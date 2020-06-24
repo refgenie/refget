@@ -1,0 +1,9 @@
+description: "Schema for a single raw sequence"
+henge_class: sequence
+type: object
+properties:
+  sequence:
+    type: string
+    description: "Actual sequence content"
+required:
+  - sequence

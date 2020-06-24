@@ -1,0 +1,22 @@
+site_name: Refget
+site_url: http://refget.databio.org/
+repo_url: http://github.com/refgenie/refget
+pypi_name: refget
+
+nav:
+  - Getting Started: 
+    - Introduction: README.md
+  - How-to Guides:
+    - "Tutorial": tutorial.md
+  - Reference:
+    - Support: https://github.com/refgenie/refget/issues
+    - Changelog: changelog.md
+
+theme: databio
+
+plugins:
+  - databio:
+      autodoc_package: "refget"
+      autodoc_build: "docs/autodoc_build"
+      no_top_level: true
+  - search
