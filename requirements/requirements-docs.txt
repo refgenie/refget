@@ -1,2 +1,2 @@
-refget
+https://github.com/refgenie/refget/archive/master.zip
 https://github.com/databio/mkdocs-databio/archive/master.zip
