@@ -14,7 +14,7 @@ The refget package provides a Python interface to both remote and local use of t
 
 ## Install
 
-```
+```console
 pip install refget
 ```
 
@@ -22,7 +22,7 @@ pip install refget
 
 ### Retrieve results from a RESTful API
 
-```
+```python
 import refget
 
 rgc = RefGetClient("https://refget.herokuapp.com/sequence/")
@@ -32,13 +32,13 @@ rgc.refget("6681ac2f62509cfc220d78751b8dc524", start=0, end=10)
 
 ### Compute digests locally
 
-```
-refget.trunc512_digest('TCGA')
+```python
+refget.trunc512_digest("TCGA")
 ```
 
 ### Insert and retrieve sequences with a local database
 
-```
+```python
 checksum = rgc.load_seq("GGAA")
 rgc.refget(checksum)
 ```
