@@ -18,13 +18,8 @@ SCHEMA_FILEPATH = os.path.join(
 
 sequence_schema = """description: "Schema for a single raw sequence"
 henge_class: sequence
-type: object
-properties:
-  sequence:
-    type: string
-    description: "Actual sequence content"
-required:
-  - sequence
+type: string
+description: "Actual sequence content"
 """
 
 
@@ -84,16 +79,16 @@ class RefGetClient(henge.Henge):
         try:
             full_data = self.retrieve(digest)
             if start is not None and end is not None:
-                result = full_data['sequence'][start:end]
+                result = full_data[start:end]
             else:
-                result = full_data['sequence']
+                result = full_data
             
             return result
         except henge.NotFoundException:
             return self.refget_remote(digest, start, end)
 
     def load_seq(self, seq):
-        checksum = self.insert({'sequence': seq}, "sequence")
+        checksum = self.insert(seq, "sequence")
         _LOGGER.debug("Loaded {}".format(checksum))
         return checksum
 
