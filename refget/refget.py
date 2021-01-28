@@ -77,7 +77,7 @@ class RefGetClient(henge.Henge):
     def refget(self, digest, start=None, end=None):
         full_data = None
         try:
-            full_data = self.retrieve(digest)
+            full_data = super(RefGetClient, self).retrieve(digest)
             if start is not None and end is not None:
                 result = full_data[start:end]
             else:
