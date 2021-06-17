@@ -6,3 +6,6 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 First public version, backed by henge version 0.1.1.
 
+## [0.0.1] - 2020-06-25
+
+Beta version for testing
