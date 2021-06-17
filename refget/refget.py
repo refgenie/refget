@@ -25,7 +25,7 @@ description: "Actual sequence content"
 
 
 class RefGetClient(henge.Henge):
-    def __init__(self, api_url_base=None, database={}, schemas=None, henges=None, checksum_function=henge.md5, suppress_connect=True):
+    def __init__(self, api_url_base=None, database={}, schemas=[], schemas_str=[], henges=None, checksum_function=henge.md5, suppress_connect=True):
         """
         A user interface to insert and retrieve decomposable recursive unique
         identifiers (DRUIDs).
@@ -44,9 +44,9 @@ class RefGetClient(henge.Henge):
 
 
         # These are the item types that this henge can understand.
-        if not schemas:
-            schemas = [sequence_schema]
-        super(RefGetClient, self).__init__(database, schemas, henges=henges,
+        if len(schemas) ==0 and len(schemas_str) == 0:
+            schemas_str = [sequence_schema]
+        super(RefGetClient, self).__init__(database, schemas, schemas_str, henges=henges,
                                           checksum_function=checksum_function)
 
     def refget_remote(self, digest, start=None, end=None):
