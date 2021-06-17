@@ -8,7 +8,7 @@ The refget package provides a Python interface to both remote and local use of t
 
 2. Local caching of retrieved results, improving performance for applications that require repeated lookups.
 
-3. A fully functioning local implementation of the refget protocol for local analysis backed by either memory, SQList, or MongoDB.
+3. A fully functioning local implementation of the refget protocol for local analysis backed by either memory, SQLite, or MongoDB.
 
 4. Convenience functions for computing refget checksums from python and handling FASTA files directly.
 
