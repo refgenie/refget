@@ -46,7 +46,6 @@ class RefGetClient(henge.Henge):
         # These are the item types that this henge can understand.
         if not schemas:
             schemas = [sequence_schema]
-        print(schemas)
         super(RefGetClient, self).__init__(database, schemas, henges=henges,
                                           checksum_function=checksum_function)
 

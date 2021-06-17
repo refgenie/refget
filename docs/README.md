@@ -25,7 +25,7 @@ pip install refget
 ```python
 import refget
 
-rgc = RefGetClient("https://refget.herokuapp.com/sequence/")
+rgc = refget.RefGetClient("https://refget.herokuapp.com/sequence/")
 rgc.refget("6681ac2f62509cfc220d78751b8dc524", start=0, end=10)
 
 ```
