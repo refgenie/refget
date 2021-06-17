@@ -39,7 +39,7 @@ setup(
         "Programming Language :: Python :: 3.6",
     ],
     keywords="genome, assembly, bioinformatics, reference, sequence",
-    url="https://github.com/databio/refget",
+    url="https://github.com/refgenie/refget",
     author=u"Nathan Sheffield, Michal Stolarczyk",
     author_email=u"nathan@code.databio.org", 
     license="BSD2",

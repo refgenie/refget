@@ -18,19 +18,14 @@ SCHEMA_FILEPATH = os.path.join(
 
 sequence_schema = """description: "Schema for a single raw sequence"
 henge_class: sequence
-type: object
-properties:
-  sequence:
-    type: string
-    description: "Actual sequence content"
-required:
-  - sequence
+type: string
+description: "Actual sequence content"
 """
 
 
 
 class RefGetClient(henge.Henge):
-    def __init__(self, api_url_base=None, database={}, schemas=None, henges=None, checksum_function=henge.md5, suppress_connect=True):
+    def __init__(self, api_url_base=None, database={}, schemas=[], schemas_str=[], henges=None, checksum_function=henge.md5, suppress_connect=True):
         """
         A user interface to insert and retrieve decomposable recursive unique
         identifiers (DRUIDs).
@@ -49,10 +44,9 @@ class RefGetClient(henge.Henge):
 
 
         # These are the item types that this henge can understand.
-        if not schemas:
-            schemas = [sequence_schema]
-        print(schemas)
-        super(RefGetClient, self).__init__(database, schemas, henges=henges,
+        if len(schemas) ==0 and len(schemas_str) == 0:
+            schemas_str = [sequence_schema]
+        super(RefGetClient, self).__init__(database, schemas, schemas_str, henges=henges,
                                           checksum_function=checksum_function)
 
     def refget_remote(self, digest, start=None, end=None):
@@ -82,18 +76,18 @@ class RefGetClient(henge.Henge):
     def refget(self, digest, start=None, end=None):
         full_data = None
         try:
-            full_data = self.retrieve(digest)
+            full_data = super(RefGetClient, self).retrieve(digest)
             if start is not None and end is not None:
-                result = full_data['sequence'][start:end]
+                result = full_data[start:end]
             else:
-                result = full_data['sequence']
+                result = full_data
             
             return result
         except henge.NotFoundException:
             return self.refget_remote(digest, start, end)
 
     def load_seq(self, seq):
-        checksum = self.insert({'sequence': seq}, "sequence")
+        checksum = self.insert(seq, "sequence")
         _LOGGER.debug("Loaded {}".format(checksum))
         return checksum
 

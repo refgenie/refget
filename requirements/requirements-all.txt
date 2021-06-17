@@ -1,4 +1,4 @@
-henge
+henge==0.1.1
 pyfaidx
 requests
 yacman>=0.6.7
