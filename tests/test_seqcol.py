@@ -1,7 +1,7 @@
 import json
 import os
 import pytest
-import seqcol
+import refget
 
 # from seqcol import SeqColHenge, validate_seqcol, compare
 # from seqcol.const import *
@@ -32,13 +32,13 @@ class TestGeneral:
         In contrast to the generic Henge object, SeqColHenge does not
         require schemas as input, they are predefined in the constructor
         """
-        assert isinstance(seqcol.SeqColHenge(database={}), seqcol.SeqColHenge)
+        assert isinstance(refget.SeqColHenge(database={}), refget.SeqColHenge)
 
 
 class TestFastaInserting:
     @pytest.mark.parametrize("fasta_name", DEMO_FILES)
     def test_fasta_loading_works(self, fasta_name, fa_root):
-        scc = seqcol.SeqColHenge(database={})
+        scc = refget.SeqColHenge(database={})
         f = os.path.join(fa_root, fasta_name)
         print("Fasta file to be loaded: {}".format(f))
         res = scc.load_fasta(f)
@@ -48,7 +48,7 @@ class TestFastaInserting:
 class TestRetrieval:
     @pytest.mark.parametrize("fasta_name", DEMO_FILES)
     def test_retrieval_works(self, fasta_name, fa_root):
-        scc = seqcol.SeqColHenge(database={})
+        scc = refget.SeqColHenge(database={})
         f = os.path.join(fa_root, fasta_name)
         print("Fasta file to be loaded: {}".format(f))
         d, asds = scc.load_fasta(f)
@@ -60,12 +60,12 @@ class TestRetrieval:
 
 def check_comparison(fasta1, fasta2, expected_comparison):
     print(f"Comparison: Fasta1: {fasta1} vs Fasta2: {fasta2}. Expected: {expected_comparison}")
-    scc = seqcol.SeqColHenge(database={})
+    scc = refget.SeqColHenge(database={})
     d = scc.load_fasta_from_filepath(fasta1)
     d2 = scc.load_fasta_from_filepath(fasta2)
     with open(expected_comparison) as fp:
         correct_compare_response = json.load(fp)
-        proposed_compare_response = seqcol.compare_seqcols(d["SCAS"], d2["SCAS"])
+        proposed_compare_response = refget.compare_seqcols(d["SCAS"], d2["SCAS"])
         print(
             json.dumps(
                 proposed_compare_response,
@@ -115,10 +115,10 @@ class TestValidate:
 
     @pytest.mark.parametrize(["seqcol_obj"], [[seqcol_obj]])
     def test_validate(self, seqcol_obj):
-        is_valid = seqcol.validate_seqcol(seqcol_obj)
+        is_valid = refget.validate_seqcol(seqcol_obj)
         assert is_valid
 
     @pytest.mark.parametrize(["seqcol_obj"], [[bad_seqcol]])
     def test_failure(self, seqcol_obj):
         with pytest.raises(Exception):
-            seqcol.validate_seqcol(seqcol_obj)
+            refget.validate_seqcol(seqcol_obj)

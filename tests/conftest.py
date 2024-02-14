@@ -3,7 +3,7 @@
 import os
 import pytest
 import oyaml as yaml
-from seqcol.const import _schema_path
+from refget.const import _schema_path
 
 
 def ly(n, data_path):
