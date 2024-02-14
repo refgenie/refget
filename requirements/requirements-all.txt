@@ -1,5 +1,6 @@
-henge==0.1.1
+biopython
+henge>=0.2.1
 pyfaidx
+pyyaml
 requests
 yacman>=0.6.7
-pyyaml

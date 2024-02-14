@@ -1,0 +1,28 @@
+description: "A collection of biological sequences."
+type: object
+properties:
+  lengths:
+    type: array
+    collated: true
+    description: "Number of elements, such as nucleotides or amino acids, in each sequence."
+    items:
+      type: integer
+  names:
+    type: array
+    collated: true
+    description: "Human-readable identifiers of each sequence (chromosome names)."
+    items:
+      type: string
+  sequences:
+    type: array
+    collated: true
+    items:
+      type: string
+      description: "Digests of sequences computed using the GA4GH digest algorithm (sha512t24u)."
+required:
+  - lengths
+  - names
+inherent:
+  - lengths
+  - names
+  - sequences

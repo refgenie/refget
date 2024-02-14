@@ -71,9 +71,12 @@ open_pipelines/
 *RESERVE*
 
 # Build-related stuff
+build
 dist/
 refget.egg-info/
 
 #ipynm checkpoints
 *ipynb_checkpoints*
 *.egg-info*
+
+

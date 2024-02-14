@@ -10,11 +10,10 @@ class TestEmptyConstructor:
     def test_no_schemas_required(self):
         assert isinstance(RefGetClient(), RefGetClient)
 
+
 class TestInsert:
     @pytest.mark.parametrize("fasta_name", DEMO_FILES)
     def test_insert_works(self, fasta_name, fasta_path):
         rgc = RefGetClient()
         d = rgc.load_seq("TCGA")
-        assert(rgc.refget(d) == "TCGA")
-
-
+        assert rgc.refget(d) == "TCGA"

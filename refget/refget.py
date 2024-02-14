@@ -12,9 +12,7 @@ from copy import copy
 
 _LOGGER = logging.getLogger(__name__)
 henge.ITEM_TYPE = "_item_type"
-SCHEMA_FILEPATH = os.path.join(
-        os.path.dirname(__file__),
-        "schemas")
+SCHEMA_FILEPATH = os.path.join(os.path.dirname(__file__), "schemas")
 
 sequence_schema = """description: "Schema for a single raw sequence"
 henge_class: sequence
@@ -23,9 +21,17 @@ description: "Actual sequence content"
 """
 
 
-
 class RefGetClient(henge.Henge):
-    def __init__(self, api_url_base=None, database={}, schemas=[], schemas_str=[], henges=None, checksum_function=henge.md5, suppress_connect=True):
+    def __init__(
+        self,
+        api_url_base=None,
+        database={},
+        schemas=[],
+        schemas_str=[],
+        henges=None,
+        checksum_function=henge.md5,
+        suppress_connect=True,
+    ):
         """
         A user interface to insert and retrieve decomposable recursive unique
         identifiers (DRUIDs).
@@ -35,29 +41,26 @@ class RefGetClient(henge.Henge):
             data types stored by this Henge
         :param function(str) -> str checksum_function: Default function to handle the digest of the
             serialized items stored in this henge.
-        """      
+        """
         self.api_url_base = api_url_base
         self.local_cache = database
         self.info = None
         if not suppress_connect:
             self.info = self.get_service_info()
 
-
         # These are the item types that this henge can understand.
-        if len(schemas) ==0 and len(schemas_str) == 0:
+        if len(schemas) == 0 and len(schemas_str) == 0:
             schemas_str = [sequence_schema]
-        super(RefGetClient, self).__init__(database, schemas, schemas_str, henges=henges,
-                                          checksum_function=checksum_function)
+        super(RefGetClient, self).__init__(
+            database, schemas, schemas_str, henges=henges, checksum_function=checksum_function
+        )
 
     def refget_remote(self, digest, start=None, end=None):
         if not self.api_url_base:
             print("No remote URL connected")
             return
 
-        url = "{base}{digest}?accept=text/plain".format(
-            base=self.api_url_base,
-            digest=digest)
-
+        url = "{base}{digest}?accept=text/plain".format(base=self.api_url_base, digest=digest)
 
         if start is not None and end is not None:
             full_retrieved = False
@@ -66,11 +69,11 @@ class RefGetClient(henge.Henge):
             full_retrieved = True
 
         r = requests.get(url)
-        result = r.content.decode('utf-8')
+        result = r.content.decode("utf-8")
 
         if full_retrieved:
             self.load_seq(result)
-                
+
         return result
 
     def refget(self, digest, start=None, end=None):
@@ -81,7 +84,7 @@ class RefGetClient(henge.Henge):
                 result = full_data[start:end]
             else:
                 result = full_data
-            
+
             return result
         except henge.NotFoundException:
             return self.refget_remote(digest, start, end)
@@ -96,22 +99,18 @@ class RefGetClient(henge.Henge):
         if not self.info:
             self.info = self.get_service_info()
         return self.info
-    
-    def meta(self, digest):
-        url = "{base}{digest}/metadata".format(
-            base=self.api_url_base,
-            digest=digest)
-        
-        r = requests.get(url)
-        return json.loads(r.content.decode('utf-8'))
-    
-    def get_service_info(self):
-        url = "{base}service-info".format(
-            base=self.api_url_base)
-        
-        r = requests.get(url)
-        return json.loads(r.content.decode('utf-8'))     
 
+    def meta(self, digest):
+        url = "{base}{digest}/metadata".format(base=self.api_url_base, digest=digest)
+
+        r = requests.get(url)
+        return json.loads(r.content.decode("utf-8"))
+
+    def get_service_info(self):
+        url = "{base}service-info".format(base=self.api_url_base)
+
+        r = requests.get(url)
+        return json.loads(r.content.decode("utf-8"))
 
     def load_fasta(self, fa_file, lengths_only=False):
         """
@@ -123,9 +122,7 @@ class RefGetClient(henge.Henge):
         for k in fa_object.keys():
             seq = str(fa_object[k])
             seq_digest = self.load_seq(seq)
-            asdlist.append({'name': k,
-                          'length': len(seq), 
-                          'sequence_digest': seq_digest})
+            asdlist.append({"name": k, "length": len(seq), "sequence_digest": seq_digest})
 
         _LOGGER.debug(asdlist)
         return asdlist
@@ -139,29 +136,28 @@ class RefGetClient(henge.Henge):
         for k, v in seqset.items():
             if isinstance(v, str):
                 seq = v
-                v = {'sequence': seq}
-            if 'length' not in v.keys():
-                if 'sequence' not in v.keys():
-                    _LOGGER.warning(
-                        "Each sequence must have either length or a sequence.")
+                v = {"sequence": seq}
+            if "length" not in v.keys():
+                if "sequence" not in v.keys():
+                    _LOGGER.warning("Each sequence must have either length or a sequence.")
                 else:
-                    v['length'] = len(v['sequence'])
-            if 'sequence' in v.keys():
-                v['sequence_digest'] = self.load_seq(seq)
-                del v['sequence']
-            if 'name' not in v.keys():
-                v['name'] = k
-            if 'toplogy' not in v.keys():
-                v['toplogy'] = 'linear'
+                    v["length"] = len(v["sequence"])
+            if "sequence" in v.keys():
+                v["sequence_digest"] = self.load_seq(seq)
+                del v["sequence"]
+            if "name" not in v.keys():
+                v["name"] = k
+            if "toplogy" not in v.keys():
+                v["toplogy"] = "linear"
 
             seqset_new[k] = v
 
-        collection_checksum = self.insert(list(seqset_new.values()), 'ASDList')
+        collection_checksum = self.insert(list(seqset_new.values()), "ASDList")
         return collection_checksum, seqset_new
 
 
-
 # Static functions below (these don't require a database)
+
 
 def parse_fasta(fa_file):
     _LOGGER.debug("Hashing {}".format(fa_file))

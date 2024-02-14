@@ -1,10 +1,13 @@
 """ Test suite shared objects and setup """
+
 import os
 import pytest
 import oyaml as yaml
+from refget.const import _schema_path
 
 
 def ly(n, data_path):
+    """Load YAML"""
     with open(os.path.join(data_path, n), "r") as f:
         return yaml.safe_load(f)
 
@@ -15,8 +18,18 @@ def schema_path():
 
 
 @pytest.fixture
+def fa_root():
+    return os.path.join(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir),
+        "demo_fasta",
+    )
+
+
+@pytest.fixture
 def fasta_path():
-    return os.path.join(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "demo_fasta")
+    return os.path.join(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "demo_fasta"
+    )
 
 
 @pytest.fixture

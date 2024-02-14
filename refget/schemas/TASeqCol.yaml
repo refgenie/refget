@@ -1,0 +1,31 @@
+description: "TAseqcol"
+type: object
+henge_class: "TASeqCol"
+properties:
+  topology:
+    type: array
+    henge_class: "TopologyVec"
+    items:
+      type: string
+      enum: ["circular", "linear"]
+      default: "linear"  
+  rawseqcol:
+    description: "Schema for List of ASDs"
+    type: array
+    henge_class: "RawSeqCol"
+    items: 
+      description: "Schema for an Annotated Sequence Digest; a digested Sequence plus metadata"
+      type: object
+      henge_class: ASD
+      properties:
+        name:
+          type: string
+        length:
+          type: "integer"
+        sequence:
+          type: string
+          henge_class: sequence
+          description: "Actual sequence content"
+      required:
+        - length
+        - name

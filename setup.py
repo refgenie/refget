@@ -19,10 +19,10 @@ with open("requirements/requirements-all.txt", "r") as reqs_file:
 
 extra["install_requires"] = DEPENDENCIES
 
-with open("{}/_version.py".format(PACKAGE), 'r') as versionfile:
+with open("{}/_version.py".format(PACKAGE), "r") as versionfile:
     version = versionfile.readline().split()[-1].strip("\"'\n")
 
-long_description = open('README.md').read()
+long_description = open("README.md").read()
 
 setup(
     name=PACKAGE,
@@ -30,28 +30,28 @@ setup(
     version=version,
     description="Python client for refget",
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     keywords="genome, assembly, bioinformatics, reference, sequence",
     url="https://github.com/refgenie/refget",
-    author=u"Nathan Sheffield, Michal Stolarczyk",
-    author_email=u"nathan@code.databio.org", 
+    author="Nathan Sheffield, Michal Stolarczyk",
+    author_email="nathan@code.databio.org",
     license="BSD2",
     entry_points={
-        "console_scripts": [
-            'refget = refget.refget:main'
-        ],
-    },    
+        "console_scripts": ["refget = refget.refget:main"],
+    },
     # package_data={"refget": [os.path.join("refget", "*")]},
     include_package_data=True,
     test_suite="tests",
     tests_require=(["mock", "pytest"]),
     setup_requires=(["pytest-runner"] if {"test", "pytest", "ptr"} & set(sys.argv) else []),
-    **extra
+    **extra,
 )
