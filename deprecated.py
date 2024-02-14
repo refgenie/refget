@@ -18,7 +18,6 @@ sc5 = {
 }
 
 
-
 def compat(A, B):
     ainb = [x in B for x in A]
     bina = [x in A for x in B]

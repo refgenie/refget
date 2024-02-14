@@ -1,4 +1,5 @@
 """ Test suite shared objects and setup """
+
 import os
 import pytest
 import oyaml as yaml
@@ -23,9 +24,12 @@ def fa_root():
         "demo_fasta",
     )
 
+
 @pytest.fixture
 def fasta_path():
-    return os.path.join(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "demo_fasta")
+    return os.path.join(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "demo_fasta"
+    )
 
 
 @pytest.fixture

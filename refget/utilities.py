@@ -112,9 +112,9 @@ def chrom_sizes_to_digest(chrom_sizes_file_path: str) -> str:
 
 
 def chrom_sizes_to_seqcol(
-        chrom_sizes_file_path: str,
-        digest_function: Callable[[str], str] = sha512t24u_digest,
-        ) -> dict:
+    chrom_sizes_file_path: str,
+    digest_function: Callable[[str], str] = sha512t24u_digest,
+) -> dict:
     """Given a chrom.sizes file, return a canonical seqcol object"""
     with open(chrom_sizes_file_path, "r") as f:
         lines = f.readlines()
@@ -167,7 +167,7 @@ def fasta_obj_to_seqcol(
         seq = str(fa_object[k])
         seq_length = len(seq)
         seq_name = fa_object[k].name
-        seq_digest = "SQ."+digest_function(seq.upper())
+        seq_digest = "SQ." + digest_function(seq.upper())
         snlp = {"length": seq_length, "name": seq_name}  # sorted_name_length_pairs
         snlp_digest = digest_function(canonical_str(snlp))
         CSC["lengths"].append(seq_length)

@@ -16,6 +16,7 @@ class SeqColConf(yacman.YAMLConfigManager):
     """
     Simple configuration manager object for SeqColHenge.
     """
+
     def __init__(
         self,
         entries={},
@@ -26,9 +27,7 @@ class SeqColConf(yacman.YAMLConfigManager):
         skip_read_lock=False,
     ):
         filepath = yacman.select_config(
-            config_filepath=filepath,
-            config_env_vars=["SEQCOLAPI_CONFIG"],
-            config_name="seqcol"
+            config_filepath=filepath, config_env_vars=["SEQCOLAPI_CONFIG"], config_name="seqcol"
         )
         super(SeqColConf, self).__init__(entries, filepath, yamldata, writable)
 
@@ -178,9 +177,7 @@ class SeqColHenge(henge.Henge):
         """
         @param chromsizes Path to chromsizes file
         """
-        SCAS = chrom_sizes_to_seqcol(
-            chromsizes, digest_function=self.checksum_function
-        )
+        SCAS = chrom_sizes_to_seqcol(chromsizes, digest_function=self.checksum_function)
         digest = self.insert(SCAS, "SeqColArraySet", reclimit=1)
         return {
             "chromsizes_file": chromsizes,
