@@ -1,5 +1,6 @@
 import requests
 
+
 class SeqColClient(object):
     """
     A client for interacting with a sequence collection API.
@@ -13,6 +14,7 @@ class SeqColClient(object):
     Methods:
         get_collection(accession, level=2): Retrieves a sequence collection for a given accession and level.
     """
+
     def __init__(self, url="http://seqcolapi.databio.org"):
         self.url = url
 
@@ -30,7 +32,7 @@ class SeqColClient(object):
         url = f"{self.url}/collection/{accession}?level={level}"
         response = requests.get(url)
         return response.json()
-    
+
     def compare(self, accession1, accession2):
         """
         Compares two sequence collections.

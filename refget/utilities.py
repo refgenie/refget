@@ -130,6 +130,7 @@ def chrom_sizes_to_seqcol(
         CSC["names"].append(seq_name)
         CSC["sequences"].append(ga4gh_digest)
         CSC["sorted_name_length_pairs"].append(snlp_digest)
+    CSC["sorted_name_length_pairs"].sort()
     return CSC
 
 
@@ -205,10 +206,20 @@ def compare_seqcols(A: SeqCol, B: SeqCol):
 
     all_keys = list(A.keys()) + list(set(B.keys()) - set(list(A.keys())))
     result = {}
+
+    # Compute lengths of each array; only do this for array attributes
+    a_lengths = {}
+    b_lengths = {}
+    for k in A.keys():
+        a_lengths[k] = len(A[k])
+    for k in B.keys():
+        b_lengths[k] = len(B[k])
+
     return_obj = {
-        "arrays": {"a_only": [], "b_only": [], "a_and_b": []},
-        "elements": {
-            "total": {"a": len(A["lengths"]), "b": len(B["lengths"])},
+        "attributes": {"a_only": [], "b_only": [], "a_and_b": []},
+        "array_elements": {
+            "a": a_lengths,
+            "b": b_lengths,
             "a_and_b": {},
             "a_and_b_same_order": {},
         },
@@ -218,14 +229,17 @@ def compare_seqcols(A: SeqCol, B: SeqCol):
         _LOGGER.info(k)
         if k not in A:
             result[k] = {"flag": -1}
-            return_obj["arrays"]["b_only"].append(k)
+            return_obj["attributes"]["b_only"].append(k)
+            # return_obj["array_elements"]["total"][k] = {"a": None, "b": len(B[k])}
         elif k not in B:
-            return_obj["arrays"]["a_only"].append(k)
+            return_obj["attributes"]["a_only"].append(k)
+            # return_obj["array_elements"]["total"][k] = {"a": len(A[k]), "b": None}
         else:
-            return_obj["arrays"]["a_and_b"].append(k)
+            return_obj["attributes"]["a_and_b"].append(k)
             res = _compare_elements(A[k], B[k])
-            return_obj["elements"]["a_and_b"][k] = res["a_and_b"]
-            return_obj["elements"]["a_and_b_same_order"][k] = res["a_and_b_same_order"]
+            # return_obj["array_elements"]["total"][k] = {"a": len(A[k]), "b": len(B[k])}
+            return_obj["array_elements"]["a_and_b"][k] = res["a_and_b"]
+            return_obj["array_elements"]["a_and_b_same_order"][k] = res["a_and_b_same_order"]
     return return_obj
 
 
