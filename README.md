@@ -6,4 +6,4 @@ The refget package provides a Python interface to both remote and local use of t
 
 This package provides clients and functions for both refget sequences and refget sequence collections (seqcol).
 
-Documentation is hosted at [refget.databio.org](http://refget.databio.org).
+Documentation is hosted at [refgenie.databio.org/refget](https://refgenie.databio.org/refget).
