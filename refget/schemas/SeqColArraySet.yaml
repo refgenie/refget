@@ -1,0 +1,27 @@
+description: "SeqColArraySet"
+type: object
+henge_class: "SeqColArraySet"
+properties:
+  topologies:
+    type: array
+    henge_class: "array"
+    items:
+      type: string
+      enum: ["circular", "linear"]
+      default: "linear"  
+  names:
+    type: array
+    henge_class: "array"
+    items:
+      type: string    
+  lengths:
+    type: array
+    henge_class: "array"
+    items:
+      type: string    
+  sequences:
+    type: array
+    henge_class: "seqarray"
+    items:
+      type: string
+      henge_class: sequence

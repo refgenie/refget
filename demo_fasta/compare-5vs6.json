@@ -1,0 +1,30 @@
+{
+  "arrays":{
+    "a_and_b":[
+      "lengths",
+      "names",
+      "sequences",
+      "sorted_name_length_pairs"
+    ],
+    "a_only":[],
+    "b_only":[]
+  },
+  "elements":{
+    "a_and_b":{
+      "lengths":3,
+      "names":3,
+      "sorted_name_length_pairs":3,
+      "sequences":3
+    },
+    "a_and_b_same_order":{
+      "lengths":false,
+      "names":false,
+      "sorted_name_length_pairs":true,
+      "sequences":false
+    },
+    "total":{
+      "a":3,
+      "b":3
+    }
+  }
+}

@@ -1,0 +1,36 @@
+description: "SeqColArraySet"
+type: object
+henge_class: "SeqColArraySet"
+properties:
+  topologies:
+    type: array
+    henge_class: "strarray"
+    items:
+      type: string
+      enum: ["circular", "linear"]
+      default: "linear"  
+  names:
+    type: array
+    henge_class: "strarray"
+    items:
+      type: string    
+  lengths:
+    type: array
+    henge_class: "intarray"
+    items:
+      type: integer
+  sequences:
+    type: array
+    henge_class: "seqarray"
+    items:
+      type: string
+      henge_class: sequence
+  sorted_name_length_pairs:
+    type: array
+    henge_class: "strarray"
+    items:
+      type: string
+inherent:
+  - names
+  - lengths
+  - sequences
