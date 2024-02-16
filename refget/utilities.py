@@ -134,10 +134,10 @@ def chrom_sizes_to_seqcol(
     return CSC
 
 
-def fasta_file_to_digest(fa_file_path: str) -> str:
+def fasta_file_to_digest(fa_file_path: str, schema: dict=None) -> str:
     """Given a fasta, return a digest"""
     seqcol_obj = fasta_file_to_seqcol(fa_file_path)
-    return seqcol_digest(seqcol_obj)
+    return seqcol_digest(seqcol_obj, schema)
 
 
 def fasta_file_to_seqcol(fa_file_path: str) -> dict:
