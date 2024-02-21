@@ -193,7 +193,7 @@ def build_sorted_name_length_pairs(obj: dict, digest_function: Callable[[str], s
     return nl_digests
 
 
-def compare_seqcols(A: SeqCol, B: SeqCol):
+def compare_seqcols(A: SeqCol, B: SeqCol) -> dict:
     """
     Workhorse comparison function
 
