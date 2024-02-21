@@ -86,12 +86,12 @@ def format_itemwise(csc: SeqCol) -> list:
     return {"sequences": list_of_dicts}
 
 
-def parse_fasta(fa_file) -> pyfaidx.Fasta:
+def parse_fasta(fa_file_path: str) -> pyfaidx.Fasta:
     """
     Read in a gzipped or not gzipped FASTA file
     """
     try:
-        return pyfaidx.Fasta(fa_file)
+        return pyfaidx.Fasta(fa_file_path)
     except pyfaidx.UnsupportedCompressionFormat:
         # pyfaidx can handle bgzip but not gzip; so we just hack it here and
         # gunzip the file into a temporary one and read it in not to interfere
@@ -99,7 +99,7 @@ def parse_fasta(fa_file) -> pyfaidx.Fasta:
         from gzip import open as gzopen
         from tempfile import NamedTemporaryFile
 
-        with gzopen(fa_file, "rt") as f_in, NamedTemporaryFile(mode="w+t", suffix=".fa") as f_out:
+        with gzopen(fa_file_path, "rt") as f_in, NamedTemporaryFile(mode="w+t", suffix=".fa") as f_out:
             f_out.writelines(f_in.read())
             f_out.seek(0)
             return pyfaidx.Fasta(f_out.name)
@@ -180,7 +180,7 @@ def fasta_obj_to_seqcol(
     return CSC
 
 
-def build_sorted_name_length_pairs(obj: dict, digest_function):
+def build_sorted_name_length_pairs(obj: dict, digest_function: Callable[[str], str] = sha512t24u_digest):
     """Builds the sorted_name_length_pairs attribute, which corresponds to the coordinate system"""
     sorted_name_length_pairs = []
     for i in range(len(obj["names"])):
@@ -243,7 +243,7 @@ def compare_seqcols(A: SeqCol, B: SeqCol):
     return return_obj
 
 
-def _compare_elements(A: list, B: list):
+def _compare_elements(A: list, B: list) -> dict:
     """
     Compare elements between two arrays. Helper function for individual elements used by workhorse compare_seqcols function
     """
