@@ -10,3 +10,5 @@ from .refget import parse_fasta
 from .seqcol import *
 from .utilities import *
 from .seqcol_client import *
+
+from .seqcol_router import seqcol_router
