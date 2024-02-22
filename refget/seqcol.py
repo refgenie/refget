@@ -1,6 +1,5 @@
 import henge
 import logging
-import yacman
 
 from itertools import compress
 
@@ -10,26 +9,6 @@ from .utilities import *
 
 _LOGGER = logging.getLogger(__name__)
 henge.ITEM_TYPE = "_item_type"
-
-
-class SeqColConf(yacman.YAMLConfigManager):
-    """
-    Simple configuration manager object for SeqColHenge.
-    """
-
-    def __init__(
-        self,
-        entries={},
-        filepath=None,
-        yamldata=None,
-        writable=False,
-        wait_max=60,
-        skip_read_lock=False,
-    ):
-        filepath = yacman.select_config(
-            config_filepath=filepath, config_env_vars=["SEQCOLAPI_CONFIG"], config_name="seqcol"
-        )
-        super(SeqColConf, self).__init__(entries, filepath, yamldata, writable)
 
 
 class SeqColHenge(henge.Henge):

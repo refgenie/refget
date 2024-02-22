@@ -9,35 +9,44 @@ This repository contains:
 
 ### Run locally for development
 
-To run a local server with a **local database**:
-```
-source servers/localhost/dev_local.env
-uvicorn seqcolapi.main:app --reload --port 8100
-```
+First, configure env vars:
+- To run a local server with a **local database**:`source servers/localhost/dev_local.env`
+- To run a local server with **the production database**:`source servers/seqcolapi.databio.org/production.env`
 
-To run a local server with **the production database**:
+Then, run service:
+
 ```
-source servers/seqcolapi.databio.org/production.env
 uvicorn seqcolapi.main:app --reload --port 8100
 ```
 
 ### Running with docker
 
-To build the docker file:
+To build the docker file, from the root of this repository:
 
+First you build the general-purpose image
 
 ```
-docker build --no-cache -t scim .
+docker build -f deployment/dockerhub/Dockerfile -t databio/seqcolapi seqcolapi
+```
+
+Next you build the wrapped image (this just wraps the config into the app):
+
+```
+docker build -f deployment/seqcolapi.databio.org/Dockerfile -t seqcolapi.databio.org deployment/seqcolapi.databio.org
 ```
 
 To run in a container:
 
 ```
-export POSTGRES_PASSWORD=`pass aws/rds_postgres` 
+source deployment/seqcolapi.databio.org/production.env
+docker run --rm -p 8000:80 --name seqcolapi seqcolapi.databio.org
+```
+
+
 docker run --rm -p 8000:8000 --name sccon \
   --env "POSTGRES_PASSWORD" \
   --volume $CODE/seqcolapi.databio.org/config/seqcolapi.yaml:/config.yaml \
-  scim seqcolapi serve -c /config.yaml -p 8000
+  scim 
 ```
 
 To deploy container to dockerhub:

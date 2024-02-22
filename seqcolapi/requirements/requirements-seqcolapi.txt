@@ -2,7 +2,7 @@ aiofiles
 fastapi
 henge>=0.2.1
 jinja2
-logmuse>=0.2
+pipestat
 psycopg2-binary
 refget
 uvicorn>=0.7.1

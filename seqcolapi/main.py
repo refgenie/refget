@@ -1,7 +1,6 @@
 import henge
 import json
 import logging
-import logmuse
 import os
 import sys
 import uvicorn
@@ -17,12 +16,15 @@ from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
 from typing import Union
 
-from .cli import build_parser
 from .const import *
 from .scconf import RDBDict
 from .examples import *
 
-from refget import SeqColConf, SeqColHenge, format_itemwise
+from refget import SeqColHenge, format_itemwise
+from yacman import select_config, FutureYAMLConfigManager as YAMLConfigManager
+
+class SeqColConf(YAMLConfigManager):
+    pass
 
 global _LOGGER
 
@@ -124,7 +126,7 @@ def create_globals(scconf: yacman.YAMLConfigManager):
 def main(injected_args=None):
     # Entry point for running from console_scripts, installed package
     parser = build_parser()
-    parser = logmuse.add_logging_options(parser)
+    # parser = logmuse.add_logging_options(parser)
     args = parser.parse_args()
     if injected_args:
         args.__dict__.update(injected_args)
@@ -133,10 +135,10 @@ def main(injected_args=None):
         print("No subcommand given")
         sys.exit(1)
 
-    _LOGGER = logmuse.logger_via_cli(args, make_root=True)
+    # _LOGGER = logmuse.logger_via_cli(args, make_root=True)
     _LOGGER.info(f"args: {args}")
     if "config" in args and args.config is not None:
-        scconf = SeqColConf(filepath=args.config)
+        scconf = SeqColConf.from_yaml_file(args.config)
         create_globals(scconf)
         app.state.schenge = schenge
         port = args.port or scconf.exp["server"]["port"]
@@ -149,7 +151,8 @@ def main(injected_args=None):
 if __name__ != "__main__":
     # Entrypoint for running through uvicorn CLI (dev)
     if os.environ.get("SEQCOLAPI_CONFIG") is not None:
-        scconf = SeqColConf()
+        _LOGGER.info(f"Loading config from SEQCOLAPI_CONFIG: {os.environ.get('SEQCOLAPI_CONFIG')}")
+        scconf = SeqColConf.from_yaml_file(os.environ.get('SEQCOLAPI_CONFIG'))
         create_globals(scconf)
         app.state.schenge = schenge
     else:
