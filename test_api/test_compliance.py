@@ -45,11 +45,6 @@ response_file = "tests/demo0_collection.json"
 import refget
 
 
-def check_server_is_running(api_root):
-    res = requests.get(f"{api_root}/ping")
-    assert res.status_code == 200, "Server is not running"
-
-
 def read_url(url):
     import yaml
 
@@ -105,13 +100,15 @@ def check_comparison(api_root, response_file):
     server_answer = json.loads(res.content)
     assert server_answer == correct_answer, "Comparison endpoint failed"
 
-
-class TestAPI:
+@pytest.mark.require_service
+class TestAPI:  
 
     @pytest.mark.parametrize("test_values", COLLECTION_TESTS)
     def test_collection_endpoint(self, api_root, test_values):
+        # print("Service unavailable: ", SERVICE_UNAVAILABLE)
         check_collection(api_root, *test_values)
-
+    
     @pytest.mark.parametrize("response_file", COMPARISON_TESTS)
     def test_comparison_endpoint(self, api_root, response_file):
+        # print("Service unavailable: ", SERVICE_UNAVAILABLE)
         check_comparison(api_root, response_file)
