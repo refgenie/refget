@@ -11,4 +11,9 @@ from .seqcol import *
 from .utilities import *
 from .seqcol_client import *
 
-from .seqcol_router import seqcol_router
+try:
+    # Requires optional dependencies, so we catch the ImportError
+    from .seqcol_router import seqcol_router
+except ImportError:
+    seqcol_router = None
+    pass
