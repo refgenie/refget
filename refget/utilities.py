@@ -7,7 +7,7 @@ import os
 import pyfaidx
 
 from jsonschema import Draft7Validator
-from typing import Optional, Callable
+from typing import Optional, Callable, Union
 from yacman import load_yaml
 
 from .const import SeqCol
@@ -23,18 +23,27 @@ def trunc512_digest(seq, offset=24) -> str:
     return hex_digest.decode()
 
 
-def sha512t24u_digest(seq: str, offset: int = 24) -> str:
+def sha512t24u_digest(seq: Union[str, bytes], offset: int = 24) -> str:
     """GA4GH digest function"""
-    digest = hashlib.sha512(seq.encode()).digest()
+    if isinstance(seq, str):
+        seq = seq.encode("utf-8")
+    digest = hashlib.sha512(seq).digest()
     tdigest_b64us = base64.urlsafe_b64encode(digest[:offset])
     return tdigest_b64us.decode("ascii")
 
 
-def canonical_str(item: dict) -> str:
+def sha512t24u_digest_bytes(seq: bytes, offset: int = 24) -> str:
+    """GA4GH digest function"""
+    digest = hashlib.sha512(seq).digest()
+    tdigest_b64us = base64.urlsafe_b64encode(digest[:offset])
+    return tdigest_b64us.decode("ascii")
+
+
+def canonical_str(item: dict) -> bytes:
     """Convert a dict into a canonical string representation"""
     return json.dumps(
         item, separators=(",", ":"), ensure_ascii=False, allow_nan=False, sort_keys=True
-    )
+    ).encode()
 
 
 def print_csc(csc: dict) -> str:
@@ -99,7 +108,9 @@ def parse_fasta(fa_file_path: str) -> pyfaidx.Fasta:
         from gzip import open as gzopen
         from tempfile import NamedTemporaryFile
 
-        with gzopen(fa_file_path, "rt") as f_in, NamedTemporaryFile(mode="w+t", suffix=".fa") as f_out:
+        with gzopen(fa_file_path, "rt") as f_in, NamedTemporaryFile(
+            mode="w+t", suffix=".fa"
+        ) as f_out:
             f_out.writelines(f_in.read())
             f_out.seek(0)
             return pyfaidx.Fasta(f_out.name)
@@ -134,7 +145,7 @@ def chrom_sizes_to_seqcol(
     return CSC
 
 
-def fasta_file_to_digest(fa_file_path: str, schema: dict=None) -> str:
+def fasta_file_to_digest(fa_file_path: str, schema: dict = None) -> str:
     """Given a fasta, return a digest"""
     seqcol_obj = fasta_file_to_seqcol(fa_file_path)
     return seqcol_digest(seqcol_obj, schema)
@@ -180,7 +191,9 @@ def fasta_obj_to_seqcol(
     return CSC
 
 
-def build_sorted_name_length_pairs(obj: dict, digest_function: Callable[[str], str] = sha512t24u_digest):
+def build_sorted_name_length_pairs(
+    obj: dict, digest_function: Callable[[str], str] = sha512t24u_digest
+):
     """Builds the sorted_name_length_pairs attribute, which corresponds to the coordinate system"""
     sorted_name_length_pairs = []
     for i in range(len(obj["names"])):

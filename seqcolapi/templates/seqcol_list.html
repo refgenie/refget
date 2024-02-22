@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Sequence collection list</h3>
+
+<table class="table mt-5">
+<thead>
+  <th>Assembly</th>
+  <th>Sequence collection digest</th>
+</thead>
+{%- for x in results -%}
+<tr>
+  <th><a href="{{x['assembly_link']}}">{{ x["assembly"] }}</a></th>
+  <th><a href="{{ host }}/collection/{{x['seqcol_digest']}}">{{ x["seqcol_digest"] }}</a></th>
+</tr>
+{% endfor %}
+
+</table>
+{% endblock %}

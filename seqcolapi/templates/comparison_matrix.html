@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<h3>Sequence collection comparison matrix</h3>
+
+The square matrix below lists sequence collections on the x and y axes. At the intersection is a link to the /comparison endpoint that compares those two genomes.
+
+<style>
+th.rotated-text {
+    height: 200px;
+    white-space: nowrap;
+    padding: 0 !important;
+}
+
+th.rotated-text > div {
+    transform:
+        translate(13px, 0px)
+        rotate(310deg);
+    width: 20px;
+}
+
+th.rotated-text > div > span {
+    padding: 5px 10px;
+}
+</style>
+
+<table class="table mt-5">
+<thead>
+  <th></th>
+  {% for x in results -%}
+  <th class="rotated-text"><div><span>{{ x }}</span></div></th>
+  {% endfor %}
+</thead>
+{%- for x in results -%}
+<tr>
+  <th><a href="{{ host }}/collection/{{results[x]['digest']}}">{{ x }}</a></th>
+{% for y in results %}
+	{% if x == y %}
+	<td>=</td>
+	{% else %}
+    <td><a href="{{ host }}/comparison/{{results[x]['digest']}}/{{results[y]['digest']}}">Compare</a></td>
+	{% endif %}
+{%- endfor %}
+</tr>
+{% endfor %}
+
+</table>
+{% endblock %}

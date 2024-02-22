@@ -1,0 +1,42 @@
+{
+  "digests": {
+    "a": "5TK2xeaOB3WmheaDFTzE6G2zdStHNQCM",
+    "b": "V7QPcpp5S1wYnPBmMGiO53LXRxr9tTQa"
+  },
+  "attributes": {
+    "a_only": [],
+    "b_only": [],
+    "a_and_b": [
+      "lengths",
+      "names",
+      "sequences",
+      "sorted_name_length_pairs"
+    ]
+  },
+  "array_elements": {
+    "a": {
+      "lengths": 2,
+      "names": 2,
+      "sequences": 2,
+      "sorted_name_length_pairs": 2
+    },
+    "b": {
+      "lengths": 3,
+      "names": 3,
+      "sequences": 3,
+      "sorted_name_length_pairs": 3
+    },
+    "a_and_b": {
+      "lengths": 2,
+      "names": 2,
+      "sequences": 2,
+      "sorted_name_length_pairs": 2
+    },
+    "a_and_b_same_order": {
+      "lengths": true,
+      "names": true,
+      "sequences": true,
+      "sorted_name_length_pairs": true
+    }
+  }
+}
