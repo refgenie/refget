@@ -31,7 +31,7 @@ def sha512t24u_digest_str(seq: str, offset: int = 24) -> str:
 
 def sha512t24u_digest(seq: bytes, offset: int = 24) -> str:
     """GA4GH digest function"""
-    digest = hashlib.sha512(seq.digest()
+    digest = hashlib.sha512(seq).digest()
     tdigest_b64us = base64.urlsafe_b64encode(digest[:offset])
     return tdigest_b64us.decode("ascii")
 
