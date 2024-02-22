@@ -33,35 +33,15 @@ templates = Jinja2Templates(directory=TEMPLATES_PATH)
 for key, value in ALL_VERSIONS.items():
     _LOGGER.info(f"{key}: {value}")
 
-holder = {}
-
-def load_something():
-    return "you got my schenge!"
-
-from contextlib import asynccontextmanager
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Set up the back-end for the app.
-    """
-    print("Setting up the app")
-    # app.state.holder = {"schenge": load_something()}
-    yield {"schenge": load_something()}
-    del holder["schenge"]
-
 
 app = FastAPI(
     title="Sequence Collections API",
     description="An API providing metadata such as names, lengths, and other values for collections of reference sequences",
     version=seqcolapi_version,
-    lifespan=lifespan,
 )
 
 from refget import seqcol_router
-
-
 app.include_router(seqcol_router)
-
 
 origins = ["*"]
 
@@ -121,9 +101,7 @@ def create_globals(scconf: yacman.YAMLConfigManager):
     """
     print(scconf)
     _LOGGER.info(f"Connecting to database... {scconf.exp['database']['host']}")
-    # global schenge
-
-    
+    global schenge
 
     pgdb = RDBDict(
         db_name=scconf.exp["database"]["name"],

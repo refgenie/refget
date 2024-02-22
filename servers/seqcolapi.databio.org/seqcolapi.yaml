@@ -1,0 +1,13 @@
+refget_provider_apis: https://www.ebi.ac.uk/ena/cram/sequence/
+schemas:
+- https://schema.databio.org/refget/SeqColArraySetInherent.yaml
+database:
+  host: $POSTGRES_HOST
+  user: seqcol_admin
+  password: $POSTGRES_PASSWORD
+  port: 5432
+  name: seqcol
+  table: seqcol
+server:
+  host: 0.0.0.0
+  port: 80
