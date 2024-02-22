@@ -79,4 +79,4 @@ refget.egg-info/
 *ipynb_checkpoints*
 *.egg-info*
 
-
+coverage.xml
