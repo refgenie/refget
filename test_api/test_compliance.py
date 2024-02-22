@@ -100,14 +100,15 @@ def check_comparison(api_root, response_file):
     server_answer = json.loads(res.content)
     assert server_answer == correct_answer, "Comparison endpoint failed"
 
+
 @pytest.mark.require_service
-class TestAPI:  
+class TestAPI:
 
     @pytest.mark.parametrize("test_values", COLLECTION_TESTS)
     def test_collection_endpoint(self, api_root, test_values):
         # print("Service unavailable: ", SERVICE_UNAVAILABLE)
         check_collection(api_root, *test_values)
-    
+
     @pytest.mark.parametrize("response_file", COMPARISON_TESTS)
     def test_comparison_endpoint(self, api_root, response_file):
         # print("Service unavailable: ", SERVICE_UNAVAILABLE)

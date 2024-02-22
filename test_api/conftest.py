@@ -1,11 +1,13 @@
 import pytest
 import requests
 
+
 def pytest_addoption(parser):
     """
     Add an option to specify the API root
     """
     parser.addoption("--api_root", action="store", default="http://0.0.0.0:8100")
+
 
 @pytest.fixture()
 def api_root(pytestconfig):
@@ -14,19 +16,22 @@ def api_root(pytestconfig):
     """
     return pytestconfig.getoption("api_root")
 
+
 def check_server_is_running(api_root):
     """
     Check if a server is responding at the given API root
     """
     try:
-        print (f"Checking if service is running at {api_root}")
+        print(f"Checking if service is running at {api_root}")
         res = requests.get(f"{api_root}/")
         assert res.status_code == 200, "Service is not running"
         return True
     except:
         return False
 
+
 REQ_SERVICE_MARK = "require_service"
+
 
 def pytest_configure(config):
     """
@@ -37,6 +42,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", f"{REQ_SERVICE_MARK}: test to only run when API root is available"
     )
+
 
 def pytest_collection_modifyitems(config, items):
     """
@@ -49,5 +55,3 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if REQ_SERVICE_MARK in item.keywords:
                 item.add_marker(skip_missing_service)
-    
-
