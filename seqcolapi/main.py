@@ -23,8 +23,10 @@ from .examples import *
 from refget import SeqColHenge, format_itemwise
 from yacman import select_config, FutureYAMLConfigManager as YAMLConfigManager
 
+
 class SeqColConf(YAMLConfigManager):
     pass
+
 
 global _LOGGER
 
@@ -152,7 +154,7 @@ if __name__ != "__main__":
     # Entrypoint for running through uvicorn CLI (dev)
     if os.environ.get("SEQCOLAPI_CONFIG") is not None:
         _LOGGER.info(f"Loading config from SEQCOLAPI_CONFIG: {os.environ.get('SEQCOLAPI_CONFIG')}")
-        scconf = SeqColConf.from_yaml_file(os.environ.get('SEQCOLAPI_CONFIG'))
+        scconf = SeqColConf.from_yaml_file(os.environ.get("SEQCOLAPI_CONFIG"))
         create_globals(scconf)
         app.state.schenge = schenge
     else:
