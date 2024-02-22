@@ -24,4 +24,8 @@ Under `/test_api` are compliance tests for a service implementing the sequence c
 1. Load the fasta files from the `test_fasta` folder into your API database.
 2. Run `pytest test_api --api_root <API_URL>`, pointing to your URL to test
 
+For example, this will test my remote server instance:
 
+```
+pytest test_api --api_root https://seqcolapi.databio.org
+```

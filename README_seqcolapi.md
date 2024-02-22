@@ -36,32 +36,30 @@ docker build -f deployment/seqcolapi.databio.org/Dockerfile -t seqcolapi.databio
 ```
 
 To run in a container:
-
 ```
 source deployment/seqcolapi.databio.org/production.env
-docker run --rm -p 8000:80 --name seqcolapi seqcolapi.databio.org
+docker run --rm -p 8000:80 --name seqcolapi \
+  --env "POSTGRES_PASSWORD" \
+  --env "POSTGRES_HOST" \
+  seqcolapi.databio.org
 ```
 
-
+### Alternative: Mount the config
+Instead of building a bundle with the config, you could just mount it into the base image:
+```
 docker run --rm -p 8000:8000 --name sccon \
   --env "POSTGRES_PASSWORD" \
   --volume $CODE/seqcolapi.databio.org/config/seqcolapi.yaml:/config.yaml \
-  scim 
+  seqcolapi 
 ```
 
-To deploy container to dockerhub:
+### Deploying container to dockerhub
 
 Use github action in this repo which deploys on release, or through manual dispatch.
 
-
-Left to do:
-- [x] it already retrieves from a refget server.
-- [x] let me insert stuff using only checksums.
-- [ ] make it take 2 refget servers correctly.
-
-
 ## To load new data into seqcolapi.databio.org
 
+See instructions in `seqcolapi` repo.
 ```
 cd analysis
 source ../servers/localhost/dev_local.env
@@ -72,25 +70,7 @@ Now run `load_fasta.py`
 
 ## Deploy to AWS ECS
 
-### Testing locally first
-
-Build the seqcolapi image
-
-```
-cd
-docker build -t docker.io/databio/seqcolapi:latest .
-```
-
-```
-docker pull docker.io/databio/seqcolapi:latest
-cd servers/seqcolapi.databio.org
-docker build -t scim .
-docker run \
-  -e POSTGRES_HOST=$POSTGRES_HOST \
-  -e POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
-  --network=host \
-  scim
-```
+- Test locally first, using 1. native test; 2. local docker test.
 
 ### Deploying
 
