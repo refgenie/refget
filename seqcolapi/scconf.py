@@ -14,16 +14,21 @@ _LOGGER = logging.getLogger(__name__)
 # pgdb["key"]               # Retrieve item
 # pgdb.close()              # Close connection
 
+
 def getenv(varname):
-    """ Simple wrapper to make the Exception more informative for missing env var"""
-    try: 
+    """Simple wrapper to make the Exception more informative for missing env var"""
+    try:
         return os.environ[varname]
     except KeyError:
         raise Exception(f"Environment variable {varname} not set.")
 
+
 import pipestat
+
+
 class PipestatMapping(pipestat.PipestatManager):
-    """ A wrapper class to allow using a PipestatManager as a dict-like object."""
+    """A wrapper class to allow using a PipestatManager as a dict-like object."""
+
     def __getitem__(self, key):
         # This little hack makes this work with `in`;
         # e.g.: for x in rdbdict, which is now disabled, instead of infinite.
@@ -36,7 +41,7 @@ class PipestatMapping(pipestat.PipestatManager):
 
     def __len__(self):
         return self.count_records()
-        
+
     def _next_page(self):
         self._buf["page_index"] += 1
         limit = self._buf["page_size"]
@@ -48,7 +53,7 @@ class PipestatMapping(pipestat.PipestatManager):
         _LOGGER.debug("Iterating...")
         self._buf = {  # buffered iterator
             "current_view_index": 0,
-            "len":  len(self),
+            "len": len(self),
             "page_size": 100,
             "page_index": -1,
             "keys": self._next_page(),
@@ -58,11 +63,11 @@ class PipestatMapping(pipestat.PipestatManager):
     def __next__(self):
         if self._buf["current_view_index"] > self._buf["len"]:
             raise StopIteration
-        
+
         idx = self._buf["current_view_index"] - self._buf["page_index"] * self._buf["page_size"]
         if idx <= self._buf["page_size"]:
             self._buf["current_view_index"] += 1
-            return self._buf["keys"][idx-1]
+            return self._buf["keys"][idx - 1]
         else:  # current index is beyond current page, but not beyond total
             return self._next_page()
 
@@ -262,10 +267,9 @@ class RDBDict(Mapping):
             stmt_str += f" LIMIT {limit}"
         if offset != None:
             stmt_str += f" OFFSET {offset}"
-        stmt = sql.SQL(stmt_str).format(
-            table=sql.Identifier(self.db_table))
+        stmt = sql.SQL(stmt_str).format(table=sql.Identifier(self.db_table))
         res = self.execute_multi_query(stmt)
-        return res   
+        return res
 
     def _next_page(self):
         self._buf["page_index"] += 1
@@ -278,7 +282,7 @@ class RDBDict(Mapping):
         _LOGGER.debug("Iterating...")
         self._buf = {  # buffered iterator
             "current_view_index": 0,
-            "len":  len(self),
+            "len": len(self),
             "page_size": 10,
             "page_index": 0,
             "keys": self.get_paged_keys(10, 0),
@@ -288,11 +292,11 @@ class RDBDict(Mapping):
     def __next__(self):
         if self._buf["current_view_index"] > self._buf["len"]:
             raise StopIteration
-        
+
         idx = self._buf["current_view_index"] - self._buf["page_index"] * self._buf["page_size"]
         if idx <= self._buf["page_size"]:
             self._buf["current_view_index"] += 1
-            return self._buf["keys"][idx-1]
+            return self._buf["keys"][idx - 1]
         else:  # current index is beyond current page, but not beyond total
             return self._next_page()
 
@@ -313,7 +317,6 @@ class RDBDict(Mapping):
     #         _LOGGER.info("Not found: {}".format(self._current_idx))
     #         raise StopIteration
     #     return res
-
 
 
 # We don't need the full SeqColHenge,

@@ -41,6 +41,7 @@ app = FastAPI(
 )
 
 from refget import seqcol_router
+
 app.include_router(seqcol_router)
 
 origins = ["*"]
@@ -53,7 +54,8 @@ app.add_middleware(  # This is a public API, so we allow all origins
     allow_headers=["*"],
 )
 
-@app.get('favicon.ico', include_in_schema=False)
+
+@app.get("favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse(f"/static/favicon.ico")
 
@@ -66,7 +68,6 @@ async def index(request: Request):
     templ_vars = {"request": request, "openapi_version": app.openapi()["openapi"]}
     _LOGGER.debug("merged vars: {}".format(dict(templ_vars, **ALL_VERSIONS)))
     return templates.TemplateResponse("index.html", dict(templ_vars, **ALL_VERSIONS))
-
 
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
@@ -91,9 +92,9 @@ async def service_info():
     return JSONResponse(content=ret)
 
 
-
 # Mount statics after other routes for lower precedence
-app.mount(f"/" , StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
+app.mount(f"/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
+
 
 def create_globals(scconf: yacman.YAMLConfigManager):
     """
@@ -110,13 +111,13 @@ def create_globals(scconf: yacman.YAMLConfigManager):
         db_host=scconf.exp["database"]["host"],
         db_port=scconf.exp["database"]["port"],
         db_table=scconf.exp["database"]["table"],
-        )
+    )
     _LOGGER.info(f"Using schema: {scconf['schemas']}")
     schenge = SeqColHenge(
         database=pgdb,
         schemas=scconf["schemas"],
     )
-    
+
     return schenge
 
 
@@ -140,11 +141,10 @@ def main(injected_args=None):
         app.state.schenge = schenge
         port = args.port or scconf.exp["server"]["port"]
         _LOGGER.info(f"Running on port {port}")
-        uvicorn.run(app,
-                    host=scconf.exp["server"]["host"], 
-                    port=port)
+        uvicorn.run(app, host=scconf.exp["server"]["host"], port=port)
     else:
         _LOGGER.error("Configure by passing -c SEQCOLAPI_CONFIG ")
+
 
 if __name__ != "__main__":
     # Entrypoint for running through uvicorn CLI (dev)

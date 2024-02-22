@@ -24,13 +24,16 @@ _LOGGER = logging.getLogger(__name__)
 
 seqcol_router = APIRouter()
 
+
 async def get_schenge(request: Request):
     """Dependency to get the schenge from the app state"""
     return request.app.state.schenge
 
+
 @seqcol_router.get("/test")
-async def test(schenge = Depends(get_schenge)):
+async def test(schenge=Depends(get_schenge)):
     return str(schenge)
+
 
 @seqcol_router.get(
     "/sequence/{digest}",
@@ -48,8 +51,10 @@ async def refget(request: Request, digest: str = example_sequence):
     tags=["Retrieving sequence collections"],
 )
 async def collection(
-    schenge = Depends(get_schenge),
-    digest: str = example_digest, level: Union[int, None] = None, collated: bool = True
+    schenge=Depends(get_schenge),
+    digest: str = example_digest,
+    level: Union[int, None] = None,
+    collated: bool = True,
 ):
     print("Retrieving collection")
     print(str(schenge))
@@ -92,8 +97,9 @@ async def collection(
     tags=["Comparing sequence collections"],
 )
 async def compare_2_digests(
-    schenge = Depends(get_schenge),
-    digest1: str = example_digest_hg38, digest2: str = example_digest_hg38_primary
+    schenge=Depends(get_schenge),
+    digest1: str = example_digest_hg38,
+    digest2: str = example_digest_hg38_primary,
 ):
     _LOGGER.info("Compare called")
     result = {}
@@ -115,8 +121,7 @@ async def compare_2_digests(
     tags=["Comparing sequence collections"],
 )
 async def compare_1_digest(
-    schenge = Depends(get_schenge),
-    digest1: str = example_digest_hg38, B: dict = example_hg38_sc
+    schenge=Depends(get_schenge), digest1: str = example_digest_hg38, B: dict = example_hg38_sc
 ):
     _LOGGER.info(f"digest1: {digest1}")
     _LOGGER.info(f"B: {B}")
@@ -130,9 +135,10 @@ async def compare_1_digest(
     tags=["Listing sequence collections"],
 )
 async def list_collections_by_offset(
-    schenge = Depends(get_schenge),
-    limit: int = 100, offset: int = 0):
+    schenge=Depends(get_schenge), limit: int = 100, offset: int = 0
+):
     return JSONResponse(schenge.list_by_offset(limit=limit, offset=offset))
+
 
 @seqcol_router.get(
     "/list",
@@ -140,8 +146,6 @@ async def list_collections_by_offset(
     tags=["Listing sequence collections"],
 )
 async def list_collections_by_token(
-    schenge = Depends(get_schenge),
-    page_size: int = 100, cursor: str = None):
+    schenge=Depends(get_schenge), page_size: int = 100, cursor: str = None
+):
     return JSONResponse(schenge.list(page_size=page_size, cursor=cursor))
-
-

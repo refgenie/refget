@@ -10,14 +10,10 @@ def build_parser():
     :return argparse.ArgumentParser
     """
     banner = "%(prog)s - API for sequence collections"
-    additional_description = (
-        "For subcommand-specific options, type: '%(prog)s <subcommand> -h'"
-    )
+    additional_description = "For subcommand-specific options, type: '%(prog)s <subcommand> -h'"
     additional_description += "\nhttps://github.com/regenie/seqcolapi"
 
-    parser = VersionInHelpParser(
-        prog=PKG_NAME, description=banner, epilog=additional_description
-    )
+    parser = VersionInHelpParser(prog=PKG_NAME, description=banner, epilog=additional_description)
 
     parser.add_argument(
         "-V",

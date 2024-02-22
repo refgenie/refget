@@ -28,11 +28,11 @@ COLLECTION_TESTS = [
 ]
 
 COMPARISON_TESTS = [
-    F"{API_TEST_DIR}/comparison/compare_subset.json",  # subset
-    F"{API_TEST_DIR}/comparison/compare_different_names.json",  # same sequences, different names
-    F"{API_TEST_DIR}/comparison/compare_different_order.json",  # same sequences, name order switch, but equivalent coordinate system
-    F"{API_TEST_DIR}/comparison/compare_pair_swap.json",  # swapped name-length-pairs
-    F"{API_TEST_DIR}/comparison/compare_swap_wo_coords.json",  # swapped name-length-pairs, but no coord system change
+    f"{API_TEST_DIR}/comparison/compare_subset.json",  # subset
+    f"{API_TEST_DIR}/comparison/compare_different_names.json",  # same sequences, different names
+    f"{API_TEST_DIR}/comparison/compare_different_order.json",  # same sequences, name order switch, but equivalent coordinate system
+    f"{API_TEST_DIR}/comparison/compare_pair_swap.json",  # swapped name-length-pairs
+    f"{API_TEST_DIR}/comparison/compare_swap_wo_coords.json",  # swapped name-length-pairs, but no coord system change
 ]
 
 # This is optional, so we could turn off for a compliance test
@@ -92,20 +92,23 @@ def check_collection(api_root, demo_file, response_file):
     ), f"Collection endpoint failed: lengths mismatch for {demo_file}"
     if TEST_SORTED_NAME_LENGTH_PAIRS:
         assert (
-            server_answer["sorted_name_length_pairs"]
-            == correct_answer["sorted_name_length_pairs"]
+            server_answer["sorted_name_length_pairs"] == correct_answer["sorted_name_length_pairs"]
         ), f"Collection endpoint failed: sorted_name_length_pairs mismatch for {demo_file}"
 
+
 def check_comparison(api_root, response_file):
-        with open(response_file) as fp:
-            correct_answer = json.load(fp) 
-        res = requests.get(f"{api_root}/comparison/{correct_answer['digests']['a']}/{correct_answer['digests']['b']}")
-        server_answer = json.loads(res.content)
-        assert server_answer == correct_answer, "Comparison endpoint failed"
+    with open(response_file) as fp:
+        correct_answer = json.load(fp)
+    res = requests.get(
+        f"{api_root}/comparison/{correct_answer['digests']['a']}/{correct_answer['digests']['b']}"
+    )
+    server_answer = json.loads(res.content)
+    assert server_answer == correct_answer, "Comparison endpoint failed"
+
 
 class TestAPI:
 
-    @pytest.mark.parametrize('test_values', COLLECTION_TESTS)
+    @pytest.mark.parametrize("test_values", COLLECTION_TESTS)
     def test_collection_endpoint(self, api_root, test_values):
         check_collection(api_root, *test_values)
 
