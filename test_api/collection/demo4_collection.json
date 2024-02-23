@@ -1,0 +1,22 @@
+{
+  "lengths": [
+    4,
+    4,
+    8
+  ],
+  "names": [
+    "chr2",
+    "chr1",
+    "chrX"
+  ],
+  "sequences": [
+    "SQ.aKF498dAxcJAqme6QYQ7EZ07-fiw8Kw2",
+    "SQ.ORLd3OQy8whca09ypkTExMc_ByFalnnO",
+    "SQ.733WIVstq8gdCl6w8NhKc5sGdN6SZ5-I"
+  ],
+  "sorted_name_length_pairs": [
+    "ESV_rcaJ-zgrfBr6sJ7J9kqldWX2gG_K",
+    "I0_AywNhq4XLlcc1vZexw5cHygCK_bLh",
+    "V2tENgwhEWrKc8UNgFzrMwx7H3JgoIuq"
+  ]
+}

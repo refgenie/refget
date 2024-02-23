@@ -10,3 +10,10 @@ from .refget import parse_fasta
 from .seqcol import *
 from .utilities import *
 from .seqcol_client import *
+
+try:
+    # Requires optional dependencies, so we catch the ImportError
+    from .seqcol_router import seqcol_router
+except ImportError:
+    seqcol_router = None
+    pass

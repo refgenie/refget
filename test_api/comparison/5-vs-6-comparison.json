@@ -1,0 +1,42 @@
+{
+  "digests": {
+    "a": "JPd9Y-hwnhGD7HPe3yka4Qtx2YsIL8tW",
+    "b": "fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32"
+  },
+  "attributes": {
+    "a_only": [],
+    "b_only": [],
+    "a_and_b": [
+      "lengths",
+      "names",
+      "sequences",
+      "sorted_name_length_pairs"
+    ]
+  },
+  "array_elements": {
+    "a": {
+      "lengths": 3,
+      "names": 3,
+      "sequences": 3,
+      "sorted_name_length_pairs": 3
+    },
+    "b": {
+      "lengths": 3,
+      "names": 3,
+      "sequences": 3,
+      "sorted_name_length_pairs": 3
+    },
+    "a_and_b": {
+      "lengths": 3,
+      "names": 3,
+      "sequences": 3,
+      "sorted_name_length_pairs": 3
+    },
+    "a_and_b_same_order": {
+      "lengths": false,
+      "names": false,
+      "sequences": false,
+      "sorted_name_length_pairs": true
+    }
+  }
+}
