@@ -42,6 +42,12 @@ async def test(schenge=Depends(get_schenge)):
 )
 async def refget(request: Request, digest: str = example_sequence):
     schenge = request.app.state.schenge
+    if not schenge.refget:
+    raise HTTPException(
+        status_code=400,
+        detail="Error: this server does not support raw sequence retrieval. Use a refget server instead.",
+    )
+    # If you wanted to implement refget sequences, you would do it here
     return Response(content=schenge.refget(digest))
 
 
