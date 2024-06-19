@@ -63,12 +63,12 @@ class CollectionNamesAttr(SQLModel, table=True):
 
 class SequenceCollection(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    sequences: "SequencesAttr" = Relationship(back_populates="collection")
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
-    names: "NamesAttr" = Relationship(back_populates="collection")
+    sequences: "SequencesAttr" = Relationship(back_populates="collection")
     names_digest: str = Field(foreign_key="namesattr.digest")
-    lengths: "LengthsAttr" = Relationship(back_populates="collection")
+    names: "NamesAttr" = Relationship(back_populates="collection")
     lengths_digest: str = Field(foreign_key="lengthsattr.digest")
+    lengths: "LengthsAttr" = Relationship(back_populates="collection")
 
 class SequencesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)

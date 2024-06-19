@@ -125,6 +125,7 @@ class TestValidate:
 
 
 
+
 class TestNewModels:
     """
     Test the new models
