@@ -122,3 +122,27 @@ class TestValidate:
     def test_failure(self, seqcol_obj):
         with pytest.raises(Exception):
             refget.validate_seqcol(seqcol_obj)
+
+
+
+class TestNewModels:
+    """
+    Test the new models
+    """
+
+    def test_new_models(self, fa_root):
+        f = os.path.join(fa_root, DEMO_FILES[0])
+        print("Fasta file to be loaded: {}".format(f))
+        d = refget.fasta_file_to_seqcol(f)
+        print(d)
+        # print(d.digest)
+        x = refget.seqcol_digest_model(d)
+        print("Comprehensive object: ", x)
+        print("Comprehensive object l1: ", x.level1)
+        print("Comprehensive object l1.sa: ", x.level1.sequences_rel)
+        print(json.dumps(x.model_dump(), indent=2))
+
+        # assert d["digest"] == "SQ.2648ae1bacce4ec4b6cf337dcae37816"
+        # assert d["fa_file"] == f
+        # assert d["fa_object"] is not None
+        # assert d["SCAS"] == seqcol_obj

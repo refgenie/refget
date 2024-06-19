@@ -1,5 +1,5 @@
-import seqcol
-from seqcol import SeqColHenge
+import refget
+
 
 
 scc = SeqColHenge(database={}, schemas=["seqcol/schemas/SeqColArraySet.yaml"])
@@ -164,5 +164,251 @@ import json
 
 print(json.dumps(csc, indent=2))
 
-
 seqcol.seqcol_digest(csc)
+
+
+
+
+from sqlmodel import create_engine, SQLModel, Field, Session
+import refget, os
+from tests.conftest import DEMO_FILES
+from refget.models import *
+from refget.agents import *
+
+
+fa_root="demo_fasta"
+f = os.path.join(fa_root, DEMO_FILES[0])
+print("Fasta file to be loaded: {}".format(f))
+postgres_url = "postgresql://postgres:postgres@localhost/postgres"
+dbc = RefgetDBAgent(postgres_url)
+
+sc1 = dbc.seqcol.get("RvFXEYkqNYw4_r8l67-tzNfj2k2PYlv2")
+rows = dbc.truncate()
+x = dbc.seqcol.add_from_fasta_file(f)
+f2 = os.path.join(fa_root, DEMO_FILES[2])
+x2 = dbc.seqcol.add_from_fasta_file(f2)
+
+
+y = x
+y.names_digest=123
+y = SequenceCollection(**x.model_dump())
+
+from sqlmodel import insert
+
+with Session(dbc.engine) as session:
+    session.add(y)
+    session.commit()
+
+with Session(dbc.engine) as session:
+    stmt = insert(SequenceCollection).values(y.model_dump())
+    dbc.engine.exec(stmt.on_conflict_do_nothing())
+
+from sqlalchemy.dialects.postgresql import insert
+
+
+with Session(dbc.engine) as session:
+    stmt = insert(SequenceCollection).values(y.model_dump()).on_conflict_do_nothing()
+    session.exec(stmt)
+
+
+
+
+refget.fasta_file_to_seqcol(f)
+f = os.path.join(fa_root, DEMO_FILES[1])
+csc = refget.build_seqcol_model(fasta_file_to_seqcol(f))
+
+fromdb = dbc.seqcol.get(csc.digest)
+fromdb
+
+csc.digest
+
+object =csc
+object.to_dict()
+stmt = insert(SequenceCollection).values(object).on_conflict_do_nothing()
+session.exec(stmt)
+
+
+
+with Session(dbc.engine) as session:
+    session.add(csc)
+    session.refresh(csc)
+    session.commit()
+
+with Session(dbc.engine) as session:
+    session.add(csc)
+    try:
+        session.commit()
+    except IntegrityError as e:
+        try: 
+            with Session(dbc.engine) as session:
+                session.add(csc.sequences)
+                session.commit()
+        except:
+            pass
+        try: 
+            with Session(dbc.engine) as session:
+                session.add(csc.names)
+                session.commit()
+        except:
+            pass
+        try:
+            with Session(dbc.engine) as session:
+                session.add(csc.lengths)
+                session.commit()
+        except:
+            pass
+        
+
+csc
+csc0 = refget.build_seqcol_model(fasta_file_to_seqcol(os.path.join(fa_root, DEMO_FILES[0])))
+
+f = os.path.join(fa_root, DEMO_FILES[3])
+csc3 = refget.build_seqcol_model(fasta_file_to_seqcol(f))
+csc.lengths
+from sqlalchemy.orm.session import make_transient
+# with Session(dbc.engine) as session:
+
+csc4 = refget.build_seqcol_model(fasta_file_to_seqcol(os.path.join(fa_root, DEMO_FILES[4])))
+with Session(dbc.engine) as session:
+    with session.no_autoflush:
+        csc_simplified = SequenceCollection(digest=csc4.digest)
+        names = session.get(NamesAttr, csc4.names.digest)
+        if not names:
+            names = NamesAttr(**csc4.names.model_dump())
+            session.add(names)
+        sequences = session.get(SequencesAttr, csc4.sequences.digest)
+        if not sequences:
+            sequences = SequencesAttr(**csc4.sequences.model_dump())
+            session.add(sequences)
+        lengths = session.get(LengthsAttr, csc4.lengths.digest)
+        if not lengths:
+            lengths = LengthsAttr(**csc4.lengths.model_dump())
+            session.add(lengths)
+        names.collection.append(csc_simplified)
+        sequences.collection.append(csc_simplified)
+        lengths.collection.append(csc_simplified)
+        session.commit()
+
+
+# What was the problem? That even just *creating* the object rom the other one...
+# so I was saying: names = csc4.names, and that was *connected* to csc4.lengths, 
+# so it was trying to insert that one on the csc.
+
+
+session = Session(dbc.engine)
+
+
+
+csc_simplified = SequenceCollection(digest=csc4.digest, 
+                                    names=csc4.names,lengths=lengths, sequences=sequences)
+
+lengths.collection.append(csc_simplified)
+lengths.collection
+lengths.collection.append(csc_simplified)
+session.commit()
+
+# stmt = select(SequencesAttr).where(SequencesAttr.digest == csc4.sequences.digest)
+# results = session.exec(stmt)
+# sequences = results.one_or_none()
+# stmt = select(NamesAttr).where(NamesAttr.digest == csc4.names.digest)
+# results = session.exec(stmt)
+# names = results.one_or_none()
+# stmt = select(LengthsAttr).where(LengthsAttr.digest == csc4.lengths.digest)
+# results = session.exec(stmt)
+# lengths = results.one_or_none()
+
+
+
+
+
+print(f"names: {names}\n", f"lengths: {lengths}\n", f"sequences: {sequences}")
+
+with session.no_autoflush:
+    csc_simplified = SequenceCollection(digest=csc4.digest, 
+                                        names=csc4.names,
+                                        lengths=lengths,
+                                        sequences=sequences)
+    # lengths.collection.append(csc_simplified)
+    # session.add(lengths)
+    # sequences.collection.append(csc_simplified)
+    # session.add(sequences)
+    session.commit()
+
+session.add(csc_simplified)
+session.commit()
+
+
+if sequences:
+    sequences.collection.append(csc_simplified)
+    session.refresh(csc_simplified)
+if names:
+    names.collection.append(csc_simplified)
+else:
+    session.add(names)
+if lengths:
+    lengths.collection.append(csc_simplified)
+
+session.add(sequences)
+session.add(lengths)
+# session.add(csc_linked)
+session.commit()
+
+
+
+
+csc_linked = SequenceCollection(
+    digest=csc4.digest,
+    sequences=sequences or csc3.sequences,
+    names=names or csc3.names,
+    lengths=lengths or csc3.lengths
+)
+
+
+
+
+
+with Session(dbc.engine) as session:
+    stmt = select(SequenceCollection).where(SequenceCollection.digest == "123")
+    results = session.exec(stmt)
+    exists = results.one_or_none()
+
+
+
+demo_results = {}
+for demo_file in DEMO_FILES:
+    f = os.path.join(fa_root, demo_file)
+    print("Fasta file to be loaded: {}".format(f))
+    demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
+
+import json
+print(
+    json.dumps(
+        demo_results,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        indent=2,
+    )
+)
+
+cna = CollectionNamesAttr (
+    digest = seqcol_obj3["names"],
+    value = ["blah", "blah2"]
+)
+
+ca = CollectionsAttr (
+    digest = "compute_me", 
+    value = [l1.digest, sc2.digest]
+)
+
+pg1 = Pangenome(digest="pangenome_digest", 
+                names = cna, collections=ca)
+
+
+
+What I need:
+- [ ] RefgetDBAgent, replaces SeqColHenge and Henge objects
+- [ ] functions for computing digests and 
+creating these pydantic object representations nicer
+
