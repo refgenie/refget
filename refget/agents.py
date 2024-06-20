@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import UniqueViolation
 
 from .models import *
-from .utilities import build_seqcol_model, fasta_file_to_seqcol
+from .utilities import build_seqcol_model, fasta_file_to_seqcol, format_itemwise
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
@@ -19,12 +19,35 @@ class SeqColAgent(object):
     def __init__(self, engine):
         self.engine = engine 
 
-    def get(self, digest: str):
+    def get(self, digest: str, return_format:str = "full"):
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
-            return results.first()
-    
+            seqcol = results.first()
+            if not seqcol:
+                raise ValueError(f"SequenceCollection with digest '{digest}' not found")
+            if return_format == "level2":
+                return {
+                        "names": seqcol.names.value,
+                        "lengths": seqcol.lengths.value,
+                        "sequences": seqcol.sequences.value,
+                }
+            elif return_format == "level1":
+                return {
+                        "names": seqcol.names_digest,
+                        "lengths": seqcol.lengths_digest,
+                        "sequences": seqcol.sequences_digest
+                }
+            elif return_format == "itemwise":
+                l2 = {
+                        "names": seqcol.names.value,
+                        "lengths": seqcol.lengths.value,
+                        "sequences": seqcol.sequences.value,
+                }
+                return format_itemwise(l2)
+            else:
+                return seqcol
+            
     def add(self, seqcol: SequenceCollection):
         with Session(self.engine) as session:
             with session.no_autoflush:

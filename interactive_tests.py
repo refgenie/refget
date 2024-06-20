@@ -178,12 +178,21 @@ from refget.agents import *
 postgres_url = "postgresql://postgres:postgres@localhost/postgres"
 dbc = RefgetDBAgent(postgres_url)
 
-seqcols = dbc.seqcol.list()
-dbc.attribute.list("lengths")
-
 fa_root="demo_fasta"
+
 f = os.path.join(fa_root, DEMO_FILES[0])
 print("Fasta file to be loaded: {}".format(f))
+
+# Load some fasta files into the database
+
+demo_results = {}
+for demo_file in DEMO_FILES:
+    f = os.path.join(fa_root, demo_file)
+    print("Fasta file to be loaded: {}".format(f))
+    demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
+
+seqcols = dbc.seqcol.list()
+dbc.attribute.list("lengths")
 
 sc1 = dbc.seqcol.get("RvFXEYkqNYw4_r8l67-tzNfj2k2PYlv2")
 rows = dbc.truncate()
@@ -191,7 +200,8 @@ x = dbc.seqcol.add_from_fasta_file(f)
 f2 = os.path.join(fa_root, DEMO_FILES[2])
 x2 = dbc.seqcol.add_from_fasta_file(f2)
 
-dbc.add
+
+
 
 
 refget.fasta_file_to_seqcol(f)
@@ -199,15 +209,6 @@ f = os.path.join(fa_root, DEMO_FILES[1])
 csc = refget.build_seqcol_model(fasta_file_to_seqcol(f))
 
 fromdb = dbc.seqcol.get(csc.digest)
-fromdb
-
-csc.digest
-
-object =csc
-object.to_dict()
-stmt = insert(SequenceCollection).values(object).on_conflict_do_nothing()
-session.exec(stmt)
-
 
 csc
 csc0 = refget.build_seqcol_model(fasta_file_to_seqcol(os.path.join(fa_root, DEMO_FILES[0])))
@@ -217,44 +218,12 @@ csc3 = refget.build_seqcol_model(fasta_file_to_seqcol(f))
 csc.lengths
 sc4 = refget.build_seqcol_model(fasta_file_to_seqcol(os.path.join(fa_root, DEMO_FILES[4])))
 
-
 # What was the problem? That even just *creating* the object rom the other one...
 # so I was saying: names = csc4.names, and that was *connected* to csc4.lengths, 
 # so it was trying to insert that one on the csc.
 
-
 print(f"names: {names}\n", f"lengths: {lengths}\n", f"sequences: {sequences}")
 
-
-demo_results = {}
-for demo_file in DEMO_FILES:
-    f = os.path.join(fa_root, demo_file)
-    print("Fasta file to be loaded: {}".format(f))
-    demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
-
-from sqlmodel import func
-
-# list contents
-session = Session(dbc.seqcol.engine)
-stmt = select(
-    SequenceCollection
-    ).where(
-        SequenceCollection.digest > "Nt1Yxbdk9VLr2hULZ2LZiLkkpZVVjLc2"
-    ).limit(2)
-result = session.exec(stmt)
-seqcols = result.all()
-len(seqcols)
-seqcols
-with Session(dbc.seqcol.engine) as session:
-
-cnt = select(func.count(SequenceCollection.digest))
-res = session.exec(cnt)
-count = res.one()
-
-stmt = select(SequenceCollection).offset(2)
-res = session.exec(stmt)
-seqcols = res.all()
-len(seqcols)
 import json
 print(
     json.dumps(
@@ -266,21 +235,6 @@ print(
         indent=2,
     )
 )
-
-cna = CollectionNamesAttr (
-    digest = seqcol_obj3["names"],
-    value = ["blah", "blah2"]
-)
-
-ca = CollectionsAttr (
-    digest = "compute_me", 
-    value = [l1.digest, sc2.digest]
-)
-
-pg1 = Pangenome(digest="pangenome_digest", 
-                names = cna, collections=ca)
-
-
 
 What I need:
 - [ ] RefgetDBAgent, replaces SeqColHenge and Henge objects

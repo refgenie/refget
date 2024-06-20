@@ -43,4 +43,12 @@ docker run --rm --name refget-postgres -p 5432:5432 \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_DB=postgres \
   postgres:13
-````
+```
+
+### Loading files
+
+If you need to load, then you have to install either `gc_count` (fast) or `pyfaidx` (slow).
+
+
+
+
