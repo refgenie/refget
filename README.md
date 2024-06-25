@@ -49,6 +49,19 @@ docker run --rm --name refget-postgres -p 5432:5432 \
 
 If you need to load, then you have to install either `gc_count` (fast) or `pyfaidx` (slow).
 
+You can load them like:
+
+```
+python load_demo_data.py
+```
+
+Or:
+
+```
+refget add-fasta path/to/fasta.fa
+```
+
+
 
 
 

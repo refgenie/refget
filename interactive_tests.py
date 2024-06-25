@@ -169,28 +169,6 @@ seqcol.seqcol_digest(csc)
 
 
 
-from sqlmodel import create_engine, SQLModel, Field, Session
-import refget, os
-from tests.conftest import DEMO_FILES
-from refget.models import *
-from refget.agents import *
-
-postgres_url = "postgresql://postgres:postgres@localhost/postgres"
-dbc = RefgetDBAgent(postgres_url)
-
-fa_root="demo_fasta"
-
-f = os.path.join(fa_root, DEMO_FILES[0])
-print("Fasta file to be loaded: {}".format(f))
-
-# Load some fasta files into the database
-
-demo_results = {}
-for demo_file in DEMO_FILES:
-    f = os.path.join(fa_root, demo_file)
-    print("Fasta file to be loaded: {}".format(f))
-    demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
-
 seqcols = dbc.seqcol.list()
 dbc.attribute.list("lengths")
 

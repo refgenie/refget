@@ -53,14 +53,15 @@ class Pangenome(SQLModel, table=True):
 
 class CollectionsAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: List[str] = Field(sa_column=Column(ARRAY(String)))
+    value: str
     pangenome: Pangenome = Relationship(back_populates="collections")
+    # value: List[str] = Field(sa_column=Column(ARRAY(String)))
 
 class CollectionNamesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: List[str] = Field(sa_column=Column(ARRAY(String)))
     pangenome: Pangenome = Relationship(back_populates="names")   
-
+    value: str
+    # value: List[str] = Field(sa_column=Column(ARRAY(String)))
 class SequenceCollection(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
@@ -69,21 +70,57 @@ class SequenceCollection(SQLModel, table=True):
     names: "NamesAttr" = Relationship(back_populates="collection")
     lengths_digest: str = Field(foreign_key="lengthsattr.digest")
     lengths: "LengthsAttr" = Relationship(back_populates="collection")
+    sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
+    sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(back_populates="collection")
 
 class SequencesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: List[str] = Field(sa_column=Column(ARRAY(String)))
+    value: str
     collection: List["SequenceCollection"] = Relationship(back_populates="sequences")
 
 class NamesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: List[str] = Field(sa_column=Column(ARRAY(String)))
+    value: str
     collection: List["SequenceCollection"] = Relationship(back_populates="names")   
 
 class LengthsAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: List[int] = Field(sa_column=Column(ARRAY(String)))
+    value: str
     collection: List["SequenceCollection"] = Relationship(back_populates="lengths")   
+
+class SortedNameLengthPairsAttr(SQLModel, table=True):
+    digest: str = Field(primary_key=True)
+    value: str
+    collection: List["SequenceCollection"] = Relationship(back_populates="sorted_name_length_pairs")
+
+
+
+
+
+# class SequencesAttr(SQLModel, table=True):
+#     digest: str = Field(primary_key=True)
+#     value: List[str] = Field(sa_column=Column(ARRAY(String)))
+#     collection: List["SequenceCollection"] = Relationship(back_populates="sequences")
+
+# class NamesAttr(SQLModel, table=True):
+#     digest: str = Field(primary_key=True)
+#     value: List[str] = Field(sa_column=Column(ARRAY(String)))
+#     collection: List["SequenceCollection"] = Relationship(back_populates="names")   
+
+# class LengthsAttr(SQLModel, table=True):
+#     digest: str = Field(primary_key=True)
+#     value: List[int] = Field(sa_column=Column(ARRAY(String)))
+#     collection: List["SequenceCollection"] = Relationship(back_populates="lengths")   
+
+
+
+
+
+
+
+
+
+
 
 
 

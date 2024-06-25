@@ -145,10 +145,10 @@ def chrom_sizes_to_seqcol(
     return CSC
 
 
-def fasta_file_to_digest(fa_file_path: str, schema: dict = None) -> str:
+def fasta_file_to_digest(fa_file_path: str, inherent_attrs: list = None) -> str:
     """Given a fasta, return a digest"""
     seqcol_obj = fasta_file_to_seqcol(fa_file_path)
-    return seqcol_digest(seqcol_obj, schema)
+    return seqcol_digest(seqcol_obj, inherent_attrs)
 
 
 def fasta_file_to_seqcol(
@@ -191,7 +191,9 @@ def build_sorted_name_length_pairs(
 ):
     """Builds the sorted_name_length_pairs attribute, which corresponds to the coordinate system"""
     sorted_name_length_pairs = []
+    print(obj["names"])
     for i in range(len(obj["names"])):
+        print(i)
         sorted_name_length_pairs.append({"length": obj["lengths"][i], "name": obj["names"][i]})
     nl_digests = []  # name-length digests
     for i in range(len(sorted_name_length_pairs)):
@@ -209,18 +211,23 @@ def compare_seqcols(A: SeqCol, B: SeqCol) -> dict:
     @param B Sequence collection B
     @return dict Following formal seqcol specification comparison function return value
     """
-    validate_seqcol(A)  # First ensure these are the right structure
-    validate_seqcol(B)
+    # validate_seqcol(A)  # First ensure these are the right structure
+    # validate_seqcol(B)
+    a_keys = list(A.keys())
+    b_keys = list(B.keys())
+    a_keys.sort()
+    b_keys.sort()
 
-    all_keys = list(A.keys()) + list(set(B.keys()) - set(list(A.keys())))
+    all_keys = a_keys + list(set(b_keys) - set(a_keys))
+    all_keys.sort()
     result = {}
 
     # Compute lengths of each array; only do this for array attributes
     a_lengths = {}
     b_lengths = {}
-    for k in A.keys():
+    for k in a_keys:
         a_lengths[k] = len(A[k])
-    for k in B.keys():
+    for k in b_keys:
         b_lengths[k] = len(B[k])
 
     return_obj = {
@@ -273,7 +280,7 @@ def _compare_elements(A: list, B: list) -> dict:
     return {"a_and_b": overlap, "a_and_b_same_order": order}
 
 
-def seqcol_digest(seqcol_obj: SeqCol, schema: dict = None) -> str:
+def seqcol_digest(seqcol_obj: SeqCol, inherent_attrs: list = None) -> str:
     """
     Given a canonical sequence collection, compute its digest.
 
@@ -286,8 +293,8 @@ def seqcol_digest(seqcol_obj: SeqCol, schema: dict = None) -> str:
     # Step 1a: Remove any non-inherent attributes,
     # so that only the inherent attributes contribute to the digest.
     seqcol_obj2 = {}
-    if schema:
-        for k in schema["inherent"]:
+    if inherent_attrs:
+        for k in inherent_attrs:
             # Step 2: Apply RFC-8785 to canonicalize the value
             # associated with each attribute individually.
             seqcol_obj2[k] = canonical_str(seqcol_obj[k])
@@ -321,7 +328,7 @@ def explain_flag(flag):
 
 
 
-def build_seqcol_model(seqcol_obj: dict, schema: dict = None) -> SequenceCollection:
+def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> SequenceCollection:
     """
     Given a canonical sequence collection, compute its digest.
 
@@ -334,8 +341,8 @@ def build_seqcol_model(seqcol_obj: dict, schema: dict = None) -> SequenceCollect
     # Step 1a: Remove any non-inherent attributes,
     # so that only the inherent attributes contribute to the digest.
     seqcol_obj2 = {}
-    if schema:
-        for k in schema["inherent"]:
+    if inherent_attrs:
+        for k in inherent_attrs:
             # Step 2: Apply RFC-8785 to canonicalize the value
             # associated with each attribute individually.
             seqcol_obj2[k] = canonical_str(seqcol_obj[k])
@@ -357,23 +364,38 @@ def build_seqcol_model(seqcol_obj: dict, schema: dict = None) -> SequenceCollect
     # Step 5: Digest the final canonical representation again.
     seqcol_digest = sha512t24u_digest(seqcol_obj4)
 
+    v = ",".join(seqcol_obj["sequences"])
     sequences_attr = SequencesAttr(
         digest = seqcol_obj3["sequences"],
-        value = seqcol_obj["sequences"]
+        value = v
     )
     
+    v = ",".join(seqcol_obj["names"])
     names_attr = NamesAttr(
         digest = seqcol_obj3["names"],
-        value = seqcol_obj["names"]
+        value = v
     )
 
+    v = ",".join([str(x) for x in seqcol_obj["lengths"]])
     lengths_attr = LengthsAttr(
         digest = seqcol_obj3["lengths"],
-        value = seqcol_obj["lengths"]
+        value = v
     )
+    print(seqcol_obj2)
+    snlp = build_sorted_name_length_pairs(seqcol_obj)
+    v =  ",".join(snlp)
+    snlp_attr = SortedNameLengthPairsAttr(
+        digest = sha512t24u_digest(canonical_str(snlp)),
+        value = v
+    )
+
+    
+
     seqcol = SequenceCollection(digest=seqcol_digest,
                             sequences=sequences_attr, 
                             names=names_attr, 
-                            lengths=lengths_attr)
+                            lengths=lengths_attr,
+                            sorted_name_length_pairs=snlp_attr)
+
 
     return seqcol
