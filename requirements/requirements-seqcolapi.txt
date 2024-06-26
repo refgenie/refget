@@ -1,0 +1,11 @@
+aiofiles
+fastapi
+henge>=0.2.1
+jinja2
+pipestat
+psycopg2-binary
+refget
+sqlmodel
+uvicorn>=0.7.1
+ubiquerg>=0.6.1
+yacman>=0.9.0
