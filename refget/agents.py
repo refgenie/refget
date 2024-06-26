@@ -1,4 +1,5 @@
 import os
+import logging
 
 from psycopg2.errors import UniqueViolation
 from sqlmodel import create_engine, select, Session, delete, func
@@ -8,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from .models import *
 from .utilities import build_seqcol_model, fasta_file_to_seqcol, format_itemwise, compare_seqcols
+from .const import _LOGGER
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
@@ -18,7 +20,7 @@ ATTR_TYPE_MAP = {
 
 def read_url(url):
     import yaml
-    print("Reading URL: {}".format(url))
+    _LOGGER.info("Reading URL: {}".format(url))
     from urllib.request import urlopen
     from urllib.error import HTTPError
     try:
@@ -167,7 +169,7 @@ class AttributeAgent(object):
             response.value = response.value.split(",")
             if attribute_type == "lengths":
                 response.value = [int(x) for x in response.value]
-            return response
+            return response.value
     
     def list(self, attribute_type, offset=0, limit=50):
         Attribute = ATTR_TYPE_MAP[attribute_type]
@@ -185,13 +187,21 @@ class AttributeAgent(object):
                 "items": seqcols
             }
 
-    def search(self, attribute_type, digest):
+    def search(self, attribute_type, digest, offset=0, limit=50):
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
-            statement = select(SequenceCollection).where(getattr(SequenceCollection, f"{attribute_type}_digest") == digest)
-            results = session.exec(statement)
-            return results.all()
-
+            list_stmt = select(SequenceCollection).where(getattr(SequenceCollection, f"{attribute_type}_digest") == digest).offset(offset).limit(limit)
+            cnt_stmt = select(func.count(SequenceCollection.digest)).where(getattr(SequenceCollection, f"{attribute_type}_digest") == digest)
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqcols = list_res.all()
+            return {
+                "count": count,
+                "limit": limit,
+                "offset": offset,
+                "items": seqcols
+            }
 
 
 class RefgetDBAgent(object):
@@ -212,8 +222,9 @@ class RefgetDBAgent(object):
                 host=POSTGRES_HOST,
                 database=POSTGRES_DB,
             )
-        self.engine = create_engine(postgres_str, echo=True)
-        SQLModel.metadata.create_all(self.engine)  
+        self.engine = create_engine(postgres_str, echo=False)
+        _LOGGER.info(f"SQL Engine: {self.engine}")
+        SQLModel.metadata.create_all(self.engine) 
         self.inherent_attrs = inherent_attrs
         self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
         self.__pangenome = PangenomeAgent(self.engine)

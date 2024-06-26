@@ -95,7 +95,7 @@ async def attribute(
     attribute: str = "names",
     digest: str = example_digest
 ):
-    return JSONResponse(dbagent.attribute.get(attribute, digest).model_dump())
+    return JSONResponse(dbagent.attribute.get(attribute, digest))
 
 
 @seqcol_router.get(
@@ -106,15 +106,14 @@ async def attribute(
 async def attribute_search(
     dbagent=Depends(get_dbagent),
     attribute: str = "names",
-    digest: str = example_digest
+    digest: str = example_digest,
+    limit: int = 100,
+    offset: int = 0
 ):
-    attr = dbagent.attribute.get(attribute, digest).model_dump()
-    search_results = dbagent.attribute.search(attribute, digest)
-    res = [x.model_dump() for x in search_results]
-    return JSONResponse({
-        "attribute": attr,
-        "results": res
-    })
+    # attr = dbagent.attribute.get(attribute, digest)
+    res = dbagent.attribute.search(attribute, digest, limit=limit, offset=offset)
+    res["items"] = [x.digest for x in res["items"]]
+    return JSONResponse(res)
 
 
 

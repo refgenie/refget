@@ -49,7 +49,12 @@ const fecthComparison = async(digest1, digest2) => {
 
 const fetchAttribute = async(attribute, digest) => {
   const url = `${API_BASE}/attribute/${attribute}/${digest}/list`
-  return fetch(url).then((response) => response.json())
+  const url2 = `${API_BASE}/attribute/${attribute}/${digest}`
+  let resps = [
+    fetch(url).then((response) => response.json()),
+    fetch(url2).then((response) => response.json())
+  ]
+  return Promise.all(resps)
 }
 
 const CollectionView = (params) => {
@@ -142,7 +147,12 @@ const AttributeView = () => {
   const { attribute, digest } = useParams()
   const api_url = `${API_BASE}/attribute/${attribute}/${digest}`
   const api_url_list = `${API_BASE}/attribute/${attribute}/${digest}/list`
+  let results = content[0]
+  let attribute_value = content[1]
 
+  console.log("AttributeView attribute_value: " , attribute_value)
+  console.log("AttributeView results: " , results)
+  
   return (
     <div>
       <h1>Attribute: {attribute} 
@@ -159,11 +169,11 @@ const AttributeView = () => {
       </div>
       <div className="row align-items-center">
         <div className="col-md-1">Value:</div>
-        <div className="col"><AttributeValue value={content.attribute.value} /></div>
+        <div className="col"><AttributeValue value={attribute_value} /></div>
       </div>
       <h2 className="mt-4">Containing collections:</h2>
       API URL: <Link to={api_url_list}>{api_url_list}</Link>
-      <CollectionTable collections={content.results}  clipboard={false}/>
+      <SeqColList collections={results}  clipboard={false}/>
     </div>
   )
 }
@@ -329,31 +339,28 @@ const App = () => {
     </div>
     <ToastContainer />
   </>)
-
 }
 
+// Basic list of Sequence Collections
 const SeqColList = ({collections}) => {
   const seqColList = collections || useLoaderData()
 
   return (<>
     <div>
-      <h1>Sequence Collection List</h1>
       <ul>
         {seqColList.items.map((seqCol) => (
           <li key={seqCol}>
-            <a href={`/collection/${seqCol}`}>{seqCol}</a>
+            <Link to={`/collection/${seqCol}`}>{seqCol}</Link>
           </li>
         ))}
       </ul>
-      <CompareTable seqColList={seqColList}/>
     </div></>
   )
 }
 
 const CollectionTable = ({collections}) => {
-  const seqColList = collections || useLoaderData()["items"]
-  console.log("CollectionTable", seqColList)
-
+  const seqColList = collections || useLoaderData()
+  console.log("seqColList", seqColList)
   return (
     <table>
     <thead>
@@ -365,8 +372,8 @@ const CollectionTable = ({collections}) => {
       </tr>
     </thead>
     <tbody>
-    {seqColList.map((collection) => (
-      <tr key={collection.digest}>
+    {seqColList["items"].map((collection) => (
+      <tr key={collection}>
         <td><LinkedCollectionDigest digest={collection.digest} clipboard={false}/></td>
         <td className="tiny mx-2"><LinkedAttributeDigest attribute="names" digest={collection.names_digest} clipboard={false}/></td>
         <td className="tiny mx-2"><LinkedAttributeDigest attribute="lengths" digest={collection.lengths_digest} clipboard={false} /></td>
@@ -379,7 +386,18 @@ const CollectionTable = ({collections}) => {
 }
 
 
+const HomePage = () => {
+  const seqColList = useLoaderData()
+  return (
+    <div>
+      <h1>Sequence Collections</h1>
+      <p>These are the sequence collections available in the refget server.</p>
+      <SeqColList/>
+      <CompareTable seqColList={seqColList}/>
+    </div>
+  )
 
+}
 
 
 const router = createBrowserRouter([
@@ -389,8 +407,8 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <SeqColList/>,
-        loader: fetchSeqColList,
+        element: <HomePage/>,
+        loader: fetchSeqColList
       }, 
       {
         path: "/comparison/:digest1/:digest2",

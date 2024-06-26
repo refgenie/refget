@@ -44,6 +44,16 @@ COMPARISON_TESTS = [
     f"{API_TEST_DIR}/comparison/compare_swap_wo_coords.json",  # swapped name-length-pairs, but no coord system change
 ]
 
+ATTRIBUTE_TESTS = [
+    ("lengths", "7-_HdxYiRf-AJLBKOTaJUdxXrUkIXs6T", [8,4]),
+    ("names", "Fw1r9eRxfOZD98KKrhlYQNEdSRHoVxAG", ["chrX","chr1","chr2"])
+]
+
+ATTRIBUTE_LIST_TESTS = [
+    ("lengths", "cGRMZIb3AVgkcAfNv39RN7hnT5Chk7RX", f"{API_TEST_DIR}/attribute/cGRM.json",)
+]
+
+
 # This is optional, so we could turn off for a compliance test
 TEST_SORTED_NAME_LENGTH_PAIRS = False
 
@@ -105,8 +115,6 @@ def check_collection(api_root, demo_file, response_file):
 def check_comparison(api_root, response_file):
     with open(response_file) as fp:
         correct_answer = json.load(fp)
-        if not TEST_SORTED_NAME_LENGTH_PAIRS:
-            print(correct_answer)
 
     url = f"{api_root}/comparison/{correct_answer['digests']['a']}/{correct_answer['digests']['b']}"
     res = requests.get(url)
@@ -120,15 +128,47 @@ def check_comparison(api_root, response_file):
         assert False, f"Comparison endpoint failed: {url}"
 
 
+def check_attribute(api_root, attribute_type, attribute, correct_value):
+    url = f"{api_root}/attribute/{attribute_type}/{attribute}"
+    res = requests.get(url)
+    try:
+        server_answer = json.loads(res.content)
+        assert server_answer == correct_value, f"Attribute endpoint failed: {url}. Answer: {correct_value}"
+    except json.decoder.JSONDecodeError:
+        print(f"Url: {url}")
+        assert False, f"Attribute endpoint failed: {url}"
+
+def check_attribute_list(api_root, attribute_type, attribute, response_file):
+    with open(response_file) as fp:
+        correct_answer = json.load(fp)
+
+    url = f"{api_root}/attribute/{attribute_type}/{attribute}/list"
+    res = requests.get(url)
+    try:
+        server_answer = json.loads(res.content)
+        print("Server answer:", server_answer)
+        for digest in correct_answer["items"]:
+            print("Checking digest:", digest)
+            assert digest in server_answer["items"], f"Attribute endpoint failed: {url}. Missing: {digest}"
+    except json.decoder.JSONDecodeError:
+        print(f"Url: {url}")
+        assert False, f"Attribute endpoint failed: {url}"
+
 @pytest.mark.require_service
 class TestAPI:
 
     @pytest.mark.parametrize("test_values", COLLECTION_TESTS)
     def test_collection_endpoint(self, api_root, test_values):
-        # print("Service unavailable: ", SERVICE_UNAVAILABLE)
         check_collection(api_root, *test_values)
 
     @pytest.mark.parametrize("response_file", COMPARISON_TESTS)
     def test_comparison_endpoint(self, api_root, response_file):
-        # print("Service unavailable: ", SERVICE_UNAVAILABLE)
         check_comparison(api_root, response_file)
+
+    @pytest.mark.parametrize("test_values", ATTRIBUTE_TESTS)
+    def test_attribute_endpoint(self, api_root, test_values):
+        check_attribute(api_root, *test_values)
+
+    @pytest.mark.parametrize("test_values", ATTRIBUTE_LIST_TESTS)
+    def test_attribute_list_endpoint(self, api_root, test_values):
+        check_attribute_list(api_root, *test_values)

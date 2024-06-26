@@ -13,6 +13,7 @@ from .agents import RefgetDBAgent
 
 
 _LOGGER = logging.getLogger(__name__)
+
 henge.ITEM_TYPE = "_item_type"
 SCHEMA_FILEPATH = os.path.join(os.path.dirname(__file__), "schemas")
 

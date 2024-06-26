@@ -62,6 +62,13 @@ refget add-fasta path/to/fasta.fa
 ```
 
 
+#### Adding data to production service
 
+Just first source the production credentials, then load the data:
+
+```
+source deployment/seqcolapi.databio.org/production.env
+python load_demo_data.py
+```
 
 
