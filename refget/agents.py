@@ -1,8 +1,10 @@
 import os
 
+from psycopg2.errors import UniqueViolation
 from sqlmodel import create_engine, select, Session, delete, func
 from sqlalchemy.exc import IntegrityError
-from psycopg2.errors import UniqueViolation
+from sqlalchemy import URL
+from sqlalchemy.dialects.postgresql import insert
 
 from .models import *
 from .utilities import build_seqcol_model, fasta_file_to_seqcol, format_itemwise, compare_seqcols
@@ -13,7 +15,6 @@ ATTR_TYPE_MAP = {
     "lengths": LengthsAttr,
     "sorted_name_length_pairs": SortedNameLengthPairsAttr
 }
-from sqlalchemy.dialects.postgresql import insert
 
 def read_url(url):
     import yaml
@@ -203,7 +204,14 @@ class RefgetDBAgent(object):
             POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
             POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
             POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-            postgres_str = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
+            postgres_str_old = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
+            postgres_str = URL.create(
+                "postgresql",
+                username=POSTGRES_USER,
+                password=POSTGRES_PASSWORD,  # plain (unescaped) text
+                host=POSTGRES_HOST,
+                database=POSTGRES_DB,
+            )
         self.engine = create_engine(postgres_str, echo=True)
         SQLModel.metadata.create_all(self.engine)  
         self.inherent_attrs = inherent_attrs

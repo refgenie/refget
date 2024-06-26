@@ -178,7 +178,6 @@ def parse_fasta(fa_file):
 
 
 def build_argparser():
-    import argparse
     from . import __version__
     version_str = f"{__version__} "
     from ubiquerg import VersionInHelpParser
@@ -196,7 +195,6 @@ def build_argparser():
     return parser
 
 def main():
-    print("Test")
     parser = build_argparser()
     args = parser.parse_args()
     print(args)
