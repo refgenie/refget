@@ -28,7 +28,7 @@ on:
     inputs: null   
   push:
     paths:
-      - servers/seqcolapi.databio.org/seqcolapi.yaml
+      - deployment/seqcolapi.databio.org/seqcolapi.yaml
 
 name: Deploy to Amazon ECS - primary
 
@@ -64,7 +64,7 @@ jobs:
         # Build a docker container and
         # push it to ECR so that it can
         # be deployed to ECS.
-        cd servers/seqcolapi.databio.org/
+        cd deployment/seqcolapi.databio.org/
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
