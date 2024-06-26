@@ -8,7 +8,7 @@ example_digest = Path(
     description="Sequence collection digest",
     pattern=r"^[-\w]+$",
     max_length=64,
-    min_length=32,
+    min_length=16,
     examples="a6748aa0f6a1e165f871dbed5e54ba62",
 )
 

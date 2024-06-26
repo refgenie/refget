@@ -9,6 +9,8 @@ import yaml
 from yacman import load_yaml
 from copy import copy
 
+from .agents import RefgetDBAgent
+
 
 _LOGGER = logging.getLogger(__name__)
 henge.ITEM_TYPE = "_item_type"
@@ -173,3 +175,37 @@ def parse_fasta(fa_file):
         fa_object = pyfaidx.Fasta(fa_file_unzipped)
         os.system("gzip {}".format(fa_file_unzipped))
     return fa_object
+
+
+def build_argparser():
+    import argparse
+    from . import __version__
+    version_str = f"{__version__} "
+    from ubiquerg import VersionInHelpParser
+    additional_description = "https://refgenie.org/refget"
+    banner = f"%(prog)s - a tool for getting sequences by digest"
+    parser = VersionInHelpParser(
+        prog="refget",
+        description=banner,
+        epilog=additional_description,
+        version=version_str,
+    )
+    subparsers = parser.add_subparsers(dest="command")
+    add_fasta = subparsers.add_parser("add_fasta", help="Add a fasta file to the database")
+    add_fasta.add_argument("fasta_file", help="Path to the fasta file")
+    return parser
+
+def main():
+    print("Test")
+    parser = build_argparser()
+    args = parser.parse_args()
+    print(args)
+
+    if args.command == "add-fasta":
+        print("Adding fasta file")
+        print(args.fasta_file)
+        refget = RefgetDBAgent()
+        refget.seqcol.add_from_fasta_file(args.fasta_file)
+        print("Added fasta file")
+    else:
+        print("No command given")
