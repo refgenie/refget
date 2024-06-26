@@ -29,3 +29,39 @@ For example, this will test my remote server instance:
 ```
 pytest test_api --api_root https://seqcolapi.databio.org
 ```
+
+
+## Loading up data into an instance
+
+### Starting a demo instance 
+
+Use docker to create a local postgres database like this:
+
+```
+docker run --rm --name refget-postgres -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_DB=postgres \
+  postgres:13
+```
+
+### Loading files
+
+If you need to load, then you have to install either `gc_count` (fast) or `pyfaidx` (slow).
+
+You can load them like:
+
+```
+python load_demo_data.py
+```
+
+Or:
+
+```
+refget add-fasta path/to/fasta.fa
+```
+
+
+
+
+

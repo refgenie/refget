@@ -80,3 +80,5 @@ refget.egg-info/
 *.egg-info*
 
 coverage.xml
+
+.vscode/settings.json

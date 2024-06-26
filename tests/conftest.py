@@ -5,6 +5,25 @@ import pytest
 import oyaml as yaml
 from refget.const import _schema_path
 
+# DEMO_FILES = [
+#     "demo0.fa",
+#     "demo1.fa.gz",
+#     "demo2.fa",
+#     "demo3.fa",
+#     "demo4.fa",
+#     "demo5.fa.gz",
+#     "demo6.fa",
+# ]
+
+DEMO_FILES = [
+    "base.fa",
+    "different_names.fa",
+    "different_order.fa",
+    "pair_swap.fa",
+    "subset.fa",
+    "swap_wo_coords.fa",
+]
+
 
 def ly(n, data_path):
     """Load YAML"""
@@ -28,7 +47,7 @@ def fa_root():
 @pytest.fixture
 def fasta_path():
     return os.path.join(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "demo_fasta"
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "test_fasta"
     )
 
 

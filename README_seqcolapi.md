@@ -10,8 +10,14 @@ This repository contains:
 ### Run locally for development
 
 First, configure env vars:
-- To run a local server with a **local database**:`source servers/localhost/dev_local.env`
-- To run a local server with **the production database**:`source servers/seqcolapi.databio.org/production.env`
+- To run a local server with a **local database**:`source deployment/localhost/dev_local.env`
+- To run a local server with **the production database**:`source deployment/seqcolapi.databio.org/production.env`
+
+```
+source deployment/sqlmodel/dev_sqlmodel.env
+
+```
+
 
 Then, run service:
 
