@@ -19,7 +19,8 @@ import {
   useParams
 } from "react-router-dom";
 
-const API_BASE = "http://127.0.0.1:8100"
+// const API_BASE = "http://127.0.0.1:8100"
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8100';
 
 const fetchSeqColList = async() => {
   const url = `${API_BASE}/list`
