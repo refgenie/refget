@@ -73,7 +73,7 @@ jobs:
       id: task-def
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: servers/seqcolapi.databio.org//${{ env.server }}_task_def.json
+        task-definition: deployment/seqcolapi.databio.org/${{ env.server }}_task_def.json
         container-name: seqcolapi
         image: ${{ steps.build-image.outputs.image }}
 
