@@ -45,12 +45,15 @@ To run in a container:
 ```
 source deployment/seqcolapi.databio.org/production.env
 docker run --rm -p 8000:80 --name seqcolapi \
+  --env "POSTGRES_USER" \
+  --env "POSTGRES_DB" \
   --env "POSTGRES_PASSWORD" \
   --env "POSTGRES_HOST" \
   seqcolapi.databio.org
 ```
 
 ### Alternative: Mount the config
+
 Instead of building a bundle with the config, you could just mount it into the base image:
 ```
 docker run --rm -p 8000:8000 --name sccon \

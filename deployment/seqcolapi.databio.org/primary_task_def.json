@@ -31,6 +31,14 @@
         {
           "valueFrom": "BEDBASE_POSTGRES_HOST",
           "name": "POSTGRES_HOST"
+        },
+        {
+          "valueFrom": "SEQCOLAPI_POSTGRES_DB",
+          "name": "POSTGRES_DB"
+        },
+        {
+          "valueFrom": "SEQCOLAPI_POSTGRES_USER",
+          "name": "POSTGRES_USER"
         }
       ],
       "dockerSecurityOptions": null,
