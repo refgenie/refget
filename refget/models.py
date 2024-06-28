@@ -43,25 +43,45 @@ SequenceCollection = create_model(
 #     # could add: __cls_kwargs__={"table": True},
 
 
+# class PangenomeOld2(SQLModel, table=True):
+#     digest: str = Field(primary_key=True)
+#     names: "CollectionNamesAttr" = Relationship(back_populates="pangenome")
+#     names_digest: str = Field(foreign_key="collectionnamesattr.digest")
+#     collections: "CollectionsAttr" = Relationship(back_populates="pangenome")
+#     collections_digest: str = Field(foreign_key="collectionsattr.digest")
+#     # could add: __cls_kwargs__={"table": True},
+
+# class CollectionsAttr(SQLModel, table=True):
+#     digest: str = Field(primary_key=True)
+#     value: str
+#     pangenome: Pangenome = Relationship(back_populates="collections")
+    # value: List[str] = Field(sa_column=Column(ARRAY(String)))
+
+
+# class CollectionsAttr(SQLModel, table=True):
+#     digest: str = Field(primary_key=True)
+#     value: list["SequenceCollection"] 
+#     pangenome: Pangenome = Relationship(back_populates="collections")
+#     # value: List[str] = Field(sa_column=Column(ARRAY(String)))
+
+class PangenomeCollectionLink(SQLModel, table=True):
+    pangenome_digest: str = Field(foreign_key="pangenome.digest", primary_key=True)
+    collection_digest: str = Field(foreign_key="sequencecollection.digest", primary_key=True)
+
 class Pangenome(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     names: "CollectionNamesAttr" = Relationship(back_populates="pangenome")
     names_digest: str = Field(foreign_key="collectionnamesattr.digest")
-    collections: "CollectionsAttr" = Relationship(back_populates="pangenome")
-    collections_digest: str = Field(foreign_key="collectionsattr.digest")
-    # could add: __cls_kwargs__={"table": True},
+    collections: List["SequenceCollection"] = Relationship(back_populates="pangenomes", link_model=PangenomeCollectionLink)
 
-class CollectionsAttr(SQLModel, table=True):
-    digest: str = Field(primary_key=True)
-    value: str
-    pangenome: Pangenome = Relationship(back_populates="collections")
-    # value: List[str] = Field(sa_column=Column(ARRAY(String)))
+
 
 class CollectionNamesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    pangenome: Pangenome = Relationship(back_populates="names")   
     value: str
+    pangenome: List["Pangenome"] = Relationship(back_populates="names")   
     # value: List[str] = Field(sa_column=Column(ARRAY(String)))
+
 class SequenceCollection(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
@@ -72,6 +92,26 @@ class SequenceCollection(SQLModel, table=True):
     lengths: "LengthsAttr" = Relationship(back_populates="collection")
     sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
     sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(back_populates="collection")
+
+    pangenomes: List[Pangenome] = Relationship(back_populates="collections", link_model=PangenomeCollectionLink)
+
+    def format_l1(self):
+        return {
+            "lengths": self.lengths_digest,
+            "names": self.names_digest,
+            "sequences": self.sequences_digest,
+            "sorted_name_length_pairs": self.sorted_name_length_pairs_digest,
+        }
+
+    def format_l2(self):
+        return {
+                "lengths": [int(x) for x in self.lengths.value.split(",")],
+                "names": self.names.value.split(","),
+                "sequences": self.sequences.value.split(","),
+                "sorted_name_length_pairs": self.sorted_name_length_pairs.value.split(","),
+        }
+
+
 
 class SequencesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
