@@ -121,11 +121,14 @@ def create_globals(scconf: yacman.YAMLConfigManager):
         database=pgdb,
         schemas=scconf["schemas"],
     )
+    return schenge
 
+def create_global_dbagent():
     from refget.agents import RefgetDBAgent
     global dbagent
-    dbagent = RefgetDBAgent()
-    return schenge
+    dbagent = RefgetDBAgent()  # Configured via env vars
+    return dbagent
+
 
 
 def main(injected_args=None):
@@ -151,6 +154,8 @@ def main(injected_args=None):
         _LOGGER.info(f"Running on port {port}")
         uvicorn.run(app, host=scconf.exp["server"]["host"], port=port)
     else:
+        create_global_dbagent()
+        app.state.dbagent = dbagent
         _LOGGER.error("Configure by passing -c SEQCOLAPI_CONFIG ")
 
 
@@ -163,4 +168,6 @@ if __name__ != "__main__":
         app.state.schenge = schenge
         app.state.dbagent = dbagent
     else:
+        create_global_dbagent()
+        app.state.dbagent = dbagent
         _LOGGER.error("Configure by setting SEQCOLAPI_CONFIG env var")
