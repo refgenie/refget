@@ -16,7 +16,8 @@ import {
   createBrowserRouter,
   RouterProvider,
   useLoaderData,
-  useParams
+  useParams,
+  useRouteError
 } from "react-router-dom";
 
 // const API_BASE = "http://127.0.0.1:8100"
@@ -399,6 +400,17 @@ const HomePage = () => {
 
 }
 
+function ErrorBoundary() {
+  const error = useRouteError();
+  console.error(error);
+  return <div class="alert alert-danger" role="alert">
+    {error.message}
+    Is the API service operating correctly at <a href={`${API_BASE}`}>{API_BASE}</a>?<br/>
+    <button className="btn btn-danger" onClick={() => window.location.reload()}>Reload</button>
+  </div>;
+}
+
+
 
 const router = createBrowserRouter([
   {
@@ -408,6 +420,7 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <HomePage/>,
+        errorElement: <ErrorBoundary />,
         loader: fetchSeqColList
       }, 
       {
