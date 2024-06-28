@@ -200,20 +200,27 @@ class RefgetDBAgent(object):
     """
     def __init__(self, postgres_str: str = None, inherent_attrs=["names", "lengths", "sequences"]): # = "sqlite:///foo.db"
         if not postgres_str:
-            POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-            POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
-            POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
-            POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+            POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+            POSTGRES_DB = os.getenv("POSTGRES_DB")
+            POSTGRES_USER = os.getenv("POSTGRES_USER")
+            POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
             postgres_str_old = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
             postgres_str = URL.create(
                 "postgresql",
                 username=POSTGRES_USER,
-                password=POSTGRES_PASSWORD,  # plain (unescaped) text
+                password=POSTGRES_PASSWORD,
                 host=POSTGRES_HOST,
                 database=POSTGRES_DB,
             )
-        self.engine = create_engine(postgres_str, echo=True)
-        SQLModel.metadata.create_all(self.engine)  
+        try:            
+            self.engine = create_engine(postgres_str, echo=True)
+            SQLModel.metadata.create_all(self.engine)  
+        except Exception as e:
+            _LOGGER.error(f"Error: {e}")
+            _LOGGER.error("Unable to connect to database")
+            _LOGGER.error("Please check that you have set the database credentials correctly in the environment variables")
+            _LOGGER.error(f"Database engine string: {postgres_str}")
+            raise e
         self.inherent_attrs = inherent_attrs
         self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
         self.__pangenome = PangenomeAgent(self.engine)

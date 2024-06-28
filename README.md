@@ -38,8 +38,8 @@ pytest test_api --api_root https://seqcolapi.databio.org
 Use docker to create a local postgres database like this:
 
 ```
-docker run --rm --name refget-postgres -p 5432:5432 \
-  -e POSTGRES_PASSWORD=postgres \
+docker run --rm --name refget-postgres -p 127.0.0.15432:5432 \
+  -e POSTGRES_PASSWORD=ns3xow4kdn6wl2k \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_DB=postgres \
   postgres:13
