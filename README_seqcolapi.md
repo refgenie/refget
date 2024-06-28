@@ -3,7 +3,7 @@
 This repository contains:
 
 1. Sequence collections API software (the `seqcolapi` package). This package is based on the `refget` package. It simply provides an wrapper to implement the Sequence Collections API.
-2. Configuration and GitHub Actions for demo server instance ([servers subfolder](/servers)).
+2. Configuration and GitHub Actions for demo server instance ([deployment subfolder](/deployment)).
 
 ## Instructions
 

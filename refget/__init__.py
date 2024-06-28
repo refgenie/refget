@@ -2,8 +2,8 @@
 
 import logging
 
-from ._version import __version__
 from .const import *
+from ._version import __version__
 from .hash_functions import *
 from .refget import RefGetClient
 from .refget import parse_fasta
@@ -17,3 +17,6 @@ try:
 except ImportError:
     seqcol_router = None
     pass
+
+logging.basicConfig(level=logging.INFO)
+

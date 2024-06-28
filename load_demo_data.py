@@ -4,7 +4,10 @@ from tests.conftest import DEMO_FILES
 from refget.models import *
 from refget.agents import *
 
+
+
 dbc = RefgetDBAgent()
+print(f"SQL Engine: {dbc.engine}")
 
 fa_root="test_fasta"
 
@@ -16,6 +19,4 @@ for demo_file in DEMO_FILES:
     print("Fasta file to be loaded: {}".format(f))
     demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
     print(demo_results[f])
-
-
 

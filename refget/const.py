@@ -1,4 +1,7 @@
 import os
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _schema_path(name):
