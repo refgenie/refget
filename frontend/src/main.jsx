@@ -23,6 +23,18 @@ import {
 // const API_BASE = "http://127.0.0.1:8100"
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8100';
 
+
+const fetchPangenomeLevels = async(digest, level="2", collated=true) => {
+  const url = `${API_BASE}/pangenome/${digest}?level=1`
+  const url2 = `${API_BASE}/pangenome/${digest}?level=2`
+  let resps = [
+    fetch(url).then((response) => response.json()),
+    fetch(url2).then((response) => response.json())
+  ]
+  
+  return Promise.all(resps)
+}
+
 const fetchSeqColList = async() => {
   const url = `${API_BASE}/list`
   return fetch(url).then((response) => response.json())
@@ -33,7 +45,7 @@ const fetchSeqColDetails = async(digest, level="2", collated=true) => {
   return fetch(url).then((response) => response.json())
 }
 
-const fetchAllCol = async(digest) => {
+const fetchCollectionLevels = async(digest) => {
   let url = `${API_BASE}/collection/${digest}?level=1`
   let resps = [
     fetch(url).then((response) => response.json()),
@@ -269,20 +281,20 @@ const CompareTable = ({seqColList}) => {
 
   function buildCompareLinks(seqColList) {
     let header_cells = [];
-    for (let i = 0; i < seqColList.items.length; i++) {
-      header_cells.push(<th key={"header_col_"+i} className='rotated-text'><div>{seqColList.items[i]}</div></th>)
+    for (let i = 0; i < seqColList.length; i++) {
+      header_cells.push(<th key={"header_col_"+i} className='rotated-text'><div>{seqColList[i]}</div></th>)
     }
     let header_row = <tr><th></th>{header_cells}</tr>;
 
     let link_rows = [];
-    for (let i = 0; i < seqColList.items.length; i++) {
+    for (let i = 0; i < seqColList.length; i++) {
       let link_cells = []
-      link_cells.push(<th className="text-end" key={"header_row_"+i}><Link to={`/collection/${seqColList.items[i]}`}>{seqColList.items[i]}</Link></th>)
-      for (let j = 0; j < seqColList.items.length; j++) {
+      link_cells.push(<th className="text-end" key={"header_row_"+i}><Link to={`/collection/${seqColList[i]}`}>{seqColList[i]}</Link></th>)
+      for (let j = 0; j < seqColList.length; j++) {
         link_cells.push(
           <td key={i + "vs" + j} className="text-center">{ j == i ? "=" : <Link
-            to={`/comparison/${seqColList.items[i]}/${seqColList.items[j]}`}
-            key={`${seqColList.items[i]}-${seqColList.items[j]}`}
+            to={`/comparison/${seqColList[i]}/${seqColList[j]}`}
+            key={`${seqColList[i]}-${seqColList[j]}`}
           ><img src={compare} alt="Compare" width="50" className="compare"/>
           </Link>}</td>
         );
@@ -342,9 +354,40 @@ const App = () => {
   </>)
 }
 
+
+// Basic list of Sequence Collections
+const PangenomeView = ({collections}) => {
+  const seqColList = collections || useLoaderData()
+  const params = useParams()
+
+  console.log("SeqColList", seqColList)
+
+  const pangenome = {
+    level1: seqColList[0],
+    level2: seqColList[1]
+  }
+
+  return (<>
+    <div>
+      <h1>Pangenome: {params.digest}</h1>
+      <h2>Resident sequence collections:</h2>
+      <ul>
+        {pangenome.level2.collections.map((seqCol) => (
+          <li key={seqCol}>
+            <Link to={`/collection/${seqCol}`}>{seqCol}</Link>
+          </li>
+        ))}
+      </ul>
+      <h2>Compare table:</h2>
+      <CompareTable seqColList={pangenome.level2.collections}/>
+    </div></>
+  )
+}
+
 // Basic list of Sequence Collections
 const SeqColList = ({collections}) => {
   const seqColList = collections || useLoaderData()
+  console.log("SeqColList", seqColList)
 
   return (<>
     <div>
@@ -391,10 +434,11 @@ const HomePage = () => {
   const seqColList = useLoaderData()
   return (
     <div>
+      <Link to="/pangenome/test_pangenome">Pangenome</Link>
       <h1>Sequence Collections</h1>
-      <p>These are the sequence collections available in the refget server.</p>
+      <p>These are the sequence collections available.</p>
       <SeqColList/>
-      <CompareTable seqColList={seqColList}/>
+      <CompareTable seqColList={seqColList.items}/>
     </div>
   )
 
@@ -436,7 +480,7 @@ const router = createBrowserRouter([
         element: <CollectionView/>,
         loader: (request) => {
           console.log("params", request.params)
-          return fetchAllCol(request.params.digest)
+          return fetchCollectionLevels(request.params.digest)
         }
       },
       {
@@ -447,6 +491,11 @@ const router = createBrowserRouter([
           return fetchAttribute(request.params.attribute, request.params.digest)
         
         }
+      },
+      {
+        path: "/pangenome/:digest",
+        element: <PangenomeView/>,
+        loader: () => fetchPangenomeLevels("test_pangenome")
       }
     ]
   },

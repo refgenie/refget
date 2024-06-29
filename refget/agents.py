@@ -89,6 +89,7 @@ class SeqColAgent(object):
                 lengths.collection.append(csc_simplified)
                 sorted_name_length_pairs.collection.append(csc_simplified)
                 session.commit()
+                return csc_simplified
 
     def add_from_dict(self, seqcol_dict: dict):
         seqcol = build_seqcol_model(seqcol_dict, self.inherent_attrs)
@@ -152,6 +153,10 @@ class PangenomeAgent(object):
                 return pangenome.level1()
             elif return_format == "level3":
                 return pangenome.level3()
+            elif return_format == "level4":
+                return pangenome.level4()
+            else:
+                return pangenome
 
 
     def add(self, pangenome: Pangenome):

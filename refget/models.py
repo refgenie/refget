@@ -73,25 +73,32 @@ class Pangenome(SQLModel, table=True):
     names: "CollectionNamesAttr" = Relationship(back_populates="pangenome")
     names_digest: str = Field(foreign_key="collectionnamesattr.digest")
     collections: List["SequenceCollection"] = Relationship(back_populates="pangenomes", link_model=PangenomeCollectionLink)
+    collections_digest: str
 
     def level1(self):
         return {
             "names": self.names_digest,
-            "collections": [x.digest for x in self.collections]
+            "collections": self.collections_digest
         }
 
     def level2(self):
         return {
             "names": self.names.value.split(","),
-            "collections": [x.level1() for x in self.collections]
+            "collections": [x.digest for x in self.collections]
         }
     
     def level3(self):
         return {
             "names": self.names.value.split(","),
-            "collections": [x.level2() for x in self.collections]
+            "collections": [x.level1() for x in self.collections]
         }
-        
+
+    def level4(self):
+        return {
+            "names": self.names.value.split(","),
+            "collections": [x.level2() for x in self.collections]
+        }        
+
 
 class CollectionNamesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
