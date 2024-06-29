@@ -74,7 +74,24 @@ class Pangenome(SQLModel, table=True):
     names_digest: str = Field(foreign_key="collectionnamesattr.digest")
     collections: List["SequenceCollection"] = Relationship(back_populates="pangenomes", link_model=PangenomeCollectionLink)
 
+    def level1(self):
+        return {
+            "names": self.names_digest,
+            "collections": [x.digest for x in self.collections]
+        }
 
+    def level2(self):
+        return {
+            "names": self.names.value.split(","),
+            "collections": [x.level1() for x in self.collections]
+        }
+    
+    def level3(self):
+        return {
+            "names": self.names.value.split(","),
+            "collections": [x.level2() for x in self.collections]
+        }
+        
 
 class CollectionNamesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
@@ -95,7 +112,7 @@ class SequenceCollection(SQLModel, table=True):
 
     pangenomes: List[Pangenome] = Relationship(back_populates="collections", link_model=PangenomeCollectionLink)
 
-    def format_l1(self):
+    def level1(self):
         return {
             "lengths": self.lengths_digest,
             "names": self.names_digest,
@@ -103,7 +120,7 @@ class SequenceCollection(SQLModel, table=True):
             "sorted_name_length_pairs": self.sorted_name_length_pairs_digest,
         }
 
-    def format_l2(self):
+    def level2(self):
         return {
                 "lengths": [int(x) for x in self.lengths.value.split(",")],
                 "names": self.names.value.split(","),

@@ -38,7 +38,7 @@ class SeqColAgent(object):
         self.engine = engine 
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format:str = "full"):
+    def get(self, digest: str, return_format:str = "level2"):
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
@@ -46,14 +46,9 @@ class SeqColAgent(object):
             if not seqcol:
                 raise ValueError(f"SequenceCollection with digest '{digest}' not found")
             if return_format == "level2":
-                return seqcol.format_l2()
+                return seqcol.level2()
             elif return_format == "level1":
-                return {
-                        "lengths": seqcol.lengths_digest,
-                        "names": seqcol.names_digest,
-                        "sequences": seqcol.sequences_digest,
-                        "sorted_name_length_pairs": seqcol.sorted_name_length_pairs_digest,
-                }
+                return seqcol.level1()
             elif return_format == "itemwise":
                 l2 = {
                         "names": seqcol.names.value.split(","),
@@ -94,26 +89,6 @@ class SeqColAgent(object):
                 lengths.collection.append(csc_simplified)
                 sorted_name_length_pairs.collection.append(csc_simplified)
                 session.commit()
-
-    def add(self, pangenome: Pangenome):
-        with Session(self.engine) as session:
-            with session.no_autoflush:
-                pg = session.get(Pangenome, pangenome.digest)
-                if pg:
-                    return pg
-                pg_simplified = Pangenome(digest=pangenome.digest)
-                names = session.get(NamesAttr, pangenome.names.digest)
-                if not names:
-                    names = CollectionNamesAttr(**pangenome.names.model_dump())
-                    session.add(names)
-                for s in pangenome.collections:
-                    seqcol = session.get(SequenceCollection, s.digest)
-                    if not seqcol:  # If sequence collection does not exist, create it
-                        seqcol = SequenceCollection(**s.model_dump())
-                        session.add(seqcol)
-                    pg_simplified.collections.append(seqcol)
-                names.pangenome.append(pg_simplified)
-
 
     def add_from_dict(self, seqcol_dict: dict):
         seqcol = build_seqcol_model(seqcol_dict, self.inherent_attrs)
@@ -164,11 +139,39 @@ class PangenomeAgent(object):
     def __init__(self, engine):
         self.engine = engine 
 
-    def get(self, digest: str):
+    def get(self, digest: str, return_format:str = "level2"):
         with Session(self.engine) as session:
             statement = select(Pangenome).where(Pangenome.digest == digest)
-            results = session.exec(statement)
-            return results.first()
+            result = session.exec(statement)
+            pangenome = result.one()
+            if not pangenome:
+                raise ValueError(f"Pangenome with digest '{digest}' not found")
+            if return_format == "level2":
+                return pangenome.level2()
+            elif return_format == "level1":
+                return pangenome.level1()
+            elif return_format == "level3":
+                return pangenome.level3()
+
+
+    def add(self, pangenome: Pangenome):
+        with Session(self.engine) as session:
+            with session.no_autoflush:
+                pg = session.get(Pangenome, pangenome.digest)
+                if pg:
+                    return pg
+                pg_simplified = Pangenome(digest=pangenome.digest)
+                names = session.get(NamesAttr, pangenome.names.digest)
+                if not names:
+                    names = CollectionNamesAttr(**pangenome.names.model_dump())
+                    session.add(names)
+                for s in pangenome.collections:
+                    seqcol = session.get(SequenceCollection, s.digest)
+                    if not seqcol:  # If sequence collection does not exist, create it
+                        seqcol = SequenceCollection(**s.model_dump())
+                        session.add(seqcol)
+                    pg_simplified.collections.append(seqcol)
+                names.pangenome.append(pg_simplified)
 
 
 class AttributeAgent(object):
