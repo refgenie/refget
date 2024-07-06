@@ -156,6 +156,17 @@ class PangenomeAgent(object):
                 return pangenome.level3()
             elif return_format == "level4":
                 return pangenome.level4()
+            elif return_format == "itemwise":
+                l2 = pangenome.level2()
+                list_of_dicts = []
+                for i in range(len(l2["names"])):
+                    list_of_dicts.append(
+                        {
+                            "name": l2["names"][i],
+                            "collection": l2["collections"][i],
+                        }
+                    )
+                return {"collections": list_of_dicts}
             else:
                 return pangenome
 

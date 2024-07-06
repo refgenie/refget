@@ -64,6 +64,10 @@ refget add-fasta path/to/fasta.fa
 ```
 
 
+For pangenome: 
+
+python load_pangenome_reference.py ../seqcolapi/analysis/data/demo.csv test_fasta
+
 #### Adding data to production service
 
 Just first source the production credentials, then load the data:
@@ -91,7 +95,7 @@ First, configure env vars:
 - To run a local server with **the production database**:`source deployment/seqcolapi.databio.org/production.env`
 
 ```
-source deployment/sqlmodel/dev_sqlmodel.env
+source deployment/local_demo/local_demo.env
 ```
 
 

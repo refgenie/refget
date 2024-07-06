@@ -3,11 +3,16 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 
 import compare from './assets/compare.svg'
-import copyToClipboardIcon from './assets/copy_to_clipboard.svg'
 import { useState } from 'react'
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+import { CollectionView } from './pages/CollectionView.jsx'
+import { PangenomeView } from './pages/PangenomeView.jsx'
+import { AttributeView } from './pages/AttributeView.jsx'
+import { AttributeValue, LinkedAttributeDigest } from './components/Attributes.jsx'
+import { CollectionList, PangenomeList } from './components/ObjectLists.jsx'
 
 
 import {
@@ -20,24 +25,30 @@ import {
   useRouteError
 } from "react-router-dom";
 
-// const API_BASE = "http://127.0.0.1:8100"
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8100';
 
+import { API_BASE } from './utilities.jsx'
 
 const fetchPangenomeLevels = async(digest, level="2", collated=true) => {
   const url = `${API_BASE}/pangenome/${digest}?level=1`
   const url2 = `${API_BASE}/pangenome/${digest}?level=2`
+  const urlItemwise = `${API_BASE}/pangenome/${digest}?collated=false`  
   let resps = [
     fetch(url).then((response) => response.json()),
-    fetch(url2).then((response) => response.json())
+    fetch(url2).then((response) => response.json()),
+    fetch(urlItemwise).then((response) => response.json())
   ]
   
   return Promise.all(resps)
 }
 
 const fetchSeqColList = async() => {
-  const url = `${API_BASE}/list`
-  return fetch(url).then((response) => response.json())
+  const url = `${API_BASE}/list/collections?limit=20`
+  const url2 = `${API_BASE}/list/pangenomes?limit=5`
+  let resps = [
+    fetch(url).then((response) => response.json()),
+    fetch(url2).then((response) => response.json())
+  ]
+  return Promise.all(resps)
 }
 
 const fetchSeqColDetails = async(digest, level="2", collated=true) => {
@@ -70,79 +81,6 @@ const fetchAttribute = async(attribute, digest) => {
   return Promise.all(resps)
 }
 
-const CollectionView = (params) => {
-  const collection = useLoaderData()
-  const [collectionRepresentation, setCollectionRepresentation] = useState(null)
-  const { digest } = useParams()
-  console.log("CollectionView", collection)
-  
-  let level1 = collection[0]
-  let level2 = collection[1]
-
-  console.log("Lev 1", level1)
-
-  // const col_str = (2 == 1 ? "asdf" : <pre>{JSON.stringify(collectionRepresentation, null, 2)}</pre>)
-  const showLevel = (level, collated=true) => { 
-    console.log(`showing level ${level}`)
-    fetchSeqColDetails(digest, level, collated).then((data) => {
-      console.log("got data", data)
-      if (level == 1) {
-        data = Level1Collection(data)
-      }
-      else if (level == 2) {
-        data = Level2Collection(data)
-      }
-      setCollectionRepresentation(data)
-    })
-  
-    const showUncollated = () => {
-      console.log("showing uncollated")
-      fetchSeqColDetails(digest, "uncollated").then((data) => {
-        console.log("got data", data)
-        setCollectionRepresentation(data)
-      })
-    }
-
-  }
-  const api_url_level2 = `${API_BASE}/collection/${digest}`
-  const api_url_level1 = `${API_BASE}/collection/${digest}?level=1`
-  const api_url_uncollated = `${API_BASE}/collection/${digest}?collated=false`
-
-  let attribute_list_views = []
-  for ( let attribute in level2) {
-    attribute_list_views.push(<>
-    <h5 className="mb-2 mt-3">{attribute}</h5>
-    <div className="row align-items-center">
-      <div className="col-md-1 ">Digest:</div>
-      <div className="col">
-        <LinkedAttributeDigest attribute={attribute} digest={level1[attribute]}/>
-      </div>
-    </div>
-    <div className="row align-items-center">
-      <div className="col-md-1 ">Value:</div>
-      <div className="col">
-        <AttributeValue value={level2[attribute]} />
-      </div>
-    </div>
-      </>
-    )
-  }
-
-  return (
-    <div>
-      <h2>Sequence Collection: {digest}</h2>
-      <ul>
-        <h4>API URLs</h4>
-        <li>Level 1: <Link to={api_url_level1}>{api_url_level1}</Link></li>
-        <li>Level 2: <Link to={api_url_level2}>{api_url_level2}</Link></li>
-        <li>Uncollated: <Link to={api_url_uncollated}>{api_url_uncollated}</Link></li>
-      </ul>
-      {attribute_list_views}
-    </div>
-  )
-}
-
-
 const LinkedCollectionDigest = ({digest, clipboard=true}) => {
   return (<>
     <Link to={`/collection/${digest}`} className="font-monospace">{digest}</Link> 
@@ -151,61 +89,8 @@ const LinkedCollectionDigest = ({digest, clipboard=true}) => {
   )
 }
 
-const AttributeValue = ({value}) => {
-  return(<pre className="text-secondary m-0 p-2 border border-muted"><code>{value.join(",")}</code></pre>)
-}
-
-const AttributeView = () => { 
-  const content = useLoaderData()
-  const { attribute, digest } = useParams()
-  const api_url = `${API_BASE}/attribute/${attribute}/${digest}`
-  const api_url_list = `${API_BASE}/attribute/${attribute}/${digest}/list`
-  let results = content[0]
-  let attribute_value = content[1]
-
-  console.log("AttributeView attribute_value: " , attribute_value)
-  console.log("AttributeView results: " , results)
-  
-  return (
-    <div>
-      <h1>Attribute: {attribute} 
-      </h1>
-      <div className="row align-items-center">
-        <div className="col-md-1">API URL:</div>
-        <div className="col"><Link to={api_url}>{api_url}</Link></div>
-      </div>
-      <div className="row align-items-center">
-        <div className="col-md-1">Digest:</div>
-        <div className="col">
-          <LinkedAttributeDigest attribute={attribute} digest={digest}/>
-        </div>
-      </div>
-      <div className="row align-items-center">
-        <div className="col-md-1">Value:</div>
-        <div className="col"><AttributeValue value={attribute_value} /></div>
-      </div>
-      <h2 className="mt-4">Containing collections:</h2>
-      API URL: <Link to={api_url_list}>{api_url_list}</Link>
-      <SeqColList collections={results}  clipboard={false}/>
-    </div>
-  )
-}
 
 
-const copyToClipboard = async (text) => {
-  console.log("Copying to clipboard")
-  toast("Copied to clipboard", {autoClose: 1250, progress: undefined, hideProgressBar: true, pauseOnFocusLoss:false})
-  return await navigator.clipboard.writeText(text)
-}
-
-
-const LinkedAttributeDigest = ({attribute, digest, clipboard=true}) => {
-  return (<>
-    <Link to={`/attribute/${attribute}/${digest}`} className="font-monospace">{digest}</Link> 
-    { clipboard ? <img  role="button" src={copyToClipboardIcon} alt="Copy" width="30" className="copy-to-clipboard mx-2" onClick={() => copyToClipboard(digest)}/> : "" }
-    </>
-  )
-}
 
 const Level1Collection = ({collection}) => {
   return (
@@ -355,52 +240,8 @@ const App = () => {
 }
 
 
-// Basic list of Sequence Collections
-const PangenomeView = ({collections}) => {
-  const seqColList = collections || useLoaderData()
-  const params = useParams()
 
-  console.log("SeqColList", seqColList)
 
-  const pangenome = {
-    level1: seqColList[0],
-    level2: seqColList[1]
-  }
-
-  return (<>
-    <div>
-      <h1>Pangenome: {params.digest}</h1>
-      <h2>Resident sequence collections:</h2>
-      <ul>
-        {pangenome.level2.collections.map((seqCol) => (
-          <li key={seqCol}>
-            <Link to={`/collection/${seqCol}`}>{seqCol}</Link>
-          </li>
-        ))}
-      </ul>
-      <h2>Compare table:</h2>
-      <CompareTable seqColList={pangenome.level2.collections}/>
-    </div></>
-  )
-}
-
-// Basic list of Sequence Collections
-const SeqColList = ({collections}) => {
-  const seqColList = collections || useLoaderData()
-  console.log("SeqColList", seqColList)
-
-  return (<>
-    <div>
-      <ul>
-        {seqColList.items.map((seqCol) => (
-          <li key={seqCol}>
-            <Link to={`/collection/${seqCol}`}>{seqCol}</Link>
-          </li>
-        ))}
-      </ul>
-    </div></>
-  )
-}
 
 const CollectionTable = ({collections}) => {
   const seqColList = collections || useLoaderData()
@@ -431,17 +272,40 @@ const CollectionTable = ({collections}) => {
 
 
 const HomePage = () => {
-  const seqColList = useLoaderData()
+  const loaderData = useLoaderData()
+  console.log("HomePage loadData ", loaderData)
+  const collections = loaderData[0]
+  const pangenomes = loaderData[1]
+
+  const PangenomeExamplesList = () => {
+    if (pangenomes.items[0]) {
+      return <>
+        <h3>Example Pangenomes:</h3>
+        <PangenomeList pangenomes={pangenomes}/>
+      </>
+    } else {
+      return ""
+    } 
+  }
+
   return (
     <div>
-      <Link to="/pangenome/test_pangenome">Pangenome</Link>
-      <h1>Sequence Collections</h1>
-      <p>These are the sequence collections available.</p>
-      <SeqColList/>
-      <CompareTable seqColList={seqColList.items}/>
+      <h2>Welcome</h2>
+      <p>Welcome to the Refget Sequence Collections service!
+        This landing page provides a way to explore the data in the server.
+        You can go straight to the API itself using the <b>API Docs</b> link in the title bar.
+        Or, you can check out a few examples below
+      </p>
+
+      <PangenomeExamplesList/>
+      
+      <h3>Example Sequence Collections</h3>
+      <p>Here are some available sequence collections:</p>
+      <CollectionList collections={collections}/>
+
     </div>
   )
-
+//       <CompareTable seqColList={collections.items}/>
 }
 
 function ErrorBoundary() {
@@ -495,7 +359,7 @@ const router = createBrowserRouter([
       {
         path: "/pangenome/:digest",
         element: <PangenomeView/>,
-        loader: () => fetchPangenomeLevels("test_pangenome")
+        loader: (request) => fetchPangenomeLevels(request.params.digest)
       }
     ]
   },
