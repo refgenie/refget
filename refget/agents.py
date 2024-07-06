@@ -1,7 +1,6 @@
 import os
 import logging
 
-from psycopg2.errors import UniqueViolation
 from sqlmodel import create_engine, select, Session, delete, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import URL
