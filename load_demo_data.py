@@ -4,6 +4,8 @@ from tests.conftest import DEMO_FILES
 from refget.models import *
 from refget.agents import *
 
+# Before running this script, you'll need to set up env vars like so:
+# source deployment/local_demo/local_demo.env 
 
 
 dbc = RefgetDBAgent()
@@ -20,3 +22,8 @@ for demo_file in DEMO_FILES:
     demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
     print(demo_results[f])
 
+
+# You can explore these results like this:
+# with Session(dbc.engine) as session:
+#     session.add(demo_results["test_fasta/base.fa"])
+#     print("Digest is: ", demo_results["test_fasta/base.fa"].digest)

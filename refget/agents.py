@@ -6,9 +6,11 @@ from sqlmodel import create_engine, select, Session, delete, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
+import peppy
+
 
 from .models import *
-from .utilities import build_seqcol_model, fasta_file_to_seqcol, format_itemwise, compare_seqcols
+from .utilities import build_seqcol_model, fasta_file_to_seqcol, format_itemwise, compare_seqcols, build_pangenome_model
 from .const import _LOGGER
 
 ATTR_TYPE_MAP = {
@@ -98,8 +100,6 @@ class SeqColAgent(object):
 
     def add_from_fasta_file(self, fasta_file_path: str):
         CSC = fasta_file_to_seqcol(fasta_file_path)
-        print("CSCSCC:::::::::::::::::::::::::::::::::::::::")
-        print(CSC)
         return self.add_from_dict(CSC)
     
     def list_by_offset(self, limit=50, offset=0):
@@ -160,13 +160,14 @@ class PangenomeAgent(object):
 
 
     def add(self, pangenome: Pangenome):
+        
         with Session(self.engine) as session:
             with session.no_autoflush:
                 pg = session.get(Pangenome, pangenome.digest)
                 if pg:
                     return pg
-                pg_simplified = Pangenome(digest=pangenome.digest)
-                names = session.get(NamesAttr, pangenome.names.digest)
+                pg_simplified = Pangenome(digest=pangenome.digest, collections_digest=pangenome.collections_digest)
+                names = session.get(CollectionNamesAttr, pangenome.names.digest)
                 if not names:
                     names = CollectionNamesAttr(**pangenome.names.model_dump())
                     session.add(names)
@@ -177,6 +178,23 @@ class PangenomeAgent(object):
                         session.add(seqcol)
                     pg_simplified.collections.append(seqcol)
                 names.pangenome.append(pg_simplified)
+                session.commit()
+                return pg_simplified
+            
+
+
+
+    def add_from_fasta_pep(self, pep: peppy.Project, fasta_root):
+        # First add in the FASTA files individually, and build a dictionary of the results
+        results = {}
+        for s in prj.samples:
+            file_path = os.path.join(s.fasta, fasta_root)
+            f = os.path.join(fa_root, demo_file)
+            print("Fasta file to be loaded: {}".format(f))
+            results[s.sample_name] = self.seqcol.add_from_fasta_file(f)
+
+        p = build_pangenome_model(results)
+        return self.add(p)
 
 
 class AttributeAgent(object):
