@@ -1,5 +1,3 @@
-
-
 import json
 from refget import SeqColClient
 
@@ -29,11 +27,8 @@ for demo_file in DEMO_FILES:
     print(template.format(f=f, digest=digest, pretty_str=pretty_str))
 
 
-
-
 # demo_results = {}
 # for demo_file in DEMO_FILES:
 #     f = os.path.join(fa_root, demo_file)
 #     print("Fasta file to be loaded: {}".format(f))
 #     demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
-

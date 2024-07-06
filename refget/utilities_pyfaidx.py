@@ -1,4 +1,4 @@
-from .utilities import sha512t24u_digest_bytes 
+from .utilities import sha512t24u_digest_bytes
 
 
 def fasta_obj_to_seqcol(
@@ -56,4 +56,3 @@ def parse_fasta(fa_file_path: str):
             f_out.writelines(f_in.read())
             f_out.seek(0)
             return pyfaidx.Fasta(f_out.name)
-

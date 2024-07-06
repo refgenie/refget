@@ -48,19 +48,16 @@ async def refget(request: Request, sequence_digest: str = example_sequence):
     # If you wanted to implement refget sequences, you would do it here
     return Response(content=schenge.refget(sequence_digest))
 
+
 @seqcol_router.get(
-        "/attribute/{attribute}/{attribute_digest}",
-        summary="Retrieve a single attribute of a sequence collection",
-        tags=["Retrieving data"],
+    "/attribute/{attribute}/{attribute_digest}",
+    summary="Retrieve a single attribute of a sequence collection",
+    tags=["Retrieving data"],
 )
 async def attribute(
-    dbagent=Depends(get_dbagent),
-    attribute: str = "names",
-    attribute_digest: str = example_digest
+    dbagent=Depends(get_dbagent), attribute: str = "names", attribute_digest: str = example_digest
 ):
     return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
-
-
 
 
 @seqcol_router.get(
@@ -81,8 +78,8 @@ async def collection(
             status_code=400,
             detail="Error: recursion > 1 disabled. Use the /refget server to retrieve sequences.",
         )
-    try: 
-        if not collated: 
+    try:
+        if not collated:
             return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="itemwise"))
         if level == 1:
             return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level1"))
@@ -94,7 +91,6 @@ async def collection(
             status_code=404,
             detail=str(e),
         )
-    
 
 
 @seqcol_router.get(
@@ -110,7 +106,7 @@ async def pangenome(
 ):
     if level == None:
         level = 2
-    try: 
+    try:
         if not collated:
             return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="itemwise"))
         if level == 1:
@@ -136,28 +132,28 @@ async def pangenome(
             detail=str(e),
         )
 
+
 @seqcol_router.get(
-        "/attribute/{attribute}/{attribute_digest}/list",
-        summary="List sequence collections that contain a given attribute",
-        tags=["Discovering data"],
+    "/attribute/{attribute}/{attribute_digest}/list",
+    summary="List sequence collections that contain a given attribute",
+    tags=["Discovering data"],
 )
 @seqcol_router.get(
-        "/list/collections/{attribute}/{attribute_digest}",
-        summary="List sequence collections that contain a given attribute",
-        tags=["Discovering data"],
+    "/list/collections/{attribute}/{attribute_digest}",
+    summary="List sequence collections that contain a given attribute",
+    tags=["Discovering data"],
 )
 async def attribute_search(
     dbagent=Depends(get_dbagent),
     attribute: str = "names",
     attribute_digest: str = example_digest,
     limit: int = 100,
-    offset: int = 0
+    offset: int = 0,
 ):
     # attr = dbagent.attribute.get(attribute, digest)
     res = dbagent.attribute.search(attribute, attribute_digest, limit=limit, offset=offset)
     res["items"] = [x.digest for x in res["items"]]
     return JSONResponse(res)
-
 
 
 @seqcol_router.get(
@@ -207,7 +203,6 @@ async def collection2(
         )
 
 
-
 @seqcol_router.get(
     "/comparison/{collection_digest1}/{collection_digest2}",
     summary="Compare two sequence collections hosted on the server",
@@ -230,8 +225,6 @@ async def compare_2_digests(
             detail="Error: collection not found. Check the digest and try again.",
         )
     return JSONResponse(result)
-
-
 
 
 @seqcol_router.get(
@@ -265,13 +258,14 @@ async def compare_2_digests2(
     tags=["Comparing sequence collections"],
 )
 async def compare_1_digest(
-    schenge=Depends(get_schenge), collection_digest1: str = example_digest_hg38, B: dict = example_hg38_sc
+    schenge=Depends(get_schenge),
+    collection_digest1: str = example_digest_hg38,
+    B: dict = example_hg38_sc,
 ):
     _LOGGER.info(f"digest1: {collection_digest1}")
     _LOGGER.info(f"B: {B}")
     A = schenge.retrieve(collection_digest1, reclimit=1)
     return JSONResponse(schenge.compat_all(A, B))
-
 
 
 @seqcol_router.get(

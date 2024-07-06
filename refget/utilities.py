@@ -17,6 +17,7 @@ _LOGGER = logging.getLogger(__name__)
 
 try:
     from gc_count import checksum
+
     pyfaidx = None
     GC_COUNT_INSTALLED = True
 except ImportError:
@@ -25,6 +26,7 @@ except ImportError:
 
 try:
     import pyfaidx
+
     PYFAIDX_INSTALLED = True
     from .utilities_pyfaidx import *
 except ImportError:
@@ -115,7 +117,6 @@ def format_itemwise(csc: SeqCol) -> list:
     return {"sequences": list_of_dicts}
 
 
-
 def chrom_sizes_to_digest(chrom_sizes_file_path: str) -> str:
     """Given a chrom.sizes file, return a digest"""
     seqcol_obj = chrom_sizes_to_seqcol(chrom_sizes_file_path)
@@ -158,7 +159,7 @@ def fasta_file_to_seqcol(
     """
     Convert a FASTA file into a Sequence Collection digest.
     """
-    if GC_COUNT_INSTALLED: # Use gc_count if available
+    if GC_COUNT_INSTALLED:  # Use gc_count if available
         fasta_seq_digests = checksum(fasta_file_path)
         CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": []}
         for s in fasta_seq_digests:
@@ -176,14 +177,12 @@ def fasta_file_to_seqcol(
         # dsc = DigestedSequenceCollection(**CSC)
         # dsc.digest = seqcol_digest(CSC)
         return CSC
-    
 
-    elif PYFAIDX_INSTALLED: # Use pyfaidx if available
+    elif PYFAIDX_INSTALLED:  # Use pyfaidx if available
         fa_obj = parse_fasta(fasta_file_path)
         return fasta_obj_to_seqcol(fa_obj, digest_function=digest_function)
     else:
         raise ImportError("Neither gc_count nor pyfaidx is installed")
-
 
 
 def build_sorted_name_length_pairs(
@@ -327,7 +326,6 @@ def explain_flag(flag):
             print(FLAGS[2**e])
 
 
-
 def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> SequenceCollection:
     """
     Given a canonical sequence collection, compute its digest.
@@ -365,77 +363,63 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
     seqcol_digest = sha512t24u_digest(seqcol_obj4)
 
     v = ",".join(seqcol_obj["sequences"])
-    sequences_attr = SequencesAttr(
-        digest = seqcol_obj3["sequences"],
-        value = v
-    )
-    
+    sequences_attr = SequencesAttr(digest=seqcol_obj3["sequences"], value=v)
+
     v = ",".join(seqcol_obj["names"])
-    names_attr = NamesAttr(
-        digest = seqcol_obj3["names"],
-        value = v
-    )
+    names_attr = NamesAttr(digest=seqcol_obj3["names"], value=v)
 
     v = ",".join([str(x) for x in seqcol_obj["lengths"]])
-    lengths_attr = LengthsAttr(
-        digest = seqcol_obj3["lengths"],
-        value = v
-    )
+    lengths_attr = LengthsAttr(digest=seqcol_obj3["lengths"], value=v)
     print(seqcol_obj2)
     snlp = build_sorted_name_length_pairs(seqcol_obj)
-    v =  ",".join(snlp)
-    snlp_attr = SortedNameLengthPairsAttr(
-        digest = sha512t24u_digest(canonical_str(snlp)),
-        value = v
+    v = ",".join(snlp)
+    snlp_attr = SortedNameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(snlp)), value=v)
+
+    seqcol = SequenceCollection(
+        digest=seqcol_digest,
+        sequences=sequences_attr,
+        names=names_attr,
+        lengths=lengths_attr,
+        sorted_name_length_pairs=snlp_attr,
     )
-
-    
-
-    seqcol = SequenceCollection(digest=seqcol_digest,
-                            sequences=sequences_attr, 
-                            names=names_attr, 
-                            lengths=lengths_attr,
-                            sorted_name_length_pairs=snlp_attr)
-
 
     return seqcol
 
 
-
 def build_pangenome_model(pangenome_obj: dict) -> Pangenome:
-    
-        # First add in the FASTA files individually, and build a dictionary of the results
-        # pangenome_obj = {}
-        # for s in prj.samples:
-        #     file_path = os.path.join(s.fasta, fasta_root)
-        #     f = os.path.join(fa_root, demo_file)
-        #     print("Fasta file to be loaded: {}".format(f))
-        #     pangenome_obj[s.sample_name] = self.seqcol.add_from_fasta_file(f)
 
-        # Now create a CollectionNamesAttr object
-        d=sha512t24u_digest(canonical_str(list(pangenome_obj.keys())))
-        v = ",".join(list(pangenome_obj.keys()))
-        cna = CollectionNamesAttr(
-            digest = d,
-            value = v)
+    # First add in the FASTA files individually, and build a dictionary of the results
+    # pangenome_obj = {}
+    # for s in prj.samples:
+    #     file_path = os.path.join(s.fasta, fasta_root)
+    #     f = os.path.join(fa_root, demo_file)
+    #     print("Fasta file to be loaded: {}".format(f))
+    #     pangenome_obj[s.sample_name] = self.seqcol.add_from_fasta_file(f)
 
-        # Now create a Collection object
-        collections_digest = sha512t24u_digest(canonical_str([x.digest for x in pangenome_obj.values()]))
-        collections_digest
+    # Now create a CollectionNamesAttr object
+    d = sha512t24u_digest(canonical_str(list(pangenome_obj.keys())))
+    v = ",".join(list(pangenome_obj.keys()))
+    cna = CollectionNamesAttr(digest=d, value=v)
 
-        pg_to_digest = {
-            "names": cna.digest,
-            "collections": collections_digest,
-        }
+    # Now create a Collection object
+    collections_digest = sha512t24u_digest(
+        canonical_str([x.digest for x in pangenome_obj.values()])
+    )
+    collections_digest
 
-        pangenome_digest = sha512t24u_digest(canonical_str(pg_to_digest))
-        pangenome_digest
+    pg_to_digest = {
+        "names": cna.digest,
+        "collections": collections_digest,
+    }
 
-        p = Pangenome(
-                digest=pangenome_digest,
-                names=cna,
-                collections=list(pangenome_obj.values()),
-                collections_digest=collections_digest)
+    pangenome_digest = sha512t24u_digest(canonical_str(pg_to_digest))
+    pangenome_digest
 
-        return p
+    p = Pangenome(
+        digest=pangenome_digest,
+        names=cna,
+        collections=list(pangenome_obj.values()),
+        collections_digest=collections_digest,
+    )
 
+    return p

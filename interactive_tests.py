@@ -1,7 +1,6 @@
 import refget
 
 
-
 scc = SeqColHenge(database={}, schemas=["seqcol/schemas/SeqColArraySet.yaml"])
 scc
 
@@ -167,8 +166,6 @@ print(json.dumps(csc, indent=2))
 seqcol.seqcol_digest(csc)
 
 
-
-
 seqcols = dbc.seqcol.list()
 dbc.attribute.list("lengths")
 
@@ -177,9 +174,6 @@ rows = dbc.truncate()
 x = dbc.seqcol.add_from_fasta_file(f)
 f2 = os.path.join(fa_root, DEMO_FILES[2])
 x2 = dbc.seqcol.add_from_fasta_file(f2)
-
-
-
 
 
 refget.fasta_file_to_seqcol(f)
@@ -197,12 +191,13 @@ csc.lengths
 sc4 = refget.build_seqcol_model(fasta_file_to_seqcol(os.path.join(fa_root, DEMO_FILES[4])))
 
 # What was the problem? That even just *creating* the object rom the other one...
-# so I was saying: names = csc4.names, and that was *connected* to csc4.lengths, 
+# so I was saying: names = csc4.names, and that was *connected* to csc4.lengths,
 # so it was trying to insert that one on the csc.
 
 print(f"names: {names}\n", f"lengths: {lengths}\n", f"sequences: {sequences}")
 
 import json
+
 print(
     json.dumps(
         demo_results,
@@ -214,10 +209,10 @@ print(
     )
 )
 
-What I need:
-- [ ] RefgetDBAgent, replaces SeqColHenge and Henge objects
-- [ ] functions for computing digests and 
-creating these pydantic object representations nicer
+# What I need:
+# - [ ] RefgetDBAgent, replaces SeqColHenge and Henge objects
+# - [ ] functions for computing digests and
+# creating these pydantic object representations nicer
 
-- [ ] wire up endpoints to this new object
-- [ ] use peppy to grab a pep, process fastq.gz files?
+# - [ ] wire up endpoints to this new object
+# - [ ] use peppy to grab a pep, process fastq.gz files?

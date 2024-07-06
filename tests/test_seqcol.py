@@ -17,7 +17,6 @@ SNLP_TESTS = [
 ]  # sorted_name_length_pairs
 
 
-
 @pytest.mark.skip("Need to update to use the new models")
 class TestGeneral:
     def test_no_schemas_required(self):
@@ -26,6 +25,7 @@ class TestGeneral:
         require schemas as input, they are predefined in the constructor
         """
         assert isinstance(refget.SeqColHenge(database={}), refget.SeqColHenge)
+
 
 @pytest.mark.skip("Need to update to use the new models")
 class TestFastaInserting:
@@ -102,6 +102,7 @@ seqcol_obj = {
 
 bad_seqcol = {"bogus": True}
 
+
 @pytest.mark.skip("Need to update to use the new models")
 class TestValidate:
     """
@@ -117,7 +118,6 @@ class TestValidate:
     def test_failure(self, seqcol_obj):
         with pytest.raises(Exception):
             refget.validate_seqcol(seqcol_obj)
-
 
 
 @pytest.mark.skip("Need to update to use the new models")

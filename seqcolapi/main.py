@@ -123,12 +123,13 @@ def create_globals(scconf: yacman.YAMLConfigManager):
     )
     return schenge
 
+
 def create_global_dbagent():
     from refget.agents import RefgetDBAgent
+
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent
-
 
 
 def main(injected_args=None):
