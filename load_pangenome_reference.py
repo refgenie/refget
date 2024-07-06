@@ -24,17 +24,19 @@ print(f"SQL Engine: {dbc.engine}")
 print("Using PEP file: ", args.pep)
 print("Using fa_root: ", fa_root)
 
-pangenome_obj = {}
-for s in prj.samples:
-    file_path = os.path.join(fa_root, s.fasta)
-    print(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
-    pangenome_obj[s.sample_name] = dbc.seqcol.add_from_fasta_file(file_path)
+# pangenome_obj = {}
+# for s in prj.samples:
+#     file_path = os.path.join(fa_root, s.fasta)
+#     print(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
+#     pangenome_obj[s.sample_name] = dbc.seqcol.add_from_fasta_file(file_path)
 
 
-with Session(dbc.engine) as session:
-    with session.no_autoflush:
-        session.add(p)
-        session.commit()
+dbc.pangenome.add_from_fasta_pep(prj, fa_root)
+
+# with Session(dbc.engine) as session:
+#     with session.no_autoflush:
+#         session.add(p)
+#         session.commit()
 
 
 #  Try retrieving the data like this:
@@ -43,6 +45,7 @@ with Session(dbc.engine) as session:
 # dbc.seqcol.get("8aA37TYgiVohRqfRhXEeklIAXf2Rs8jw", return_format="level2")
 
 # pangenome_digest = "LWzar7AHabrhP8Byw64OV14QrUDfX8Yu"
+# pangenome_digest = "YHuz_Us0SSJC0_UK2VIVXYX7SbpipD-b" # Demo
 
 # dbc.pangenome.get(pangenome_digest, return_format="level1")
 # dbc.pangenome.get(pangenome_digest, return_format="level2")

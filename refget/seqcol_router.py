@@ -81,12 +81,19 @@ async def collection(
             status_code=400,
             detail="Error: recursion > 1 disabled. Use the /refget server to retrieve sequences.",
         )
-    if not collated: 
-        return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="itemwise"))
-    if level == 1:
-        return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level1"))
-    if level == 2:
-        return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level2"))
+    try: 
+        if not collated: 
+            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="itemwise"))
+        if level == 1:
+            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level1"))
+        if level == 2:
+            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level2"))
+        return JSONResponse({"error": "Invalid level specified."})
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
     
 
 
@@ -103,22 +110,31 @@ async def pangenome(
 ):
     if level == None:
         level = 2
-    if level > 4:
+    try: 
+        if not collated:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="itemwise"))
+        if level == 1:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level1"))
+        if level == 2:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level2"))
+        if level == 3:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level3"))
+        if level == 4:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level4"))
+        if level > 4:
+            raise HTTPException(
+                status_code=400,
+                detail="Error: recursion > 4 disabled. Use the /refget server to retrieve sequences.",
+            )
         raise HTTPException(
             status_code=400,
-            detail="Error: recursion > 4 disabled. Use the /refget server to retrieve sequences.",
+            detail="Invalid level specified",
         )
-    if not collated:
-        return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="itemwise"))
-    if level == 1:
-        return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level1"))
-    if level == 2:
-        return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level2"))
-    if level == 3:
-        return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level3"))
-    if level == 4:
-        return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level4"))
-    return JSONResponse({"error": "Invalid level specified."})
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
 
 @seqcol_router.get(
         "/attribute/{attribute}/{attribute_digest}/list",

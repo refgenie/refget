@@ -40,11 +40,11 @@ class SeqColAgent(object):
         self.engine = engine 
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format:str = "level2"):
+    def get(self, digest: str, return_format:str = "level2") -> SequenceCollection:
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
-            seqcol = results.first()
+            seqcol = results.one_or_none()
             if not seqcol:
                 raise ValueError(f"SequenceCollection with digest '{digest}' not found")
             if return_format == "level2":
@@ -62,7 +62,7 @@ class SeqColAgent(object):
             else:
                 return seqcol
             
-    def add(self, seqcol: SequenceCollection):
+    def add(self, seqcol: SequenceCollection) -> SequenceCollection:
         with Session(self.engine) as session:
             with session.no_autoflush:
                 csc = session.get(SequenceCollection, seqcol.digest)
@@ -137,14 +137,15 @@ class SeqColAgent(object):
 
         
 class PangenomeAgent(object):
-    def __init__(self, engine):
-        self.engine = engine 
+    def __init__(self, parent):
+        self.engine = parent.engine
+        self.parent = parent
 
-    def get(self, digest: str, return_format:str = "level2"):
+    def get(self, digest: str, return_format:str = "level2") -> Pangenome:
         with Session(self.engine) as session:
             statement = select(Pangenome).where(Pangenome.digest == digest)
             result = session.exec(statement)
-            pangenome = result.one()
+            pangenome = result.one_or_none()
             if not pangenome:
                 raise ValueError(f"Pangenome with digest '{digest}' not found")
             if return_format == "level2":
@@ -159,7 +160,7 @@ class PangenomeAgent(object):
                 return pangenome
 
 
-    def add(self, pangenome: Pangenome):
+    def add(self, pangenome: Pangenome)  -> Pangenome:
         
         with Session(self.engine) as session:
             with session.no_autoflush:
@@ -184,16 +185,15 @@ class PangenomeAgent(object):
 
 
 
-    def add_from_fasta_pep(self, pep: peppy.Project, fasta_root):
+    def add_from_fasta_pep(self, pep: peppy.Project, fa_root):
         # First add in the FASTA files individually, and build a dictionary of the results
-        results = {}
-        for s in prj.samples:
-            file_path = os.path.join(s.fasta, fasta_root)
-            f = os.path.join(fa_root, demo_file)
-            print("Fasta file to be loaded: {}".format(f))
-            results[s.sample_name] = self.seqcol.add_from_fasta_file(f)
+        pangenome_obj = {}
+        for s in pep.samples:
+            file_path = os.path.join(fa_root, s.fasta)
+            print(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
+            pangenome_obj[s.sample_name] = self.parent.seqcol.add_from_fasta_file(file_path)
 
-        p = build_pangenome_model(results)
+        p = build_pangenome_model(pangenome_obj)
         return self.add(p)
 
 
@@ -276,7 +276,7 @@ class RefgetDBAgent(object):
 
         self.inherent_attrs = inherent_attrs
         self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
-        self.__pangenome = PangenomeAgent(self.engine)
+        self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
 
     
