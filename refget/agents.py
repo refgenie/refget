@@ -6,9 +6,11 @@ from sqlmodel import create_engine, select, Session, delete, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
+import peppy
+
 
 from .models import *
-from .utilities import build_seqcol_model, fasta_file_to_seqcol, format_itemwise, compare_seqcols
+from .utilities import build_seqcol_model, fasta_file_to_seqcol, format_itemwise, compare_seqcols, build_pangenome_model
 from .const import _LOGGER
 
 ATTR_TYPE_MAP = {
@@ -38,27 +40,17 @@ class SeqColAgent(object):
         self.engine = engine 
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format:str = "full"):
+    def get(self, digest: str, return_format:str = "level2") -> SequenceCollection:
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
-            seqcol = results.first()
+            seqcol = results.one_or_none()
             if not seqcol:
                 raise ValueError(f"SequenceCollection with digest '{digest}' not found")
             if return_format == "level2":
-                return {
-                        "lengths": [int(x) for x in seqcol.lengths.value.split(",")],
-                        "names": seqcol.names.value.split(","),
-                        "sequences": seqcol.sequences.value.split(","),
-                        "sorted_name_length_pairs": seqcol.sorted_name_length_pairs.value.split(","),
-                }
+                return seqcol.level2()
             elif return_format == "level1":
-                return {
-                        "lengths": seqcol.lengths_digest,
-                        "names": seqcol.names_digest,
-                        "sequences": seqcol.sequences_digest,
-                        "sorted_name_length_pairs": seqcol.sorted_name_length_pairs_digest,
-                }
+                return seqcol.level1()
             elif return_format == "itemwise":
                 l2 = {
                         "names": seqcol.names.value.split(","),
@@ -70,13 +62,14 @@ class SeqColAgent(object):
             else:
                 return seqcol
             
-    def add(self, seqcol: SequenceCollection):
+    def add(self, seqcol: SequenceCollection) -> SequenceCollection:
         with Session(self.engine) as session:
             with session.no_autoflush:
                 csc = session.get(SequenceCollection, seqcol.digest)
-                if csc:
+                if csc:  # already exists
                     return csc
-                csc_simplified = SequenceCollection(digest=seqcol.digest)
+                csc_simplified = SequenceCollection(digest=seqcol.digest)  # not linked to attributes
+                # Check if attributes exist; only create them if they don't
                 names = session.get(NamesAttr, seqcol.names.digest)
                 if not names:
                     names = NamesAttr(**seqcol.names.model_dump())
@@ -98,7 +91,7 @@ class SeqColAgent(object):
                 lengths.collection.append(csc_simplified)
                 sorted_name_length_pairs.collection.append(csc_simplified)
                 session.commit()
-
+                return csc_simplified
 
     def add_from_dict(self, seqcol_dict: dict):
         seqcol = build_seqcol_model(seqcol_dict, self.inherent_attrs)
@@ -107,8 +100,6 @@ class SeqColAgent(object):
 
     def add_from_fasta_file(self, fasta_file_path: str):
         CSC = fasta_file_to_seqcol(fasta_file_path)
-        print("CSCSCC:::::::::::::::::::::::::::::::::::::::")
-        print(CSC)
         return self.add_from_dict(CSC)
     
     def list_by_offset(self, limit=50, offset=0):
@@ -146,14 +137,92 @@ class SeqColAgent(object):
 
         
 class PangenomeAgent(object):
-    def __init__(self, engine):
-        self.engine = engine 
+    def __init__(self, parent):
+        self.engine = parent.engine
+        self.parent = parent
 
-    def get(self, digest: str):
+    def get(self, digest: str, return_format:str = "level2") -> Pangenome:
         with Session(self.engine) as session:
             statement = select(Pangenome).where(Pangenome.digest == digest)
-            results = session.exec(statement)
-            return results.first()
+            result = session.exec(statement)
+            pangenome = result.one_or_none()
+            if not pangenome:
+                raise ValueError(f"Pangenome with digest '{digest}' not found")
+            if return_format == "level2":
+                return pangenome.level2()
+            elif return_format == "level1":
+                return pangenome.level1()
+            elif return_format == "level3":
+                return pangenome.level3()
+            elif return_format == "level4":
+                return pangenome.level4()
+            elif return_format == "itemwise":
+                l2 = pangenome.level2()
+                list_of_dicts = []
+                for i in range(len(l2["names"])):
+                    list_of_dicts.append(
+                        {
+                            "name": l2["names"][i],
+                            "collection": l2["collections"][i],
+                        }
+                    )
+                return {"collections": list_of_dicts}
+            else:
+                return pangenome
+
+
+    def add(self, pangenome: Pangenome)  -> Pangenome:
+        
+        with Session(self.engine) as session:
+            with session.no_autoflush:
+                pg = session.get(Pangenome, pangenome.digest)
+                if pg:
+                    return pg
+                pg_simplified = Pangenome(digest=pangenome.digest, collections_digest=pangenome.collections_digest)
+                names = session.get(CollectionNamesAttr, pangenome.names.digest)
+                if not names:
+                    names = CollectionNamesAttr(**pangenome.names.model_dump())
+                    session.add(names)
+                for s in pangenome.collections:
+                    seqcol = session.get(SequenceCollection, s.digest)
+                    if not seqcol:  # If sequence collection does not exist, create it
+                        seqcol = SequenceCollection(**s.model_dump())
+                        session.add(seqcol)
+                    pg_simplified.collections.append(seqcol)
+                names.pangenome.append(pg_simplified)
+                session.commit()
+                return pg_simplified
+            
+
+
+
+    def add_from_fasta_pep(self, pep: peppy.Project, fa_root):
+        # First add in the FASTA files individually, and build a dictionary of the results
+        pangenome_obj = {}
+        for s in pep.samples:
+            file_path = os.path.join(fa_root, s.fasta)
+            print(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
+            pangenome_obj[s.sample_name] = self.parent.seqcol.add_from_fasta_file(file_path)
+
+        p = build_pangenome_model(pangenome_obj)
+        return self.add(p)
+
+    def list_by_offset(self, limit=50, offset=0):
+        with Session(self.engine) as session:
+            list_stmt =  select(Pangenome).offset(offset).limit(limit)
+            cnt_stmt = select(func.count(Pangenome.digest))
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqcols = list_res.all()
+            return {
+                "count": count,
+                "limit": limit,
+                "offset": offset,
+                "items": seqcols
+            }
+    
+
 
 
 class AttributeAgent(object):
@@ -210,24 +279,32 @@ class RefgetDBAgent(object):
     """
     def __init__(self, postgres_str: str = None, inherent_attrs=["names", "lengths", "sequences"]): # = "sqlite:///foo.db"
         if not postgres_str:
-            POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-            POSTGRES_DB = os.getenv("POSTGRES_DB", "postgres")
-            POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
-            POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
+            POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+            POSTGRES_DB = os.getenv("POSTGRES_DB")
+            POSTGRES_USER = os.getenv("POSTGRES_USER")
+            POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
             postgres_str_old = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
             postgres_str = URL.create(
                 "postgresql",
                 username=POSTGRES_USER,
-                password=POSTGRES_PASSWORD,  # plain (unescaped) text
+                password=POSTGRES_PASSWORD,
                 host=POSTGRES_HOST,
                 database=POSTGRES_DB,
             )
-        self.engine = create_engine(postgres_str, echo=False)
-        _LOGGER.info(f"SQL Engine: {self.engine}")
-        SQLModel.metadata.create_all(self.engine) 
+
+        try:            
+            self.engine = create_engine(postgres_str, echo=True)
+            SQLModel.metadata.create_all(self.engine)  
+        except Exception as e:
+            _LOGGER.error(f"Error: {e}")
+            _LOGGER.error("Unable to connect to database")
+            _LOGGER.error("Please check that you have set the database credentials correctly in the environment variables")
+            _LOGGER.error(f"Database engine string: {postgres_str}")
+            raise e
+
         self.inherent_attrs = inherent_attrs
         self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
-        self.__pangenome = PangenomeAgent(self.engine)
+        self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
 
     

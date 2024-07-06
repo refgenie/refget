@@ -12,6 +12,25 @@ example_digest = Path(
     examples="a6748aa0f6a1e165f871dbed5e54ba62",
 )
 
+example_collection_digest = Path(
+    ...,
+    description="Sequence collection digest",
+    pattern=r"^[-\w]+$",
+    max_length=64,
+    min_length=16,
+    examples="a6748aa0f6a1e165f871dbed5e54ba62",
+)
+
+
+example_pangenome_digest = Path(
+    ...,
+    description="Pangenome digest",
+    pattern=r"^[-\w]+$",
+    max_length=64,
+    min_length=8,
+    examples="a6748aa0f6a1e165f871dbed5e54ba62",
+)
+
 example_digest_2 = Path(
     ...,
     description="Sequence collection digest",

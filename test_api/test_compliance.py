@@ -16,42 +16,8 @@ import refget
 #     "demo6.fa",
 # ]
 
-DEMO_FILES = [
-    "base.fa",
-    "different_names.fa",
-    "different_order.fa",
-    "pair_swap.fa",
-    "subset.fa",
-    "swap_wo_coords.fa",
-]
+from .conftest import DEMO_FILES, COLLECTION_TESTS, COMPARISON_TESTS, ATTRIBUTE_TESTS, ATTRIBUTE_LIST_TESTS
 
-API_TEST_DIR = "test_api"
-
-COLLECTION_TESTS = [
-    (DEMO_FILES[0], f"{API_TEST_DIR}/collection/base_collection.json"),
-    (DEMO_FILES[1], f"{API_TEST_DIR}/collection/different_names_collection.json"),
-    (DEMO_FILES[2], f"{API_TEST_DIR}/collection/different_order_collection.json"),
-    (DEMO_FILES[3], f"{API_TEST_DIR}/collection/pair_swap_collection.json"),
-    (DEMO_FILES[4], f"{API_TEST_DIR}/collection/subset_collection.json"),
-    (DEMO_FILES[5], f"{API_TEST_DIR}/collection/swap_wo_coords_collection.json"),
-]
-
-COMPARISON_TESTS = [
-    f"{API_TEST_DIR}/comparison/compare_subset.json",  # subset
-    f"{API_TEST_DIR}/comparison/compare_different_names.json",  # same sequences, different names
-    f"{API_TEST_DIR}/comparison/compare_different_order.json",  # same sequences, name order switch, but equivalent coordinate system
-    f"{API_TEST_DIR}/comparison/compare_pair_swap.json",  # swapped name-length-pairs
-    f"{API_TEST_DIR}/comparison/compare_swap_wo_coords.json",  # swapped name-length-pairs, but no coord system change
-]
-
-ATTRIBUTE_TESTS = [
-    ("lengths", "7-_HdxYiRf-AJLBKOTaJUdxXrUkIXs6T", [8,4]),
-    ("names", "Fw1r9eRxfOZD98KKrhlYQNEdSRHoVxAG", ["chrX","chr1","chr2"])
-]
-
-ATTRIBUTE_LIST_TESTS = [
-    ("lengths", "cGRMZIb3AVgkcAfNv39RN7hnT5Chk7RX", f"{API_TEST_DIR}/attribute/cGRM.json",)
-]
 
 
 # This is optional, so we could turn off for a compliance test
@@ -62,29 +28,48 @@ demo_root = "/home/nsheff/code/refget/test_fasta"
 demo_file = "demo0.fa"
 response_file = "tests/demo0_collection.json"
 
+print("Testing Compliance")
 
-
-def read_url(url):
+def read_url_old(url):
     import yaml
     print("Reading URL: {}".format(url))
     from urllib.request import urlopen
     from urllib.error import HTTPError
     try:
+        print("here1")
         response = urlopen(url)
+        print("here2")
     except HTTPError as e:
         raise e
+    print("here3")
     data = response.read()  # a `bytes` object
+    print("here")
     text = data.decode("utf-8")
+    print("here")
     return yaml.safe_load(text)
+
+def read_url(url):
+    import requests
+    import yaml
+    try:
+        response = requests.get(url, timeout=1)
+    except requests.exceptions.ConnectionError:
+        print(f"Connection error: {url}")
+        raise e
+    data = response.content
+    return yaml.safe_load(data)
+
+
 
 
 def check_collection(api_root, demo_file, response_file):
 
     # Need schema to make sure we eliminate inherent attributes correctly
-    schema_path = "https://schema.databio.org/refget/SeqColArraySetInherent.yaml"
+    # schema_path = "https://schema.databio.org/refget/SeqColArraySetInherent.yaml"
+    # schema = read_url(schema_path)
+    # inherent_attrs = schema["inherent"]
 
-    schema = read_url(schema_path)
-    inherent_attrs = schema["inherent"]
+    inherent_attrs = ["names", "lengths", "sequences"]
     print(f"Loading fasta file at '{demo_root}/{demo_file}'")
     digest = refget.fasta_file_to_digest(f"{demo_root}/{demo_file}", inherent_attrs=inherent_attrs)
     print(f"Checking digest: {digest}")
@@ -157,12 +142,16 @@ def check_attribute_list(api_root, attribute_type, attribute, response_file):
 @pytest.mark.require_service
 class TestAPI:
 
+    print("Testing Compliance")
+
     @pytest.mark.parametrize("test_values", COLLECTION_TESTS)
     def test_collection_endpoint(self, api_root, test_values):
+        print("Testing collection endpoint")
         check_collection(api_root, *test_values)
 
     @pytest.mark.parametrize("response_file", COMPARISON_TESTS)
     def test_comparison_endpoint(self, api_root, response_file):
+        print("Testing comparison endpoint")
         check_comparison(api_root, response_file)
 
     @pytest.mark.parametrize("test_values", ATTRIBUTE_TESTS)

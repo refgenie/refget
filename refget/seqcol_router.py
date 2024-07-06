@@ -34,39 +34,43 @@ async def get_dbagent(request: Request):
     return request.app.state.dbagent
 
 
-@seqcol_router.get("/agent")
-async def test(dbagent=Depends(get_dbagent)):
-    return str(dbagent)
-
-
-@seqcol_router.get("/test")
-async def test(schenge=Depends(get_schenge)):
-    return str(schenge)
-
-
 @seqcol_router.get(
-    "/sequence/{digest}",
-    summary="Retrieve raw sequence via refget protocol",
-    tags=["Refget endpoints"],
+    "/sequence/{sequence_digest}",
+    summary="Retrieve raw sequence via original refget protocol",
+    tags=["Retrieving data"],
 )
-async def refget(request: Request, digest: str = example_sequence):
+async def refget(request: Request, sequence_digest: str = example_sequence):
     schenge = request.app.state.schenge
     raise HTTPException(
         status_code=400,
         detail="Error: this server does not support raw sequence retrieval. Use a refget server instead.",
     )
     # If you wanted to implement refget sequences, you would do it here
-    return Response(content=schenge.refget(digest))
+    return Response(content=schenge.refget(sequence_digest))
+
+@seqcol_router.get(
+        "/attribute/{attribute}/{attribute_digest}",
+        summary="Retrieve a single attribute of a sequence collection",
+        tags=["Retrieving data"],
+)
+async def attribute(
+    dbagent=Depends(get_dbagent),
+    attribute: str = "names",
+    attribute_digest: str = example_digest
+):
+    return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
+
+
 
 
 @seqcol_router.get(
-    "/collection/{digest}",
+    "/collection/{collection_digest}",
     summary="Retrieve a sequence collection",
-    tags=["Retrieving sequence collections"],
+    tags=["Retrieving data"],
 )
 async def collection(
     dbagent=Depends(get_dbagent),
-    digest: str = example_digest,
+    collection_digest: str = example_collection_digest,
     level: Union[int, None] = None,
     collated: bool = True,
 ):
@@ -77,54 +81,94 @@ async def collection(
             status_code=400,
             detail="Error: recursion > 1 disabled. Use the /refget server to retrieve sequences.",
         )
-    if not collated: 
-        return JSONResponse(dbagent.seqcol.get(digest, return_format="itemwise"))
-    if level == 1:
-        return JSONResponse(dbagent.seqcol.get(digest, return_format="level1"))
-    if level == 2:
-        return JSONResponse(dbagent.seqcol.get(digest, return_format="level2"))
+    try: 
+        if not collated: 
+            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="itemwise"))
+        if level == 1:
+            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level1"))
+        if level == 2:
+            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level2"))
+        return JSONResponse({"error": "Invalid level specified."})
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
     
 
+
 @seqcol_router.get(
-        "/attribute/{attribute}/{digest}",
-        summary="Retrieve a single attribute of a sequence collection",
-        tags=["Retrieving sequence collections"],
+    "/pangenome/{pangenome_digest}",
+    summary="Retrieve a pangenome",
+    tags=["Retrieving data"],
 )
-async def attribute(
+async def pangenome(
     dbagent=Depends(get_dbagent),
-    attribute: str = "names",
-    digest: str = example_digest
+    pangenome_digest: str = example_pangenome_digest,
+    level: Union[int, None] = None,
+    collated: bool = True,
 ):
-    return JSONResponse(dbagent.attribute.get(attribute, digest))
-
+    if level == None:
+        level = 2
+    try: 
+        if not collated:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="itemwise"))
+        if level == 1:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level1"))
+        if level == 2:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level2"))
+        if level == 3:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level3"))
+        if level == 4:
+            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level4"))
+        if level > 4:
+            raise HTTPException(
+                status_code=400,
+                detail="Error: recursion > 4 disabled. Use the /refget server to retrieve sequences.",
+            )
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid level specified",
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=str(e),
+        )
 
 @seqcol_router.get(
-        "/attribute/{attribute}/{digest}/list",
-        summary="Retrieve any sequence collection containing a given attribute",
-        tags=["Retrieving sequence collections"],
+        "/attribute/{attribute}/{attribute_digest}/list",
+        summary="List sequence collections that contain a given attribute",
+        tags=["Discovering data"],
+)
+@seqcol_router.get(
+        "/list/collections/{attribute}/{attribute_digest}",
+        summary="List sequence collections that contain a given attribute",
+        tags=["Discovering data"],
 )
 async def attribute_search(
     dbagent=Depends(get_dbagent),
     attribute: str = "names",
-    digest: str = example_digest,
+    attribute_digest: str = example_digest,
     limit: int = 100,
     offset: int = 0
 ):
     # attr = dbagent.attribute.get(attribute, digest)
-    res = dbagent.attribute.search(attribute, digest, limit=limit, offset=offset)
+    res = dbagent.attribute.search(attribute, attribute_digest, limit=limit, offset=offset)
     res["items"] = [x.digest for x in res["items"]]
     return JSONResponse(res)
 
 
 
 @seqcol_router.get(
-    "/collection2/{digest}",
+    "/collection2/{collection_digest}",
     summary="Retrieve a sequence collection",
     tags=["Retrieving sequence collections"],
+    include_in_schema=False,
 )
 async def collection2(
     schenge=Depends(get_schenge),
-    digest: str = example_digest,
+    collection_digest: str = example_digest,
     level: Union[int, None] = None,
     collated: bool = True,
 ):
@@ -138,7 +182,7 @@ async def collection2(
             detail="Error: recursion > 1 disabled. Use the /refget server to retrieve sequences.",
         )
     try:
-        csc = schenge.retrieve(digest, reclimit=level - 1)
+        csc = schenge.retrieve(collection_digest, reclimit=level - 1)
     except henge.NotFoundException as e:
         _LOGGER.debug(e)
         raise HTTPException(
@@ -165,20 +209,20 @@ async def collection2(
 
 
 @seqcol_router.get(
-    "/comparison/{digest1}/{digest2}",
+    "/comparison/{collection_digest1}/{collection_digest2}",
     summary="Compare two sequence collections hosted on the server",
     tags=["Comparing sequence collections"],
 )
 async def compare_2_digests(
     dbagent=Depends(get_dbagent),
-    digest1: str = example_digest_hg38,
-    digest2: str = example_digest_hg38_primary,
+    collection_digest1: str = example_digest_hg38,
+    collection_digest2: str = example_digest_hg38_primary,
 ):
     _LOGGER.info("Compare called")
     result = {}
-    result["digests"] = {"a": digest1, "b": digest2}
+    result["digests"] = {"a": collection_digest1, "b": collection_digest2}
     try:
-        result.update(dbagent.compare_digests(digest1, digest2))
+        result.update(dbagent.compare_digests(collection_digest1, collection_digest2))
     except henge.NotFoundException as e:
         _LOGGER.debug(e)
         raise HTTPException(
@@ -191,20 +235,21 @@ async def compare_2_digests(
 
 
 @seqcol_router.get(
-    "/comparison2/{digest1}/{digest2}",
+    "/comparison2/{collection_digest1}/{collection_digest2}",
     summary="Compare two sequence collections hosted on the server",
     tags=["Comparing sequence collections"],
+    include_in_schema=False,
 )
 async def compare_2_digests2(
     schenge=Depends(get_schenge),
-    digest1: str = example_digest_hg38,
-    digest2: str = example_digest_hg38_primary,
+    collection_digest1: str = example_digest_hg38,
+    collection_digest2: str = example_digest_hg38_primary,
 ):
     _LOGGER.info("Compare called")
     result = {}
-    result["digests"] = {"a": digest1, "b": digest2}
+    result["digests"] = {"a": collection_digest1, "b": collection_digest2}
     try:
-        result.update(schenge.compare_digests(digest1, digest2))
+        result.update(schenge.compare_digests(collection_digest1, collection_digest2))
     except henge.NotFoundException as e:
         _LOGGER.debug(e)
         raise HTTPException(
@@ -215,24 +260,29 @@ async def compare_2_digests2(
 
 
 @seqcol_router.post(
-    "/comparison/{digest1}",
+    "/comparison/{collection_digest1}",
     summary="Compare a local sequence collection to one on the server",
     tags=["Comparing sequence collections"],
 )
 async def compare_1_digest(
-    schenge=Depends(get_schenge), digest1: str = example_digest_hg38, B: dict = example_hg38_sc
+    schenge=Depends(get_schenge), collection_digest1: str = example_digest_hg38, B: dict = example_hg38_sc
 ):
-    _LOGGER.info(f"digest1: {digest1}")
+    _LOGGER.info(f"digest1: {collection_digest1}")
     _LOGGER.info(f"B: {B}")
-    A = schenge.retrieve(digest1, reclimit=1)
+    A = schenge.retrieve(collection_digest1, reclimit=1)
     return JSONResponse(schenge.compat_all(A, B))
 
 
 
 @seqcol_router.get(
-    "/list-by-offset",
-    summary="List sequence collections on the server",
-    tags=["Listing sequence collections"],
+    "/list",
+    summary="List sequence collections on the server, paged by offset",
+    tags=["Discovering data"],
+)
+@seqcol_router.get(
+    "/list/collections",
+    summary="List sequence collections on the server, paged by offset",
+    tags=["Discovering data"],
 )
 async def list_collections_by_offset(
     dbagent=Depends(get_dbagent), limit: int = 100, offset: int = 0
@@ -243,13 +293,26 @@ async def list_collections_by_offset(
 
 
 @seqcol_router.get(
-    "/list",
-    summary="List sequence collections on the server",
-    tags=["Listing sequence collections"],
+    "/list-by-cursor",
+    summary="List sequence collections on the server, paged by cursor",
+    tags=["Discovering data"],
 )
 async def list_collections_by_token(
     dbagent=Depends(get_dbagent), page_size: int = 100, cursor: str = None
 ):
     res = dbagent.seqcol.list(page_size=page_size, cursor=cursor)
+    res["items"] = [x.digest for x in res["items"]]
+    return JSONResponse(res)
+
+
+@seqcol_router.get(
+    "/list/pangenomes",
+    summary="List pangenomes on the server, paged by offset",
+    tags=["Discovering data"],
+)
+async def list_cpangenomes_by_offset(
+    dbagent=Depends(get_dbagent), limit: int = 100, offset: int = 0
+):
+    res = dbagent.pangenome.list_by_offset(limit=limit, offset=offset)
     res["items"] = [x.digest for x in res["items"]]
     return JSONResponse(res)

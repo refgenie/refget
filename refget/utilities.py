@@ -399,3 +399,43 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
 
 
     return seqcol
+
+
+
+def build_pangenome_model(pangenome_obj: dict) -> Pangenome:
+    
+        # First add in the FASTA files individually, and build a dictionary of the results
+        # pangenome_obj = {}
+        # for s in prj.samples:
+        #     file_path = os.path.join(s.fasta, fasta_root)
+        #     f = os.path.join(fa_root, demo_file)
+        #     print("Fasta file to be loaded: {}".format(f))
+        #     pangenome_obj[s.sample_name] = self.seqcol.add_from_fasta_file(f)
+
+        # Now create a CollectionNamesAttr object
+        d=sha512t24u_digest(canonical_str(list(pangenome_obj.keys())))
+        v = ",".join(list(pangenome_obj.keys()))
+        cna = CollectionNamesAttr(
+            digest = d,
+            value = v)
+
+        # Now create a Collection object
+        collections_digest = sha512t24u_digest(canonical_str([x.digest for x in pangenome_obj.values()]))
+        collections_digest
+
+        pg_to_digest = {
+            "names": cna.digest,
+            "collections": collections_digest,
+        }
+
+        pangenome_digest = sha512t24u_digest(canonical_str(pg_to_digest))
+        pangenome_digest
+
+        p = Pangenome(
+                digest=pangenome_digest,
+                names=cna,
+                collections=list(pangenome_obj.values()),
+                collections_digest=collections_digest)
+
+        return p
+
