@@ -5,16 +5,6 @@ import pytest
 import oyaml as yaml
 from refget.const import _schema_path
 
-# DEMO_FILES = [
-#     "demo0.fa",
-#     "demo1.fa.gz",
-#     "demo2.fa",
-#     "demo3.fa",
-#     "demo4.fa",
-#     "demo5.fa.gz",
-#     "demo6.fa",
-# ]
-
 DEMO_FILES = [
     "base.fa",
     "different_names.fa",
@@ -23,7 +13,6 @@ DEMO_FILES = [
     "subset.fa",
     "swap_wo_coords.fa",
 ]
-
 
 def ly(n, data_path):
     """Load YAML"""

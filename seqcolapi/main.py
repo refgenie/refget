@@ -20,7 +20,7 @@ from .const import *
 from .scconf import RDBDict
 from .examples import *
 
-from refget import SeqColHenge, format_itemwise
+from refget import format_itemwise
 from yacman import select_config, FutureYAMLConfigManager as YAMLConfigManager
 
 
