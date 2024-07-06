@@ -279,6 +279,11 @@ async def compare_1_digest(
     summary="List sequence collections on the server, paged by offset",
     tags=["Discovering data"],
 )
+@seqcol_router.get(
+    "/list/collections",
+    summary="List sequence collections on the server, paged by offset",
+    tags=["Discovering data"],
+)
 async def list_collections_by_offset(
     dbagent=Depends(get_dbagent), limit: int = 100, offset: int = 0
 ):
@@ -296,5 +301,18 @@ async def list_collections_by_token(
     dbagent=Depends(get_dbagent), page_size: int = 100, cursor: str = None
 ):
     res = dbagent.seqcol.list(page_size=page_size, cursor=cursor)
+    res["items"] = [x.digest for x in res["items"]]
+    return JSONResponse(res)
+
+
+@seqcol_router.get(
+    "/list/pangenomes",
+    summary="List pangenomes on the server, paged by offset",
+    tags=["Discovering data"],
+)
+async def list_cpangenomes_by_offset(
+    dbagent=Depends(get_dbagent), limit: int = 100, offset: int = 0
+):
+    res = dbagent.pangenome.list_by_offset(limit=limit, offset=offset)
     res["items"] = [x.digest for x in res["items"]]
     return JSONResponse(res)

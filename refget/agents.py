@@ -196,6 +196,23 @@ class PangenomeAgent(object):
         p = build_pangenome_model(pangenome_obj)
         return self.add(p)
 
+    def list_by_offset(self, limit=50, offset=0):
+        with Session(self.engine) as session:
+            list_stmt =  select(Pangenome).offset(offset).limit(limit)
+            cnt_stmt = select(func.count(Pangenome.digest))
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqcols = list_res.all()
+            return {
+                "count": count,
+                "limit": limit,
+                "offset": offset,
+                "items": seqcols
+            }
+    
+
+
 
 class AttributeAgent(object):
     def __init__(self, engine):
