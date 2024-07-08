@@ -1,5 +1,5 @@
 import { Link, useLoaderData, useParams } from "react-router-dom"
-import { AttributeValue, LinkedAttributeDigest } from '../components/Attributes.jsx'
+import { AttributeValue, LinkedAttributeDigest } from '../components/ValuesAndDigests.jsx'
 
 
 import { API_BASE } from '../utilities.jsx'
