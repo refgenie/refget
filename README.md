@@ -2,11 +2,15 @@
 
 ![Run pytests](https://github.com/pepkit/looper/workflows/Run%20pytests/badge.svg)
 
-The refget package provides a Python interface to both remote and local use of the refget protocol.
+User-facing documentation is hosted at [refgenie.org/refget](https://refgenie.org/refget/).
 
-This package provides clients and functions for both refget sequences and refget sequence collections (seqcol).
+In this repository you will find:
 
-Documentation is hosted at [refgenie.org/refget](https://refgenie.org/refget/).
+1. `/refget`: The `refget` package, which provides a Python interface to both remote and local use of the refget protocol. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
+2. `/seqcolapi`: Sequence collections API software, a fastAPI wrapper, built on top of the `refget` package. It provides a bare-bones Sequence Collections API service.
+3. `/actions`:  GitHub Actions for demo server instance 
+4. `/deployment`: Server configurations for demo instances and public deployed instances.
+5. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
 
 ## Testing
 
@@ -14,7 +18,7 @@ Documentation is hosted at [refgenie.org/refget](https://refgenie.org/refget/).
 
 - `pytest` to test `refget` package, local unit tests
 
-### Compliance testing 
+### Compliance testing of Sequence Collections API
 
 Under `/test_api` are compliance tests for a service implementing the sequence collections API. This will test your collection and comparison endpoints to make sure the comparison function is working. 
 
@@ -24,21 +28,26 @@ Under `/test_api` are compliance tests for a service implementing the sequence c
 1. Load the fasta files from the `test_fasta` folder into your API database.
 2. Run `pytest test_api --api_root <API_URL>`, pointing to your URL to test
 
-For example, this will test my remote server instance:
+For example, this will test a remote server instance:
 
 ```
 pytest test_api --api_root https://seqcolapi.databio.org
 ```
 
+## Development and deployment
 
-## Loading up data into an instance
+### Setting up a database connection
 
-### Starting a demo instance 
-
-Use docker to create a local postgres database like this:
+First populate environment variables to configure a database connection. Choose one of these:
 
 ```
-source deployment/local_demo/local_demo.env 
+source deployment/local_demo/local_demo.env # local demo (see below to create the database using docker)
+source deployment/seqcolapi.databio.org/production.env # connect to production database
+```
+
+If you're using the `local_demo`, then use docker to create a local postgres database like this:
+
+```
 docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
   -e POSTGRES_PASSWORD \
   -e POSTGRES_USER \
@@ -47,62 +56,22 @@ docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
   postgres:16.3
 ```
 
-### Loading files
-
-If you need to load, then you have to install either `gc_count` (fast) or `pyfaidx` (slow).
-
-You can load them like:
+If you need to load test data into your server, then you have to install either `gc_count` (fast) or `pyfaidx` (slow). You can load test data like this:
 
 ```
 python load_demo_data.py
-```
-
-Or:
-
-```
-refget add-fasta path/to/fasta.fa
-```
-
-
-For pangenome: 
-
-python load_pangenome_reference.py ../seqcolapi/analysis/data/demo.csv test_fasta
-
-#### Adding data to production service
-
-Just first source the production credentials, then load the data:
-
-```
-source deployment/seqcolapi.databio.org/production.env
-python load_demo_data.py
+# refget add-fasta path/to/fasta.fa  # This could be a way in the future...
 ```
 
 --- 
 
-# seqcolapi
-
-This repository contains:
-
-1. Sequence collections API software (the `seqcolapi` package). This package is based on the `refget` package. It simply provides an wrapper to implement the Sequence Collections API.
-2. Configuration and GitHub Actions for demo server instance ([deployment subfolder](/deployment)).
-
 ## Instructions
 
-### Run locally for development
-
-First, configure env vars:
-- To run a local server with a **local database**:`source deployment/localhost/dev_local.env`
-- To run a local server with **the production database**:`source deployment/seqcolapi.databio.org/production.env`
-
-```
-source deployment/local_demo/local_demo.env
-```
-
-
-Then, run service:
+Run the demo `seqcolapi` service like this:
 
 ```
 uvicorn seqcolapi.main:app --reload --port 8100
+
 ```
 
 ### Running with docker
