@@ -16,8 +16,13 @@ import refget
 #     "demo6.fa",
 # ]
 
-from .conftest import DEMO_FILES, COLLECTION_TESTS, COMPARISON_TESTS, ATTRIBUTE_TESTS, ATTRIBUTE_LIST_TESTS
-
+from .conftest import (
+    DEMO_FILES,
+    COLLECTION_TESTS,
+    COMPARISON_TESTS,
+    ATTRIBUTE_TESTS,
+    ATTRIBUTE_LIST_TESTS,
+)
 
 
 # This is optional, so we could turn off for a compliance test
@@ -30,11 +35,14 @@ response_file = "tests/demo0_collection.json"
 
 print("Testing Compliance")
 
+
 def read_url_old(url):
     import yaml
+
     print("Reading URL: {}".format(url))
     from urllib.request import urlopen
     from urllib.error import HTTPError
+
     try:
         print("here1")
         response = urlopen(url)
@@ -48,9 +56,11 @@ def read_url_old(url):
     print("here")
     return yaml.safe_load(text)
 
+
 def read_url(url):
     import requests
     import yaml
+
     try:
         response = requests.get(url, timeout=1)
     except requests.exceptions.ConnectionError:
@@ -58,8 +68,6 @@ def read_url(url):
         raise e
     data = response.content
     return yaml.safe_load(data)
-
-
 
 
 def check_collection(api_root, demo_file, response_file):
@@ -101,13 +109,17 @@ def check_comparison(api_root, response_file):
     with open(response_file) as fp:
         correct_answer = json.load(fp)
 
-    url = f"{api_root}/comparison/{correct_answer['digests']['a']}/{correct_answer['digests']['b']}"
+    url = (
+        f"{api_root}/comparison/{correct_answer['digests']['a']}/{correct_answer['digests']['b']}"
+    )
     res = requests.get(url)
     try:
         server_answer = json.loads(res.content)
         print("Server answer:", refget.canonical_str(server_answer))
         print("Correct answer:", refget.canonical_str(correct_answer))
-        assert refget.canonical_str(server_answer) == refget.canonical_str(correct_answer), f"Comparison endpoint failed: {url}. File: {response_file}"
+        assert refget.canonical_str(server_answer) == refget.canonical_str(
+            correct_answer
+        ), f"Comparison endpoint failed: {url}. File: {response_file}"
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
         assert False, f"Comparison endpoint failed: {url}"
@@ -118,10 +130,13 @@ def check_attribute(api_root, attribute_type, attribute, correct_value):
     res = requests.get(url)
     try:
         server_answer = json.loads(res.content)
-        assert server_answer == correct_value, f"Attribute endpoint failed: {url}. Answer: {correct_value}"
+        assert (
+            server_answer == correct_value
+        ), f"Attribute endpoint failed: {url}. Answer: {correct_value}"
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
         assert False, f"Attribute endpoint failed: {url}"
+
 
 def check_attribute_list(api_root, attribute_type, attribute, response_file):
     with open(response_file) as fp:
@@ -134,10 +149,13 @@ def check_attribute_list(api_root, attribute_type, attribute, response_file):
         print("Server answer:", server_answer)
         for digest in correct_answer["items"]:
             print("Checking digest:", digest)
-            assert digest in server_answer["items"], f"Attribute endpoint failed: {url}. Missing: {digest}"
+            assert (
+                digest in server_answer["items"]
+            ), f"Attribute endpoint failed: {url}. Missing: {digest}"
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
         assert False, f"Attribute endpoint failed: {url}"
+
 
 @pytest.mark.require_service
 class TestAPI:

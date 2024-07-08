@@ -7,7 +7,6 @@ from .const import *
 from .utilities import *
 
 
-
 _LOGGER = logging.getLogger(__name__)
 henge.ITEM_TYPE = "_item_type"
 

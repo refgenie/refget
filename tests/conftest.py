@@ -14,6 +14,7 @@ DEMO_FILES = [
     "swap_wo_coords.fa",
 ]
 
+
 def ly(n, data_path):
     """Load YAML"""
     with open(os.path.join(data_path, n), "r") as f:

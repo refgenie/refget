@@ -8,9 +8,9 @@ from refget.models import *
 from refget.agents import *
 
 # A simple argparser to get the PEP and the fa_root
-parser = argparse.ArgumentParser(description='Load a pangenome reference into the database')
-parser.add_argument('pep', help='Path to the PEP file')
-parser.add_argument('fa_root', help='Path to the root of the pangenome fasta files')
+parser = argparse.ArgumentParser(description="Load a pangenome reference into the database")
+parser.add_argument("pep", help="Path to the PEP file")
+parser.add_argument("fa_root", help="Path to the root of the pangenome fasta files")
 args = parser.parse_args()
 
 prj = peppy.Project(args.pep)
@@ -61,4 +61,3 @@ dbc.pangenome.add_from_fasta_pep(prj, fa_root)
 # res
 
 # dbc.pangenome.get()
-

@@ -180,8 +180,10 @@ def parse_fasta(fa_file):
 
 def build_argparser():
     from . import __version__
+
     version_str = f"{__version__} "
     from ubiquerg import VersionInHelpParser
+
     additional_description = "https://refgenie.org/refget"
     banner = f"%(prog)s - a tool for getting sequences by digest"
     parser = VersionInHelpParser(
@@ -194,6 +196,7 @@ def build_argparser():
     add_fasta = subparsers.add_parser("add_fasta", help="Add a fasta file to the database")
     add_fasta.add_argument("fasta_file", help="Path to the fasta file")
     return parser
+
 
 def main():
     parser = build_argparser()

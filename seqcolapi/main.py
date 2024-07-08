@@ -100,35 +100,36 @@ async def service_info():
 app.mount(f"/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
 
 
-def create_globals(scconf: yacman.YAMLConfigManager):
-    """
-    Create global variables for the app to use.
-    """
-    print(scconf)
-    _LOGGER.info(f"Connecting to database... {scconf.exp['database']['host']}")
-    global schenge
+# def create_globals(scconf: yacman.YAMLConfigManager):
+#     """
+#     Create global variables for the app to use.
+#     """
+#     print(scconf)
+#     _LOGGER.info(f"Connecting to database... {scconf.exp['database']['host']}")
+#     global schenge
 
-    pgdb = RDBDict(
-        db_name=scconf.exp["database"]["name"],
-        db_user=scconf.exp["database"]["user"],
-        db_password=scconf.exp["database"]["password"],
-        db_host=scconf.exp["database"]["host"],
-        db_port=scconf.exp["database"]["port"],
-        db_table=scconf.exp["database"]["table"],
-    )
-    _LOGGER.info(f"Using schema: {scconf['schemas']}")
-    schenge = SeqColHenge(
-        database=pgdb,
-        schemas=scconf["schemas"],
-    )
-    return schenge
+#     pgdb = RDBDict(
+#         db_name=scconf.exp["database"]["name"],
+#         db_user=scconf.exp["database"]["user"],
+#         db_password=scconf.exp["database"]["password"],
+#         db_host=scconf.exp["database"]["host"],
+#         db_port=scconf.exp["database"]["port"],
+#         db_table=scconf.exp["database"]["table"],
+#     )
+#     _LOGGER.info(f"Using schema: {scconf['schemas']}")
+#     schenge = SeqColHenge(
+#         database=pgdb,
+#         schemas=scconf["schemas"],
+#     )
+#     return schenge
+
 
 def create_global_dbagent():
     from refget.agents import RefgetDBAgent
+
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent
-
 
 
 def main(injected_args=None):
@@ -145,29 +146,28 @@ def main(injected_args=None):
 
     # _LOGGER = logmuse.logger_via_cli(args, make_root=True)
     _LOGGER.info(f"args: {args}")
-    if "config" in args and args.config is not None:
-        scconf = SeqColConf.from_yaml_file(args.config)
-        create_globals(scconf)
-        app.state.schenge = schenge
-        app.state.dbagent = dbagent
-        port = args.port or scconf.exp["server"]["port"]
-        _LOGGER.info(f"Running on port {port}")
-        uvicorn.run(app, host=scconf.exp["server"]["host"], port=port)
-    else:
-        create_global_dbagent()
-        app.state.dbagent = dbagent
-        _LOGGER.error("Configure by passing -c SEQCOLAPI_CONFIG ")
+    # if "config" in args and args.config is not None:
+    #     scconf = SeqColConf.from_yaml_file(args.config)
+    #     create_globals(scconf)
+    #     app.state.schenge = schenge
+    #     app.state.dbagent = dbagent
+    #     port = args.port or scconf.exp["server"]["port"]
+    #     _LOGGER.info(f"Running on port {port}")
+    #     uvicorn.run(app, host=scconf.exp["server"]["host"], port=port)
+    # else:
+    create_global_dbagent()
+    app.state.dbagent = dbagent
 
 
 if __name__ != "__main__":
     # Entrypoint for running through uvicorn CLI (dev)
-    if os.environ.get("SEQCOLAPI_CONFIG") is not None:
-        _LOGGER.info(f"Loading config from SEQCOLAPI_CONFIG: {os.environ.get('SEQCOLAPI_CONFIG')}")
-        scconf = SeqColConf.from_yaml_file(os.environ.get("SEQCOLAPI_CONFIG"))
-        create_globals(scconf)
-        app.state.schenge = schenge
-        app.state.dbagent = dbagent
-    else:
-        create_global_dbagent()
-        app.state.dbagent = dbagent
-        _LOGGER.error("Configure by setting SEQCOLAPI_CONFIG env var")
+    # if os.environ.get("SEQCOLAPI_CONFIG") is not None:
+    #     _LOGGER.info(f"Loading config from SEQCOLAPI_CONFIG: {os.environ.get('SEQCOLAPI_CONFIG')}")
+    #     scconf = SeqColConf.from_yaml_file(os.environ.get("SEQCOLAPI_CONFIG"))
+    #     create_globals(scconf)
+    #     app.state.schenge = schenge
+    #     app.state.dbagent = dbagent
+    # else:
+    create_global_dbagent()
+    app.state.dbagent = dbagent
+    _LOGGER.error("Configure by setting SEQCOLAPI_CONFIG env var")

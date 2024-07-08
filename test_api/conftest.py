@@ -24,12 +24,16 @@ COMPARISON_TESTS = [
 ]
 
 ATTRIBUTE_TESTS = [
-    ("lengths", "7-_HdxYiRf-AJLBKOTaJUdxXrUkIXs6T", [8,4]),
-    ("names", "Fw1r9eRxfOZD98KKrhlYQNEdSRHoVxAG", ["chrX","chr1","chr2"])
+    ("lengths", "7-_HdxYiRf-AJLBKOTaJUdxXrUkIXs6T", [8, 4]),
+    ("names", "Fw1r9eRxfOZD98KKrhlYQNEdSRHoVxAG", ["chrX", "chr1", "chr2"]),
 ]
 
 ATTRIBUTE_LIST_TESTS = [
-    ("lengths", "cGRMZIb3AVgkcAfNv39RN7hnT5Chk7RX", f"{API_TEST_DIR}/attribute/cGRM.json",)
+    (
+        "lengths",
+        "cGRMZIb3AVgkcAfNv39RN7hnT5Chk7RX",
+        f"{API_TEST_DIR}/attribute/cGRM.json",
+    )
 ]
 
 
@@ -61,8 +65,6 @@ def check_server_is_running(api_root):
     except:
         print("Server is not running.")
         return False
-
-
 
 
 def pytest_configure(config):
