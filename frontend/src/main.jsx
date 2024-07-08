@@ -2,7 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
 
-import compare from './assets/compare.svg'
+import databio_logo from "./assets/logo_databio_long.svg"
+import seqcol_logo from "./assets/seqcol_logo.svg"
 import { useState } from 'react'
 
 import { ToastContainer, toast } from 'react-toastify';
@@ -11,9 +12,13 @@ import 'react-toastify/dist/ReactToastify.css';
 import { CollectionView } from './pages/CollectionView.jsx'
 import { PangenomeView } from './pages/PangenomeView.jsx'
 import { AttributeView } from './pages/AttributeView.jsx'
-import { AttributeValue, LinkedAttributeDigest } from './components/Attributes.jsx'
-import { CollectionList, PangenomeList } from './components/ObjectLists.jsx'
+import { DemoPage } from './pages/DemoPage.jsx'
+import { ComparisonView } from './pages/ComparisonView.jsx'
 
+
+import { AttributeValue, LinkedAttributeDigest } from './components/ValuesAndDigests.jsx'
+import { CollectionList, PangenomeList } from './components/ObjectLists.jsx'
+import { copyToClipboardIcon, copyToClipboard } from "./utilities";
 
 import {
   Outlet,
@@ -42,7 +47,7 @@ const fetchPangenomeLevels = async(digest, level="2", collated=true) => {
 }
 
 const fetchSeqColList = async() => {
-  const url = `${API_BASE}/list/collections?limit=20`
+  const url = `${API_BASE}/list/collections?limit=10&offset=10`
   const url2 = `${API_BASE}/list/pangenomes?limit=5`
   let resps = [
     fetch(url).then((response) => response.json()),
@@ -60,7 +65,8 @@ const fetchCollectionLevels = async(digest) => {
   let url = `${API_BASE}/collection/${digest}?level=1`
   let resps = [
     fetch(url).then((response) => response.json()),
-    fetch(`${API_BASE}/collection/${digest}?level=2`).then((response) => response.json()) 
+    fetch(`${API_BASE}/collection/${digest}?level=2`).then((response) => response.json()),
+    fetch(`${API_BASE}/collection/${digest}?collated=false`).then((response) => response.json()) 
   ]
   return Promise.all(resps)
 }
@@ -80,15 +86,6 @@ const fetchAttribute = async(attribute, digest) => {
   ]
   return Promise.all(resps)
 }
-
-const LinkedCollectionDigest = ({digest, clipboard=true}) => {
-  return (<>
-    <Link to={`/collection/${digest}`} className="font-monospace">{digest}</Link> 
-    { clipboard ? <img src={copyToClipboardIcon} alt="Copy" width="30" className="copy-to-clipboard mx-2" onClick={ () => navigator.clipboard.writeText(digest)}/> : "" }
-    </>
-  )
-}
-
 
 
 
@@ -117,88 +114,6 @@ const Level2Collection = ({collection}) => {
 
 
 
-const ComparisonView =() => { 
-  const comparison = useLoaderData()
-  console.log("ComparisonView", comparison)
-  const comp_str = JSON.stringify(comparison, null, 2)
-  
-  let api_url = `${API_BASE}/comparison/${comparison.digests.a}/${comparison.digests.b}`
-
-  return (
-    <div>
-      <h1>Comparison</h1>
-      <div>
-        API URL: <Link to={api_url}>{api_url}</Link><br/>
-        <label className="col-sm-4 fw-bold">Digest A:</label>
-        <LinkedCollectionDigest digest={comparison.digests.a}/>
-        </div>
-      <div>
-        <label className="col-sm-4 fw-bold">Digest B:</label>
-        <LinkedCollectionDigest digest={comparison.digests.b}/>
-      </div>
-      <h3>Attributes</h3>
-      <div className="row mb-3">
-      <label className="col-sm-4 fw-bold">Found in collection A only:</label>
-      {comparison.attributes.a_only.join(', ')}
-      </div>
-      <div className="row mb-3">
-      <label className="col-sm-4 fw-bold">Found in both:</label>
-      {comparison.attributes.a_and_b.join(', ')}
-      </div>
-      
-
-      <h3>Array Elements</h3>
-      <div className="row mb-3">
-      <label className="col-sm-4 fw-bold">Found in both:</label>
-      {Object.entries(comparison.array_elements.a_and_b).map(([key, value]) => (
-        <div className="row mb-3">
-          <label className="col-sm-4 fw-bold">{key}</label>{value}
-        </div>
-      ))}
-      </div>
-      {comp_str}
-    </div>
-  )
-
-}
-
-const CompareTable = ({seqColList}) => {  
-
-  function buildCompareLinks(seqColList) {
-    let header_cells = [];
-    for (let i = 0; i < seqColList.length; i++) {
-      header_cells.push(<th key={"header_col_"+i} className='rotated-text'><div>{seqColList[i]}</div></th>)
-    }
-    let header_row = <tr><th></th>{header_cells}</tr>;
-
-    let link_rows = [];
-    for (let i = 0; i < seqColList.length; i++) {
-      let link_cells = []
-      link_cells.push(<th className="text-end" key={"header_row_"+i}><Link to={`/collection/${seqColList[i]}`}>{seqColList[i]}</Link></th>)
-      for (let j = 0; j < seqColList.length; j++) {
-        link_cells.push(
-          <td key={i + "vs" + j} className="text-center">{ j == i ? "=" : <Link
-            to={`/comparison/${seqColList[i]}/${seqColList[j]}`}
-            key={`${seqColList[i]}-${seqColList[j]}`}
-          ><img src={compare} alt="Compare" width="50" className="compare"/>
-          </Link>}</td>
-        );
-      }
-      link_rows.push(<tr key={"row_" + i}>{link_cells}</tr>);
-    }
-    let table = <table border="0">
-      <thead>{header_row}</thead>
-      <tbody>{link_rows}</tbody>
-    </table>;
-    return table;
-  }
-
-  return  <>     
-    <h1>Comparison table</h1>
-    {buildCompareLinks(seqColList)}
-  </>
-}
-
 
 
 const Nav = () => {
@@ -206,7 +121,7 @@ const Nav = () => {
     <nav className="navbar navbar-expand-lg py-2 mb-4 border-bottom navbar-light" aria-label="navbar">
       <div className="container">
         <a href="/" className="align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
-        Refget Sequence Collections
+        <img src={seqcol_logo} alt="Refget Sequence Collections" height="40"/> Refget Sequence Collections
         </a>
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <span className="navbar-toggler-icon"></span>
@@ -230,10 +145,22 @@ const Nav = () => {
 }
 
 const App = () => { 
+  const refget_version = "0.5.0"
   return (<>
     <Nav/>
-    <div className="container">
+    <main className="container">
       <Outlet/>
+    </main>
+    <div className="container">
+      <footer className="flex-wrap py-3 my-4 align-top d-flex justify-content-between align-items-center border-top">
+        <div className="d-flex flex-column"><div>
+          <span className="badge rounded-pill bg-primary text-primary bg-opacity-25 border border-primary me-1">refget {refget_version}</span>
+          </div>
+        <div className="d-flex flex-row mt-1 align-items-center">
+          <div className="p-1 bg-success border border-success rounded-circle me-1"></div>
+          Connected</div>
+          </div><div className="ms-auto"><a href="https://databio.org/"><img src={databio_logo} alt="Sheffield Computational Biology Lab" width="200"/></a></div>
+      </footer>
     </div>
     <ToastContainer />
   </>)
@@ -290,19 +217,30 @@ const HomePage = () => {
 
   return (
     <div>
-      <h2>Welcome</h2>
-      <p>Welcome to the Refget Sequence Collections service!
+      <p>Welcome to the Refget Sequence Collections demo service!
         This landing page provides a way to explore the data in the server.
         You can go straight to the API itself using the <b>API Docs</b> link in the title bar.
-        Or, you can check out a few examples below
+        Or, you can check out a few examples below. Here are two easy ways to browse:
       </p>
 
-      <PangenomeExamplesList/>
-      
-      <h3>Example Sequence Collections</h3>
-      <p>Here are some available sequence collections:</p>
-      <CollectionList collections={collections}/>
+      <h5>1. View and compare the demo sequence collections:</h5>
+      <p className="text-muted fs-6">
+        This service includes several small demo collections. This page will show you 
+        comparisons between them:
+      </p>
 
+      <ul>
+        <li><Link to="/demo">Demo of collection comparisons</Link></li>
+      </ul>
+      
+      <h5 className="mt-4">2. Example Sequence Collections from the human pangenome reference consortium available on this server:</h5>
+      <p className="text-muted fs-6">
+        This uses the <span className="font-monospace text-success">/list/collections</span> endpoint,
+        which provides a paged list of all collections hosted by this server.
+      </p>
+
+      <CollectionList collections={collections}/>
+      <PangenomeExamplesList/>
     </div>
   )
 //       <CompareTable seqColList={collections.items}/>
@@ -331,6 +269,10 @@ const router = createBrowserRouter([
         errorElement: <ErrorBoundary />,
         loader: fetchSeqColList
       }, 
+      { 
+        path: "/demo",
+        element: <DemoPage/>
+      },
       {
         path: "/comparison/:digest1/:digest2",
         element: <ComparisonView/>,

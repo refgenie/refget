@@ -11,6 +11,7 @@ In this repository you will find:
 3. `/actions`:  GitHub Actions for demo server instance 
 4. `/deployment`: Server configurations for demo instances and public deployed instances.
 5. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
+6. `/frontend`: a React seqcolapi front-end.
 
 ## Testing
 
@@ -61,22 +62,21 @@ If you need to load test data into your server, then you have to install either 
 ```
 python load_demo_data.py
 # refget add-fasta path/to/fasta.fa  # This could be a way in the future...
+# python load_pangenome_reference.py ../seqcolapi/analysis/data/demo.csv test_fasta  # loads an entire pangenome
 ```
 
---- 
-
-## Instructions
+## Running the seqcolapi API backend
 
 Run the demo `seqcolapi` service like this:
 
 ```
 uvicorn seqcolapi.main:app --reload --port 8100
-
 ```
 
 ### Running with docker
 
 To build the docker file, from the root of this repository:
+
 
 First you build the general-purpose image
 
@@ -115,16 +115,26 @@ docker run --rm -p 8000:8000 --name sccon \
 
 Use github action in this repo which deploys on release, or through manual dispatch.
 
-## To load new data into seqcolapi.databio.org
 
-See instructions in `seqcolapi` repo.
+## Running the frontend
+
+### Local client with local server
+
 ```
-cd analysis
-source ../servers/localhost/dev_local.env
-ipython3
+cd frontend
+npm i
+VITE_API_BASE="http://localhost:8100" npm run dev
 ```
 
-Now run `load_fasta.py`
+### Local client with production server
+
+```
+cd frontend
+npm i
+VITE_API_BASE="https://seqcolapi.databio.org" npm run dev
+```
+
+
 
 ## Deploy to AWS ECS
 

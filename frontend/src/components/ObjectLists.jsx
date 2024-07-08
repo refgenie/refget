@@ -10,7 +10,7 @@ const CollectionList = ({collections}) => {
         <ul>
           {seqColList.items.map((seqCol) => (
             <li key={seqCol}>
-              <Link to={`/collection/${seqCol}`}>{seqCol}</Link>
+              Collection: <Link to={`/collection/${seqCol}`} className="font-monospace">{seqCol}</Link>
             </li>
           ))}
         </ul>

@@ -13,4 +13,17 @@ const LinkedAttributeDigest = ({attribute, digest, clipboard=true}) => {
     )
 }
   
-export { AttributeValue, LinkedAttributeDigest }
+const LinkedCollectionDigest = ({digest, clipboard=true}) => {
+    return (<>
+      <Link to={`/collection/${digest}`} className="font-monospace">{digest}</Link> 
+      { clipboard ? <img src={copyToClipboardIcon} alt="Copy" width="30" className="copy-to-clipboard mx-2" onClick={ () => navigator.clipboard.writeText(digest)}/> : "" }
+      </>
+    )
+  }
+  
+
+export {
+    AttributeValue,
+    LinkedAttributeDigest,
+    LinkedCollectionDigest
+}
