@@ -52,17 +52,6 @@ async def refget(request: Request, sequence_digest: str = example_sequence):
 
 
 @seqcol_router.get(
-    "/attribute/{attribute}/{attribute_digest}",
-    summary="Retrieve a single attribute of a sequence collection",
-    tags=["Retrieving data"],
-)
-async def attribute(
-    dbagent=Depends(get_dbagent), attribute: str = "names", attribute_digest: str = example_digest
-):
-    return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
-
-
-@seqcol_router.get(
     "/collection/{collection_digest}",
     summary="Retrieve a sequence collection",
     tags=["Retrieving data"],
@@ -93,6 +82,18 @@ async def collection(
             status_code=404,
             detail=str(e),
         )
+
+@seqcol_router.get(
+    "/attribute/collection/{attribute}/{attribute_digest}",
+    summary="Retrieve a single attribute of a sequence collection",
+    tags=["Retrieving data"],
+)
+async def attribute(
+    dbagent=Depends(get_dbagent), attribute: str = "names", attribute_digest: str = example_digest
+):
+    return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
+
+
 
 
 @seqcol_router.get(
@@ -134,24 +135,6 @@ async def pangenome(
             detail=str(e),
         )
 
-
-
-@seqcol_router.get(
-    "/list/collections/{attribute}/{attribute_digest}",
-    summary="List sequence collections that contain a given attribute",
-    tags=["Discovering data"],
-)
-async def attribute_search(
-    dbagent=Depends(get_dbagent),
-    attribute: str = "names",
-    attribute_digest: str = example_digest,
-    limit: int = 100,
-    offset: int = 0,
-):
-    # attr = dbagent.attribute.get(attribute, digest)
-    res = dbagent.attribute.search(attribute, attribute_digest, limit=limit, offset=offset)
-    res["items"] = [x.digest for x in res["items"]]
-    return JSONResponse(res)
 
 
 @seqcol_router.get(
@@ -266,41 +249,64 @@ async def compare_1_digest(
     return JSONResponse(schenge.compat_all(A, B))
 
 
-@seqcol_router.post(
-    "/list/attributes/{attribute}",
-    tags=["Discovering data"],
-)
-async def list_attributes(
-    dbagent=Depends(get_dbagent), attribute: str = "names", limit: int = 100, offset: int = 0
-):
-    res = dbagent.attribute.list(attribute, limit=limit, offset=offset)
-    res["items"] = [x.digest for x in res["items"]]
-    return JSONResponse(res)
-
 
 @seqcol_router.get(
     "/list/collections",
-    summary="List sequence collections on the server, paged by offset",
+    summary="List sequence collections on the server",
     tags=["Discovering data"],
 )
 async def list_collections_by_offset(
-    dbagent=Depends(get_dbagent), limit: int = 100, offset: int = 0
+    dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
-    res = dbagent.seqcol.list_by_offset(limit=limit, offset=offset)
-    res["items"] = [x.digest for x in res["items"]]
+    res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page*page_size)
+    res["results"] = [x.digest for x in res["results"]]
+    return JSONResponse(res)
+
+
+# @seqcol_router.get(
+#     "/list-by-cursor",
+#     summary="List sequence collections on the server, paged by cursor",
+#     tags=["Discovering data"],
+# )
+# async def list_collections_by_token(
+#     dbagent=Depends(get_dbagent), page_size: int = 100, cursor: str = None
+# ):
+#     res = dbagent.seqcol.list(page_size=page_size, cursor=cursor)
+#     res["results"] = [x.digest for x in res["results"]]
+#     return JSONResponse(res)
+
+
+
+
+
+@seqcol_router.get(
+    "/list/collections/{attribute}/{attribute_digest}",
+    summary="Filtered list of sequence collections that contain a given attribute",
+    tags=["Discovering data"],
+)
+async def attribute_search(
+    dbagent=Depends(get_dbagent),
+    attribute: str = "names",
+    attribute_digest: str = example_attribute_digest,
+    page_size: int = 100,
+    page: int = 0,
+):
+    # attr = dbagent.attribute.get(attribute, digest)
+    res = dbagent.attribute.search(attribute, attribute_digest, limit=page_size, offset=page*page_size)
+    res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
 
 @seqcol_router.get(
-    "/list-by-cursor",
-    summary="List sequence collections on the server, paged by cursor",
+    "/list/attributes/{attribute}",
+    summary="List attributes on the server",
     tags=["Discovering data"],
 )
-async def list_collections_by_token(
-    dbagent=Depends(get_dbagent), page_size: int = 100, cursor: str = None
+async def list_attributes(
+    dbagent=Depends(get_dbagent), attribute: str = "names", page_size: int = 100, page: int = 0
 ):
-    res = dbagent.seqcol.list(page_size=page_size, cursor=cursor)
-    res["items"] = [x.digest for x in res["items"]]
+    res = dbagent.attribute.list(attribute, limit=page_size, offset=page*page_size)
+    res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
 
@@ -310,8 +316,11 @@ async def list_collections_by_token(
     tags=["Discovering data"],
 )
 async def list_cpangenomes_by_offset(
-    dbagent=Depends(get_dbagent), limit: int = 100, offset: int = 0
+    dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
-    res = dbagent.pangenome.list_by_offset(limit=limit, offset=offset)
-    res["items"] = [x.digest for x in res["items"]]
+    res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page*page_size)
+    res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
+
+
+

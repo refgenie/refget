@@ -128,7 +128,7 @@ class SeqColAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"count": count, "limit": limit, "offset": offset, "items": seqcols}
+            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
 
     def list(self, page_size=100, cursor=None):
         with Session(self.engine) as session:
@@ -237,7 +237,7 @@ class PangenomeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"count": count, "limit": limit, "offset": offset, "items": seqcols}
+            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
 
 
 class AttributeAgent(object):
@@ -264,7 +264,7 @@ class AttributeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"count": count, "limit": limit, "offset": offset, "items": seqcols}
+            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
 
     def search(self, attribute_type, digest, offset=0, limit=50):
         Attribute = ATTR_TYPE_MAP[attribute_type]
@@ -284,7 +284,7 @@ class AttributeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"count": count, "limit": limit, "offset": offset, "items": seqcols}
+            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
 
 
 class RefgetDBAgent(object):
