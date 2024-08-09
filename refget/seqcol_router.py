@@ -30,6 +30,8 @@ async def get_schenge(request: Request):
     return request.app.state.schenge
 
 
+# dbagent is a RefgetDBAgent
+
 async def get_dbagent(request: Request):
     return request.app.state.dbagent
 
@@ -133,11 +135,7 @@ async def pangenome(
         )
 
 
-@seqcol_router.get(
-    "/attribute/{attribute}/{attribute_digest}/list",
-    summary="List sequence collections that contain a given attribute",
-    tags=["Discovering data"],
-)
+
 @seqcol_router.get(
     "/list/collections/{attribute}/{attribute_digest}",
     summary="List sequence collections that contain a given attribute",
@@ -268,11 +266,18 @@ async def compare_1_digest(
     return JSONResponse(schenge.compat_all(A, B))
 
 
-@seqcol_router.get(
-    "/list",
-    summary="List sequence collections on the server, paged by offset",
+@seqcol_router.post(
+    "/list/attributes/{attribute}",
     tags=["Discovering data"],
 )
+async def list_attributes(
+    dbagent=Depends(get_dbagent), attribute: str = "names", limit: int = 100, offset: int = 0
+):
+    res = dbagent.attribute.list(attribute, limit=limit, offset=offset)
+    res["items"] = [x.digest for x in res["items"]]
+    return JSONResponse(res)
+
+
 @seqcol_router.get(
     "/list/collections",
     summary="List sequence collections on the server, paged by offset",
