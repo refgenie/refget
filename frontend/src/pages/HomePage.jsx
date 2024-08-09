@@ -2,15 +2,18 @@ import { PangenomeList } from '../components/ObjectLists.jsx'
 import { CollectionList } from '../components/ObjectLists.jsx'
 import { Link } from "react-router-dom";
 import { useLoaderData } from "react-router-dom";
+import { AttributeList } from '../components/ObjectLists';
+
 
 const HomePage = () => {
     const loaderData = useLoaderData()
     console.log("HomePage loadData ", loaderData)
     const collections = loaderData[0]
     const pangenomes = loaderData[1]
+    const sorted_name_length_pairs = loaderData[2]
   
     const PangenomeExamplesList = () => {
-      if (pangenomes.items[0]) {
+      if (pangenomes.results[0]) {
         return <>
           <h3>Example Pangenomes:</h3>
           <PangenomeList pangenomes={pangenomes}/>
@@ -53,6 +56,14 @@ const HomePage = () => {
           <li><Link to="/hprc">HPRC genomes</Link></li>
         </ul>
         <PangenomeExamplesList/>
+
+        <h5 className="mt-4">4. List of sorted_name_length_pairs on this server:</h5>
+        <p className="text-muted fs-6">
+        The <span className="font-monospace text-success">/list/attributes</span> endpoint lets you retrieve
+        a list of all the values of a particular attribute hosted by this server.
+        </p>
+        <AttributeList attributes={sorted_name_length_pairs}/>
+
 
       </div>
     )

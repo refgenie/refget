@@ -1,14 +1,16 @@
 import { Link } from "react-router-dom"
+import { useLoaderData } from "react-router-dom"
+
 
 // Basic list of Sequence Collections
 const CollectionList = ({collections}) => {
     const seqColList = collections || useLoaderData()[0]
-    console.log("CollectionList", CollectionList)
+    console.log("seqColList", seqColList)
   
     return (<>
       <div>
         <ul>
-          {seqColList.items.map((seqCol) => (
+          {seqColList.results.map((seqCol) => (
             <li key={seqCol}>
               Collection: <Link to={`/collection/${seqCol}`} className="font-monospace">{seqCol}</Link>
             </li>
@@ -17,6 +19,23 @@ const CollectionList = ({collections}) => {
       </div></>
     )
   }
+
+const AttributeList = ({attributes}) => {
+  const attrList = attributes || useLoaderData()[0]
+  console.log("attrList", attrList)
+
+  return (<>
+    <div>
+      <ul>
+        {attrList.results.map((attr) => (
+          <li key={attr}>
+            Attribute: <Link to={`/attribute/sorted_name_length_pairs/${attr}`}>{attr}</Link>
+          </li>
+        ))}
+      </ul>
+    </div></>
+  )
+}
 
 
 // Basic list of Pangenomes
@@ -27,7 +46,7 @@ const PangenomeList = ({pangenomes}) => {
   return (<>
     <div>
       <ul>
-        {pangenomeList.items.map((pangenome) => (
+        {pangenomeList.results.map((pangenome) => (
           <li key={pangenome}>
             <Link to={`/pangenome/${pangenome}`}>{pangenome}</Link>
           </li>
@@ -39,5 +58,5 @@ const PangenomeList = ({pangenomes}) => {
 
 
 
-  export { CollectionList, PangenomeList }
+  export { AttributeList, CollectionList, PangenomeList }
   

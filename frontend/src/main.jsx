@@ -48,11 +48,13 @@ const fetchPangenomeLevels = async(digest, level="2", collated=true) => {
 }
 
 const fetchSeqColList = async() => {
-  const url = `${API_BASE}/list/collections?limit=10&offset=10`
-  const url2 = `${API_BASE}/list/pangenomes?limit=5`
+  const url = `${API_BASE}/list/collections?page_size=10&page=1`
+  const url2 = `${API_BASE}/list/pangenomes?page_size=5`
+  const url3 = `${API_BASE}/list/attributes/sorted_name_length_pairs?page_size=5`
   let resps = [
     fetch(url).then((response) => response.json()),
-    fetch(url2).then((response) => response.json())
+    fetch(url2).then((response) => response.json()),
+    fetch(url3).then((response) => response.json())
   ]
   return Promise.all(resps)
 }
@@ -79,8 +81,8 @@ const fecthComparison = async(digest1, digest2) => {
 }
 
 const fetchAttribute = async(attribute, digest) => {
-  const url = `${API_BASE}/attribute/${attribute}/${digest}/list`
-  const url2 = `${API_BASE}/attribute/${attribute}/${digest}`
+  const url = `${API_BASE}/list/collections/${attribute}/${digest}`
+  const url2 = `${API_BASE}/attribute/collection/${attribute}/${digest}`
   let resps = [
     fetch(url).then((response) => response.json()),
     fetch(url2).then((response) => response.json())
@@ -93,9 +95,9 @@ const fetchAttribute = async(attribute, digest) => {
 const Level1Collection = ({collection}) => {
   return (
     <div>
-      Names: <Link to={`/attribute/names/${collection.names}`}>{collection.names}</Link><br/>
-      Lengths: <Link to={`/attribute/lengths/${collection.lengths}`}>{collection.lengths}</Link><br/>
-      Sequences: <Link to={`/attribute/sequences/${collection.sequences}`}>{collection.sequences}</Link><br/>
+      Names: <Link to={`/attribute/collection/names/${collection.names}`}>{collection.names}</Link><br/>
+      Lengths: <Link to={`/attribute/collection/lengths/${collection.lengths}`}>{collection.lengths}</Link><br/>
+      Sequences: <Link to={`/attribute/collection/sequences/${collection.sequences}`}>{collection.sequences}</Link><br/>
     </div>
   )
 }
@@ -185,7 +187,7 @@ const CollectionTable = ({collections}) => {
       </tr>
     </thead>
     <tbody>
-    {seqColList["items"].map((collection) => (
+    {seqColList["results"].map((collection) => (
       <tr key={collection}>
         <td><LinkedCollectionDigest digest={collection.digest} clipboard={false}/></td>
         <td className="tiny mx-2"><LinkedAttributeDigest attribute="names" digest={collection.names_digest} clipboard={false}/></td>

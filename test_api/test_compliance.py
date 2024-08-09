@@ -126,7 +126,7 @@ def check_comparison(api_root, response_file):
 
 
 def check_attribute(api_root, attribute_type, attribute, correct_value):
-    url = f"{api_root}/attribute/{attribute_type}/{attribute}"
+    url = f"{api_root}/attribute/collection/{attribute_type}/{attribute}"
     res = requests.get(url)
     try:
         server_answer = json.loads(res.content)
@@ -138,19 +138,19 @@ def check_attribute(api_root, attribute_type, attribute, correct_value):
         assert False, f"Attribute endpoint failed: {url}"
 
 
-def check_attribute_list(api_root, attribute_type, attribute, response_file):
+def check_list_collections_by_attribute(api_root, attribute_type, attribute, response_file):
     with open(response_file) as fp:
         correct_answer = json.load(fp)
 
-    url = f"{api_root}/attribute/{attribute_type}/{attribute}/list"
+    url = f"{api_root}/list/collections/{attribute_type}/{attribute}"
     res = requests.get(url)
     try:
         server_answer = json.loads(res.content)
         print("Server answer:", server_answer)
-        for digest in correct_answer["items"]:
+        for digest in correct_answer["results"]:
             print("Checking digest:", digest)
             assert (
-                digest in server_answer["items"]
+                digest in server_answer["results"]
             ), f"Attribute endpoint failed: {url}. Missing: {digest}"
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
