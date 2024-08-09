@@ -6,7 +6,7 @@ import { CollectionList } from '../components/ObjectLists.jsx'
 const AttributeView = () => { 
     const content = useLoaderData()
     const { attribute, digest } = useParams()
-    const api_url = `${API_BASE}/attribute/${attribute}/${digest}`
+    const api_url = `${API_BASE}/attribute/collection/${attribute}/${digest}`
     const api_url_list = `${API_BASE}/list/collections/${attribute}/${digest}`
     let results = content[0]
     let attribute_value = content[1]
