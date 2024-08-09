@@ -10,7 +10,7 @@ const HomePage = () => {
     const pangenomes = loaderData[1]
   
     const PangenomeExamplesList = () => {
-      if (pangenomes.items[0]) {
+      if (pangenomes.results[0]) {
         return <>
           <h3>Example Pangenomes:</h3>
           <PangenomeList pangenomes={pangenomes}/>

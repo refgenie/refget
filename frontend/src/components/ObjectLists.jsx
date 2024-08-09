@@ -8,7 +8,7 @@ const CollectionList = ({collections}) => {
     return (<>
       <div>
         <ul>
-          {seqColList.items.map((seqCol) => (
+          {seqColList.results.map((seqCol) => (
             <li key={seqCol}>
               Collection: <Link to={`/collection/${seqCol}`} className="font-monospace">{seqCol}</Link>
             </li>
@@ -27,7 +27,7 @@ const PangenomeList = ({pangenomes}) => {
   return (<>
     <div>
       <ul>
-        {pangenomeList.items.map((pangenome) => (
+        {pangenomeList.results.map((pangenome) => (
           <li key={pangenome}>
             <Link to={`/pangenome/${pangenome}`}>{pangenome}</Link>
           </li>

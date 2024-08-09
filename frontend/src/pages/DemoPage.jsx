@@ -21,6 +21,7 @@ function DemoPage() {
             <th>digest</th>
           </tr>
         </thead>
+        <tbody>
         {Object.keys(demo_seqcol_digests).map((property) => {
           return (
             <tr key={demo_seqcol_digests[property]}>
@@ -29,6 +30,7 @@ function DemoPage() {
             </tr>
           )
         })}
+        </tbody>
       </table>
       <CompareTable seqColList={Object.values(demo_seqcol_digests)}/>
     </div>
