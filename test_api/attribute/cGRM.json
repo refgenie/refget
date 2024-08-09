@@ -1,8 +1,10 @@
 {
-    "count": 4,
-    "limit": 100,
-    "offset": 0,
-    "items": [
+  "pagination": {
+    "total": 4,
+    "page_size": 100,
+    "page": 0
+  },
+    "results": [
       "fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32",
       "TKB7n_14iKSFjljBA-TSVjeYpxPQe0-k",
       "E6zGtGuc8wKYmCMw5gaLW3ppyXsoO6p4",
