@@ -1,10 +1,21 @@
-from .utilities import sha512t24u_digest_bytes
+import pyfaidx
+import json
+
+from typing import Optional, Callable, Union
+
+PYFAIDX_INSTALLED = True
+
+def canonical_str(item: dict) -> bytes:
+    """Convert a dict into a canonical string representation"""
+    return json.dumps(
+        item, separators=(",", ":"), ensure_ascii=False, allow_nan=False, sort_keys=True
+    ).encode()
 
 
 def fasta_obj_to_seqcol(
     fa_object: pyfaidx.Fasta,
+    digest_function: Callable[[str], str],
     verbose: bool = True,
-    digest_function: Callable[[str], str] = sha512t24u_digest_bytes,
 ) -> dict:
     """
     Given a fasta object, return a CSC (Canonical Sequence Collection object)
@@ -12,7 +23,9 @@ def fasta_obj_to_seqcol(
     # CSC = SeqColArraySet
     # Or equivalently, a "Level 1 SeqCol"
 
-    CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": []}
+    CSC = {"lengths": [], "names": [], "sequences": [], 
+        "sorted_name_length_pairs": [],
+        "name_length_pairs": []}
     seqs = fa_object.keys()
     nseqs = len(seqs)
     print(f"Found {nseqs} chromosomes")
@@ -24,11 +37,13 @@ def fasta_obj_to_seqcol(
         seq_length = len(seq)
         seq_name = fa_object[k].name
         seq_digest = "SQ." + digest_function(seq.upper())
-        snlp = {"length": seq_length, "name": seq_name}  # sorted_name_length_pairs
-        snlp_digest = digest_function(canonical_str(snlp))
+        nlp = {"length": seq_length, "name": seq_name}  # sorted_name_length_pairs
+        snlp_object = canonical_str(nlp)
+        snlp_digest = digest_function(canonical_str(nlp))
         CSC["lengths"].append(seq_length)
         CSC["names"].append(seq_name)
-        CSC["sorted_name_length_pairs"].append(snlp_digest)
+        CSC["sorted_name_length_pairs"].append(snlp_object)
+        CSC["name_length_pairs"].append(nlp)
         CSC["sequences"].append(seq_digest)
         i += 1
     CSC["sorted_name_length_pairs"].sort()

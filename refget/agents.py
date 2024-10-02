@@ -23,6 +23,8 @@ ATTR_TYPE_MAP = {
     "names": NamesAttr,
     "lengths": LengthsAttr,
     "sorted_name_length_pairs": SortedNameLengthPairsAttr,
+    "name_length_pairs": NameLengthPairsAttr,
+    "sorted_sequences": SortedSequencesAttr,
 }
 
 
@@ -47,25 +49,21 @@ class SeqColAgent(object):
         self.engine = engine
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format: str = "level2") -> SequenceCollection:
+    def get(self, digest: str, return_format: str = "level2", attribute: str = None) -> SequenceCollection:
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
             seqcol = results.one_or_none()
             if not seqcol:
                 raise ValueError(f"SequenceCollection with digest '{digest}' not found")
-            if return_format == "level2":
+            if attribute:  
+                return getattr(seqcol, attribute).value
+            elif return_format == "level2":
                 return seqcol.level2()
             elif return_format == "level1":
                 return seqcol.level1()
             elif return_format == "itemwise":
-                l2 = {
-                    "names": seqcol.names.value.split(","),
-                    "lengths": [int(x) for x in seqcol.lengths.value.split(",")],
-                    "sequences": seqcol.sequences.value.split(","),
-                    "sorted_name_length_pairs": seqcol.sorted_name_length_pairs.value.split(","),
-                }
-                return format_itemwise(l2)
+                return seqcol.itemwise()
             else:
                 return seqcol
 
@@ -83,10 +81,17 @@ class SeqColAgent(object):
                 if not names:
                     names = NamesAttr(**seqcol.names.model_dump())
                     session.add(names)
+
                 sequences = session.get(SequencesAttr, seqcol.sequences.digest)
                 if not sequences:
                     sequences = SequencesAttr(**seqcol.sequences.model_dump())
                     session.add(sequences)
+
+                sorted_sequences = session.get(SortedSequencesAttr, seqcol.sorted_sequences.digest)
+                if not sorted_sequences:
+                    sorted_sequences = SortedSequencesAttr(**seqcol.sorted_sequences.model_dump())
+                    session.add(sorted_sequences)
+
                 lengths = session.get(LengthsAttr, seqcol.lengths.digest)
                 if not lengths:
                     lengths = LengthsAttr(**seqcol.lengths.model_dump())
@@ -99,16 +104,28 @@ class SeqColAgent(object):
                         **seqcol.sorted_name_length_pairs.model_dump()
                     )
                     session.add(sorted_name_length_pairs)
+                name_length_pairs = session.get(
+                    NameLengthPairsAttr, seqcol.name_length_pairs.digest
+                )
+                if not name_length_pairs:
+                    name_length_pairs = NameLengthPairsAttr(
+                        **seqcol.name_length_pairs.model_dump()
+                    )
+                    session.add(name_length_pairs)
+
                 names.collection.append(csc_simplified)
                 sequences.collection.append(csc_simplified)
+                sorted_sequences.collection.append(csc_simplified)
                 lengths.collection.append(csc_simplified)
                 sorted_name_length_pairs.collection.append(csc_simplified)
+                name_length_pairs.collection.append(csc_simplified)
                 session.commit()
                 return csc_simplified
 
     def add_from_dict(self, seqcol_dict: dict):
         seqcol = build_seqcol_model(seqcol_dict, self.inherent_attrs)
         print(seqcol)
+        print(seqcol.name_length_pairs.value)
         return self.add(seqcol)
 
     def add_from_fasta_file(self, fasta_file_path: str):
@@ -236,9 +253,10 @@ class AttributeAgent(object):
             statement = select(Attribute).where(Attribute.digest == digest)
             results = session.exec(statement)
             response = results.first()
-            response.value = response.value.split(",")
+            # response.value = response.value.split(",")
             if attribute_type == "lengths":
                 response.value = [int(x) for x in response.value]
+
             return response.value
 
     def list(self, attribute_type, offset=0, limit=50):
@@ -348,5 +366,12 @@ class RefgetDBAgent(object):
             result = session.exec(statement)
             statement = delete(SequencesAttr)
             result = session.exec(statement)
+            statement = delete(SortedNameLengthPairsAttr)
+            result = session.exec(statement)
+            statement = delete(NameLengthPairsAttr)
+            result = session.exec(statement)
+            statement = delete(SortedSequencesAttr)
+            result = session.exec(statement)
+            
             session.commit()
             return result1.rowcount

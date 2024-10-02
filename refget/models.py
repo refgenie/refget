@@ -109,12 +109,18 @@ class SequenceCollection(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
     sequences: "SequencesAttr" = Relationship(back_populates="collection")
+    sorted_sequences_digest: str = Field(foreign_key="sortedsequencesattr.digest")
+    sorted_sequences: "SortedSequencesAttr" = Relationship(back_populates="collection")
     names_digest: str = Field(foreign_key="namesattr.digest")
     names: "NamesAttr" = Relationship(back_populates="collection")
     lengths_digest: str = Field(foreign_key="lengthsattr.digest")
     lengths: "LengthsAttr" = Relationship(back_populates="collection")
     sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
     sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(
+        back_populates="collection"
+    )
+    name_length_pairs_digest: str = Field(foreign_key="namelengthpairsattr.digest")
+    name_length_pairs: "NameLengthPairsAttr" = Relationship(
         back_populates="collection"
     )
 
@@ -127,41 +133,73 @@ class SequenceCollection(SQLModel, table=True):
             "lengths": self.lengths_digest,
             "names": self.names_digest,
             "sequences": self.sequences_digest,
+            "sorted_sequences": self.sorted_sequences_digest,
+            "name_length_pairs": self.name_length_pairs_digest,
             "sorted_name_length_pairs": self.sorted_name_length_pairs_digest,
         }
 
     def level2(self):
         return {
-            "lengths": [int(x) for x in self.lengths.value.split(",")],
-            "names": self.names.value.split(","),
-            "sequences": self.sequences.value.split(","),
-            "sorted_name_length_pairs": self.sorted_name_length_pairs.value.split(","),
+            # "lengths": [int(x) for x in self.lengths.value.split(",")],
+            "lengths": self.lengths.value,
+            "names": self.names.value,
+            "sequences": self.sequences.value,
+            "sorted_sequences": self.sorted_sequences.value,
+            "name_length_pairs": self.name_length_pairs.value,
+            "sorted_name_length_pairs": self.sorted_name_length_pairs.value,
         }
 
+    def itemwise(self):
+        list_of_dicts = []
+        for i in range(len(self.lengths.value)):
+            list_of_dicts.append(
+                {
+                    "name": self.names.value[i],
+                    "length": self.lengths.value[i],
+                    "sequence": self.sequences.value[i],
+                }
+            )
+        return list_of_dicts
+
+
+from sqlmodel import JSON, Column
 
 class SequencesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: str
+    value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="sequences")
+
+
+class SortedSequencesAttr(SQLModel, table=True):
+    digest: str = Field(primary_key=True)
+    value: list = Field(sa_column=Column(JSON), default_factory=list)
+    collection: List["SequenceCollection"] = Relationship(back_populates="sorted_sequences")
 
 
 class NamesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: str
+    value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="names")
 
 
 class LengthsAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: str
+    value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="lengths")
 
 
 class SortedNameLengthPairsAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
-    value: str
+    value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(
         back_populates="sorted_name_length_pairs"
+    )
+
+class NameLengthPairsAttr(SQLModel, table=True):
+    digest: str = Field(primary_key=True)
+    value: list = Field(sa_column=Column(JSON), default_factory=list)
+    collection: List["SequenceCollection"] = Relationship(
+        back_populates="name_length_pairs"
     )
 
 

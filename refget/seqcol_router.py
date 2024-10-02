@@ -61,6 +61,7 @@ async def collection(
     collection_digest: str = example_collection_digest,
     level: Union[int, None] = None,
     collated: bool = True,
+    attribute: str = None,
 ):
     if level == None:
         level = 2
@@ -72,6 +73,8 @@ async def collection(
     try:
         if not collated:
             return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="itemwise"))
+        if attribute:
+            return JSONResponse(dbagent.seqcol.get(collection_digest, attribute=attribute))
         if level == 1:
             return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level1"))
         if level == 2:
@@ -89,7 +92,7 @@ async def collection(
     tags=["Retrieving data"],
 )
 async def attribute(
-    dbagent=Depends(get_dbagent), attribute: str = "names", attribute_digest: str = example_digest
+    dbagent=Depends(get_dbagent), attribute: str = "names", attribute_digest: str = example_attribute_digest
 ):
     return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
 
