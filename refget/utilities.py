@@ -1,17 +1,15 @@
-import base64
-import binascii
-import hashlib
 import json
 import logging
 import os
 
 from jsonschema import Draft7Validator
-from typing import Optional, Callable, Union
+from typing import Optional, Callable
 from yacman import load_yaml
 
 from .const import SeqCol
 from .exceptions import *
 from .models import *
+from .digest_functions import sha512t24u_digest, sha512t24u_digest_bytes
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,7 +20,7 @@ try:
     GC_COUNT_INSTALLED = True
 except ImportError:
     GC_COUNT_INSTALLED = False
-    _LOGGER.error("gc_count not installed")
+    _LOGGER.debug("gc_count not installed")
 
 try:
     import pyfaidx
@@ -34,29 +32,6 @@ except ImportError:
     PYFAIDX_INSTALLED = False
 
 
-def trunc512_digest(seq, offset=24) -> str:
-    """Deprecated GA4GH digest function"""
-    digest = hashlib.sha512(seq.encode()).digest()
-    hex_digest = binascii.hexlify(digest[:offset])
-    return hex_digest.decode()
-
-
-def sha512t24u_digest(seq: Union[str, bytes], offset: int = 24) -> str:
-    """GA4GH digest function"""
-    if isinstance(seq, str):
-        seq = seq.encode("utf-8")
-    digest = hashlib.sha512(seq).digest()
-    tdigest_b64us = base64.urlsafe_b64encode(digest[:offset])
-    return tdigest_b64us.decode("ascii")
-
-
-def sha512t24u_digest_bytes(seq: bytes, offset: int = 24) -> str:
-    """GA4GH digest function"""
-    digest = hashlib.sha512(seq).digest()
-    tdigest_b64us = base64.urlsafe_b64encode(digest[:offset])
-    return tdigest_b64us.decode("ascii")
-
-
 def canonical_str(item: dict) -> bytes:
     """Convert a dict into a canonical string representation"""
     return json.dumps(
@@ -64,7 +39,7 @@ def canonical_str(item: dict) -> bytes:
     ).encode()
 
 
-def print_csc(csc: dict) -> str:
+def print_csc(csc: dict):
     """Convenience function to pretty-print a canonical sequence collection"""
     return print(json.dumps(csc, indent=2))
 
@@ -99,7 +74,7 @@ def validate_seqcol(seqcol_obj: SeqCol, schema=None) -> Optional[dict]:
     return True
 
 
-def format_itemwise(csc: SeqCol) -> list:
+def format_itemwise(csc: SeqCol) -> dict:
     """
     Format a SeqCol object into a list of dicts, one per sequence.
     """
@@ -130,7 +105,12 @@ def chrom_sizes_to_seqcol(
     """Given a chrom.sizes file, return a canonical seqcol object"""
     with open(chrom_sizes_file_path, "r") as f:
         lines = f.readlines()
-    CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": []}
+    CSC: dict[str, list] = {
+        "lengths": [],
+        "names": [],
+        "sequences": [],
+        "sorted_name_length_pairs": [],
+    }
     for line in lines:
         line = line.strip()
         if line == "":
@@ -161,7 +141,12 @@ def fasta_file_to_seqcol(
     """
     if GC_COUNT_INSTALLED:  # Use gc_count if available
         fasta_seq_digests = checksum(fasta_file_path)
-        CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": []}
+        CSC = {
+            "lengths": [],
+            "names": [],
+            "sequences": [],
+            "sorted_name_length_pairs": [],
+        }
         for s in fasta_seq_digests:
             seq_name = s.id
             seq_length = s.length
@@ -193,7 +178,9 @@ def build_sorted_name_length_pairs(
     print(obj["names"])
     for i in range(len(obj["names"])):
         print(i)
-        sorted_name_length_pairs.append({"length": obj["lengths"][i], "name": obj["names"][i]})
+        sorted_name_length_pairs.append(
+            {"length": obj["lengths"][i], "name": obj["names"][i]}
+        )
     nl_digests = []  # name-length digests
     for i in range(len(sorted_name_length_pairs)):
         nl_digests.append(digest_function(canonical_str(sorted_name_length_pairs[i])))
@@ -253,7 +240,9 @@ def compare_seqcols(A: SeqCol, B: SeqCol) -> dict:
             res = _compare_elements(A[k], B[k])
             # return_obj["array_elements"]["total"][k] = {"a": len(A[k]), "b": len(B[k])}
             return_obj["array_elements"]["a_and_b"][k] = res["a_and_b"]
-            return_obj["array_elements"]["a_and_b_same_order"][k] = res["a_and_b_same_order"]
+            return_obj["array_elements"]["a_and_b_same_order"][k] = res[
+                "a_and_b_same_order"
+            ]
     return return_obj
 
 
@@ -326,7 +315,9 @@ def explain_flag(flag):
             print(FLAGS[2**e])
 
 
-def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> SequenceCollection:
+def build_seqcol_model(
+    seqcol_obj: dict, inherent_attrs: list = None
+) -> SequenceCollection:
     """
     Given a canonical sequence collection, compute its digest.
 
@@ -373,7 +364,9 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
     print(seqcol_obj2)
     snlp = build_sorted_name_length_pairs(seqcol_obj)
     v = ",".join(snlp)
-    snlp_attr = SortedNameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(snlp)), value=v)
+    snlp_attr = SortedNameLengthPairsAttr(
+        digest=sha512t24u_digest(canonical_str(snlp)), value=v
+    )
 
     seqcol = SequenceCollection(
         digest=seqcol_digest,
@@ -387,7 +380,6 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
 
 
 def build_pangenome_model(pangenome_obj: dict) -> Pangenome:
-
     # First add in the FASTA files individually, and build a dictionary of the results
     # pangenome_obj = {}
     # for s in prj.samples:

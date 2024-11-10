@@ -1,4 +1,6 @@
-from .utilities import sha512t24u_digest_bytes
+from .digest_functions import sha512t24u_digest_bytes
+from typing import Callable
+import pyfaidx
 
 
 def fasta_obj_to_seqcol(
