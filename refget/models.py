@@ -8,9 +8,11 @@
 # look different.
 
 from pydantic import create_model
-from typing import List
+from typing import List, Callable
 from sqlmodel import Field, ARRAY, SQLModel, create_engine, Column, String, Relationship, Integer
 
+
+DigestFunction = Callable[[str | bytes], str]
 # First, get a dict of attributes from the JSON Schema:
 kwargs = {
     "names": (List, []),

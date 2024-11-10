@@ -1,12 +1,13 @@
 from .digest_functions import sha512t24u_digest_bytes
-from typing import Callable
+from .conversion import convert_dict_to_bytes
+from .models import DigestFunction
 import pyfaidx
 
 
 def fasta_obj_to_seqcol(
     fa_object: pyfaidx.Fasta,
     verbose: bool = True,
-    digest_function: Callable[[str], str] = sha512t24u_digest_bytes,
+    digest_function: DigestFunction = sha512t24u_digest_bytes,
 ) -> dict:
     """
     Given a fasta object, return a CSC (Canonical Sequence Collection object)
@@ -14,7 +15,12 @@ def fasta_obj_to_seqcol(
     # CSC = SeqColArraySet
     # Or equivalently, a "Level 1 SeqCol"
 
-    CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": []}
+    CSC: dict[str, list] = {
+        "lengths": [],
+        "names": [],
+        "sequences": [],
+        "sorted_name_length_pairs": [],
+    }
     seqs = fa_object.keys()
     nseqs = len(seqs)
     print(f"Found {nseqs} chromosomes")
@@ -27,7 +33,7 @@ def fasta_obj_to_seqcol(
         seq_name = fa_object[k].name
         seq_digest = "SQ." + digest_function(seq.upper())
         snlp = {"length": seq_length, "name": seq_name}  # sorted_name_length_pairs
-        snlp_digest = digest_function(canonical_str(snlp))
+        snlp_digest = digest_function(convert_dict_to_bytes(snlp))
         CSC["lengths"].append(seq_length)
         CSC["names"].append(seq_name)
         CSC["sorted_name_length_pairs"].append(snlp_digest)
@@ -41,8 +47,6 @@ def parse_fasta(fa_file_path: str):
     """
     Read in a gzipped or not gzipped FASTA file
     """
-    if not PYFAIDX_INSTALLED:
-        raise ImportError("pyfaidx is not installed")
     try:
         return pyfaidx.Fasta(fa_file_path)
     except pyfaidx.UnsupportedCompressionFormat:
