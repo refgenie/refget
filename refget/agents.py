@@ -1,11 +1,13 @@
+import json
 import os
 import logging
+import peppy
+import requests
 
 from sqlmodel import create_engine, select, Session, delete, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
-import peppy
 
 
 from .models import *
@@ -17,31 +19,56 @@ from .utilities import (
     build_pangenome_model,
 )
 from .const import _LOGGER
+from .const import SCHEMA_FILEPATH
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
     "names": NamesAttr,
     "lengths": LengthsAttr,
-    "sorted_name_length_pairs": SortedNameLengthPairsAttr,
     "name_length_pairs": NameLengthPairsAttr,
     "sorted_sequences": SortedSequencesAttr,
 }
 
 
-def read_url(url):
+def read_yaml_url(url):
+    """
+    Read a YAML file from a URL.
+
+    :param url: The URL to read the YAML file from.
+    :return: The loaded YAML file as a dictionary.
+    """
     import yaml
 
     _LOGGER.info("Reading URL: {}".format(url))
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-
     try:
-        response = urlopen(url)
-    except HTTPError as e:
+        response = requests.get(url)
+        response.raise_for_status()
+        text = response.text
+        return yaml.safe_load(text)
+    except requests.exceptions.RequestException as e:
+        _LOGGER.error(f"Error reading URL: {e}")
         raise e
-    data = response.read()  # a `bytes` object
-    text = data.decode("utf-8")
-    return yaml.safe_load(text)
+
+
+def load_json(source):
+    """
+    Load a JSON from a file or URL.
+
+    :param source: The file path or URL to the JSON.
+    :return: The loaded JSON as a dictionary.
+    """
+    if os.path.isfile(source):
+        with open(source, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    else:
+        try:
+            response = requests.get(source)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            _LOGGER.error(f"Error loading JSON from URL: {e}")
+            raise e
+
 
 
 class SeqColAgent(object):
@@ -49,7 +76,7 @@ class SeqColAgent(object):
         self.engine = engine
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format: str = "level2", attribute: str = None) -> SequenceCollection:
+    def get(self, digest: str, return_format: str = "level2", attribute: str = None, itemwise_limit: int = None) -> SequenceCollection:
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
@@ -63,7 +90,7 @@ class SeqColAgent(object):
             elif return_format == "level1":
                 return seqcol.level1()
             elif return_format == "itemwise":
-                return seqcol.itemwise()
+                return seqcol.itemwise(itemwise_limit)
             else:
                 return seqcol
 
@@ -74,8 +101,10 @@ class SeqColAgent(object):
                 if csc:  # already exists
                     return csc
                 csc_simplified = SequenceCollection(
-                    digest=seqcol.digest
+                    digest=seqcol.digest,
+                    sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                 )  # not linked to attributes
+
                 # Check if attributes exist; only create them if they don't
                 names = session.get(NamesAttr, seqcol.names.digest)
                 if not names:
@@ -96,14 +125,17 @@ class SeqColAgent(object):
                 if not lengths:
                     lengths = LengthsAttr(**seqcol.lengths.model_dump())
                     session.add(lengths)
-                sorted_name_length_pairs = session.get(
-                    SortedNameLengthPairsAttr, seqcol.sorted_name_length_pairs.digest
-                )
-                if not sorted_name_length_pairs:
-                    sorted_name_length_pairs = SortedNameLengthPairsAttr(
-                        **seqcol.sorted_name_length_pairs.model_dump()
-                    )
-                    session.add(sorted_name_length_pairs)
+
+                # This is a transient attribute
+                # sorted_name_length_pairs = session.get(
+                #     SortedNameLengthPairsAttr, seqcol.sorted_name_length_pairs.digest
+                # )
+                # if not sorted_name_length_pairs:
+                #     sorted_name_length_pairs = SortedNameLengthPairsAttr(
+                #         **seqcol.sorted_name_length_pairs.model_dump()
+                #     )
+                #     session.add(sorted_name_length_pairs)
+
                 name_length_pairs = session.get(
                     NameLengthPairsAttr, seqcol.name_length_pairs.digest
                 )
@@ -113,19 +145,20 @@ class SeqColAgent(object):
                     )
                     session.add(name_length_pairs)
 
+                # Link the attributes back to the sequence collection
                 names.collection.append(csc_simplified)
                 sequences.collection.append(csc_simplified)
                 sorted_sequences.collection.append(csc_simplified)
                 lengths.collection.append(csc_simplified)
-                sorted_name_length_pairs.collection.append(csc_simplified)
+                # sorted_name_length_pairs.collection.append(csc_simplified)
                 name_length_pairs.collection.append(csc_simplified)
                 session.commit()
                 return csc_simplified
 
     def add_from_dict(self, seqcol_dict: dict):
         seqcol = build_seqcol_model(seqcol_dict, self.inherent_attrs)
-        print(seqcol)
-        print(seqcol.name_length_pairs.value)
+        _LOGGER.info(f"SeqCol: {seqcol}")
+        _LOGGER.info(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
         return self.add(seqcol)
 
     def add_from_fasta_file(self, fasta_file_path: str):
@@ -295,8 +328,10 @@ class RefgetDBAgent(object):
     """
 
     def __init__(
-        self, postgres_str: str = None, inherent_attrs=["names", "lengths", "sequences"]
+        self, postgres_str: str = None, schema=f'{SCHEMA_FILEPATH}/seqcol.json', inherent_attrs=["names", "sequences"]
     ):  # = "sqlite:///foo.db"
+
+        # Connect to database using the provided engine string, or env var defaults
         if not postgres_str:
             POSTGRES_HOST = os.getenv("POSTGRES_HOST")
             POSTGRES_DB = os.getenv("POSTGRES_DB")
@@ -325,7 +360,20 @@ class RefgetDBAgent(object):
             _LOGGER.error(f"Database engine string: {postgres_str}")
             raise e
 
-        self.inherent_attrs = inherent_attrs
+        # Read schema
+        if schema:
+            self.schema_dict = load_json(schema)
+            _LOGGER.info(f"Schema: {self.schema_dict}")
+            try:
+                self.inherent_attrs = self.schema_dict["ga4gh"]["inherent"]
+            except KeyError:
+                self.inherent_attrs = inherent_attrs
+                _LOGGER.warning(f"No 'inherent' attributes found in schema; using defaults: {inherent_attrs}")
+        else:
+            _LOGGER.warning("No schema provided; using defaults")
+            self.schema_dict = None
+            self.inherent_attrs = inherent_attrs
+
         self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
         self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
@@ -333,8 +381,13 @@ class RefgetDBAgent(object):
     def compare_digests(self, digestA, digestB):
         A = self.seqcol.get(digestA, return_format="level2")
         B = self.seqcol.get(digestB, return_format="level2")
-        # _LOGGER.info(A)
-        # _LOGGER.info(B)
+        return compare_seqcols(A, B)
+
+    def compare_1_digest(self, digestA, seqcolB):
+        A = self.seqcol.get(digestA, return_format="level2")
+        B = build_seqcol_model(seqcolB, self.inherent_attrs).level2()
+        _LOGGER.info(f"Comparing...")
+        _LOGGER.info(f"B: {B}")
         return compare_seqcols(A, B)
 
     @property

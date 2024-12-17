@@ -14,27 +14,6 @@ from .exceptions import *
 from .models import *
 
 _LOGGER = logging.getLogger(__name__)
-PYFAIDX_INSTALLED = False
-GC_COUNT_INSTALLED = False
-
-try:
-    from gc_count import checksum
-
-    pyfaidx = None
-    GC_COUNT_INSTALLED = True
-except ImportError:
-    GC_COUNT_INSTALLED = False
-    _LOGGER.error("gc_count not installed")
-
-try:
-    import pyfaidx
-
-    PYFAIDX_INSTALLED = True
-    from .utilities_pyfaidx import *
-except ImportError as e:
-    print(e)
-    _LOGGER.error("pyfaidx not installed")
-    PYFAIDX_INSTALLED = False
 
 
 def trunc512_digest(seq, offset=24) -> str:
@@ -166,13 +145,13 @@ def fasta_file_to_seqcol(
     """
     Convert a FASTA file into a Sequence Collection digest.
     """
-    if GC_COUNT_INSTALLED:  # Use gc_count if available
-        fasta_seq_digests = checksum(fasta_file_path)
-        CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": []}
+    if GTARS_INSTALLED:  # Use gtars if available
+        fasta_seq_digests = gtars.digests.digest_fasta(fasta_file_path)
+        CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": [], "sorted_sequences": []}
         for s in fasta_seq_digests:
             seq_name = s.id
             seq_length = s.length
-            seq_digest = "SQ." + s.sha512
+            seq_digest = "SQ." + s.sha512t24u
             nlp = {"length": seq_length, "name": seq_name}  # for name_length_pairs
             # snlp_digest = digest_function(canonical_str(nlp)) # for sorted_name_length_pairs
             snlp_digest = canonical_str(nlp) # for sorted_name_length_pairs
@@ -187,12 +166,8 @@ def fasta_file_to_seqcol(
         # dsc = DigestedSequenceCollection(**CSC)
         # dsc.digest = seqcol_digest(CSC)
         return CSC
-
-    elif PYFAIDX_INSTALLED:  # Use pyfaidx if available
-        fa_obj = parse_fasta(fasta_file_path)
-        return fasta_obj_to_seqcol(fa_obj, digest_function=digest_function)
     else:
-        raise ImportError("Neither gc_count nor pyfaidx is installed")
+        raise ImportError("Install gtars to compute digests from FASTA files.")
 
 
 def build_sorted_name_length_pairs(
@@ -383,6 +358,7 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
     # Step 5: Digest the final canonical representation again.
     seqcol_digest = sha512t24u_digest(seqcol_obj4)
 
+    # Now, build the actual pydantic models
     v = ",".join(seqcol_obj["sequences"])
     sequences_attr = SequencesAttr(digest=seqcol_obj3["sequences"], value=seqcol_obj["sequences"])
 
@@ -390,7 +366,7 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
     names_attr = NamesAttr(digest=seqcol_obj3["names"], value=seqcol_obj["names"])
 
     v = ",".join([str(x) for x in seqcol_obj["lengths"]])
-    lengths_attr = LengthsAttr(digest=seqcol_obj3["lengths"], value=seqcol_obj["lengths"])
+    lengths_attr = LengthsAttr(digest=sha512t24u_digest(canonical_str(seqcol_obj["lengths"])), value=seqcol_obj["lengths"])
 
     print(seqcol_obj2)
     nlp = build_name_length_pairs(seqcol_obj)
@@ -407,9 +383,10 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
     from copy import copy
     snlp = [canonical_str(x).decode("utf-8") for x in nlp]
     snlp.sort()
-    _LOGGER.info(f"snlp: {snlp}")
+    _LOGGER.info(f"--- SNLP: {snlp}")
     snlp_digest = sha512t24u_digest(canonical_str(snlp))
-    snlp_attr = SortedNameLengthPairsAttr(digest=snlp_digest, value=snlp)
+    _LOGGER.info(f"--- SNLP: {snlp_digest}")
+    # snlp_attr = SortedNameLengthPairsAttr(digest=snlp_digest, value=snlp)
 
     sorted_sequences_value = copy(seqcol_obj["sequences"])
     sorted_sequences_value.sort()
@@ -426,7 +403,7 @@ def build_seqcol_model(seqcol_obj: dict, inherent_attrs: list = None) -> Sequenc
         names=names_attr,
         lengths=lengths_attr,
         name_length_pairs=nlp_attr,
-        sorted_name_length_pairs=snlp_attr,
+        sorted_name_length_pairs_digest=snlp_digest,
     )
 
 

@@ -73,7 +73,7 @@ example_sequence = Path(
     pattern=r"^[-\w]+$",
     max_length=64,
     min_length=32,
-    examples="76f9f3315fa4b831e93c36cd88196480",
+    examples="SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw",
 )
 
 example_hg38_sc = Body(

@@ -6,9 +6,9 @@ User-facing documentation is hosted at [refgenie.org/refget](https://refgenie.or
 
 In this repository you will find:
 
-1. `/refget`: The `refget` package, which provides a Python interface to both remote and local use of the refget protocol. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
-2. `/seqcolapi`: Sequence collections API software, a fastAPI wrapper, built on top of the `refget` package. It provides a bare-bones Sequence Collections API service.
-3. `/actions`:  GitHub Actions for demo server instance 
+1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of the refget protocol. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
+2. `/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service.
+3. `actions` (in `.github/workflows`):  GitHub Actions for demo server instance 
 4. `/deployment`: Server configurations for demo instances and public deployed instances.
 5. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
 6. `/frontend`: a React seqcolapi front-end.
@@ -54,10 +54,10 @@ docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
   -e POSTGRES_USER \
   -e POSTGRES_DB \
   -e POSTGRES_HOST \
-  postgres:16.3
+  postgres:17.0
 ```
 
-If you need to load test data into your server, then you have to install either `gc_count` (fast) or `pyfaidx` (slow). You can load test data like this:
+If you need to load test data into your server, then you have to install either `gtars`. You can load test data like this:
 
 ```
 python load_demo_data.py
@@ -149,3 +149,21 @@ Use config file located in `/servers/seqcolapi.databio.org`. This will use the i
 1. Ensure the [refget](https://github.com/refgenie/refget/) package master branch is as you want it.
 2. Deploy the updated [secqolapi](https://github.com/refgenie/seqcolapi/) app to dockerhub (using manual dispatch, or deploy on github release).
 3. Finally, deploy the instance with manual dispatch using the included GitHub action.
+
+
+
+
+
+
+
+
+## Developer notes
+
+### Models
+
+The objects and attributes are represented as SQLModel objects in `refget/models.py`. To add a new attribute:
+
+1. create a new model. This will create a table for that model, etc.
+2. change the function that creates the objects, to populate the new attribute.
+
+
