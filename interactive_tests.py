@@ -216,3 +216,53 @@ print(
 
 # - [ ] wire up endpoints to this new object
 # - [ ] use peppy to grab a pep, process fastq.gz files?
+
+
+from refget import fasta_file_to_seqcol
+fasta_file_to_seqcol("demo_fasta/demo0.fa")
+fasta_file_to_seqcol("/home/nsheff/sandbox/HG002.alt.pat.f1_v2.unmasked.fa.gz")
+
+
+import gtars
+
+import gc_count
+from refget import sha512t24u_digest
+from refget import sha512t24u_digest_bytes
+
+
+gc_count.checksum_from_str("test").sha512
+gc_count.sha512t24u_digest("test")
+sha512t24u_digest_bytes("test")
+
+
+var = 'VB84F57JQBHY8SDPXJQ06P1STTEV8ZUPLX5T76OYSH88DM8IV9A9KSYJ0DBLQM665UZZC5033LW26RR1AQFKQ84BGHZLFZKRRBWN877GB1IP15KVJ9LX6Z1K0087WJGFB0HYKYQQZ0R24A77M6PY1ZY9E3TAAO7SI2UEI3MORCQUUXFB59L54M01NF8IWYA4579DL47VJ9DVAPUVJHX9FIK4BUN71UMOOIML9UKLIGDP9N80JJMIEJQKM85M8BEWQF8KS8DN77VVWBMO76VR2K8EHTBF403IWYAF3J2Z9WEDMQKAA0IJKGCHLYK7Y3WSODLDNWCRUU3UGSVPE7CJFZI6O9RMLARB1Y66CZ125L8ERKFU0UY53SNO5DNGGC0D5DOGH8MCZQYRJXELOQNA7KOHLVPBMRNQYVP1A49I3H2Y6DE8FG0WAXIZ6RKFNEBU4ES3X18E79KRJO2DKCXAYYMRPM4WMX8WIC9EP4K6Q07T7UM7G4S4TG31FS9WOUX9BIVFL0642307KV2SFG9YNH5IZB9IJ4TUMM1D25NBBECUMMM28JGZQ2765SZOYRL3BVIZBU1G8NN8Z7N2WEK08FV22LA5YE7GB6GTCEH4ISA2WBTBUEJH65V3MX8EVEU2FDLZKI02O27N3GQT556ZI2YY44GZDWV1Z21RWOWM411X4FFJ2BZ7LQAG5I9J3U4BIF7F3ESKOOIHG388V0PG95ZF5AW1IGD2T6VM9TPJN3HRNWGMHAU3M6O1C6HJBMHB6P26CZJEBZ1K75L35KV9S9UU4NYUJH0KADJNXFI9WVRI7AG89OOVWXQ2GSBT4QUYJW1UZDJ53JQ8M1FVS8J3KTVCSXUW97M8WCNNKQOFB7LHC4YHUZSRKA103L6DPBQG3MTAKPZ9VW5PTQ9QXFX5TMJHU5YOTJAFZ80ISSPX5ZUPABZ1SUZWHRR951CBZ3TYYO88BFNLGR1HKSCZZWG471PPW561NLGINKKBBD9P'
+
+import random
+import timeit
+import string
+strs = []
+for i in range(1000):
+    strs.append(''.join(random.choices(string.ascii_uppercase + string.digits, k=1000)))
+
+# Define the functions to benchmark
+def benchmark_sha512t24u_digest():
+    for var in strs:
+        sha512t24u_digest(var)
+
+def benchmark_gc_count_checksum():
+    for var in strs:
+        gc_count.checksum_from_str(var).sha512
+
+def benchmark_gc_sha512_only():
+    for var in strs:
+        gc_count.sha512t24u_digest(var)
+
+# Benchmark the functions
+time_sha512t24u_digest = timeit.timeit(benchmark_sha512t24u_digest, number=1000)
+time_gc_count_checksum = timeit.timeit(benchmark_gc_count_checksum, number=1000)
+time_gc_512_only = timeit.timeit(benchmark_gc_sha512_only, number=1000)
+
+print(f"sha512t24u_digest: {time_sha512t24u_digest} seconds")
+print(f"gc_count.checksum_from_str().sha512: {time_gc_count_checksum} seconds")
+print(f"gc_count.sha512t24u_digest: {time_gc_512_only} seconds")
+
