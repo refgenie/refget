@@ -16,6 +16,4 @@ except ImportError:
     seqcol_router = None
     pass
 
-
-
 logging.basicConfig(level=logging.INFO)

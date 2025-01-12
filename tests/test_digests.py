@@ -13,3 +13,4 @@ class TestRustDigest:
     def test_rust_py_digest_equivalent(self):
         assert gtars_sha512t24u_digest("ACGT") == py_sha512t24u_digest("ACGT")
         assert gtars_sha512t24u_digest("tcga") == py_sha512t24u_digest("tcga")
+
