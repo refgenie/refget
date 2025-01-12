@@ -9,36 +9,15 @@ from jsonschema import Draft7Validator
 from typing import Optional, Callable, Union
 from yacman import load_yaml
 
-from .const import SeqCol
+from .const import SeqCol, GTARS_INSTALLED
 from .exceptions import *
 from .models import *
 
+from .hash_functions import sha512t24u_digest
+if False:
+    from gtars.digests import digest_fasta, sha512t24u_digest
+
 _LOGGER = logging.getLogger(__name__)
-
-
-def trunc512_digest(seq, offset=24) -> str:
-    """Deprecated GA4GH digest function"""
-    digest = hashlib.sha512(seq.encode()).digest()
-    hex_digest = binascii.hexlify(digest[:offset])
-    return hex_digest.decode()
-
-
-def sha512t24u_digest(seq: Union[str, bytes], offset: int = 24) -> str:
-    """GA4GH digest function"""
-    if isinstance(seq, str):
-        seq = seq.encode("utf-8")
-    digest = hashlib.sha512(seq).digest()
-    tdigest_b64us = base64.urlsafe_b64encode(digest[:offset])
-    return tdigest_b64us.decode("ascii")
-
-
-def sha512t24u_digest_bytes(seq: Union[str, bytes], offset: int = 24) -> str:
-    """GA4GH digest function"""
-    if isinstance(seq, str):
-        seq = seq.encode("utf-8")
-    digest = hashlib.sha512(seq).digest()
-    tdigest_b64us = base64.urlsafe_b64encode(digest[:offset])
-    return tdigest_b64us.decode("ascii")
 
 
 def canonical_str(item: dict) -> bytes:
@@ -140,13 +119,13 @@ def fasta_file_to_digest(fa_file_path: str, inherent_attrs: list = None) -> str:
 
 def fasta_file_to_seqcol(
     fasta_file_path: str,
-    digest_function: Callable[[bytes], str] = sha512t24u_digest_bytes,
+    digest_function: Callable[[bytes], str] = sha512t24u_digest,
 ) -> dict:
     """
     Convert a FASTA file into a Sequence Collection digest.
     """
     if GTARS_INSTALLED:  # Use gtars if available
-        fasta_seq_digests = gtars.digests.digest_fasta(fasta_file_path)
+        fasta_seq_digests = digest_fasta(fasta_file_path)
         CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": [], "sorted_sequences": []}
         for s in fasta_seq_digests:
             seq_name = s.id

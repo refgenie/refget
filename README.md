@@ -57,7 +57,7 @@ docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
   postgres:17.0
 ```
 
-If you need to load test data into your server, then you have to install either `gtars`. You can load test data like this:
+If you need to load test data into your server, then you have to install `gtars`, a Python package for computing GA4GH digests. You can load test data like this:
 
 ```
 python load_demo_data.py

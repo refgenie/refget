@@ -173,7 +173,7 @@ class SeqColAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
+            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
 
     def list(self, page_size=100, cursor=None):
         with Session(self.engine) as session:
@@ -273,7 +273,7 @@ class PangenomeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
+            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
 
 
 class AttributeAgent(object):
