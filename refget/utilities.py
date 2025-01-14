@@ -13,6 +13,7 @@ from .conversion import convert_dict_to_bytes
 
 
 from .hash_functions import sha512t24u_digest
+
 if False:
     from gtars.digests import digest_fasta, sha512t24u_digest
 
@@ -131,14 +132,20 @@ def fasta_file_to_seqcol(
 
     if GTARS_INSTALLED:  # Use gtars if available
         fasta_seq_digests = digest_fasta(fasta_file_path)
-        CSC = {"lengths": [], "names": [], "sequences": [], "sorted_name_length_pairs": [], "sorted_sequences": []}
+        CSC = {
+            "lengths": [],
+            "names": [],
+            "sequences": [],
+            "sorted_name_length_pairs": [],
+            "sorted_sequences": [],
+        }
         for s in fasta_seq_digests:
             seq_name = s.id
             seq_length = s.length
             seq_digest = "SQ." + s.sha512t24u
             nlp = {"length": seq_length, "name": seq_name}  # for name_length_pairs
             # snlp_digest = digest_function(canonical_str(nlp)) # for sorted_name_length_pairs
-            snlp_digest = canonical_str(nlp) # for sorted_name_length_pairs
+            snlp_digest = canonical_str(nlp)  # for sorted_name_length_pairs
             CSC["lengths"].append(seq_length)
             CSC["names"].append(seq_name)
             # CSC["name_length_pairs"].append(nlp)
@@ -169,15 +176,12 @@ def build_sorted_name_length_pairs(obj: dict, digest_function: DigestFunction = 
     return nl_digests
 
 
-def build_name_length_pairs(
-    obj: dict, digest_function: Callable[[str], str] = sha512t24u_digest
-):
+def build_name_length_pairs(obj: dict, digest_function: Callable[[str], str] = sha512t24u_digest):
     """Builds the name_length_pairs attribute, which corresponds to the coordinate system"""
     name_length_pairs = []
     for i in range(len(obj["names"])):
         name_length_pairs.append({"length": obj["lengths"][i], "name": obj["names"][i]})
     return name_length_pairs
-
 
 
 def compare_seqcols(A: SeqCol, B: SeqCol) -> dict:
@@ -350,7 +354,9 @@ def build_seqcol_model(
     names_attr = NamesAttr(digest=seqcol_obj3["names"], value=seqcol_obj["names"])
 
     v = ",".join([str(x) for x in seqcol_obj["lengths"]])
-    lengths_attr = LengthsAttr(digest=sha512t24u_digest(canonical_str(seqcol_obj["lengths"])), value=seqcol_obj["lengths"])
+    lengths_attr = LengthsAttr(
+        digest=sha512t24u_digest(canonical_str(seqcol_obj["lengths"])), value=seqcol_obj["lengths"]
+    )
 
     print(seqcol_obj2)
 
@@ -360,12 +366,12 @@ def build_seqcol_model(
     _LOGGER.info(f"nlp canonical_str: {canonical_str(nlp)}")
     _LOGGER.info(f"Name-length pairs: {nlp_attr}")
 
-
     # snlp = build_sorted_name_length_pairs(seqcol_obj)
     # v = ",".join(snlp)
     # snlp_attr = SortedNameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(snlp)), value=snlp)
 
     from copy import copy
+
     snlp = [canonical_str(x).decode("utf-8") for x in nlp]
     snlp.sort()
     _LOGGER.info(f"--- SNLP: {snlp}")
@@ -376,7 +382,9 @@ def build_seqcol_model(
     sorted_sequences_value = copy(seqcol_obj["sequences"])
     sorted_sequences_value.sort()
     sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
-    sorted_sequences_attr = SortedSequencesAttr(digest=sorted_sequences_digest, value=sorted_sequences_value)
+    sorted_sequences_attr = SortedSequencesAttr(
+        digest=sorted_sequences_digest, value=sorted_sequences_value
+    )
     _LOGGER.info(f"sorted_sequences_value: {sorted_sequences_value}")
     _LOGGER.info(f"sorted_sequences_digest: {sorted_sequences_digest}")
     _LOGGER.info(f"sorted_sequences_attr: {sorted_sequences_attr}")
@@ -390,7 +398,6 @@ def build_seqcol_model(
         name_length_pairs=nlp_attr,
         sorted_name_length_pairs_digest=snlp_digest,
     )
-
 
     _LOGGER.info(f"seqcol: {seqcol}")
 

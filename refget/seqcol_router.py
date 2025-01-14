@@ -26,6 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 
 seqcol_router = APIRouter()
 
+
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
 async def get_dbagent(request: Request):
     return request.app.state.dbagent
@@ -67,7 +68,11 @@ async def collection(
         )
     try:
         if not collated:
-            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="itemwise", itemwise_limit=10000))
+            return JSONResponse(
+                dbagent.seqcol.get(
+                    collection_digest, return_format="itemwise", itemwise_limit=10000
+                )
+            )
         if attribute:
             return JSONResponse(dbagent.seqcol.get(collection_digest, attribute=attribute))
         if level == 1:
@@ -88,7 +93,9 @@ async def collection(
     tags=["Retrieving data"],
 )
 async def attribute(
-    dbagent=Depends(get_dbagent), attribute: str = "names", attribute_digest: str = example_attribute_digest
+    dbagent=Depends(get_dbagent),
+    attribute: str = "names",
+    attribute_digest: str = example_attribute_digest,
 ):
     try:
         return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
@@ -163,7 +170,7 @@ async def list_collections_by_offset(
     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
 
-    res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page*page_size)
+    res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
@@ -194,7 +201,9 @@ async def attribute_search(
     page: int = 0,
 ):
     # attr = dbagent.attribute.get(attribute, digest)
-    res = dbagent.attribute.search(attribute, attribute_digest, limit=page_size, offset=page*page_size)
+    res = dbagent.attribute.search(
+        attribute, attribute_digest, limit=page_size, offset=page * page_size
+    )
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
@@ -208,7 +217,7 @@ async def list_attributes(
     dbagent=Depends(get_dbagent), attribute: str = "names", page_size: int = 100, page: int = 0
 ):
     try:
-        res = dbagent.attribute.list(attribute, limit=page_size, offset=page*page_size)
+        res = dbagent.attribute.list(attribute, limit=page_size, offset=page * page_size)
         res["results"] = [x.digest for x in res["results"]]
         return JSONResponse(res)
     except KeyError as e:
@@ -222,14 +231,15 @@ async def list_attributes(
     "/list/pangenomes",
     summary="List pangenomes on the server, paged by offset",
     tags=["Discovering data"],
-    include_in_schema=False
+    include_in_schema=False,
 )
 async def list_cpangenomes_by_offset(
     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
-    res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page*page_size)
+    res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
+
 
 @seqcol_router.get(
     "/pangenome/{pangenome_digest}",
@@ -270,5 +280,3 @@ async def pangenome(
             status_code=404,
             detail=str(e),
         )
-
-

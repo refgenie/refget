@@ -59,7 +59,7 @@ def load_json(source):
     :return: The loaded JSON as a dictionary.
     """
     if os.path.isfile(source):
-        with open(source, 'r', encoding='utf-8') as file:
+        with open(source, "r", encoding="utf-8") as file:
             return json.load(file)
     else:
         try:
@@ -71,22 +71,25 @@ def load_json(source):
             raise e
 
 
-
 class SeqColAgent(object):
     def __init__(self, engine, inherent_attrs=None):
         self.engine = engine
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format: str = "level2", attribute: str = None, itemwise_limit: int = None) -> SequenceCollection:
+    def get(
+        self,
+        digest: str,
+        return_format: str = "level2",
+        attribute: str = None,
+        itemwise_limit: int = None,
+    ) -> SequenceCollection:
         with Session(self.engine) as session:
-            statement = select(SequenceCollection).where(
-                SequenceCollection.digest == digest
-            )
+            statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
             seqcol = results.one_or_none()
             if not seqcol:
                 raise ValueError(f"SequenceCollection with digest '{digest}' not found")
-            if attribute:  
+            if attribute:
                 return getattr(seqcol, attribute).value
             elif return_format == "level2":
                 return seqcol.level2()
@@ -176,7 +179,10 @@ class SeqColAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": int(offset / limit), "page_size": limit, "total": count},
+                "results": seqcols,
+            }
 
     def list(self, page_size=100, cursor=None):
         with Session(self.engine) as session:
@@ -189,9 +195,7 @@ class SeqColAgent(object):
                 )
             else:
                 list_stmt = (
-                    select(SequenceCollection)
-                    .limit(page_size)
-                    .order_by(SequenceCollection.digest)
+                    select(SequenceCollection).limit(page_size).order_by(SequenceCollection.digest)
                 )
             cnt_stmt = select(func.count(SequenceCollection.digest))
             cnt_res = session.exec(cnt_stmt)
@@ -270,9 +274,7 @@ class PangenomeAgent(object):
         for s in pep.samples:
             file_path = os.path.join(fa_root, s.fasta)
             print(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
-            pangenome_obj[s.sample_name] = self.parent.seqcol.add_from_fasta_file(
-                file_path
-            )
+            pangenome_obj[s.sample_name] = self.parent.seqcol.add_from_fasta_file(file_path)
 
         p = build_pangenome_model(pangenome_obj)
         return self.add(p)
@@ -285,7 +287,11 @@ class PangenomeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": int(offset / limit), "page_size": limit, "total": count},
+                "results": seqcols,
+            }
+
 
 class AttributeAgent(object):
     def __init__(self, engine):
@@ -312,16 +318,17 @@ class AttributeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "results": seqcols,
+            }
 
     def search(self, attribute_type, digest, offset=0, limit=50):
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             list_stmt = (
                 select(SequenceCollection)
-                .where(
-                    getattr(SequenceCollection, f"{attribute_type}_digest") == digest
-                )
+                .where(getattr(SequenceCollection, f"{attribute_type}_digest") == digest)
                 .offset(offset)
                 .limit(limit)
             )
@@ -332,7 +339,10 @@ class AttributeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "results": seqcols,
+            }
 
 
 class RefgetDBAgent(object):
@@ -341,7 +351,6 @@ class RefgetDBAgent(object):
     """
 
     def __init__(
-<<<<<<< HEAD
         self,
         engine: Optional[SqlalchemyDatabaseEngine] = None,
         postgres_str: Optional[str] = None,
@@ -358,7 +367,7 @@ class RefgetDBAgent(object):
                 POSTGRES_DB = os.getenv("POSTGRES_DB")
                 POSTGRES_USER = os.getenv("POSTGRES_USER")
                 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-                schema=f'{SCHEMA_FILEPATH}/seqcol.json',
+                schema = (f"{SCHEMA_FILEPATH}/seqcol.json",)
                 postgres_str = URL.create(
                     "postgresql",
                     username=POSTGRES_USER,
@@ -392,7 +401,9 @@ class RefgetDBAgent(object):
                 self.inherent_attrs = self.schema_dict["ga4gh"]["inherent"]
             except KeyError:
                 self.inherent_attrs = inherent_attrs
-                _LOGGER.warning(f"No 'inherent' attributes found in schema; using defaults: {inherent_attrs}")
+                _LOGGER.warning(
+                    f"No 'inherent' attributes found in schema; using defaults: {inherent_attrs}"
+                )
         else:
             _LOGGER.warning("No schema provided; using defaults")
             self.schema_dict = None
@@ -449,6 +460,6 @@ class RefgetDBAgent(object):
             result = session.exec(statement)
             statement = delete(SortedSequencesAttr)
             result = session.exec(statement)
-            
+
             session.commit()
             return result1.rowcount
