@@ -4,11 +4,12 @@ import logging
 import peppy
 import requests
 
-from sqlmodel import create_engine, select, Session, delete, func
+from sqlmodel import create_engine, select, Session, delete, func, SQLModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
-
+from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
+from typing import Optional, List
 
 from .models import *
 from .utilities import (
@@ -58,7 +59,7 @@ def load_json(source):
     :return: The loaded JSON as a dictionary.
     """
     if os.path.isfile(source):
-        with open(source, 'r', encoding='utf-8') as file:
+        with open(source, "r", encoding="utf-8") as file:
             return json.load(file)
     else:
         try:
@@ -70,20 +71,25 @@ def load_json(source):
             raise e
 
 
-
 class SeqColAgent(object):
     def __init__(self, engine, inherent_attrs=None):
         self.engine = engine
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format: str = "level2", attribute: str = None, itemwise_limit: int = None) -> SequenceCollection:
+    def get(
+        self,
+        digest: str,
+        return_format: str = "level2",
+        attribute: str = None,
+        itemwise_limit: int = None,
+    ) -> SequenceCollection:
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
             seqcol = results.one_or_none()
             if not seqcol:
                 raise ValueError(f"SequenceCollection with digest '{digest}' not found")
-            if attribute:  
+            if attribute:
                 return getattr(seqcol, attribute).value
             elif return_format == "level2":
                 return seqcol.level2()
@@ -95,7 +101,7 @@ class SeqColAgent(object):
                 return seqcol
 
     def add(self, seqcol: SequenceCollection) -> SequenceCollection:
-        with Session(self.engine) as session:
+        with Session(self.engine, expire_on_commit=False) as session:
             with session.no_autoflush:
                 csc = session.get(SequenceCollection, seqcol.digest)
                 if csc:  # already exists
@@ -173,7 +179,10 @@ class SeqColAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": int(offset / limit), "page_size": limit, "total": count},
+                "results": seqcols,
+            }
 
     def list(self, page_size=100, cursor=None):
         with Session(self.engine) as session:
@@ -193,7 +202,12 @@ class SeqColAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"count": count, "page_size": page_size, "cursor": cursor, "items": seqcols}
+            return {
+                "count": count,
+                "page_size": page_size,
+                "cursor": cursor,
+                "items": seqcols,
+            }
 
 
 class PangenomeAgent(object):
@@ -231,14 +245,14 @@ class PangenomeAgent(object):
                 return pangenome
 
     def add(self, pangenome: Pangenome) -> Pangenome:
-
         with Session(self.engine) as session:
             with session.no_autoflush:
                 pg = session.get(Pangenome, pangenome.digest)
                 if pg:
                     return pg
                 pg_simplified = Pangenome(
-                    digest=pangenome.digest, collections_digest=pangenome.collections_digest
+                    digest=pangenome.digest,
+                    collections_digest=pangenome.collections_digest,
                 )
                 names = session.get(CollectionNamesAttr, pangenome.names.digest)
                 if not names:
@@ -273,7 +287,10 @@ class PangenomeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": int(offset / limit), "page_size": limit, "total": count},
+                "results": seqcols,
+            }
 
 
 class AttributeAgent(object):
@@ -301,7 +318,10 @@ class AttributeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "results": seqcols,
+            }
 
     def search(self, attribute_type, digest, offset=0, limit=50):
         Attribute = ATTR_TYPE_MAP[attribute_type]
@@ -319,7 +339,10 @@ class AttributeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
+            return {
+                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "results": seqcols,
+            }
 
 
 class RefgetDBAgent(object):
@@ -328,36 +351,46 @@ class RefgetDBAgent(object):
     """
 
     def __init__(
-        self, postgres_str: str = None, schema=f'{SCHEMA_FILEPATH}/seqcol.json', inherent_attrs=["names", "sequences"]
+        self,
+        engine: Optional[SqlalchemyDatabaseEngine] = None,
+        postgres_str: Optional[str] = None,
+        inherent_attrs: List[str] = ["names", "lengths", "sequences"],
     ):  # = "sqlite:///foo.db"
+        assert (
+            engine or postgres_str
+        ), "Must provide either an engine or a postgres_str to create one!"
+        if engine is not None:
+            self.engine = engine
+        else:
+            if not postgres_str:
+                POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+                POSTGRES_DB = os.getenv("POSTGRES_DB")
+                POSTGRES_USER = os.getenv("POSTGRES_USER")
+                POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+                schema = (f"{SCHEMA_FILEPATH}/seqcol.json",)
+                postgres_str = URL.create(
+                    "postgresql",
+                    username=POSTGRES_USER,
+                    password=POSTGRES_PASSWORD,
+                    host=POSTGRES_HOST,
+                    database=POSTGRES_DB,
+                )
 
-        # Connect to database using the provided engine string, or env var defaults
-        if not postgres_str:
-            POSTGRES_HOST = os.getenv("POSTGRES_HOST")
-            POSTGRES_DB = os.getenv("POSTGRES_DB")
-            POSTGRES_USER = os.getenv("POSTGRES_USER")
-            POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-            postgres_str_old = (
-                f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}/{POSTGRES_DB}"
-            )
-            postgres_str = URL.create(
-                "postgresql",
-                username=POSTGRES_USER,
-                password=POSTGRES_PASSWORD,
-                host=POSTGRES_HOST,
-                database=POSTGRES_DB,
-            )
-
+            try:
+                self.engine = create_engine(postgres_str, echo=False)
+            except Exception as e:
+                _LOGGER.error(f"Error: {e}")
+                _LOGGER.error("Unable to connect to database")
+                _LOGGER.error(
+                    "Please check that you have set the database credentials correctly in the environment variables"
+                )
+                _LOGGER.error(f"Database engine string: {postgres_str}")
+                raise e
         try:
-            self.engine = create_engine(postgres_str, echo=True)
             SQLModel.metadata.create_all(self.engine)
         except Exception as e:
             _LOGGER.error(f"Error: {e}")
-            _LOGGER.error("Unable to connect to database")
-            _LOGGER.error(
-                "Please check that you have set the database credentials correctly in the environment variables"
-            )
-            _LOGGER.error(f"Database engine string: {postgres_str}")
+            _LOGGER.error("Unable to create tables in the database")
             raise e
 
         # Read schema
@@ -368,7 +401,9 @@ class RefgetDBAgent(object):
                 self.inherent_attrs = self.schema_dict["ga4gh"]["inherent"]
             except KeyError:
                 self.inherent_attrs = inherent_attrs
-                _LOGGER.warning(f"No 'inherent' attributes found in schema; using defaults: {inherent_attrs}")
+                _LOGGER.warning(
+                    f"No 'inherent' attributes found in schema; using defaults: {inherent_attrs}"
+                )
         else:
             _LOGGER.warning("No schema provided; using defaults")
             self.schema_dict = None
@@ -425,6 +460,6 @@ class RefgetDBAgent(object):
             result = session.exec(statement)
             statement = delete(SortedSequencesAttr)
             result = session.exec(statement)
-            
+
             session.commit()
             return result1.rowcount

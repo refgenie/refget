@@ -1,8 +1,8 @@
-
-
-from typing import List
+from typing import List, Callable, Union
 from sqlmodel import Field, ARRAY, SQLModel, create_engine, Column, String, Relationship, Integer
 from sqlmodel import JSON
+
+DigestFunction = Callable[[Union[str, bytes]], str]
 
 
 class PangenomeCollectionLink(SQLModel, table=True):
@@ -49,7 +49,7 @@ class CollectionNamesAttr(SQLModel, table=True):
 
 
 # For a transient attribute, like sorted_name_length_pairs, you just need the attr_digest value.
-# For attributes where you want to store the values in a table, you would also have the 
+# For attributes where you want to store the values in a table, you would also have the
 # Relationship attribute.
 class SequenceCollection(SQLModel, table=True):
     digest: str = Field(primary_key=True)
@@ -67,9 +67,7 @@ class SequenceCollection(SQLModel, table=True):
     #     back_populates="collection"
     # )
     name_length_pairs_digest: str = Field(foreign_key="namelengthpairsattr.digest")
-    name_length_pairs: "NameLengthPairsAttr" = Relationship(
-        back_populates="collection"
-    )
+    name_length_pairs: "NameLengthPairsAttr" = Relationship(back_populates="collection")
 
     pangenomes: List[Pangenome] = Relationship(
         back_populates="collections", link_model=PangenomeCollectionLink
@@ -97,9 +95,7 @@ class SequenceCollection(SQLModel, table=True):
 
     def itemwise(self, limit=None):
         if limit and len(self.sequences.value) > limit:
-            raise ValueError(
-                f"Too many sequences to format itemwise: {len(self.sequences.value)}"
-            )
+            raise ValueError(f"Too many sequences to format itemwise: {len(self.sequences.value)}")
         list_of_dicts = []
         for i in range(len(self.lengths.value)):
             list_of_dicts.append(
@@ -113,6 +109,7 @@ class SequenceCollection(SQLModel, table=True):
 
 
 # Each of these classes will become a separate table in the database.
+
 
 class SequencesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
@@ -137,12 +134,12 @@ class LengthsAttr(SQLModel, table=True):
     value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="lengths")
 
+
 class NameLengthPairsAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     value: list = Field(sa_column=Column(JSON), default_factory=list)
-    collection: List["SequenceCollection"] = Relationship(
-        back_populates="name_length_pairs"
-    )
+    collection: List["SequenceCollection"] = Relationship(back_populates="name_length_pairs")
+
 
 # This is now a transient attribute, so we don't need to store it in the database.
 # class SortedNameLengthPairsAttr(SQLModel, table=True):

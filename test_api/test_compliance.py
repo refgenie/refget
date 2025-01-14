@@ -115,9 +115,9 @@ def check_comparison(api_root, response_file):
     res = requests.get(url)
     try:
         server_answer = json.loads(res.content)
-        print("Server answer:", refget.canonical_str(server_answer))
-        print("Correct answer:", refget.canonical_str(correct_answer))
-        assert refget.canonical_str(server_answer) == refget.canonical_str(
+        print("Server answer:", refget.convert_dict_to_bytes(server_answer))
+        print("Correct answer:", refget.convert_dict_to_bytes(correct_answer))
+        assert refget.convert_dict_to_bytes(server_answer) == refget.convert_dict_to_bytes(
             correct_answer
         ), f"Comparison endpoint failed: {url}. File: {response_file}"
     except json.decoder.JSONDecodeError:

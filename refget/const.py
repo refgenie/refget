@@ -57,6 +57,7 @@ SeqCol = dict
 GTARS_INSTALLED = False
 try:
     from gtars.digests import digest_fasta, sha512t24u_digest
+
     GTARS_INSTALLED = True
 except ImportError:
     GTARS_INSTALLED = False
