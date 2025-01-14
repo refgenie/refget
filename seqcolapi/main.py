@@ -131,6 +131,7 @@ def create_global_dbagent():
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent
 
+
 def main(injected_args=None):
     # Entry point for running from console_scripts, installed package
     parser = build_parser()
