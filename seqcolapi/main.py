@@ -1,4 +1,4 @@
-import henge
+# import henge
 import json
 import logging
 import os
@@ -6,7 +6,7 @@ import sys
 import uvicorn
 import yacman
 
-from fastapi import Body, FastAPI, Response
+from fastapi import Body, FastAPI, Response, Depends
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -44,7 +44,7 @@ app = FastAPI(
     version=seqcolapi_version,
 )
 
-from refget import seqcol_router
+from refget import seqcol_router, get_dbagent
 
 app.include_router(seqcol_router)
 
@@ -75,7 +75,7 @@ async def index(request: Request):
 
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
-async def service_info():
+async def service_info(dbagent=Depends(get_dbagent)):
     ret = {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",
@@ -91,7 +91,7 @@ async def service_info():
         "updatedAt": "2021-03-01T00:00:00Z",
         "environment": "dev",
         "version": ALL_VERSIONS["seqcolapi_version"],
-        "seqcol": {"schema": schenge.schemas, "sorted_name_length_pairs": True},
+        "seqcol": {"schema": dbagent.schema_dict, "sorted_name_length_pairs": True},
     }
     return JSONResponse(content=ret)
 
@@ -130,7 +130,6 @@ def create_global_dbagent():
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent
-
 
 def main(injected_args=None):
     # Entry point for running from console_scripts, installed package

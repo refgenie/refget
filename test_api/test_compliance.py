@@ -1,4 +1,4 @@
-# Draft of a compliance suite for the API
+# Compliance suite for the SeqCol API
 
 import json
 import pytest
@@ -178,4 +178,4 @@ class TestAPI:
 
     @pytest.mark.parametrize("test_values", ATTRIBUTE_LIST_TESTS)
     def test_attribute_list_endpoint(self, api_root, test_values):
-        check_attribute_list(api_root, *test_values)
+        check_list_collections_by_attribute(api_root, *test_values)

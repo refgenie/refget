@@ -1,12 +1,14 @@
+import json
 import os
 import logging
+import peppy
+import requests
 
 from sqlmodel import create_engine, select, Session, delete, func, SQLModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
-import peppy
 from typing import Optional, List
 
 from .models import *
@@ -18,29 +20,56 @@ from .utilities import (
     build_pangenome_model,
 )
 from .const import _LOGGER
+from .const import SCHEMA_FILEPATH
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
     "names": NamesAttr,
     "lengths": LengthsAttr,
-    "sorted_name_length_pairs": SortedNameLengthPairsAttr,
+    "name_length_pairs": NameLengthPairsAttr,
+    "sorted_sequences": SortedSequencesAttr,
 }
 
 
-def read_url(url):
+def read_yaml_url(url):
+    """
+    Read a YAML file from a URL.
+
+    :param url: The URL to read the YAML file from.
+    :return: The loaded YAML file as a dictionary.
+    """
     import yaml
 
     _LOGGER.info("Reading URL: {}".format(url))
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-
     try:
-        response = urlopen(url)
-    except HTTPError as e:
+        response = requests.get(url)
+        response.raise_for_status()
+        text = response.text
+        return yaml.safe_load(text)
+    except requests.exceptions.RequestException as e:
+        _LOGGER.error(f"Error reading URL: {e}")
         raise e
-    data = response.read()  # a `bytes` object
-    text = data.decode("utf-8")
-    return yaml.safe_load(text)
+
+
+def load_json(source):
+    """
+    Load a JSON from a file or URL.
+
+    :param source: The file path or URL to the JSON.
+    :return: The loaded JSON as a dictionary.
+    """
+    if os.path.isfile(source):
+        with open(source, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    else:
+        try:
+            response = requests.get(source)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            _LOGGER.error(f"Error loading JSON from URL: {e}")
+            raise e
+
 
 
 class SeqColAgent(object):
@@ -48,7 +77,7 @@ class SeqColAgent(object):
         self.engine = engine
         self.inherent_attrs = inherent_attrs
 
-    def get(self, digest: str, return_format: str = "level2") -> SequenceCollection:
+    def get(self, digest: str, return_format: str = "level2", attribute: str = None, itemwise_limit: int = None) -> SequenceCollection:
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(
                 SequenceCollection.digest == digest
@@ -57,20 +86,14 @@ class SeqColAgent(object):
             seqcol = results.one_or_none()
             if not seqcol:
                 raise ValueError(f"SequenceCollection with digest '{digest}' not found")
-            if return_format == "level2":
+            if attribute:  
+                return getattr(seqcol, attribute).value
+            elif return_format == "level2":
                 return seqcol.level2()
             elif return_format == "level1":
                 return seqcol.level1()
             elif return_format == "itemwise":
-                l2 = {
-                    "names": seqcol.names.value.split(","),
-                    "lengths": [int(x) for x in seqcol.lengths.value.split(",")],
-                    "sequences": seqcol.sequences.value.split(","),
-                    "sorted_name_length_pairs": seqcol.sorted_name_length_pairs.value.split(
-                        ","
-                    ),
-                }
-                return format_itemwise(l2)
+                return seqcol.itemwise(itemwise_limit)
             else:
                 return seqcol
 
@@ -81,39 +104,64 @@ class SeqColAgent(object):
                 if csc:  # already exists
                     return csc
                 csc_simplified = SequenceCollection(
-                    digest=seqcol.digest
+                    digest=seqcol.digest,
+                    sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                 )  # not linked to attributes
+
                 # Check if attributes exist; only create them if they don't
                 names = session.get(NamesAttr, seqcol.names.digest)
                 if not names:
                     names = NamesAttr(**seqcol.names.model_dump())
                     session.add(names)
+
                 sequences = session.get(SequencesAttr, seqcol.sequences.digest)
                 if not sequences:
                     sequences = SequencesAttr(**seqcol.sequences.model_dump())
                     session.add(sequences)
+
+                sorted_sequences = session.get(SortedSequencesAttr, seqcol.sorted_sequences.digest)
+                if not sorted_sequences:
+                    sorted_sequences = SortedSequencesAttr(**seqcol.sorted_sequences.model_dump())
+                    session.add(sorted_sequences)
+
                 lengths = session.get(LengthsAttr, seqcol.lengths.digest)
                 if not lengths:
                     lengths = LengthsAttr(**seqcol.lengths.model_dump())
                     session.add(lengths)
-                sorted_name_length_pairs = session.get(
-                    SortedNameLengthPairsAttr, seqcol.sorted_name_length_pairs.digest
+
+                # This is a transient attribute
+                # sorted_name_length_pairs = session.get(
+                #     SortedNameLengthPairsAttr, seqcol.sorted_name_length_pairs.digest
+                # )
+                # if not sorted_name_length_pairs:
+                #     sorted_name_length_pairs = SortedNameLengthPairsAttr(
+                #         **seqcol.sorted_name_length_pairs.model_dump()
+                #     )
+                #     session.add(sorted_name_length_pairs)
+
+                name_length_pairs = session.get(
+                    NameLengthPairsAttr, seqcol.name_length_pairs.digest
                 )
-                if not sorted_name_length_pairs:
-                    sorted_name_length_pairs = SortedNameLengthPairsAttr(
-                        **seqcol.sorted_name_length_pairs.model_dump()
+                if not name_length_pairs:
+                    name_length_pairs = NameLengthPairsAttr(
+                        **seqcol.name_length_pairs.model_dump()
                     )
-                    session.add(sorted_name_length_pairs)
+                    session.add(name_length_pairs)
+
+                # Link the attributes back to the sequence collection
                 names.collection.append(csc_simplified)
                 sequences.collection.append(csc_simplified)
+                sorted_sequences.collection.append(csc_simplified)
                 lengths.collection.append(csc_simplified)
-                sorted_name_length_pairs.collection.append(csc_simplified)
+                # sorted_name_length_pairs.collection.append(csc_simplified)
+                name_length_pairs.collection.append(csc_simplified)
                 session.commit()
                 return csc_simplified
 
     def add_from_dict(self, seqcol_dict: dict):
         seqcol = build_seqcol_model(seqcol_dict, self.inherent_attrs)
-        print(seqcol)
+        _LOGGER.info(f"SeqCol: {seqcol}")
+        _LOGGER.info(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
         return self.add(seqcol)
 
     def add_from_fasta_file(self, fasta_file_path: str):
@@ -128,7 +176,7 @@ class SeqColAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
+            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
 
     def list(self, page_size=100, cursor=None):
         with Session(self.engine) as session:
@@ -237,8 +285,7 @@ class PangenomeAgent(object):
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
             seqcols = list_res.all()
-            return {"pagination": { "page": offset*limit, "page_size": limit, "total": count}, "results": seqcols}
-
+            return {"pagination": { "page": int(offset/limit), "page_size": limit, "total": count}, "results": seqcols}
 
 class AttributeAgent(object):
     def __init__(self, engine):
@@ -250,9 +297,10 @@ class AttributeAgent(object):
             statement = select(Attribute).where(Attribute.digest == digest)
             results = session.exec(statement)
             response = results.first()
-            response.value = response.value.split(",")
+            # response.value = response.value.split(",")
             if attribute_type == "lengths":
                 response.value = [int(x) for x in response.value]
+
             return response.value
 
     def list(self, attribute_type, offset=0, limit=50):
@@ -293,6 +341,7 @@ class RefgetDBAgent(object):
     """
 
     def __init__(
+<<<<<<< HEAD
         self,
         engine: Optional[SqlalchemyDatabaseEngine] = None,
         postgres_str: Optional[str] = None,
@@ -309,6 +358,7 @@ class RefgetDBAgent(object):
                 POSTGRES_DB = os.getenv("POSTGRES_DB")
                 POSTGRES_USER = os.getenv("POSTGRES_USER")
                 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+                schema=f'{SCHEMA_FILEPATH}/seqcol.json',
                 postgres_str = URL.create(
                     "postgresql",
                     username=POSTGRES_USER,
@@ -333,7 +383,21 @@ class RefgetDBAgent(object):
             _LOGGER.error(f"Error: {e}")
             _LOGGER.error("Unable to create tables in the database")
             raise e
-        self.inherent_attrs = inherent_attrs
+
+        # Read schema
+        if schema:
+            self.schema_dict = load_json(schema)
+            _LOGGER.info(f"Schema: {self.schema_dict}")
+            try:
+                self.inherent_attrs = self.schema_dict["ga4gh"]["inherent"]
+            except KeyError:
+                self.inherent_attrs = inherent_attrs
+                _LOGGER.warning(f"No 'inherent' attributes found in schema; using defaults: {inherent_attrs}")
+        else:
+            _LOGGER.warning("No schema provided; using defaults")
+            self.schema_dict = None
+            self.inherent_attrs = inherent_attrs
+
         self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
         self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
@@ -341,8 +405,13 @@ class RefgetDBAgent(object):
     def compare_digests(self, digestA, digestB):
         A = self.seqcol.get(digestA, return_format="level2")
         B = self.seqcol.get(digestB, return_format="level2")
-        # _LOGGER.info(A)
-        # _LOGGER.info(B)
+        return compare_seqcols(A, B)
+
+    def compare_1_digest(self, digestA, seqcolB):
+        A = self.seqcol.get(digestA, return_format="level2")
+        B = build_seqcol_model(seqcolB, self.inherent_attrs).level2()
+        _LOGGER.info(f"Comparing...")
+        _LOGGER.info(f"B: {B}")
         return compare_seqcols(A, B)
 
     @property
@@ -374,5 +443,12 @@ class RefgetDBAgent(object):
             result = session.exec(statement)
             statement = delete(SequencesAttr)
             result = session.exec(statement)
+            statement = delete(SortedNameLengthPairsAttr)
+            result = session.exec(statement)
+            statement = delete(NameLengthPairsAttr)
+            result = session.exec(statement)
+            statement = delete(SortedSequencesAttr)
+            result = session.exec(statement)
+            
             session.commit()
             return result1.rowcount

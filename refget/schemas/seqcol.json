@@ -1,0 +1,92 @@
+{
+  "description": "A collection of biological sequences.",
+  "type": "object",
+  "properties": {
+    "lengths": {
+      "type": "array",
+      "collated": true,
+      "description": "Number of elements, such as nucleotides or amino acids, in each sequence.",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "names": {
+      "type": "array",
+      "collated": true,
+      "description": "Human-readable labels of each sequence (chromosome names).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sequences": {
+      "type": "array",
+      "collated": true,
+      "items": {
+        "type": "string",
+        "description": "Refget sequences v2 identifiers for sequences."
+      }
+    },
+    "accessions": {
+      "type": "array",
+      "collated": true,
+      "items": {
+        "type": "string",
+        "description": "Unique external accessions for the sequences"
+      }
+    },
+    "sorted_sequences": {
+      "type": "array",
+      "collated": false,
+      "items": {
+        "type": "string",
+        "description": "Refget sequences v2 identifiers for sequences, sorted by digest."
+      }
+    },
+    "name_length_pairs": {
+      "type": "array",
+      "collated": true,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "sorted_name_length_pairs": {
+      "type": "array",
+      "collated": false,
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "length": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "names",
+    "lengths",
+    "sequences"
+  ],
+  "ga4gh": {
+    "inherent": [
+      "names",
+      "sequences"
+    ],
+    "transient": [
+      "sorted_sequences",
+      "sorted_name_length_pairs"
+    ], 
+    "passthru": []
+  }
+}

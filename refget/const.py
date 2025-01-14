@@ -52,3 +52,12 @@ INTERNAL_SCHEMAS = [_schema_path(s) for s in SCHEMA_NAMES]
 
 # Alias dict to make typehinting clearer
 SeqCol = dict
+
+
+GTARS_INSTALLED = False
+try:
+    from gtars.digests import digest_fasta, sha512t24u_digest
+    GTARS_INSTALLED = True
+except ImportError:
+    GTARS_INSTALLED = False
+    _LOGGER.error("gtars not installed.")
