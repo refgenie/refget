@@ -20,7 +20,7 @@ def sha512t24u_digest(seq: Union[str, bytes], offset: int = 24) -> str:
     return tdigest_b64us.decode("ascii")
 
 
-def sha512t24u_digest_bytes(seq: bytes | str, offset: int = 24) -> str:
+def sha512t24u_digest_bytes(seq: Union[str, bytes], offset: int = 24) -> str:
     """GA4GH digest function"""
     if isinstance(seq, str):
         seq = seq.encode("utf-8")
