@@ -2,7 +2,7 @@ from typing import List, Callable, Union
 from sqlmodel import Field, ARRAY, SQLModel, create_engine, Column, String, Relationship, Integer
 from sqlmodel import JSON
 
-DigestFunction = Callable[Union[str,bytes], str]
+DigestFunction = Callable[Union[str, bytes], str]
 
 
 class PangenomeCollectionLink(SQLModel, table=True):
