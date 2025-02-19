@@ -71,7 +71,54 @@ def load_json(source):
             raise e
 
 
+class SequenceAgent(object):
+    """
+    Agent for interacting with database of sequences
+    """
+    
+    def __init__(self, engine):
+        self.engine = engine
+
+    def get(self, digest: str) -> str:
+        with Session(self.engine) as session:
+            statement = select(Sequence).where(Sequence.digest == digest)
+            results = session.exec(statement)
+            response = results.first()
+            return response.sequence
+
+    def add(self, sequence: Sequence) -> Sequence:
+        with Session(self.engine, expire_on_commit=False) as session:
+            with session.no_autoflush:
+                seq = session.get(Sequence, sequence.digest)
+                if seq:  # already exists
+                    return seq
+                # seq_obj = Sequence(
+                #     digest=sequence.digest,
+                #     sequence=sequence.sequence,
+                #     length=sequence.length
+                # )
+                session.add(sequence)
+                session.commit()
+                return sequence
+
+    def list(self, offset=0, limit=50):
+        with Session(self.engine) as session:
+            list_stmt = select(Sequence).offset(offset).limit(limit)
+            cnt_stmt = select(func.count(Sequence.digest))
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqs = list_res.all()
+            return {
+                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "results": seqs,
+            }
+
+
 class SeqColAgent(object):
+    """
+    Agent for interacting with database of sequence collection
+    """
     def __init__(self, engine, inherent_attrs=None):
         self.engine = engine
         self.inherent_attrs = inherent_attrs
@@ -211,6 +258,9 @@ class SeqColAgent(object):
 
 
 class PangenomeAgent(object):
+    """
+    Agent for interacting with database of pangenomes
+    """
     def __init__(self, parent):
         self.engine = parent.engine
         self.parent = parent
@@ -354,20 +404,18 @@ class RefgetDBAgent(object):
         self,
         engine: Optional[SqlalchemyDatabaseEngine] = None,
         postgres_str: Optional[str] = None,
+        schema = f"{SCHEMA_FILEPATH}/seqcol.json",
         inherent_attrs: List[str] = ["names", "lengths", "sequences"],
     ):  # = "sqlite:///foo.db"
-        assert (
-            engine or postgres_str
-        ), "Must provide either an engine or a postgres_str to create one!"
         if engine is not None:
             self.engine = engine
         else:
             if not postgres_str:
+                # Configure via environment variables
                 POSTGRES_HOST = os.getenv("POSTGRES_HOST")
                 POSTGRES_DB = os.getenv("POSTGRES_DB")
                 POSTGRES_USER = os.getenv("POSTGRES_USER")
                 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-                schema = (f"{SCHEMA_FILEPATH}/seqcol.json",)
                 postgres_str = URL.create(
                     "postgresql",
                     username=POSTGRES_USER,
@@ -409,6 +457,7 @@ class RefgetDBAgent(object):
             self.schema_dict = None
             self.inherent_attrs = inherent_attrs
 
+        self.__sequence = SequenceAgent(self.engine)
         self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
         self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
@@ -424,6 +473,10 @@ class RefgetDBAgent(object):
         _LOGGER.info(f"Comparing...")
         _LOGGER.info(f"B: {B}")
         return compare_seqcols(A, B)
+
+    @property
+    def seq(self) -> SequenceAgent:
+        return self.__sequence
 
     @property
     def seqcol(self) -> SeqColAgent:

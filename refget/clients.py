@@ -10,6 +10,15 @@ class SequencesClient(object):
     """
 
     def __init__(self, seq_urls=["https://www.ebi.ac.uk/ena/cram/sequence/"]):
+        """
+        Initializes the sequences client.
+
+        Args:
+            seq_urls (list, optional): A list of base URLs of the sequences API. Defaults to ["https://www.ebi.ac.uk/ena/cram/sequence/"].
+
+        Attributes:
+            seq_urls (list): The list of base URLs of the sequences API.
+        """
         self.seq_urls = seq_urls
 
     def get_sequence(self, accession):
@@ -22,25 +31,25 @@ class SequencesClient(object):
         Returns:
             str: The sequence.
         """
-        endpoint = f"{self.seq_url}/{accession}"
+        endpoint = f"/sequence/{accession}"
         return _try_urls(self.seq_urls, endpoint)
 
 
 class SeqColClient(object):
     """
     A client for interacting with a refget sequence collections API.
-
-    Args:
-        urls (list, optional): A list of base URLs of the sequence collection API. Defaults to ["https://seqcolapi.databio.org"].
-
-    Attributes:
-        urls (list): The list of base URLs of the sequence collection API.
-
-    Methods:
-        get_collection(accession, level=2): Retrieves a sequence collection for a given accession and level.
     """
 
     def __init__(self, urls=["https://seqcolapi.databio.org"]):
+        """
+        Initializes the sequence collection client.
+
+        Args:
+            urls (list, optional): A list of base URLs of the sequence collection API. Defaults to ["https://seqcolapi.databio.org"].
+
+        Attributes:
+            urls (list): The list of base URLs of the sequence collection API.
+        """
         self.seqcol_api_urls = urls
 
     def get_collection(self, accession, level=2):
@@ -52,7 +61,7 @@ class SeqColClient(object):
             level (int, optional): The level of detail for the sequence collection. Defaults to 2.
 
         Returns:
-            dict: The JSON response containing the sequence collection.
+            (dict): The JSON response containing the sequence collection.
         """
         endpoint = f"/collection/{accession}?level={level}"
         return _try_urls(self.seqcol_api_urls, endpoint)
@@ -66,7 +75,7 @@ class SeqColClient(object):
             accession2 (str): The accession of the second sequence collection.
 
         Returns:
-            dict: The JSON response containing the comparison of the two sequence collections.
+            (dict): The JSON response containing the comparison of the two sequence collections.
         """
         endpoint = f"/comparison/{accession1}/{accession2}"
         return _try_urls(self.seqcol_api_urls, endpoint)
@@ -121,8 +130,10 @@ class SeqColClient(object):
 
 class RefGetClient(SequencesClient, SeqColClient):
     """
-    A client for interacting with a refget API, for either
-    sequences or sequence collections, or both.
+    A wrapper client for interacting with a refget API, for either
+    sequences or sequence collections, or both. The heavy lifting is
+    done by the SequencesClient and SeqColClient classes, which 
+    are inherited by this class.
     """
 
     def __init__(
@@ -130,6 +141,15 @@ class RefGetClient(SequencesClient, SeqColClient):
         seq_api_urls=["https://www.ebi.ac.uk/ena/cram/sequence"],
         seqcol_api_urls=["https://seqcolapi.databio.org"],
     ):
+        """
+        Initializes the refget client.
+
+        Args:
+            seq_api_urls (list, optional): A list of base URLs of the sequences API. Defaults to ["https://www.ebi.ac.uk/ena/cram/sequence"].
+            seqcol_api_urls (list, optional): A list of base URLs of the sequence collections API. Defaults to ["https://seqcolapi.databio.org"].
+        """
+
+
         if seq_api_urls:
             SequencesClient.__init__(self, seq_api_urls)
         if seqcol_api_urls:
