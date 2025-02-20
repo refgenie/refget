@@ -6,7 +6,7 @@ User-facing documentation is hosted at [refgenie.org/refget](https://refgenie.or
 
 In this repository you will find:
 
-1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of the refget protocol. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
+1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of refget standards. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
 2. `/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service.
 3. `actions` (in `.github/workflows`):  GitHub Actions for demo server instance 
 4. `/deployment`: Server configurations for demo instances and public deployed instances.

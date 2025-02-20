@@ -24,29 +24,53 @@ from .examples import *
 
 _LOGGER = logging.getLogger(__name__)
 
-seqcol_router = APIRouter()
-
-
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
 async def get_dbagent(request: Request):
     return request.app.state.dbagent
 
+def create_refget_router(sequences: bool = False, collections: bool = True, pangenomes: bool = False):
+    """
+    Create a FastAPI router for the sequence collection API.
+    This router provides endpoints for retrieving and comparing sequence collections.
+    You can choose which endpoints to include by setting the sequences, collections, 
+    or pangenomes flags.
 
-@seqcol_router.get(
+    Use like: app.include_router(create_refget_router(sequences=False, pangenomes=False))
+
+    Args:
+        sequences (bool): Include sequence endpoints
+        collections (bool): Include sequence collection endpoints
+        pangenomes (bool): Include pangenome endpoints
+
+    Returns:
+        APIRouter: A FastAPI router with the specified endpoints
+    """
+
+    refget_router = APIRouter()
+    if sequences:
+        _LOGGER.info("Adding sequence endpoints...")
+        refget_router.include_router(seq_router)
+    if collections:
+        _LOGGER.info("Adding collection endpoints...")
+        refget_router.include_router(seqcol_router)
+    if pangenomes:
+        _LOGGER.info("Adding pangenome endpoints...")
+        refget_router.include_router(pangenome_router)
+    return refget_router
+
+
+seq_router = APIRouter()
+@seq_router.get(
     "/sequence/{sequence_digest}",
     summary="Retrieve raw sequence via original refget protocol",
-    include_in_schema=False,
+    include_in_schema=True,
     tags=["Retrieving data"],
 )
 async def refget(request: Request, sequence_digest: str = example_sequence):
-    raise HTTPException(
-        status_code=400,
-        detail="Error: this server does not support raw sequence retrieval. Use a refget server instead.",
-    )
-    # If you wanted to provide refget sequences API, you would do it here
-    return Response(content=dbagent.refget(sequence_digest))
+    return Response(content=dbagent.seq.get(sequence_digest), media_type="text/plain")
 
 
+seqcol_router = APIRouter()
 @seqcol_router.get(
     "/collection/{collection_digest}",
     summary="Retrieve a sequence collection",
@@ -227,11 +251,12 @@ async def list_attributes(
         )
 
 
-@seqcol_router.get(
+pangenome_router = APIRouter()
+@pangenome_router.get(
     "/list/pangenomes",
     summary="List pangenomes on the server, paged by offset",
     tags=["Discovering data"],
-    include_in_schema=False,
+    include_in_schema=True,
 )
 async def list_cpangenomes_by_offset(
     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
@@ -241,11 +266,11 @@ async def list_cpangenomes_by_offset(
     return JSONResponse(res)
 
 
-@seqcol_router.get(
+@pangenome_router.get(
     "/pangenome/{pangenome_digest}",
     summary="Retrieve a pangenome",
     tags=["Retrieving data"],
-    include_in_schema=False,
+    include_in_schema=True,
 )
 async def pangenome(
     dbagent=Depends(get_dbagent),

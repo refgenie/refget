@@ -84,6 +84,9 @@ class SequenceAgent(object):
             statement = select(Sequence).where(Sequence.digest == digest)
             results = session.exec(statement)
             response = results.first()
+            # raise ValueError if not found
+            if not response or not response.sequence:
+                raise ValueError(f"Sequence with digest '{digest}' not found")
             return response.sequence
 
     def add(self, sequence: Sequence) -> Sequence:

@@ -60,5 +60,9 @@ try:
 
     GTARS_INSTALLED = True
 except ImportError:
+
+    def digest_fasta(*args, **kwargs):
+        raise ImportError("gtars is required for this function.")
+
     GTARS_INSTALLED = False
     _LOGGER.error("gtars not installed.")

@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -5,17 +6,13 @@ from jsonschema import Draft7Validator
 from typing import Optional
 from yacman import load_yaml
 
-from .const import SeqCol, GTARS_INSTALLED
+from .const import SeqCol, GTARS_INSTALLED, digest_fasta
 from .exceptions import *
 from .models import *
 from .digest_functions import sha512t24u_digest, sha512t24u_digest_bytes
 from .conversion import convert_dict_to_bytes
 
-
 from .hash_functions import sha512t24u_digest
-
-if False:
-    from gtars.digests import digest_fasta, sha512t24u_digest
 
 _LOGGER = logging.getLogger(__name__)
 

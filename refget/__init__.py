@@ -11,9 +11,9 @@ from .utilities import *
 
 try:
     # Requires optional dependencies, so we catch the ImportError
-    from .seqcol_router import seqcol_router, get_dbagent
+    from .seqcol_router import create_refget_router, get_dbagent
 except ImportError:
-    seqcol_router = None
+    create_seqcol_router = None
     pass
 
 logging.basicConfig(level=logging.INFO)

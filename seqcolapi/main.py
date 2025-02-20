@@ -44,9 +44,10 @@ app = FastAPI(
     version=seqcolapi_version,
 )
 
-from refget import seqcol_router, get_dbagent
+from refget import create_refget_router, get_dbagent
 
-app.include_router(seqcol_router)
+# This is where the magic happens
+app.include_router(create_refget_router(sequences=False, pangenomes=False))
 
 origins = ["*"]
 
@@ -58,6 +59,27 @@ app.add_middleware(  # This is a public API, so we allow all origins
     allow_headers=["*"],
 )
 
+# Catch-all error handler for any uncaught exceptions, return a 500 error with detailed information
+@app.exception_handler(Exception)
+async def generic_exception_handler(request: Request, exc: Exception):
+    return await http_exception_handler(request, HTTPException(status_code=500, detail=str(exc)))  # Pass it to HTTP handler
+
+# General Exception Handler (Covers All HTTPExceptions)
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": f"http-{exc.status_code}",  # Generic error code
+            "detail": exc.detail,  # FastAPI-style error message
+            "status": exc.status_code,
+            "path": str(request.url),  # URL of the request
+        },
+    )
+
+@app.exception_handler(ValueError)
+async def generic_exception_handler(request: Request, exc: Exception):
+    raise HTTPException(status_code=404, detail=str(exc))
 
 @app.get("favicon.ico", include_in_schema=False)
 async def favicon():
@@ -160,14 +182,5 @@ def main(injected_args=None):
 
 
 if __name__ != "__main__":
-    # Entrypoint for running through uvicorn CLI (dev)
-    # if os.environ.get("SEQCOLAPI_CONFIG") is not None:
-    #     _LOGGER.info(f"Loading config from SEQCOLAPI_CONFIG: {os.environ.get('SEQCOLAPI_CONFIG')}")
-    #     scconf = SeqColConf.from_yaml_file(os.environ.get("SEQCOLAPI_CONFIG"))
-    #     create_globals(scconf)
-    #     app.state.schenge = schenge
-    #     app.state.dbagent = dbagent
-    # else:
     create_global_dbagent()
     app.state.dbagent = dbagent
-    _LOGGER.error("Configure by setting SEQCOLAPI_CONFIG env var")
