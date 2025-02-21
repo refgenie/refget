@@ -1,50 +1,27 @@
-# import henge
-import json
 import logging
-import os
-import sys
-import uvicorn
-import yacman
 
-from fastapi import Body, FastAPI, Response, Depends
+from fastapi import  FastAPI, Depends
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from refget import create_refget_router, get_dbagent
 from starlette.requests import Request
-from starlette.templating import Jinja2Templates
 from starlette.staticfiles import StaticFiles
-from typing import Union
 
-from .const import *
-from .scconf import RDBDict
+from .const import ALL_VERSIONS, STATIC_PATH, STATIC_DIRNAME
 from .examples import *
 
-from refget import format_itemwise
-from yacman import select_config, FutureYAMLConfigManager as YAMLConfigManager
-
-
-class SeqColConf(YAMLConfigManager):
-    pass
-
-
 global _LOGGER
-
 _LOGGER = logging.getLogger(__name__)
-
-templates = Jinja2Templates(directory=TEMPLATES_PATH)
 
 for key, value in ALL_VERSIONS.items():
     _LOGGER.info(f"{key}: {value}")
 
-
 app = FastAPI(
     title="Sequence Collections API",
     description="An API providing metadata such as names, lengths, and other values for collections of reference sequences",
-    version=seqcolapi_version,
+    version=ALL_VERSIONS["seqcolapi_version"],
 )
-
-from refget import create_refget_router, get_dbagent
 
 # This is where the magic happens
 app.include_router(create_refget_router(sequences=False, pangenomes=False))
@@ -85,16 +62,14 @@ async def generic_exception_handler(request: Request, exc: Exception):
 async def favicon():
     return FileResponse(f"/static/favicon.ico")
 
-
-@app.get("/", summary="Home page", tags=["General endpoints"])
+@app.get("/", summary="Home page", tags=["General endpoints"], response_class=HTMLResponse)
 async def index(request: Request):
     """
     Returns a landing page HTML with the server resources ready to download. No inputs required.
     """
-    templ_vars = {"request": request, "openapi_version": app.openapi()["openapi"]}
-    _LOGGER.debug("merged vars: {}".format(dict(templ_vars, **ALL_VERSIONS)))
-    return templates.TemplateResponse("index.html", dict(templ_vars, **ALL_VERSIONS))
-
+    with open(f"{STATIC_PATH}/index.html", "r") as file:
+        content = file.read()
+    return HTMLResponse(content=content)
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
 async def service_info(dbagent=Depends(get_dbagent)):
@@ -108,79 +83,27 @@ async def service_info(dbagent=Depends(get_dbagent)):
         },
         "description": "An API providing metadata such as names, lengths, and other values for collections of reference sequences",
         "organization": {"name": "Databio Lab", "url": "https://databio.org"},
-        "contactUrl": "https://github.com/refgenie/seqcol/issues",
+        "contactUrl": "https://github.com/refgenie/refget/issues",
         "documentationUrl": "https://seqcolapi.databio.org",
-        "updatedAt": "2021-03-01T00:00:00Z",
+        "updatedAt": "2025-02-20T00:00:00Z",
         "environment": "dev",
         "version": ALL_VERSIONS["seqcolapi_version"],
         "seqcol": {"schema": dbagent.schema_dict, "sorted_name_length_pairs": True},
     }
     return JSONResponse(content=ret)
 
-
 # Mount statics after other routes for lower precedence
 app.mount(f"/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
 
-
-# def create_globals(scconf: yacman.YAMLConfigManager):
-#     """
-#     Create global variables for the app to use.
-#     """
-#     print(scconf)
-#     _LOGGER.info(f"Connecting to database... {scconf.exp['database']['host']}")
-#     global schenge
-
-#     pgdb = RDBDict(
-#         db_name=scconf.exp["database"]["name"],
-#         db_user=scconf.exp["database"]["user"],
-#         db_password=scconf.exp["database"]["password"],
-#         db_host=scconf.exp["database"]["host"],
-#         db_port=scconf.exp["database"]["port"],
-#         db_table=scconf.exp["database"]["table"],
-#     )
-#     _LOGGER.info(f"Using schema: {scconf['schemas']}")
-#     schenge = SeqColHenge(
-#         database=pgdb,
-#         schemas=scconf["schemas"],
-#     )
-#     return schenge
-
-
 def create_global_dbagent():
+    """
+    Create a global database agent for use in the app.
+    """
     from refget.agents import RefgetDBAgent
 
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent
 
-
-def main(injected_args=None):
-    # Entry point for running from console_scripts, installed package
-    parser = build_parser()
-    # parser = logmuse.add_logging_options(parser)
-    args = parser.parse_args()
-    if injected_args:
-        args.__dict__.update(injected_args)
-    if not args.command:
-        parser.print_help()
-        print("No subcommand given")
-        sys.exit(1)
-
-    # _LOGGER = logmuse.logger_via_cli(args, make_root=True)
-    _LOGGER.info(f"args: {args}")
-    # if "config" in args and args.config is not None:
-    #     scconf = SeqColConf.from_yaml_file(args.config)
-    #     create_globals(scconf)
-    #     app.state.schenge = schenge
-    #     app.state.dbagent = dbagent
-    #     port = args.port or scconf.exp["server"]["port"]
-    #     _LOGGER.info(f"Running on port {port}")
-    #     uvicorn.run(app, host=scconf.exp["server"]["host"], port=port)
-    # else:
-    create_global_dbagent()
-    app.state.dbagent = dbagent
-
-
 if __name__ != "__main__":
-    create_global_dbagent()
-    app.state.dbagent = dbagent
+    app.state.dbagent = create_global_dbagent()

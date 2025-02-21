@@ -61,3 +61,42 @@ for demo_file in DEMO_FILES:
         demo_results[seq_obj.digest] = dbc.seq.add(seq_obj)
     print(demo_results[seq_obj.digest])
 
+
+
+# Reading the data from a client
+import refget
+seq_client = refget.SequencesClient(urls=["https://www.ebi.ac.uk/ena/cram"])
+seq_client.get_sequence("6681ac2f62509cfc220d78751b8dc524", start=0, end=10)
+seq_client.get_metadata("6681ac2f62509cfc220d78751b8dc524")
+seq_client.service_info()
+seq_client
+
+
+col_client = refget.SequenceCollectionsClient(urls=["http://127.0.0.1:8100"])
+col_client.list_collections()
+col_client.get_collection("UNGAdNDmBbQbHihecPPFxwTydTcdFKxL")
+col_client.service_info()
+col_client
+
+
+seq_client = refget.SequencesClient(urls=["http://127.0.0.1:8100"])
+seq_client.get_sequence("iYtREV555dUFKg2_agSJW6suquUyPpMw")
+seq_client.get_sequence("iYtREV555dUFKg2_agSJW6suquUyPpMw", start=0, end=4)
+
+seq_client.get_metadata("6681ac2f62509cfc220d78751b8dc524")
+seq_client.service_info()
+seq_client
+
+
+col_client.list_collections()
+
+
+
+demo_results["test_fasta/base.fa"].sequences
+DEMO_FILES
+
+
+
+
+
+col_client.compare(demo_results["test_fasta/base.fa"].digest, demo_results["test_fasta/different_names.fa"].digest)

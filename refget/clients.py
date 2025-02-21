@@ -1,27 +1,59 @@
+import json
 import logging
 import requests
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class SequencesClient(object):
+
+
+# Abstract class?
+class RefgetClient(object):
+    """
+    A generic class, for any features used by any subclass of refget client.
+    """
+
+    def __repr__(self):
+        service_info = self.service_info()
+        return (
+            f"<{self.__class__.__name__}>\n"
+            f"  Service ID: {service_info['id']}\n"
+            f"  Service Name: {service_info['name']}\n"
+            f"  API URLs:    {', '.join(self.urls)}\n"
+        )
+        
+    def service_info(self):
+        """
+        Retrieves information about the service.
+
+        Returns:
+            dict: The service information.
+        """
+        endpoint = "/service-info"
+        # Sequences uses /service-info under `/sequences`, which should be changed, but for now...
+        if self.__class__.__name__ == "SequencesClient":
+            endpoint = "/sequence/service-info"
+        return _try_urls(self.urls, endpoint)
+
+class SequencesClient(RefgetClient):
     """
     A client for interacting with a refget sequences API.
     """
 
-    def __init__(self, seq_urls=["https://www.ebi.ac.uk/ena/cram/sequence/"]):
+    def __init__(self, urls=["https://www.ebi.ac.uk/ena/cram"]):
         """
         Initializes the sequences client.
 
         Args:
-            seq_urls (list, optional): A list of base URLs of the sequences API. Defaults to ["https://www.ebi.ac.uk/ena/cram/sequence/"].
+            urls (list, optional): A list of base URLs of the sequences API. Defaults to ["https://www.ebi.ac.uk/ena/cram/sequence/"].
 
         Attributes:
-            seq_urls (list): The list of base URLs of the sequences API.
+            urls (list): The list of base URLs of the sequences API.
         """
-        self.seq_urls = seq_urls
+        # Remove trailing slaches from input URLs
+        self.urls = [url.rstrip("/") for url in urls]
 
-    def get_sequence(self, accession):
+    def get_sequence(self, accession, start=None, end=None):
         """
         Retrieves a sequence for a given accession.
 
@@ -31,11 +63,30 @@ class SequencesClient(object):
         Returns:
             str: The sequence.
         """
+        query_params = {}
+        if start is not None:
+            query_params["start"] = start
+        if end is not None:
+            query_params["end"] = end
+
         endpoint = f"/sequence/{accession}"
-        return _try_urls(self.seq_urls, endpoint)
+        return _try_urls(self.urls, endpoint, params=query_params)
+    
+    def get_metadata(self, accession):
+        """
+        Retrieves metadata for a given accession.
+
+        Args:
+            accession (str): The accession of the sequence.
+
+        Returns:
+            dict: The metadata.
+        """
+        endpoint = f"/sequence/{accession}/metadata"
+        return _try_urls(self.urls, endpoint)
 
 
-class SeqColClient(object):
+class SequenceCollectionsClient(RefgetClient):
     """
     A client for interacting with a refget sequence collections API.
     """
@@ -50,7 +101,8 @@ class SeqColClient(object):
         Attributes:
             urls (list): The list of base URLs of the sequence collection API.
         """
-        self.seqcol_api_urls = urls
+        # Remove trailing slaches from input URLs
+        self.urls = [url.rstrip("/") for url in urls]
 
     def get_collection(self, accession, level=2):
         """
@@ -64,7 +116,7 @@ class SeqColClient(object):
             (dict): The JSON response containing the sequence collection.
         """
         endpoint = f"/collection/{accession}?level={level}"
-        return _try_urls(self.seqcol_api_urls, endpoint)
+        return _try_urls(self.urls, endpoint)
 
     def compare(self, accession1, accession2):
         """
@@ -78,7 +130,7 @@ class SeqColClient(object):
             (dict): The JSON response containing the comparison of the two sequence collections.
         """
         endpoint = f"/comparison/{accession1}/{accession2}"
-        return _try_urls(self.seqcol_api_urls, endpoint)
+        return _try_urls(self.urls, endpoint)
 
     def list_collections(self, page=None, page_size=None, attribute=None, attribute_digest=None):
         """
@@ -104,7 +156,7 @@ class SeqColClient(object):
         else:
             endpoint = "/list/collections"
 
-        return _try_urls(self.seqcol_api_urls, endpoint, params=params)
+        return _try_urls(self.urls, endpoint, params=params)
 
     def list_attributes(self, attribute, page=None, page_size=None):
         """
@@ -125,43 +177,27 @@ class SeqColClient(object):
             params["page_size"] = page_size
 
         endpoint = f"/list/attributes/{attribute}"
-        return _try_urls(self.seqcol_api_urls, endpoint, params=params)
-
-
-class RefGetClient(SequencesClient, SeqColClient):
-    """
-    A wrapper client for interacting with a refget API, for either
-    sequences or sequence collections, or both. The heavy lifting is
-    done by the SequencesClient and SeqColClient classes, which 
-    are inherited by this class.
-    """
-
-    def __init__(
-        self,
-        seq_api_urls=["https://www.ebi.ac.uk/ena/cram/sequence"],
-        seqcol_api_urls=["https://seqcolapi.databio.org"],
-    ):
+        return _try_urls(self.urls, endpoint, params=params)
+    
+    def service_info(self):
         """
-        Initializes the refget client.
+        Retrieves information about the service.
 
-        Args:
-            seq_api_urls (list, optional): A list of base URLs of the sequences API. Defaults to ["https://www.ebi.ac.uk/ena/cram/sequence"].
-            seqcol_api_urls (list, optional): A list of base URLs of the sequence collections API. Defaults to ["https://seqcolapi.databio.org"].
+        Returns:
+            dict: The service information.
         """
+        endpoint = "/service-info"
+        return _try_urls(self.urls, endpoint)
 
 
-        if seq_api_urls:
-            SequencesClient.__init__(self, seq_api_urls)
-        if seqcol_api_urls:
-            SeqColClient.__init__(self, seqcol_api_urls)
+class PangenomesClient(RefgetClient):
+    pass
 
-    def __repr__(self):
-        return f"<RefGetClient(seq_api_urls={self.seq_api_urls}, seqcol_api_urls={self.seqcol_api_urls})>"
 
 
 # Utilities
 
-
+import re
 def _wrap_response(response):
     """
     Wraps a response in a try/except block to catch any exceptions.
@@ -174,7 +210,11 @@ def _wrap_response(response):
     """
     try:
         response.raise_for_status()  # Raise an HTTPError for bad responses
-        return response.json()
+        content_type = response.headers.get("content-type")
+        if re.search(r"application/(.*\+)?json", content_type):
+            return response.json()
+        else:
+            return response.text
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"An error occurred: {e}")
 

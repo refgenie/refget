@@ -79,7 +79,7 @@ class SequenceAgent(object):
     def __init__(self, engine):
         self.engine = engine
 
-    def get(self, digest: str) -> str:
+    def _get_entire_seq(self, digest: str) -> str:
         with Session(self.engine) as session:
             statement = select(Sequence).where(Sequence.digest == digest)
             results = session.exec(statement)
@@ -88,6 +88,27 @@ class SequenceAgent(object):
             if not response or not response.sequence:
                 raise ValueError(f"Sequence with digest '{digest}' not found")
             return response.sequence
+
+    def get(self, digest: str, start: int | None = None, end: int | None = None) -> str:
+        with Session(self.engine) as session:
+            # Use the SQL SUBSTRING function to extract the desired part of the sequence
+            if start is None and end is None:
+                return self._get_entire_seq(digest)
+            elif start is None or end is None:
+                raise ValueError("Both start and end must be provided if either is provided.")
+            statement = select(
+                func.substring(Sequence.sequence, start, end - start + 1).label("subsequence")
+            ).where(Sequence.digest == digest)
+            
+            results = session.exec(statement)
+            response = results.first()
+            print(response)
+
+            # Raise ValueError if not found or if the subsequence is empty
+            if not response:
+                raise ValueError(f"Subsequence with digest '{digest}' not found")
+            
+            return response
 
     def add(self, sequence: Sequence) -> Sequence:
         with Session(self.engine, expire_on_commit=False) as session:

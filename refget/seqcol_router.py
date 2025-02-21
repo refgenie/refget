@@ -66,8 +66,17 @@ seq_router = APIRouter()
     include_in_schema=True,
     tags=["Retrieving data"],
 )
-async def refget(request: Request, sequence_digest: str = example_sequence):
-    return Response(content=dbagent.seq.get(sequence_digest), media_type="text/plain")
+async def sequence(dbagent=Depends(get_dbagent), sequence_digest: str = example_sequence, start: int = None, end: int = None):
+    return Response(content=dbagent.seq.get(sequence_digest, start, end), media_type="text/plain")
+
+@seq_router.get(
+    "/sequence/{sequence_digest}/metadata",
+    summary="Retrieve metadata for a sequence",
+    tags=["Retrieving data"],
+)
+async def seq_metadata(dbagent=Depends(get_dbagent), sequence_digest: str = example_sequence):
+    return NotImplementedError("Metadata retrieval not yet implemented.")
+    return JSONResponse(dbagent.seq.get_metadata(sequence_digest))
 
 
 seqcol_router = APIRouter()

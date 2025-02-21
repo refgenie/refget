@@ -5,7 +5,8 @@ import logging
 from .const import *
 from ._version import __version__
 from .hash_functions import *
-from .clients import RefGetClient
+from .clients import SequencesClient, SequenceCollectionsClient, PangenomesClient
+
 
 from .utilities import *
 

@@ -7,6 +7,22 @@ import hashlib
 import binascii
 from typing import Union
 
+from .const import GTARS_INSTALLED
+
+if GTARS_INSTALLED:
+    from gtars.digests import sha512t24u_digest as gtars_sha512t24u_digest
+    from gtars.digests import md5_digest as gtars_md5_digest
+
+    sha512t24u_digest = gtars_sha512t24u_digest
+    md5_digest  = gtars_md5_digest
+else:
+
+    def gtars_sha512t24u_digest(seq):
+        raise Exception("gtars is not installed")
+
+    sha512t24u_digest = py_sha512t24u_digest
+    md5_digest = py_md5_digest
+
 
 def trunc512_digest(seq, offset=24):
     digest = hashlib.sha512(seq.encode("utf-8")).digest()
@@ -65,19 +81,5 @@ def py_sha512t24u_digest(seq: Union[str, bytes], offset: int = 24) -> str:
     return tdigest_b64us.decode("ascii")
 
 
-def md5(seq):
+def py_md5_digest(seq):
     return hashlib.md5(seq.encode()).hexdigest()
-
-
-from .const import GTARS_INSTALLED
-
-if GTARS_INSTALLED:
-    from gtars.digests import sha512t24u_digest as gtars_sha512t24u_digest
-
-    sha512t24u_digest = gtars_sha512t24u_digest
-else:
-
-    def gtars_sha512t24u_digest(seq):
-        raise Exception("gtars is not installed")
-
-    sha512t24u_digest = py_sha512t24u_digest

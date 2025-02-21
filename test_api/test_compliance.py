@@ -77,7 +77,7 @@ def check_collection(api_root, demo_file, response_file):
     # schema = read_url(schema_path)
     # inherent_attrs = schema["inherent"]
 
-    inherent_attrs = ["names", "lengths", "sequences"]
+    inherent_attrs = ["names", "sequences"]
     print(f"Loading fasta file at '{demo_root}/{demo_file}'")
     digest = refget.fasta_file_to_digest(f"{demo_root}/{demo_file}", inherent_attrs=inherent_attrs)
     print(f"Checking digest: {digest}")
