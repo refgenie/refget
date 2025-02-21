@@ -35,8 +35,6 @@ def create_refget_router(sequences: bool = False, collections: bool = True, pang
     You can choose which endpoints to include by setting the sequences, collections, 
     or pangenomes flags.
 
-    Use like: app.include_router(create_refget_router(sequences=False, pangenomes=False))
-
     Args:
         sequences (bool): Include sequence endpoints
         collections (bool): Include sequence collection endpoints
@@ -44,6 +42,11 @@ def create_refget_router(sequences: bool = False, collections: bool = True, pang
 
     Returns:
         APIRouter: A FastAPI router with the specified endpoints
+
+    Examples:
+        ```
+        app.include_router(create_refget_router(sequences=False, pangenomes=False))
+        ```
     """
 
     refget_router = APIRouter()
