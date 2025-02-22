@@ -3,9 +3,7 @@ import json
 import os
 import logging
 import requests
-import yaml
 
-from yacman import load_yaml
 from copy import copy
 
 from .agents import RefgetDBAgent

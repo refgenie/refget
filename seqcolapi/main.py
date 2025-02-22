@@ -24,7 +24,9 @@ app = FastAPI(
 )
 
 # This is where the magic happens
-app.include_router(create_refget_router(sequences=False, pangenomes=False))
+refget_router = create_refget_router(sequences=False, pangenomes=False)
+print(refget_router)
+app.include_router(refget_router)
 
 origins = ["*"]
 

@@ -7,10 +7,11 @@ To use, first import it, then attach it to the app,
 then create a dbagent object to connect to the database,
 and attach it to the app state like this:
 
-from refget import seqcol_router
+from refget import create_refget_router
 from refget.agents import RefgetDBAgent
 
-app.include_router(seqcol_router, prefix="/seqcol")
+refget_router = create_refget_router(sequences=False, collections=True, pangenomes=False)
+app.include_router(refget_router, prefix="/seqcol")
 app.state.dbagent = RefgetDBAgent()
 """
 

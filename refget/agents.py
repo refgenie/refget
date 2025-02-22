@@ -139,7 +139,7 @@ class SequenceAgent(object):
             }
 
 
-class SeqColAgent(object):
+class SequenceCollectionAgent(object):
     """
     Agent for interacting with database of sequence collection
     """
@@ -482,7 +482,7 @@ class RefgetDBAgent(object):
             self.inherent_attrs = inherent_attrs
 
         self.__sequence = SequenceAgent(self.engine)
-        self.__seqcol = SeqColAgent(self.engine, self.inherent_attrs)
+        self.__seqcol = SequenceCollectionAgent(self.engine, self.inherent_attrs)
         self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
 
@@ -503,7 +503,7 @@ class RefgetDBAgent(object):
         return self.__sequence
 
     @property
-    def seqcol(self) -> SeqColAgent:
+    def seqcol(self) -> SequenceCollectionAgent:
         return self.__seqcol
 
     @property

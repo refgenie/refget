@@ -6,7 +6,7 @@
 # to load the demo fasta files into the database.
 
 import refget
-col_client = refget.SequenceCollectionsClient(urls=["http://127.0.0.1:8100"])
+col_client = refget.SequenceCollectionClient(urls=["http://127.0.0.1:8100"])
 
 demo_results = {}
 for demo_file in DEMO_FILES:

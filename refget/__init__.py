@@ -5,14 +5,14 @@ import logging
 from .const import *
 from ._version import __version__
 from .hash_functions import *
-from .clients import SequencesClient, SequenceCollectionsClient, PangenomesClient
+from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient
 
 
 from .utilities import *
 
 try:
     # Requires optional dependencies, so we catch the ImportError
-    from .seqcol_router import create_refget_router, get_dbagent
+    from .refget_router import create_refget_router, get_dbagent
 except ImportError:
     create_seqcol_router = None
     pass
