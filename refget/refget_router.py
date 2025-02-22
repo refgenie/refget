@@ -25,15 +25,19 @@ from .examples import *
 
 _LOGGER = logging.getLogger(__name__)
 
+
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
 async def get_dbagent(request: Request):
     return request.app.state.dbagent
 
-def create_refget_router(sequences: bool = False, collections: bool = True, pangenomes: bool = False):
+
+def create_refget_router(
+    sequences: bool = False, collections: bool = True, pangenomes: bool = False
+):
     """
     Create a FastAPI router for the sequence collection API.
     This router provides endpoints for retrieving and comparing sequence collections.
-    You can choose which endpoints to include by setting the sequences, collections, 
+    You can choose which endpoints to include by setting the sequences, collections,
     or pangenomes flags.
 
     Args:
@@ -64,14 +68,22 @@ def create_refget_router(sequences: bool = False, collections: bool = True, pang
 
 
 seq_router = APIRouter()
+
+
 @seq_router.get(
     "/sequence/{sequence_digest}",
     summary="Retrieve raw sequence via original refget protocol",
     include_in_schema=True,
     tags=["Retrieving data"],
 )
-async def sequence(dbagent=Depends(get_dbagent), sequence_digest: str = example_sequence, start: int = None, end: int = None):
+async def sequence(
+    dbagent=Depends(get_dbagent),
+    sequence_digest: str = example_sequence,
+    start: int = None,
+    end: int = None,
+):
     return Response(content=dbagent.seq.get(sequence_digest, start, end), media_type="text/plain")
+
 
 @seq_router.get(
     "/sequence/{sequence_digest}/metadata",
@@ -84,6 +96,8 @@ async def seq_metadata(dbagent=Depends(get_dbagent), sequence_digest: str = exam
 
 
 seqcol_router = APIRouter()
+
+
 @seqcol_router.get(
     "/collection/{collection_digest}",
     summary="Retrieve a sequence collection",
@@ -265,6 +279,8 @@ async def list_attributes(
 
 
 pangenome_router = APIRouter()
+
+
 @pangenome_router.get(
     "/list/pangenomes",
     summary="List pangenomes on the server, paged by offset",

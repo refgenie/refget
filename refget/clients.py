@@ -4,6 +4,7 @@ import requests
 
 _LOGGER = logging.getLogger(__name__)
 
+
 # Abstract class
 class RefgetClient(object):
     """
@@ -18,7 +19,7 @@ class RefgetClient(object):
             f"  Service Name: {service_info['name']}\n"
             f"  API URLs:    {', '.join(self.urls)}\n"
         )
-        
+
     def service_info(self):
         """
         Retrieves information about the service.
@@ -31,6 +32,7 @@ class RefgetClient(object):
         if self.__class__.__name__ == "SequenceClient":
             endpoint = "/sequence/service-info"
         return _try_urls(self.urls, endpoint)
+
 
 class SequenceClient(RefgetClient):
     """
@@ -51,7 +53,7 @@ class SequenceClient(RefgetClient):
         self.urls = [url.rstrip("/") for url in urls]
         # If raise_errors is None, set it to True if the client is not being used as a library
         if raise_errors is None:
-            raise_errors = (__name__ == "__main__")
+            raise_errors = __name__ == "__main__"
         self.raise_errors = raise_errors
 
     def get_sequence(self, digest, start=None, end=None):
@@ -72,7 +74,7 @@ class SequenceClient(RefgetClient):
 
         endpoint = f"/sequence/{digest}"
         return _try_urls(self.urls, endpoint, params=query_params, raise_errors=self.raise_errors)
-    
+
     def get_metadata(self, digest):
         """
         Retrieves metadata for a given sequence digest.
@@ -106,7 +108,7 @@ class SequenceCollectionClient(RefgetClient):
         self.urls = [url.rstrip("/") for url in urls]
         # If raise_errors is None, set it to True if the client is not being used as a library
         if raise_errors is None:
-            raise_errors = (__name__ == "__main__")
+            raise_errors = __name__ == "__main__"
         self.raise_errors = raise_errors
 
     def get_collection(self, digest, level=2):
@@ -122,7 +124,7 @@ class SequenceCollectionClient(RefgetClient):
         """
         endpoint = f"/collection/{digest}?level={level}"
         return _try_urls(self.urls, endpoint)
-    
+
     def get_attribute(self, attribute, digest, level=2):
         """
         Retrieves a specific attribute for a given digest and detail level.
@@ -197,7 +199,7 @@ class SequenceCollectionClient(RefgetClient):
 
         endpoint = f"/list/attributes/{attribute}"
         return _try_urls(self.urls, endpoint, params=params)
-    
+
     def service_info(self):
         """
         Retrieves information about the service.
@@ -213,8 +215,8 @@ class PangenomeClient(RefgetClient):
     pass
 
 
-
 # Utilities
+
 
 def _wrap_response(response):
     """

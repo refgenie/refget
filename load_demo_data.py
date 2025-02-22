@@ -22,16 +22,14 @@ for demo_file in DEMO_FILES:
     print(demo_results[f])
 
 
-
-
 # You can explore these results like this:
 # with Session(dbc.engine) as session:
 #     session.add(demo_results["test_fasta/base.fa"])
 #     print("Digest is: ", demo_results["test_fasta/base.fa"].digest)
 
 
-
 # simple fasta file parser
+
 
 def parse_fasta(fasta_file):
     with open(fasta_file, "r") as f:
@@ -49,6 +47,7 @@ def parse_fasta(fasta_file):
     seqs[seq_name] = seq
     return seqs
 
+
 # Loading some sequences
 demo_results = {}
 for demo_file in DEMO_FILES:
@@ -57,7 +56,8 @@ for demo_file in DEMO_FILES:
     seqs = parse_fasta(f)
     for seq_name, seq in seqs.items():
         print("Sequence to be loaded: {}".format(seq_name))
-        seq_obj = Sequence(digest=refget.digest_functions.sha512t24u_digest(seq), sequence=seq, length=len(seq))
+        seq_obj = Sequence(
+            digest=refget.digest_functions.sha512t24u_digest(seq), sequence=seq, length=len(seq)
+        )
         demo_results[seq_obj.digest] = dbc.seq.add(seq_obj)
     print(demo_results[seq_obj.digest])
-

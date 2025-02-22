@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import  FastAPI, Depends
+from fastapi import FastAPI, Depends
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
@@ -38,10 +38,14 @@ app.add_middleware(  # This is a public API, so we allow all origins
     allow_headers=["*"],
 )
 
+
 # Catch-all error handler for any uncaught exceptions, return a 500 error with detailed information
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
-    return await http_exception_handler(request, HTTPException(status_code=500, detail=str(exc)))  # Pass it to HTTP handler
+    return await http_exception_handler(
+        request, HTTPException(status_code=500, detail=str(exc))
+    )  # Pass it to HTTP handler
+
 
 # General Exception Handler (Covers All HTTPExceptions)
 @app.exception_handler(HTTPException)
@@ -56,13 +60,16 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         },
     )
 
+
 @app.exception_handler(ValueError)
 async def generic_exception_handler(request: Request, exc: Exception):
     raise HTTPException(status_code=404, detail=str(exc))
 
+
 @app.get("favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse(f"/static/favicon.ico")
+
 
 @app.get("/", summary="Home page", tags=["General endpoints"], response_class=HTMLResponse)
 async def index(request: Request):
@@ -72,6 +79,7 @@ async def index(request: Request):
     with open(f"{STATIC_PATH}/index.html", "r") as file:
         content = file.read()
     return HTMLResponse(content=content)
+
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
 async def service_info(dbagent=Depends(get_dbagent)):
@@ -94,8 +102,10 @@ async def service_info(dbagent=Depends(get_dbagent)):
     }
     return JSONResponse(content=ret)
 
+
 # Mount statics after other routes for lower precedence
 app.mount(f"/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
+
 
 def create_global_dbagent():
     """
@@ -106,6 +116,7 @@ def create_global_dbagent():
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent
+
 
 if __name__ != "__main__":
     app.state.dbagent = create_global_dbagent()

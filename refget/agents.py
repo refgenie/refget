@@ -75,7 +75,7 @@ class SequenceAgent(object):
     """
     Agent for interacting with database of sequences
     """
-    
+
     def __init__(self, engine):
         self.engine = engine
 
@@ -99,7 +99,7 @@ class SequenceAgent(object):
             statement = select(
                 func.substring(Sequence.sequence, start, end - start + 1).label("subsequence")
             ).where(Sequence.digest == digest)
-            
+
             results = session.exec(statement)
             response = results.first()
             print(response)
@@ -107,7 +107,7 @@ class SequenceAgent(object):
             # Raise ValueError if not found or if the subsequence is empty
             if not response:
                 raise ValueError(f"Subsequence with digest '{digest}' not found")
-            
+
             return response
 
     def add(self, sequence: Sequence) -> Sequence:
@@ -143,6 +143,7 @@ class SequenceCollectionAgent(object):
     """
     Agent for interacting with database of sequence collection
     """
+
     def __init__(self, engine, inherent_attrs=None):
         self.engine = engine
         self.inherent_attrs = inherent_attrs
@@ -285,6 +286,7 @@ class PangenomeAgent(object):
     """
     Agent for interacting with database of pangenomes
     """
+
     def __init__(self, parent):
         self.engine = parent.engine
         self.parent = parent
@@ -428,7 +430,7 @@ class RefgetDBAgent(object):
         self,
         engine: Optional[SqlalchemyDatabaseEngine] = None,
         postgres_str: Optional[str] = None,
-        schema = f"{SCHEMA_FILEPATH}/seqcol.json",
+        schema=f"{SCHEMA_FILEPATH}/seqcol.json",
         inherent_attrs: List[str] = ["names", "lengths", "sequences"],
     ):  # = "sqlite:///foo.db"
         if engine is not None:

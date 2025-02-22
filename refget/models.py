@@ -10,6 +10,7 @@ class Sequence(SQLModel, table=True):
     sequence: str
     length: int
 
+
 class PangenomeCollectionLink(SQLModel, table=True):
     pangenome_digest: str = Field(foreign_key="pangenome.digest", primary_key=True)
     collection_digest: str = Field(foreign_key="sequencecollection.digest", primary_key=True)

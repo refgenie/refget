@@ -6,6 +6,7 @@
 # to load the demo fasta files into the database.
 
 import refget
+
 col_client = refget.SequenceCollectionClient(urls=["http://127.0.0.1:8100"])
 
 demo_results = {}
@@ -13,7 +14,10 @@ for demo_file in DEMO_FILES:
     file_path = f"{fa_root}/{demo_file}"
     basename = os.path.basename(file_path)
     print(f"Fasta file to be loaded: {basename}")
-    res = refget.build_seqcol_model(refget.fasta_file_to_seqcol(f"{fa_root}/{demo_file}"), inherent_attrs=["names", "sequences"])
+    res = refget.build_seqcol_model(
+        refget.fasta_file_to_seqcol(f"{fa_root}/{demo_file}"),
+        inherent_attrs=["names", "sequences"],
+    )
     demo_results[basename] = res
 
 # comparisons
@@ -38,14 +42,11 @@ for x in demo_results.keys():
             f.write(json.dumps(res, indent=2))
 
 
-
-
-
 # def serialize_sqlmodel(obj):
 #     data = obj.model_dump()
 #     for key, value in obj.__dict__.items():
 #         if key.startswith("_"):
-#             continue  
+#             continue
 #         elif isinstance(value, SQLModel):
 #             data[key] = serialize_sqlmodel(value)  # Handle nested objects
 #     return data

@@ -273,11 +273,9 @@ print(f"gc_count.checksum_from_str().sha512: {time_gc_count_checksum} seconds")
 print(f"gc_count.sha512t24u_digest: {time_gc_512_only} seconds")
 
 
-
-
-
 # Reading the data from a client
 import refget
+
 seq_client = refget.SequencesClient(urls=["https://www.ebi.ac.uk/ena/cram"])
 seq_client.get_sequence("6681ac2f62509cfc220d78751b8dc524", start=0, end=10)
 seq_client.get_metadata("6681ac2f62509cfc220d78751b8dc524")
@@ -306,6 +304,6 @@ demo_results["test_fasta/base.fa"].sequences
 DEMO_FILES
 
 
-col_client.compare(demo_results["test_fasta/base.fa"].digest, demo_results["test_fasta/different_names.fa"].digest)
-
-
+col_client.compare(
+    demo_results["test_fasta/base.fa"].digest, demo_results["test_fasta/different_names.fa"].digest
+)

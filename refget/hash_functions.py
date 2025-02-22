@@ -14,7 +14,7 @@ if GTARS_INSTALLED:
     from gtars.digests import md5_digest as gtars_md5_digest
 
     sha512t24u_digest = gtars_sha512t24u_digest
-    md5_digest  = gtars_md5_digest
+    md5_digest = gtars_md5_digest
 else:
 
     def gtars_sha512t24u_digest(seq):
