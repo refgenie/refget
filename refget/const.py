@@ -26,13 +26,7 @@ SeqCol = dict
 
 GTARS_INSTALLED = False
 try:
-    from gtars.digests import digest_fasta, sha512t24u_digest
-
     GTARS_INSTALLED = True
 except ImportError:
-
-    def digest_fasta(*args, **kwargs):
-        raise ImportError("gtars is required for this function.")
-
     GTARS_INSTALLED = False
-    _LOGGER.error("gtars not installed.")
+    _LOGGER.error("gtars not installed. Some functions will be slower or unavailable.")

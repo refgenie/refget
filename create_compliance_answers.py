@@ -15,7 +15,7 @@ for demo_file in DEMO_FILES:
     basename = os.path.basename(file_path)
     print(f"Fasta file to be loaded: {basename}")
     res = refget.build_seqcol_model(
-        refget.fasta_file_to_seqcol(f"{fa_root}/{demo_file}"),
+        refget.fasta_to_seqcol(f"{fa_root}/{demo_file}"),
         inherent_attrs=["names", "sequences"],
     )
     demo_results[basename] = res

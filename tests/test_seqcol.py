@@ -129,7 +129,7 @@ class TestNewModels:
     def test_new_models(self, fa_root):
         f = os.path.join(fa_root, DEMO_FILES[0])
         print("Fasta file to be loaded: {}".format(f))
-        d = refget.fasta_file_to_seqcol(f)
+        d = refget.fasta_to_seqcol(f)
         print(d)
         # print(d.digest)
         x = refget.seqcol_digest_model(d)
