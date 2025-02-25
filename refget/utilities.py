@@ -297,14 +297,6 @@ def seqcol_digest(seqcol_obj: SeqCol, inherent_attrs: Optional[list] = None) -> 
     return seqcol_digest
 
 
-def explain_flag(flag):
-    """Explains a compare flag"""
-    print(f"Flag: {flag}\nBinary: {bin(flag)}\n")
-    for e in range(0, 13):
-        if flag & 2**e:
-            print(FLAGS[2**e])
-
-
 def build_seqcol_model(
     seqcol_obj: dict, inherent_attrs: Optional[list] = None
 ) -> SequenceCollection:
