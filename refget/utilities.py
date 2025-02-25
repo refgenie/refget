@@ -10,7 +10,6 @@ from .const import SeqCol, GTARS_INSTALLED, digest_fasta
 from .exceptions import *
 from .models import *
 from .digest_functions import sha512t24u_digest, sha512t24u_digest_bytes
-from .conversion import convert_dict_to_bytes
 
 from .hash_functions import sha512t24u_digest
 
@@ -104,7 +103,7 @@ def chrom_sizes_to_seqcol(
             continue
         seq_name, seq_length, ga4gh_digest, _ = line.split("\t")
         snlp = {"length": seq_length, "name": seq_name}  # sorted_name_length_pairs
-        snlp_digest = digest_function(convert_dict_to_bytes(snlp))
+        snlp_digest = digest_function(canonical_str(snlp))
         CSC["lengths"].append(int(seq_length))
         CSC["names"].append(seq_name)
         CSC["sequences"].append(ga4gh_digest)
@@ -167,7 +166,7 @@ def build_sorted_name_length_pairs(obj: dict, digest_function: DigestFunction = 
         sorted_name_length_pairs.append({"length": obj["lengths"][i], "name": obj["names"][i]})
     nl_digests = []  # name-length digests
     for i in range(len(sorted_name_length_pairs)):
-        nl_digests.append(digest_function(convert_dict_to_bytes(sorted_name_length_pairs[i])))
+        nl_digests.append(digest_function(canonical_str(sorted_name_length_pairs[i])))
 
     nl_digests.sort()
     return nl_digests
@@ -275,10 +274,10 @@ def seqcol_digest(seqcol_obj: SeqCol, inherent_attrs: Optional[list] = None) -> 
         for k in inherent_attrs:
             # Step 2: Apply RFC-8785 to canonicalize the value
             # associated with each attribute individually.
-            seqcol_obj2[k] = convert_dict_to_bytes(seqcol_obj[k])
+            seqcol_obj2[k] = canonical_str(seqcol_obj[k])
     else:  # no schema provided, so assume all attributes are inherent
         for k in seqcol_obj:
-            seqcol_obj2[k] = convert_dict_to_bytes(seqcol_obj[k])
+            seqcol_obj2[k] = canonical_str(seqcol_obj[k])
     # Step 3: Digest each canonicalized attribute value
     # using the GA4GH digest algorithm.
 
@@ -290,7 +289,7 @@ def seqcol_digest(seqcol_obj: SeqCol, inherent_attrs: Optional[list] = None) -> 
     # Step 4: Apply RFC-8785 again to canonicalize the JSON
     # of new seqcol object representation.
 
-    seqcol_obj4 = convert_dict_to_bytes(seqcol_obj3)
+    seqcol_obj4 = canonical_str(seqcol_obj3)
 
     # Step 5: Digest the final canonical representation again.
     seqcol_digest = sha512t24u_digest(seqcol_obj4)
@@ -316,10 +315,10 @@ def build_seqcol_model(
         for k in inherent_attrs:
             # Step 2: Apply RFC-8785 to canonicalize the value
             # associated with each attribute individually.
-            seqcol_obj2[k] = convert_dict_to_bytes(seqcol_obj[k])
+            seqcol_obj2[k] = canonical_str(seqcol_obj[k])
     else:  # no schema provided, so assume all attributes are inherent
         for k in seqcol_obj:
-            seqcol_obj2[k] = convert_dict_to_bytes(seqcol_obj[k])
+            seqcol_obj2[k] = canonical_str(seqcol_obj[k])
     # Step 3: Digest each canonicalized attribute value
     # using the GA4GH digest algorithm.
 
@@ -331,7 +330,7 @@ def build_seqcol_model(
     # Step 4: Apply RFC-8785 again to canonicalize the JSON
     # of new seqcol object representation.
 
-    seqcol_obj4 = convert_dict_to_bytes(seqcol_obj3)
+    seqcol_obj4 = canonical_str(seqcol_obj3)
     # Step 5: Digest the final canonical representation again.
     seqcol_digest = sha512t24u_digest(seqcol_obj4)
 
@@ -403,13 +402,13 @@ def build_pangenome_model(pangenome_obj: dict) -> Pangenome:
     #     pangenome_obj[s.sample_name] = self.seqcol.add_from_fasta_file(f)
 
     # Now create a CollectionNamesAttr object
-    d = sha512t24u_digest(convert_dict_to_bytes(list(pangenome_obj.keys())))
+    d = sha512t24u_digest(canonical_str(list(pangenome_obj.keys())))
     v = ",".join(list(pangenome_obj.keys()))
     cna = CollectionNamesAttr(digest=d, value=v)
 
     # Now create a Collection object
     collections_digest = sha512t24u_digest(
-        convert_dict_to_bytes([x.digest for x in pangenome_obj.values()])
+        canonical_str([x.digest for x in pangenome_obj.values()])
     )
     collections_digest
 
@@ -418,7 +417,7 @@ def build_pangenome_model(pangenome_obj: dict) -> Pangenome:
         "collections": collections_digest,
     }
 
-    pangenome_digest = sha512t24u_digest(convert_dict_to_bytes(pg_to_digest))
+    pangenome_digest = sha512t24u_digest(canonical_str(pg_to_digest))
     pangenome_digest
 
     p = Pangenome(
