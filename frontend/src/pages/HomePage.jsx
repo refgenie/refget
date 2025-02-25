@@ -13,7 +13,7 @@ const HomePage = () => {
     const sorted_name_length_pairs = loaderData[2]
   
     const PangenomeExamplesList = () => {
-      if (pangenomes.results[0]) {
+      if (pangenomes && pangenomes.results && pangenomes.results.length > 0) {
         return <>
           <h3>Example Pangenomes:</h3>
           <PangenomeList pangenomes={pangenomes}/>
@@ -25,12 +25,24 @@ const HomePage = () => {
   
     return (
       <div>
+
+        <div className="d-flex justify-content-end float-end">
+          <div className="card">
+            <div className="card-body">
+              This server is hosting <b>{collections?.pagination?.total ?? 0}</b> collections.
+            </div>
+          </div>
+        </div>
+
+
         <p>Welcome to the Refget Sequence Collections demo service!
           This landing page provides a way to explore the data in the server.
           You can go straight to the API itself using the <b>API Docs</b> link in the title bar.
           Or, you can check out a few examples below. Here are two easy ways to browse:
         </p>
+
   
+
         <h5>1. View and compare the demo sequence collections:</h5>
         <p className="text-muted fs-6">
           This service includes several small demo collections. This page will show you 
