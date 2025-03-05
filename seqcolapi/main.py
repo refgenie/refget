@@ -38,6 +38,7 @@ refget_router = create_refget_router(sequences=False, pangenomes=False)
 print(refget_router)
 app.include_router(refget_router)
 
+
 # Catch-all error handler for any uncaught exceptions, return a 500 error with detailed information
 @app.exception_handler(Exception)
 async def generic_exception_handler(request: Request, exc: Exception):
