@@ -1,6 +1,6 @@
 biopython
 henge>=0.2.1
-gtars>=0.2.2
+gtars>=0.2.4
 pyyaml
 requests
 sqlmodel
