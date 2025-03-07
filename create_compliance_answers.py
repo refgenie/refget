@@ -6,10 +6,15 @@
 # to load the demo fasta files into the database.
 
 import refget
+import os
+from tests.conftest import DEMO_FILES
 
 col_client = refget.SequenceCollectionClient(urls=["http://127.0.0.1:8100"])
+fa_root = "test_fasta"
+
 
 demo_results = {}
+demo_results_json = []
 for demo_file in DEMO_FILES:
     file_path = f"{fa_root}/{demo_file}"
     basename = os.path.basename(file_path)
@@ -19,6 +24,26 @@ for demo_file in DEMO_FILES:
         inherent_attrs=["names", "sequences"],
     )
     demo_results[basename] = res
+    demo_results_json.append({
+        "name": basename,
+        "digest": res.digest,
+        "sorted_name_length_pairs_digest": res.sorted_name_length_pairs_digest,
+    })
+
+
+
+for n, sc in demo_results.items():
+    print(f"{n}: {sc.digest} {sc.sorted_name_length_pairs_digest}")
+
+# write this to a file:
+
+demo_results_json
+import json
+with open("test_fasta/test_fasta_digests.json", "w") as f:
+    f.write(json.dumps(demo_results_json, indent=2))
+
+
+
 
 # comparisons
 attribute_root = "test_api/attribute"
