@@ -23,11 +23,6 @@ app = FastAPI(
     version=ALL_VERSIONS["seqcolapi_version"],
 )
 
-# This is where the magic happens
-refget_router = create_refget_router(sequences=False, pangenomes=False)
-print(refget_router)
-app.include_router(refget_router)
-
 origins = ["*"]
 
 app.add_middleware(  # This is a public API, so we allow all origins
@@ -37,6 +32,11 @@ app.add_middleware(  # This is a public API, so we allow all origins
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# This is where the magic happens
+refget_router = create_refget_router(sequences=False, pangenomes=False)
+print(refget_router)
+app.include_router(refget_router)
 
 
 # Catch-all error handler for any uncaught exceptions, return a 500 error with detailed information

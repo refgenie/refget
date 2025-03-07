@@ -3,12 +3,12 @@ import { LinkedCollectionDigest } from '../components/ValuesAndDigests';
 
 function DemoPage() {
     const demo_seqcol_digests = {
-      base_collection: "fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32",
-      different_names_collection: "TKB7n_14iKSFjljBA-TSVjeYpxPQe0-k",
-      different_order_collection: "JPd9Y-hwnhGD7HPe3yka4Qtx2YsIL8tW",
-      pair_swap_collection: "E6zGtGuc8wKYmCMw5gaLW3ppyXsoO6p4",
-      subset_collection: "8aA37TYgiVohRqfRhXEeklIAXf2Rs8jw",
-      swap_wo_coords_collection: "EkMSPx-_MdAzj2tWGfdFSVsuv03OznPn",
+      base_collection: "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk",
+      different_names_collection: "QvT5tAQ0B8Vkxd-qFftlzEk2QyfPtgOv",
+      different_order_collection: "Tpdsg75D4GKCGEHtIiDSL9Zx-DSuX5V8",
+      pair_swap_collection: "UNGAdNDmBbQbHihecPPFxwTydTcdFKxL",
+      subset_collection: "sv7GIP1K0qcskIKF3iaBmQpaum21vH74",
+      swap_wo_coords_collection: "aVzHaGFlUDUNF2IEmNdzS_A8lCY0stQH",
     }
   
   return <div>

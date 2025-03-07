@@ -176,19 +176,19 @@ f2 = os.path.join(fa_root, DEMO_FILES[2])
 x2 = dbc.seqcol.add_from_fasta_file(f2)
 
 
-refget.fasta_file_to_seqcol(f)
+refget.fasta_to_seqcol(f)
 f = os.path.join(fa_root, DEMO_FILES[1])
-csc = refget.build_seqcol_model(fasta_file_to_seqcol(f))
+csc = refget.build_seqcol_model(fasta_to_seqcol(f))
 
 fromdb = dbc.seqcol.get(csc.digest)
 
 csc
-csc0 = refget.build_seqcol_model(fasta_file_to_seqcol(os.path.join(fa_root, DEMO_FILES[0])))
+csc0 = refget.build_seqcol_model(fasta_to_seqcol(os.path.join(fa_root, DEMO_FILES[0])))
 
 f = os.path.join(fa_root, DEMO_FILES[3])
-csc3 = refget.build_seqcol_model(fasta_file_to_seqcol(f))
+csc3 = refget.build_seqcol_model(fasta_to_seqcol(f))
 csc.lengths
-sc4 = refget.build_seqcol_model(fasta_file_to_seqcol(os.path.join(fa_root, DEMO_FILES[4])))
+sc4 = refget.build_seqcol_model(fasta_to_seqcol(os.path.join(fa_root, DEMO_FILES[4])))
 
 # What was the problem? That even just *creating* the object rom the other one...
 # so I was saying: names = csc4.names, and that was *connected* to csc4.lengths,
@@ -218,10 +218,10 @@ print(
 # - [ ] use peppy to grab a pep, process fastq.gz files?
 
 
-from refget import fasta_file_to_seqcol
+from refget import fasta_to_seqcol
 
-fasta_file_to_seqcol("demo_fasta/demo0.fa")
-fasta_file_to_seqcol("/home/nsheff/sandbox/HG002.alt.pat.f1_v2.unmasked.fa.gz")
+fasta_to_seqcol("demo_fasta/demo0.fa")
+fasta_to_seqcol("/home/nsheff/sandbox/HG002.alt.pat.f1_v2.unmasked.fa.gz")
 
 
 import gtars

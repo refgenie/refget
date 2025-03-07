@@ -46,7 +46,7 @@ def create_refget_router(
         pangenomes (bool): Include pangenome endpoints
 
     Returns:
-        APIRouter: A FastAPI router with the specified endpoints
+        (APIRouter): A FastAPI router with the specified endpoints
 
     Examples:
         ```

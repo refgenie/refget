@@ -3,12 +3,10 @@
 import logging
 
 from .const import *
-from ._version import __version__
-from .hash_functions import *
 from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient
-
-
+from .digest_functions import *
 from .utilities import *
+from ._version import __version__
 
 try:
     # Requires optional dependencies, so we catch the ImportError

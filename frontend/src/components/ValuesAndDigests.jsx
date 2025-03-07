@@ -2,6 +2,10 @@ import { Link } from "react-router-dom";
 import { copyToClipboardIcon, copyToClipboard } from "../utilities";
 
 const AttributeValue = ({value}) => {
+    console.log("AttributeValue", value)
+    if (value === null) {
+        return(<pre className="text-secondary m-0 p-2 border border-muted"><code>null</code></pre>)
+    }
     return(<pre className="text-secondary m-0 p-2 border border-muted"><code>{value.join(",")}</code></pre>)
 }
 

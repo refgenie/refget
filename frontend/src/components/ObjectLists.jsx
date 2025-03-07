@@ -27,7 +27,7 @@ const AttributeList = ({attributes}) => {
   return (<>
     <div>
       <ul>
-        {attrList.results.map((attr) => (
+        {attrList.results?.map((attr) => (
           <li key={attr}>
             Attribute: <Link to={`/attribute/sorted_name_length_pairs/${attr}`}>{attr}</Link>
           </li>
@@ -46,7 +46,7 @@ const PangenomeList = ({pangenomes}) => {
   return (<>
     <div>
       <ul>
-        {pangenomeList.results.map((pangenome) => (
+        {pangenomeList.results?.map((pangenome) => (
           <li key={pangenome}>
             <Link to={`/pangenome/${pangenome}`}>{pangenome}</Link>
           </li>

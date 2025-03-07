@@ -64,7 +64,7 @@ class SequenceClient(RefgetClient):
             digest (str): The digest of the sequence.
 
         Returns:
-            str: The sequence.
+            (str): The sequence.
         """
         query_params = {}
         if start is not None:
@@ -83,7 +83,7 @@ class SequenceClient(RefgetClient):
             digest (str): The digest of the sequence.
 
         Returns:
-            dict: The metadata.
+            (dict): The metadata.
         """
         endpoint = f"/sequence/{digest}/metadata"
         return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
@@ -164,7 +164,7 @@ class SequenceCollectionClient(RefgetClient):
             attribute_digest (str, optional): The attribute digest to filter by. Defaults to None.
 
         Returns:
-            dict: The JSON response containing the list of available sequence collections.
+            (dict): The JSON response containing the list of available sequence collections.
         """
         params = {}
         if page is not None:
@@ -189,7 +189,7 @@ class SequenceCollectionClient(RefgetClient):
             page_size (int, optional): The number of items per page. Defaults to None.
 
         Returns:
-            dict: The JSON response containing the list of available values for the attribute.
+            (dict): The JSON response containing the list of available values for the attribute.
         """
         params = {}
         if page is not None:
@@ -205,7 +205,7 @@ class SequenceCollectionClient(RefgetClient):
         Retrieves information about the service.
 
         Returns:
-            dict: The service information.
+            (dict): The service information.
         """
         endpoint = "/service-info"
         return _try_urls(self.urls, endpoint)
@@ -227,7 +227,7 @@ def _wrap_response(response):
         response (requests.Response): The response to wrap.
 
     Returns:
-        dict: The JSON response.
+        (dict): The JSON response.
     """
     try:
         response.raise_for_status()  # Raise an HTTPError for bad responses
@@ -250,7 +250,7 @@ def _try_urls(urls, endpoint, params=None, raise_errors=True):
         params (dict, optional): The query parameters to include in the request.
 
     Returns:
-        dict: The JSON response or None if all URLs fail.
+        (dict): The JSON response or None if all URLs fail.
     """
     errors = []
     for base_url in urls:
