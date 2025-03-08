@@ -3,7 +3,7 @@ from sqlmodel import Field, ARRAY, SQLModel, create_engine, Column, String, Rela
 from sqlmodel import JSON
 from typing import Optional
 import logging
-from .utilities import canonical_str, sha512t24u_digest, build_name_length_pairs
+from .utilities import canonical_str, sha512t24u_digest, build_name_length_pairs, seqcol_dict_to_level1_dict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -114,70 +114,52 @@ class SequenceCollection(SQLModel, table=True):
         Returns:
             (SequenceCollection): The SequenceCollection object
         """
-        raise NotImplementedError("This method is not yet implemented.")
+        seqcol = fasta_to_seqcol_dict(fasta_file)
+        return cls.from_dict(seqcol)
 
     @classmethod
-    def from_dict(cls, seqcol_obj: dict, inherent_attrs: Optional[list] = None) -> "SequenceCollection":
+    def from_dict(cls, seqcol_dict: dict, inherent_attrs: Optional[list] = ["names", "sequences"]) -> "SequenceCollection":
         """
         Given a dict representation of a sequence collection, create a SequenceCollection object.
         This is the primary way to create a SequenceCollection object.
         
         Args:
-            seqcol_obj (dict): Dictionary representation of a canonical sequence collection object
+            seqcol_dict (dict): Dictionary representation of a canonical sequence collection object
             schema (dict): Schema defining the inherent attributes to digest
         
         Returns:
             (SequenceCollection): The SequenceCollection object
         """
 
-        # validate_seqcol(seqcol_obj)
-        # Step 1a: Remove any non-inherent attributes,
-        # so that only the inherent attributes contribute to the digest.
-        seqcol_obj2 = {}
-        if inherent_attrs:
-            for k in inherent_attrs:
-                # Step 2: Apply RFC-8785 to canonicalize the value
-                # associated with each attribute individually.
-                seqcol_obj2[k] = canonical_str(seqcol_obj[k])
-        else:  # no schema provided, so assume all attributes are inherent
-            for k in seqcol_obj:
-                seqcol_obj2[k] = canonical_str(seqcol_obj[k])
-        # Step 3: Digest each canonicalized attribute value
-        # using the GA4GH digest algorithm.
-
-        seqcol_obj3 = {}
-        for attribute in seqcol_obj2:
-            seqcol_obj3[attribute] = sha512t24u_digest(seqcol_obj2[attribute])
-        # print(json.dumps(seqcol_obj3, indent=2))  # visualize the result
+        # validate_seqcol(seqcol_dict)
+        seqcol_dict3 = seqcol_dict_to_level1_dict(seqcol_dict, inherent_attrs)
 
         # Step 4: Apply RFC-8785 again to canonicalize the JSON
         # of new seqcol object representation.
 
-        seqcol_obj4 = canonical_str(seqcol_obj3)
+        seqcol_dict4 = canonical_str(seqcol_dict3)
         # Step 5: Digest the final canonical representation again.
-        seqcol_digest = sha512t24u_digest(seqcol_obj4)
+        seqcol_digest = sha512t24u_digest(seqcol_dict4)
 
         # Now, build the actual pydantic models
-        v = ",".join(seqcol_obj["sequences"])
-        sequences_attr = SequencesAttr(digest=seqcol_obj3["sequences"], value=seqcol_obj["sequences"])
+        v = ",".join(seqcol_dict["sequences"])
+        sequences_attr = SequencesAttr(digest=seqcol_dict3["sequences"], value=seqcol_dict["sequences"])
 
-        v = ",".join(seqcol_obj["names"])
-        names_attr = NamesAttr(digest=seqcol_obj3["names"], value=seqcol_obj["names"])
+        v = ",".join(seqcol_dict["names"])
+        names_attr = NamesAttr(digest=seqcol_dict3["names"], value=seqcol_dict["names"])
 
-        v = ",".join([str(x) for x in seqcol_obj["lengths"]])
+        v = ",".join([str(x) for x in seqcol_dict["lengths"]])
         lengths_attr = LengthsAttr(
-            digest=sha512t24u_digest(canonical_str(seqcol_obj["lengths"])), value=seqcol_obj["lengths"]
+            digest=sha512t24u_digest(canonical_str(seqcol_dict["lengths"])), value=seqcol_dict["lengths"]
         )
 
-        print(seqcol_obj2)
-
-        nlp = build_name_length_pairs(seqcol_obj)
+        nlp = build_name_length_pairs(seqcol_dict)
         nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
         _LOGGER.info(f"nlp: {nlp}")
         _LOGGER.info(f"nlp canonical_str: {canonical_str(nlp)}")
         _LOGGER.info(f"Name-length pairs: {nlp_attr}")
 
-        # snlp = build_sorted_name_length_pairs(seqcol_obj)
+        # snlp = build_sorted_name_length_pairs(seqcol_dict)
         # v = ",".join(snlp)
         # snlp_attr = SortedNameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(snlp)), value=snlp)
 
@@ -190,7 +172,7 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.info(f"--- SNLP: {snlp_digest}")
         # snlp_attr = SortedNameLengthPairsAttr(digest=snlp_digest, value=snlp)
 
-        sorted_sequences_value = copy(seqcol_obj["sequences"])
+        sorted_sequences_value = copy(seqcol_dict["sequences"])
         sorted_sequences_value.sort()
         sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
         sorted_sequences_attr = SortedSequencesAttr(

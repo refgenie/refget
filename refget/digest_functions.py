@@ -2,6 +2,8 @@ import hashlib
 import binascii
 import base64
 
+from typing import Callable, Union
+
 from .const import GTARS_INSTALLED
 
 if GTARS_INSTALLED:
@@ -25,6 +27,10 @@ else:
 
     sha512t24u_digest = py_sha512t24u_digest
     md5_digest = py_md5_digest
+
+
+DigestFunction = Callable[[Union[str, bytes]], str]
+""" A type alias for a digest function that takes a sequence and returns a digest. """
 
 
 def trunc512_digest(seq, offset=24) -> str:

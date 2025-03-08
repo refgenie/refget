@@ -148,6 +148,7 @@ class TestNewModels:
 class TestInitSeqCol:
 
     def test_init_seqcol(self):
+        # This is the dict for the `base.fa` demo file
         dict = {'lengths': [8, 4, 4],
             'names': ['chrX', 'chr1', 'chr2'],
             'sequences': ['SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw',
@@ -161,4 +162,4 @@ class TestInitSeqCol:
             {'length': 4, 'name': 'chr2'}]}
         sc = refget.SequenceCollection.from_dict(dict)
         print(sc)
-        assert sc.digest == "J8iHjLk7WX5EXdsChP76UHu4_kicoHY1"
+        assert sc.digest == "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk"
