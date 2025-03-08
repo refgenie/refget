@@ -1,3 +1,4 @@
+jsonschema
 gtars>=0.2.4
 pyyaml
 requests
