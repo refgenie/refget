@@ -37,6 +37,23 @@ pytest test_api --api_root https://seqcolapi.databio.org
 
 ## Development and deployment
 
+### Easy-peasy way
+
+In a moment I'll show you how to do these steps individually, but if you're in a hurry, the easy way get a development API running for testing is to just use my very simple shell script like thsi:
+
+```console
+bash deployment/demo_up.sh
+```
+
+This will:
+- populate env vars
+- launch postgres container with docker
+- run the refget service with uvicorn
+- load up the demo data
+- block the terminal until you press Ctrl+C, which will shut down all services.
+
+There's no data persistence here, it's just for demo/testing.
+
 ### Setting up a database connection
 
 First populate environment variables to configure a database connection. Choose one of these:
@@ -66,8 +83,6 @@ python load_demo_data.py
 ```
 
 
-
-
 ## Running the seqcolapi API backend
 
 Run the demo `seqcolapi` service like this:
@@ -75,6 +90,7 @@ Run the demo `seqcolapi` service like this:
 ```
 uvicorn seqcolapi.main:app --reload --port 8100
 ```
+
 
 
 ### Running with docker

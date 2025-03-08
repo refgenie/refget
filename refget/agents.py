@@ -13,7 +13,7 @@ from typing import Optional, List
 
 from .models import *
 from .utilities import (
-    fasta_to_seqcol,
+    fasta_to_seqcol_dict,
     compare_seqcols,
     build_pangenome_model,
 )
@@ -238,7 +238,7 @@ class SequenceCollectionAgent(object):
         return self.add(seqcol)
 
     def add_from_fasta_file(self, fasta_file_path: str):
-        CSC = fasta_to_seqcol(fasta_file_path)
+        CSC = fasta_to_seqcol_dict(fasta_file_path)
         return self.add_from_dict(CSC)
 
     def list_by_offset(self, limit=50, offset=0):
