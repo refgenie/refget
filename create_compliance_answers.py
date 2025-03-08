@@ -13,7 +13,7 @@ from refget import SequenceCollection
 from tests.conftest import DEMO_FILES
 
 # The first section doesn't require a server, just the fasta files.
-# We will just compute the digests for the demo fasta files using the local 
+# We will just compute the digests for the demo fasta files using the local
 # digest functions, and then save the results to a file.
 
 fa_root = "test_fasta"
@@ -28,11 +28,13 @@ for demo_file in DEMO_FILES:
         inherent_attrs=["names", "sequences"],
     )
     demo_results[basename] = res
-    demo_results_json.append({
-        "name": basename,
-        "digest": res.digest,
-        "sorted_name_length_pairs_digest": res.sorted_name_length_pairs_digest,
-    })
+    demo_results_json.append(
+        {
+            "name": basename,
+            "digest": res.digest,
+            "sorted_name_length_pairs_digest": res.sorted_name_length_pairs_digest,
+        }
+    )
 
 for n, sc in demo_results.items():
     print(f"{n}: {sc.digest} {sc.sorted_name_length_pairs_digest}")
@@ -42,12 +44,11 @@ demo_results_json
 with open("test_fasta/test_fasta_digests.json", "w") as f:
     f.write(json.dumps(demo_results_json, indent=2))
 
-refget.validate_seqcol(demo_results['base.fa'].level2())
+refget.validate_seqcol(demo_results["base.fa"].level2())
 
 # This would be used to validate against the pydantic schema,
 # a jsonschema derived from the pydantic model itself.
 # SequenceCollection.model_validate(demo_results['base.fa'].level2())
-
 
 
 # Now we can use the client to generate the correct answers for the compliance tests

@@ -1,65 +1,14 @@
+import os
 import refget
 
+from tests.conftest import DEMO_FILES
 
-scc = SeqColHenge(database={}, schemas=["seqcol/schemas/SeqColArraySet.yaml"])
-scc
+fa_root = "test_fasta"
 
-fa_file = "demo_fasta/demo0.fa"
-fa_object = seqcol.parse_fasta(fa_file)
+sc0 = refget.SequenceCollection.from_fasta_file(os.path.join(fa_root, DEMO_FILES[0]))
+sc1 = refget.SequenceCollection.from_fasta_file(os.path.join(fa_root, DEMO_FILES[1]))
 
-skip_seq = False
-aslist = []
-names = []
-lengths = []
-lengthsi = []
-sequences = []
-for k in fa_object.keys():
-    seq = str(fa_object[k])
-    names.append(k)
-    lengths.append(str(len(seq)))
-    lengthsi.append(len(seq))
-    sequences.append(seq)
-
-array_set = {"names": names, "lengths": lengths, "sequences": sequences}
-
-collection_checksum = scc.insert(array_set, "SeqColArraySet")
-collection_checksum
-
-scc.retrieve(collection_checksum)
-scc.retrieve(collection_checksum, reclimit=1)
-
-# scc.retrieve("5c4b07f08319d3d0815f5ee25c45916a01f9d1519f0112e8")
-
-scc.retrieve(collection_checksum, reclimit=1)
-scc.retrieve(collection_checksum, reclimit=2)
-scc.retrieve(collection_checksum)
-scc.supports_inherent_attrs
-
-# Now a test of inherent attributes
-import seqcol
-
-scci = seqcol.SeqColHenge(database={}, schemas=["seqcol/schemas/SeqColArraySetInherent.yaml"])
-scci
-scci.schemas
-
-
-fa_file = "demo_fasta/demo0.fa"
-fa_object = seqcol.parse_fasta(fa_file)
-
-array_set_i = {"names": names, "lengths": lengthsi, "sequences": sequences, "author": "urkel"}
-array_set_i2 = {"names": names, "lengths": lengthsi, "sequences": sequences, "author": "nathan"}
-
-
-di = scci.insert(array_set_i, "SeqColArraySet")
-di = scci.insert(array_set_i2, "SeqColArraySet")
-di
-# scc.retrieve(di)
-scci.retrieve(di)
-fasta_path = "demo_fasta"
-fasta1 = "demo2.fa"
-fasta2 = "demo3.fa"
-fasta5 = "demo5.fa.gz"
-fasta6 = "demo6.fa"
+refget.compare_seqcols(sc0.level2(), sc1.level2())
 
 import os
 

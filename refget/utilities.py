@@ -13,6 +13,7 @@ from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFun
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def canonical_str(item: dict) -> bytes:
     """Convert a dict into a canonical string representation"""
     return json.dumps(
@@ -207,7 +208,7 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     }
 
     for k in all_keys:
-        _LOGGER.info(k)
+        _LOGGER.debug(k)
         if k not in A:
             result[k] = {"flag": -1}
             return_obj["attributes"]["b_only"].append(k)
@@ -247,7 +248,7 @@ def _compare_elements(A: list, B: list) -> dict:
 
 
 def seqcol_dict_to_level1_dict(
-        seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = ["names", "sequences"]
+    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = ["names", "sequences"]
 ) -> dict:
     """
     Convert a sequence collection dictionary to a level 1 dictionary
@@ -273,9 +274,7 @@ def seqcol_dict_to_level1_dict(
     return level1_dict
 
 
-def level1_dict_to_seqcol_digest(
-        level1_dict: dict
-):
+def level1_dict_to_seqcol_digest(level1_dict: dict):
     # Step 4: Apply RFC-8785 again to canonicalize the JSON
     # of new seqcol object representation.
     level1_can_str = canonical_str(level1_dict)

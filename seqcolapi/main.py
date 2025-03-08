@@ -34,6 +34,7 @@ app.add_middleware(  # This is a public API, so we allow all origins
 )
 
 # This is where the magic happens
+# This will add the seqcol endpoints to the app
 refget_router = create_refget_router(sequences=False, pangenomes=False)
 print(refget_router)
 app.include_router(refget_router)
