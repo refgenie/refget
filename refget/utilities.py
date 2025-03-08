@@ -4,16 +4,18 @@ import os
 
 from jsonschema import Draft7Validator
 from typing import Optional
+from typing import Callable, Union
 from pathlib import Path
 from yacman import load_yaml
 
+# from .models import DigestFunction
 from .const import SeqCol
 from .exceptions import *
-from .models import *
 from .digest_functions import sha512t24u_digest, fasta_to_seq_digests
 
 _LOGGER = logging.getLogger(__name__)
 
+DigestFunction = Callable[[Union[str, bytes]], str]
 
 def canonical_str(item: dict) -> bytes:
     """Convert a dict into a canonical string representation"""
@@ -48,33 +50,11 @@ def validate_seqcol(seqcol_obj: SeqCol, schema=None) -> bool:
     schema = load_yaml(schema_path)
     validator = Draft7Validator(schema)
 
-    if type(seqcol_obj) == SequenceCollection:
-        seqcol_obj = seqcol_obj.model_dump()  # can only validate dict
-
     if not validator.is_valid(seqcol_obj):
         errors = sorted(validator.iter_errors(seqcol_obj), key=lambda e: e.path)
         raise InvalidSeqColError("Validation failed", errors)
     return True
 
-
-def format_itemwise(csc: SeqCol) -> dict:
-    """
-    Format a SeqCol object into a list of dicts, one per sequence.
-
-    Deprecated! Use SequenceCollection.itemwise()
-    """
-    list_of_dicts = []
-    # TODO: handle all properties, not just these 3
-    # TODO: handle non-collated attributes, somehow
-    for i in range(len(csc["lengths"])):
-        list_of_dicts.append(
-            {
-                "name": csc["names"][i],
-                "length": csc["lengths"][i],
-                "sequence": csc["sequences"][i],
-            }
-        )
-    return list_of_dicts
 
 
 def chrom_sizes_to_digest(chrom_sizes_file_path: str) -> str:
@@ -318,135 +298,43 @@ def seqcol_digest(
     return seqcol_digest
 
 
-def build_seqcol_model(
-    seqcol_obj: dict, inherent_attrs: Optional[list] = None
-) -> SequenceCollection:
-    """
-    Given a canonical sequence collection, compute its digest.
-
-    :param dict seqcol_obj: Dictionary representation of a canonical sequence collection object
-    :param dict schema: Schema defining the inherent attributes to digest
-    :return str: The sequence collection digest
-    """
-
-    validate_seqcol(seqcol_obj)
-    # Step 1a: Remove any non-inherent attributes,
-    # so that only the inherent attributes contribute to the digest.
-    seqcol_obj2 = {}
-    if inherent_attrs:
-        for k in inherent_attrs:
-            # Step 2: Apply RFC-8785 to canonicalize the value
-            # associated with each attribute individually.
-            seqcol_obj2[k] = canonical_str(seqcol_obj[k])
-    else:  # no schema provided, so assume all attributes are inherent
-        for k in seqcol_obj:
-            seqcol_obj2[k] = canonical_str(seqcol_obj[k])
-    # Step 3: Digest each canonicalized attribute value
-    # using the GA4GH digest algorithm.
-
-    seqcol_obj3 = {}
-    for attribute in seqcol_obj2:
-        seqcol_obj3[attribute] = sha512t24u_digest(seqcol_obj2[attribute])
-    # print(json.dumps(seqcol_obj3, indent=2))  # visualize the result
-
-    # Step 4: Apply RFC-8785 again to canonicalize the JSON
-    # of new seqcol object representation.
-
-    seqcol_obj4 = canonical_str(seqcol_obj3)
-    # Step 5: Digest the final canonical representation again.
-    seqcol_digest = sha512t24u_digest(seqcol_obj4)
-
-    # Now, build the actual pydantic models
-    v = ",".join(seqcol_obj["sequences"])
-    sequences_attr = SequencesAttr(digest=seqcol_obj3["sequences"], value=seqcol_obj["sequences"])
-
-    v = ",".join(seqcol_obj["names"])
-    names_attr = NamesAttr(digest=seqcol_obj3["names"], value=seqcol_obj["names"])
-
-    v = ",".join([str(x) for x in seqcol_obj["lengths"]])
-    lengths_attr = LengthsAttr(
-        digest=sha512t24u_digest(canonical_str(seqcol_obj["lengths"])), value=seqcol_obj["lengths"]
-    )
-
-    print(seqcol_obj2)
-
-    nlp = build_name_length_pairs(seqcol_obj)
-    nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
-    _LOGGER.info(f"nlp: {nlp}")
-    _LOGGER.info(f"nlp canonical_str: {canonical_str(nlp)}")
-    _LOGGER.info(f"Name-length pairs: {nlp_attr}")
-
-    # snlp = build_sorted_name_length_pairs(seqcol_obj)
-    # v = ",".join(snlp)
-    # snlp_attr = SortedNameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(snlp)), value=snlp)
-
-    from copy import copy
-
-    snlp = [canonical_str(x).decode("utf-8") for x in nlp]
-    snlp.sort()
-    _LOGGER.info(f"--- SNLP: {snlp}")
-    snlp_digest = sha512t24u_digest(canonical_str(snlp))
-    _LOGGER.info(f"--- SNLP: {snlp_digest}")
-    # snlp_attr = SortedNameLengthPairsAttr(digest=snlp_digest, value=snlp)
-
-    sorted_sequences_value = copy(seqcol_obj["sequences"])
-    sorted_sequences_value.sort()
-    sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
-    sorted_sequences_attr = SortedSequencesAttr(
-        digest=sorted_sequences_digest, value=sorted_sequences_value
-    )
-    _LOGGER.info(f"sorted_sequences_value: {sorted_sequences_value}")
-    _LOGGER.info(f"sorted_sequences_digest: {sorted_sequences_digest}")
-    _LOGGER.info(f"sorted_sequences_attr: {sorted_sequences_attr}")
-
-    seqcol = SequenceCollection(
-        digest=seqcol_digest,
-        sequences=sequences_attr,
-        sorted_sequences=sorted_sequences_attr,
-        names=names_attr,
-        lengths=lengths_attr,
-        name_length_pairs=nlp_attr,
-        sorted_name_length_pairs_digest=snlp_digest,
-    )
-
-    _LOGGER.info(f"seqcol: {seqcol}")
-
-    return seqcol
+def build_pangenome_model():
+    raise NotImplementedError
 
 
-def build_pangenome_model(pangenome_obj: dict) -> Pangenome:
-    # First add in the FASTA files individually, and build a dictionary of the results
-    # pangenome_obj = {}
-    # for s in prj.samples:
-    #     file_path = os.path.join(s.fasta, fasta_root)
-    #     f = os.path.join(fa_root, demo_file)
-    #     print("Fasta file to be loaded: {}".format(f))
-    #     pangenome_obj[s.sample_name] = self.seqcol.add_from_fasta_file(f)
+# def build_pangenome_model(pangenome_obj: dict) -> Pangenome:
+#     # First add in the FASTA files individually, and build a dictionary of the results
+#     # pangenome_obj = {}
+#     # for s in prj.samples:
+#     #     file_path = os.path.join(s.fasta, fasta_root)
+#     #     f = os.path.join(fa_root, demo_file)
+#     #     print("Fasta file to be loaded: {}".format(f))
+#     #     pangenome_obj[s.sample_name] = self.seqcol.add_from_fasta_file(f)
 
-    # Now create a CollectionNamesAttr object
-    d = sha512t24u_digest(canonical_str(list(pangenome_obj.keys())))
-    v = ",".join(list(pangenome_obj.keys()))
-    cna = CollectionNamesAttr(digest=d, value=v)
+#     # Now create a CollectionNamesAttr object
+#     d = sha512t24u_digest(canonical_str(list(pangenome_obj.keys())))
+#     v = ",".join(list(pangenome_obj.keys()))
+#     cna = CollectionNamesAttr(digest=d, value=v)
 
-    # Now create a Collection object
-    collections_digest = sha512t24u_digest(
-        canonical_str([x.digest for x in pangenome_obj.values()])
-    )
-    collections_digest
+#     # Now create a Collection object
+#     collections_digest = sha512t24u_digest(
+#         canonical_str([x.digest for x in pangenome_obj.values()])
+#     )
+#     collections_digest
 
-    pg_to_digest = {
-        "names": cna.digest,
-        "collections": collections_digest,
-    }
+#     pg_to_digest = {
+#         "names": cna.digest,
+#         "collections": collections_digest,
+#     }
 
-    pangenome_digest = sha512t24u_digest(canonical_str(pg_to_digest))
-    pangenome_digest
+#     pangenome_digest = sha512t24u_digest(canonical_str(pg_to_digest))
+#     pangenome_digest
 
-    p = Pangenome(
-        digest=pangenome_digest,
-        names=cna,
-        collections=list(pangenome_obj.values()),
-        collections_digest=collections_digest,
-    )
+#     p = Pangenome(
+#         digest=pangenome_digest,
+#         names=cna,
+#         collections=list(pangenome_obj.values()),
+#         collections_digest=collections_digest,
+#     )
 
-    return p
+#     return p

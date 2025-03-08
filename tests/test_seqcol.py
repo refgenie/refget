@@ -142,3 +142,23 @@ class TestNewModels:
         # assert d["fa_file"] == f
         # assert d["fa_object"] is not None
         # assert d["SCAS"] == seqcol_obj
+
+
+
+class TestInitSeqCol:
+
+    def test_init_seqcol(self):
+        dict = {'lengths': [8, 4, 4],
+            'names': ['chrX', 'chr1', 'chr2'],
+            'sequences': ['SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw',
+            'SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj',
+            'SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6'],
+            'sorted_sequences': ['SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6',
+            'SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj',
+            'SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw'],
+            'name_length_pairs': [{'length': 8, 'name': 'chrX'},
+            {'length': 4, 'name': 'chr1'},
+            {'length': 4, 'name': 'chr2'}]}
+        sc = refget.SequenceCollection.from_dict(dict)
+        print(sc)
+        assert sc.digest == "J8iHjLk7WX5EXdsChP76UHu4_kicoHY1"

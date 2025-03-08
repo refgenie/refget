@@ -7,6 +7,7 @@ from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient
 from .digest_functions import *
 from .utilities import *
 from ._version import __version__
+from .models import SequenceCollection
 
 try:
     # Requires optional dependencies, so we catch the ImportError

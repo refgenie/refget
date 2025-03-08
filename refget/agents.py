@@ -13,9 +13,7 @@ from typing import Optional, List
 
 from .models import *
 from .utilities import (
-    build_seqcol_model,
     fasta_to_seqcol,
-    format_itemwise,
     compare_seqcols,
     build_pangenome_model,
 )
@@ -234,7 +232,7 @@ class SequenceCollectionAgent(object):
                 return csc_simplified
 
     def add_from_dict(self, seqcol_dict: dict):
-        seqcol = build_seqcol_model(seqcol_dict, self.inherent_attrs)
+        seqcol = SequenceCollection.from_dict(seqcol_dict, self.inherent_attrs)
         _LOGGER.info(f"SeqCol: {seqcol}")
         _LOGGER.info(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
         return self.add(seqcol)
@@ -495,7 +493,7 @@ class RefgetDBAgent(object):
 
     def compare_1_digest(self, digestA, seqcolB):
         A = self.seqcol.get(digestA, return_format="level2")
-        B = build_seqcol_model(seqcolB, self.inherent_attrs).level2()
+        B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
         _LOGGER.info(f"Comparing...")
         _LOGGER.info(f"B: {B}")
         return compare_seqcols(A, B)

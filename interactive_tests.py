@@ -178,17 +178,17 @@ x2 = dbc.seqcol.add_from_fasta_file(f2)
 
 refget.fasta_to_seqcol(f)
 f = os.path.join(fa_root, DEMO_FILES[1])
-csc = refget.build_seqcol_model(fasta_to_seqcol(f))
+csc = refget.SequenceCollection.from_dict(fasta_to_seqcol(f))
 
 fromdb = dbc.seqcol.get(csc.digest)
 
 csc
-csc0 = refget.build_seqcol_model(fasta_to_seqcol(os.path.join(fa_root, DEMO_FILES[0])))
+csc0 = refget.SequenceCollection.from_dict(fasta_to_seqcol(os.path.join(fa_root, DEMO_FILES[0])))
 
 f = os.path.join(fa_root, DEMO_FILES[3])
-csc3 = refget.build_seqcol_model(fasta_to_seqcol(f))
+csc3 = refget.SequenceCollection.from_dict(fasta_to_seqcol(f))
 csc.lengths
-sc4 = refget.build_seqcol_model(fasta_to_seqcol(os.path.join(fa_root, DEMO_FILES[4])))
+sc4 = refget.SequenceCollection.from_dict(fasta_to_seqcol(os.path.join(fa_root, DEMO_FILES[4])))
 
 # What was the problem? That even just *creating* the object rom the other one...
 # so I was saying: names = csc4.names, and that was *connected* to csc4.lengths,

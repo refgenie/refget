@@ -1,6 +1,11 @@
 from typing import List, Callable, Union
 from sqlmodel import Field, ARRAY, SQLModel, create_engine, Column, String, Relationship, Integer
 from sqlmodel import JSON
+from typing import Optional
+import logging
+from .utilities import canonical_str, sha512t24u_digest, build_name_length_pairs
+
+_LOGGER = logging.getLogger(__name__)
 
 DigestFunction = Callable[[Union[str, bytes]], str]
 
@@ -25,22 +30,40 @@ class Pangenome(SQLModel, table=True):
     )
     collections_digest: str
 
+    @classmethod
+    def from_dict(cls, pangenome_obj: dict, inherent_attrs: Optional[list] = None) -> "Pangenome":
+        """
+        Given a dict representation of a pangenome, create a Pangenome object.
+        This is the primary way to create a Pangenome object.
+        
+        Args:
+            pangenome_obj (dict): Dictionary representation of a canonical pangenome object
+
+        Returns:
+            (Pangenome): The Pangenome object
+        """
+        raise NotImplementedError("This method is not yet implemented.")
+
     def level1(self):
+        """ Converts object into dict of level 1 representation of the Pangenome. """
         return {"names": self.names_digest, "collections": self.collections_digest}
 
     def level2(self):
+        """ Converts object into dict of level 2 representation of the Pangenome. """
         return {
             "names": self.names.value.split(","),
             "collections": [x.digest for x in self.collections],
         }
 
     def level3(self):
+        """ Converts object into dict of level 3 representation of the Pangenome. """
         return {
             "names": self.names.value.split(","),
             "collections": [x.level1() for x in self.collections],
         }
 
     def level4(self):
+        """ Converts object into dict of level 4 representation of the Pangenome. """
         return {
             "names": self.names.value.split(","),
             "collections": [x.level2() for x in self.collections],
@@ -58,28 +81,165 @@ class CollectionNamesAttr(SQLModel, table=True):
 # For attributes where you want to store the values in a table, you would also have the
 # Relationship attribute.
 class SequenceCollection(SQLModel, table=True):
+    """
+    A SQLModel/pydantic model that represents a refget sequence collection.
+    """
+
+    @classmethod
+    def input_validate(cls, seqcol_obj: dict) -> bool:
+        """
+        Given a dict representation of a sequence collection, validate it against the input schema.
+        
+        Args:
+            seqcol_obj (dict): Dictionary representation of a canonical sequence collection object
+        
+        Returns:
+            (bool): True if the object is valid, False otherwise
+        """
+        schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.yaml")
+        schema = load_yaml(schema_path)
+        validator = Draft7Validator(schema)
+
+        if not validator.is_valid(seqcol_obj):
+            errors = sorted(validator.iter_errors(seqcol_obj), key=lambda e: e.path)
+            raise InvalidSeqColError("Validation failed", errors)
+        return True
+
+    @classmethod
+    def from_dict(cls, seqcol_obj: dict, inherent_attrs: Optional[list] = None) -> "SequenceCollection":
+        """
+        Given a dict representation of a sequence collection, create a SequenceCollection object.
+        This is the primary way to create a SequenceCollection object.
+        
+        Args:
+            seqcol_obj (dict): Dictionary representation of a canonical sequence collection object
+            schema (dict): Schema defining the inherent attributes to digest
+        
+        Returns:
+            (SequenceCollection): The SequenceCollection object
+        """
+
+        # validate_seqcol(seqcol_obj)
+        # Step 1a: Remove any non-inherent attributes,
+        # so that only the inherent attributes contribute to the digest.
+        seqcol_obj2 = {}
+        if inherent_attrs:
+            for k in inherent_attrs:
+                # Step 2: Apply RFC-8785 to canonicalize the value
+                # associated with each attribute individually.
+                seqcol_obj2[k] = canonical_str(seqcol_obj[k])
+        else:  # no schema provided, so assume all attributes are inherent
+            for k in seqcol_obj:
+                seqcol_obj2[k] = canonical_str(seqcol_obj[k])
+        # Step 3: Digest each canonicalized attribute value
+        # using the GA4GH digest algorithm.
+
+        seqcol_obj3 = {}
+        for attribute in seqcol_obj2:
+            seqcol_obj3[attribute] = sha512t24u_digest(seqcol_obj2[attribute])
+        # print(json.dumps(seqcol_obj3, indent=2))  # visualize the result
+
+        # Step 4: Apply RFC-8785 again to canonicalize the JSON
+        # of new seqcol object representation.
+
+        seqcol_obj4 = canonical_str(seqcol_obj3)
+        # Step 5: Digest the final canonical representation again.
+        seqcol_digest = sha512t24u_digest(seqcol_obj4)
+
+        # Now, build the actual pydantic models
+        v = ",".join(seqcol_obj["sequences"])
+        sequences_attr = SequencesAttr(digest=seqcol_obj3["sequences"], value=seqcol_obj["sequences"])
+
+        v = ",".join(seqcol_obj["names"])
+        names_attr = NamesAttr(digest=seqcol_obj3["names"], value=seqcol_obj["names"])
+
+        v = ",".join([str(x) for x in seqcol_obj["lengths"]])
+        lengths_attr = LengthsAttr(
+            digest=sha512t24u_digest(canonical_str(seqcol_obj["lengths"])), value=seqcol_obj["lengths"]
+        )
+
+        print(seqcol_obj2)
+
+        nlp = build_name_length_pairs(seqcol_obj)
+        nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
+        _LOGGER.info(f"nlp: {nlp}")
+        _LOGGER.info(f"nlp canonical_str: {canonical_str(nlp)}")
+        _LOGGER.info(f"Name-length pairs: {nlp_attr}")
+
+        # snlp = build_sorted_name_length_pairs(seqcol_obj)
+        # v = ",".join(snlp)
+        # snlp_attr = SortedNameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(snlp)), value=snlp)
+
+        from copy import copy
+
+        snlp = [canonical_str(x).decode("utf-8") for x in nlp]
+        snlp.sort()
+        _LOGGER.info(f"--- SNLP: {snlp}")
+        snlp_digest = sha512t24u_digest(canonical_str(snlp))
+        _LOGGER.info(f"--- SNLP: {snlp_digest}")
+        # snlp_attr = SortedNameLengthPairsAttr(digest=snlp_digest, value=snlp)
+
+        sorted_sequences_value = copy(seqcol_obj["sequences"])
+        sorted_sequences_value.sort()
+        sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
+        sorted_sequences_attr = SortedSequencesAttr(
+            digest=sorted_sequences_digest, value=sorted_sequences_value
+        )
+        _LOGGER.info(f"sorted_sequences_value: {sorted_sequences_value}")
+        _LOGGER.info(f"sorted_sequences_digest: {sorted_sequences_digest}")
+        _LOGGER.info(f"sorted_sequences_attr: {sorted_sequences_attr}")
+
+        seqcol = SequenceCollection(
+            digest=seqcol_digest,
+            sequences=sequences_attr,
+            sorted_sequences=sorted_sequences_attr,
+            names=names_attr,
+            lengths=lengths_attr,
+            name_length_pairs=nlp_attr,
+            sorted_name_length_pairs_digest=snlp_digest,
+        )
+
+        _LOGGER.info(f"seqcol: {seqcol}")
+
+        return seqcol
+
     digest: str = Field(primary_key=True)
+    """ Top-level digest of the SequenceCollection. """
+
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
     sequences: "SequencesAttr" = Relationship(back_populates="collection")
+    """ Array of sequence digests."""
+
     sorted_sequences_digest: str = Field(foreign_key="sortedsequencesattr.digest")
     sorted_sequences: "SortedSequencesAttr" = Relationship(back_populates="collection")
+    """ Array of sorted sequence digests."""
+
     names_digest: str = Field(foreign_key="namesattr.digest")
     names: "NamesAttr" = Relationship(back_populates="collection")
+    """ Array of sequence names. """
+
     lengths_digest: str = Field(foreign_key="lengthsattr.digest")
     lengths: "LengthsAttr" = Relationship(back_populates="collection")
+    """ Array of sequence lengths. """
+    
     sorted_name_length_pairs_digest: str = Field()
+    """ Digest of the sorted name-length pairs, representing a unique digest of sort-invariant coordinate system. """
     # sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
     # sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(
     #     back_populates="collection"
     # )
     name_length_pairs_digest: str = Field(foreign_key="namelengthpairsattr.digest")
     name_length_pairs: "NameLengthPairsAttr" = Relationship(back_populates="collection")
+    """ Array of name-length pairs, representing the coordinate system of the collection. """
 
     pangenomes: List[Pangenome] = Relationship(
         back_populates="collections", link_model=PangenomeCollectionLink
     )
 
     def level1(self):
+        """
+        Converts object into dict of level 2 representation of the SequenceCollection.
+        """
         return {
             "lengths": self.lengths_digest,
             "names": self.names_digest,
@@ -90,6 +250,9 @@ class SequenceCollection(SQLModel, table=True):
         }
 
     def level2(self):
+        """
+        Converts object into dict of level 2 representation of the SequenceCollection.
+        """
         return {
             "lengths": self.lengths.value,
             "names": self.names.value,
@@ -100,6 +263,9 @@ class SequenceCollection(SQLModel, table=True):
         }
 
     def itemwise(self, limit=None):
+        """
+        Converts object into a list of dictionaries, one for each sequence in the collection.
+        """
         if limit and len(self.sequences.value) > limit:
             raise ValueError(f"Too many sequences to format itemwise: {len(self.sequences.value)}")
         list_of_dicts = []
@@ -115,7 +281,6 @@ class SequenceCollection(SQLModel, table=True):
 
 
 # Each of these classes will become a separate table in the database.
-
 
 class SequencesAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)

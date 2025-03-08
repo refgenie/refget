@@ -6,15 +6,6 @@ import requests
 import refget
 
 # Collection endpoints
-# DEMO_FILES = [
-#     "demo0.fa",
-#     "demo1.fa.gz",
-#     "demo2.fa",
-#     "demo3.fa",
-#     "demo4.fa",
-#     "demo5.fa.gz",
-#     "demo6.fa",
-# ]
 
 from .conftest import (
     DEMO_FILES,
@@ -79,7 +70,7 @@ def check_collection(api_root, demo_file, response_file):
 
     inherent_attrs = ["names", "sequences"]
     print(f"Loading fasta file at '{demo_root}/{demo_file}'")
-    digest = refget.fasta_file_to_digest(f"{demo_root}/{demo_file}", inherent_attrs=inherent_attrs)
+    digest = refget.fasta_to_digest(f"{demo_root}/{demo_file}", inherent_attrs=inherent_attrs)
     print(f"Checking digest: {digest}")
     res = requests.get(f"{api_root}/collection/{digest}")
     try:
