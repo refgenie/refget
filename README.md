@@ -73,6 +73,7 @@ Run the demo `seqcolapi` service like this:
 uvicorn seqcolapi.main:app --reload --port 8100
 ```
 
+
 ### Running with docker
 
 To build the docker file, from the root of this repository:
@@ -99,16 +100,6 @@ docker run --rm -p 8000:80 --name seqcolapi \
   --env "POSTGRES_PASSWORD" \
   --env "POSTGRES_HOST" \
   seqcolapi.databio.org
-```
-
-### Alternative: Mount the config
-
-Instead of building a bundle with the config, you could just mount it into the base image:
-```
-docker run --rm -p 8000:8000 --name sccon \
-  --env "POSTGRES_PASSWORD" \
-  --volume $CODE/seqcolapi.databio.org/config/seqcolapi.yaml:/config.yaml \
-  seqcolapi 
 ```
 
 ### Deploying container to dockerhub
