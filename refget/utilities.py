@@ -8,14 +8,12 @@ from typing import Callable, Union
 from pathlib import Path
 from yacman import load_yaml
 
-# from .models import DigestFunction
 from .const import SeqCol
 from .exceptions import *
-from .digest_functions import sha512t24u_digest, fasta_to_seq_digests
+from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
 
 _LOGGER = logging.getLogger(__name__)
 
-DigestFunction = Callable[[Union[str, bytes]], str]
 
 def canonical_str(item: dict) -> bytes:
     """Convert a dict into a canonical string representation"""

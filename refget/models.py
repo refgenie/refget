@@ -7,9 +7,6 @@ from .utilities import canonical_str, sha512t24u_digest, build_name_length_pairs
 
 _LOGGER = logging.getLogger(__name__)
 
-DigestFunction = Callable[[Union[str, bytes]], str]
-
-
 class Sequence(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     sequence: str
@@ -100,10 +97,24 @@ class SequenceCollection(SQLModel, table=True):
         schema = load_yaml(schema_path)
         validator = Draft7Validator(schema)
 
-        if not validator.is_valid(seqcol_obj):
+
+        if not validator.is_valid(seqcol_obj.level2()):
             errors = sorted(validator.iter_errors(seqcol_obj), key=lambda e: e.path)
             raise InvalidSeqColError("Validation failed", errors)
         return True
+
+    @classmethod
+    def from_fasta_file(cls, fasta_file: str) -> "SequenceCollection":
+        """
+        Given a FASTA file, create a SequenceCollection object.
+        
+        Args:
+            fasta_file (str): Path to a FASTA file
+        
+        Returns:
+            (SequenceCollection): The SequenceCollection object
+        """
+        raise NotImplementedError("This method is not yet implemented.")
 
     @classmethod
     def from_dict(cls, seqcol_obj: dict, inherent_attrs: Optional[list] = None) -> "SequenceCollection":
