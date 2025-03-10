@@ -422,6 +422,12 @@ class AttributeAgent(object):
 class RefgetDBAgent(object):
     """
     Primary aggregator agent, interface to all other agents
+
+    Parameterized it via these environment variables:
+    - POSTGRES_HOST
+    - POSTGRES_DB
+    - POSTGRES_USER
+    - POSTGRES_PASSWORD
     """
 
     def __init__(
