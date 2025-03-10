@@ -20,8 +20,8 @@ const CollectionList = ({collections}) => {
     )
   }
 
-const AttributeList = ({attributes}) => {
-  const attrList = attributes || useLoaderData()[0]
+const AttributeList = ({attributeName, attributeDigests}) => {
+  const attrList = attributeDigests || useLoaderData()[0]
   console.log("attrList", attrList)
 
   return (<>
@@ -29,7 +29,7 @@ const AttributeList = ({attributes}) => {
       <ul>
         {attrList.results?.map((attr) => (
           <li key={attr}>
-            Attribute: <Link to={`/attribute/sorted_name_length_pairs/${attr}`}>{attr}</Link>
+            Attribute: <Link to={`/attribute/${attributeName}/${attr}`}>{attr}</Link>
           </li>
         ))}
       </ul>

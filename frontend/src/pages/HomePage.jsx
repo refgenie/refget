@@ -7,10 +7,10 @@ import { AttributeList } from '../components/ObjectLists';
 
 const HomePage = () => {
     const loaderData = useLoaderData()
-    console.log("HomePage loadData ", loaderData)
+    console.log("HomePage loaderData ", loaderData)
     const collections = loaderData[0]
     const pangenomes = loaderData[1]
-    const sorted_name_length_pairs = loaderData[2]
+    const name_length_pairs = loaderData[2]
   
     const PangenomeExamplesList = () => {
       if (pangenomes && pangenomes.results && pangenomes.results.length > 0) {
@@ -69,12 +69,12 @@ const HomePage = () => {
         </ul>
         <PangenomeExamplesList/>
 
-        <h5 className="mt-4">4. List of sorted_name_length_pairs on this server:</h5>
+        <h5 className="mt-4">4. List of name_length_pairs on this server:</h5>
         <p className="text-muted fs-6">
         The <span className="font-monospace text-success">/list/attributes</span> endpoint lets you retrieve
         a list of all the values of a particular attribute hosted by this server.
         </p>
-        <AttributeList attributes={sorted_name_length_pairs}/>
+        <AttributeList attributeName="name_length_pairs" attributeDigests={name_length_pairs}/>
 
 
       </div>

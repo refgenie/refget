@@ -51,13 +51,13 @@ const CollectionView = (params) => {
       <div key={attribute}>
       <h5 className="mb-2 mt-3">{attribute}</h5>
       <div className="row align-items-center">
-        <div className="col-md-1 ">Digest:</div>
+        <div className="col-md-1 text-secondary">Digest:</div>
         <div className="col">
           <LinkedAttributeDigest attribute={attribute} digest={level1[attribute]}/>
         </div>
       </div>
       <div className="row align-items-center">
-        <div className="col-md-1 ">Value:</div>
+        <div className="col-md-1 text-secondary">Value:</div>
         <div className="col">
           <AttributeValue value={level2[attribute]} />
         </div>

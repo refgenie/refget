@@ -48,9 +48,9 @@ const fetchPangenomeLevels = async(digest, level="2", collated=true) => {
 }
 
 const fetchSeqColList = async() => {
-  const url = `${API_BASE}/list/collections?page_size=10&page=1`
+  const url = `${API_BASE}/list/collections?page_size=10&page=0`
   const url2 = `${API_BASE}/list/pangenomes?page_size=5`
-  const url3 = `${API_BASE}/list/attributes/sorted_name_length_pairs?page_size=5`
+  const url3 = `${API_BASE}/list/attributes/name_length_pairs?page_size=5`
   let resps = [
     fetch(url).then((response) => response.json()),
     fetch(url2).then((response) => response.json()),
