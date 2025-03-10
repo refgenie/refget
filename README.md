@@ -114,30 +114,15 @@ npm i
 VITE_API_BASE="https://seqcolapi.databio.org" npm run dev
 ```
 
-
-
-
-
 ## Deploy to AWS ECS
 
 - Test locally first, using 1. native test; 2. local docker test.
 
 ### Deploying
 
-To upgrade the software:
-
-Use config file located in `/servers/seqcolapi.databio.org`. This will use the image in docker.io://databio/seqcolapi, github repo: [refgenie/seqcolapi](https://github.com/refgenie/seqcolapi) as base, bundle it with the above config, and deploy to the shefflab ECS.
-
 1. Ensure the [refget](https://github.com/refgenie/refget/) package master branch is as you want it.
 2. Deploy the updated [secqolapi](https://github.com/refgenie/seqcolapi/) app to dockerhub (using manual dispatch, or deploy on github release).
 3. Finally, deploy the instance with manual dispatch using the included GitHub action.
-
-
-
-
-
-
-
 
 ## Developer notes
 

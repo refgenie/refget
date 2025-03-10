@@ -20,4 +20,3 @@ for s in p.samples:
 # Would it be better to instead do this?
 # import peppy
 # p = peppy.Project("nsheff/pangenome_fasta")
-

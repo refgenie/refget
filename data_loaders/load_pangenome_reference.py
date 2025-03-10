@@ -61,7 +61,3 @@ dbc.pangenome.add_from_fasta_pep(prj, fa_root)
 # res
 
 # dbc.pangenome.get()
-
-
-
-
