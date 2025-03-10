@@ -68,10 +68,9 @@ class TestSequenceCollectionModel:
 
     @pytest.mark.parametrize("fa_file, correct_digest", DIGEST_TESTS)
     def test_from_fasta_file(self, fa_file, correct_digest, fa_root):
-        """ Ensures the top-level digest of a SequenceCollection matches. """
+        """Ensures the top-level digest of a SequenceCollection matches."""
         d = refget.SequenceCollection.from_fasta_file(os.path.join(fa_root, fa_file))
         assert d.digest == correct_digest
-
 
 
 class TestCompare:
@@ -83,7 +82,6 @@ class TestCompare:
     @pytest.mark.parametrize(["fasta1", "fasta2", "answer_file"], COMPARE_TESTS)
     def test_fasta_compare(self, fasta1, fasta2, answer_file, fa_root):
         check_comparison(os.path.join(fa_root, fasta1), os.path.join(fa_root, fasta2), answer_file)
-
 
 
 seqcol_obj = {
@@ -113,5 +111,3 @@ class TestValidate:
     def test_failure(self, seqcol_obj):
         with pytest.raises(Exception):
             refget.validate_seqcol(seqcol_obj)
-
-

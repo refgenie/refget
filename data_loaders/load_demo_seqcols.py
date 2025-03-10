@@ -8,7 +8,7 @@ from refget.agents import RefgetDBAgent
 
 fa_root = "test_fasta"
 DEMO_FASTA = json.load(open("test_fasta/test_fasta_digests.json"))
-dbc = RefgetDBAgent()   # Parameters are read from the environment
+dbc = RefgetDBAgent()  # Parameters are read from the environment
 print(f"SQL Engine: {dbc.engine}")
 
 # Load some fasta files into the database
@@ -25,4 +25,3 @@ for demo_file in DEMO_FASTA:
 # with Session(dbc.engine) as session:
 #     session.add(demo_results["test_fasta/base.fa"])
 #     print("Digest is: ", demo_results["test_fasta/base.fa"].digest)
-

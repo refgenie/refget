@@ -1,7 +1,7 @@
 import logging
 
 from copy import copy
-from sqlmodel import Field, SQLModel,  Column, Relationship
+from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
 from typing import List, Optional
 
@@ -16,6 +16,7 @@ from .utilities import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class Sequence(SQLModel, table=True):
     digest: str = Field(primary_key=True)

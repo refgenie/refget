@@ -1,4 +1,3 @@
-
 import os
 import refget
 import json
@@ -8,7 +7,8 @@ from refget.agents import RefgetDBAgent
 
 DEMO_FASTA = json.load(open("test_fasta/test_fasta_digests.json"))
 fa_root = "test_fasta"
-dbc = RefgetDBAgent()   # Parameters are read from the environment
+dbc = RefgetDBAgent()  # Parameters are read from the environment
+
 
 # simple fasta file parser
 def parse_fasta(fasta_file):
