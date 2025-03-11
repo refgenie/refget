@@ -1,7 +1,6 @@
-biopython
-henge>=0.2.1
-gtars
+jsonschema
+gtars>=0.2.4
 pyyaml
 requests
 sqlmodel
-yacman>=0.6.7
+yacman

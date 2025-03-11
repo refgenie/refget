@@ -4,14 +4,13 @@
 
 User-facing documentation is hosted at [refgenie.org/refget](https://refgenie.org/refget/).
 
-In this repository you will find:
+This repository includes:
 
-1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of the refget protocol. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
+1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of refget standards. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
 2. `/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service.
-3. `actions` (in `.github/workflows`):  GitHub Actions for demo server instance 
-4. `/deployment`: Server configurations for demo instances and public deployed instances.
-5. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
-6. `/frontend`: a React seqcolapi front-end.
+3. `/deployment`: Server configurations for demo instances and public deployed instances. There are also github workflows (in `.github/workflows`) that deploy the demo server instance from this repository.
+4. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
+5. `/frontend`: a React seqcolapi front-end.
 
 ## Testing
 
@@ -19,34 +18,33 @@ In this repository you will find:
 
 - `pytest` to test `refget` package, local unit tests
 
-### Compliance testing of Sequence Collections API
+## Development and deployment: Backend
 
-Under `/test_api` are compliance tests for a service implementing the sequence collections API. This will test your collection and comparison endpoints to make sure the comparison function is working. 
+### Easy-peasy way
 
-- `pytest test_api` to tests API compliance
-- `pytest test_api --api_root http://127.0.0.1:8100` to customize the API root URL to test
+In a moment I'll show you how to do these steps individually, but if you're in a hurry, the easy way get a development API running for testing is to just use my very simple shell script like this (no data persistence, just loads demo data):
 
-1. Load the fasta files from the `test_fasta` folder into your API database.
-2. Run `pytest test_api --api_root <API_URL>`, pointing to your URL to test
-
-For example, this will test a remote server instance:
-
-```
-pytest test_api --api_root https://seqcolapi.databio.org
+```console
+bash deployment/demo_up.sh
 ```
 
-## Development and deployment
+This will:
+- populate env vars
+- launch postgres container with docker
+- run the refget service with uvicorn
+- load up the demo data
+- block the terminal until you press Ctrl+C, which will shut down all services.
 
 ### Setting up a database connection
 
-First populate environment variables to configure a database connection. Choose one of these:
+First configure a database connection through environment variables. Choose one of these:
 
 ```
 source deployment/local_demo/local_demo.env # local demo (see below to create the database using docker)
 source deployment/seqcolapi.databio.org/production.env # connect to production database
 ```
 
-If you're using the `local_demo`, then use docker to create a local postgres database like this:
+If you're using the `local_demo`, then use docker to launch a local postgres database service like this:
 
 ```
 docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
@@ -57,15 +55,20 @@ docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
   postgres:17.0
 ```
 
-If you need to load test data into your server, then you have to install `gtars`, a Python package for computing GA4GH digests. You can load test data like this:
+If you need to load test data into your server, then you have to install [gtars](https://docs.bedbase.org/gtars/) (with `pip install gtars`), a Python package for computing GA4GH digests. You can then load test data like this:
 
 ```
-python load_demo_data.py
-# refget add-fasta path/to/fasta.fa  # This could be a way in the future...
-# python load_pangenome_reference.py ../seqcolapi/analysis/data/demo.csv test_fasta  # loads an entire pangenome
+python data_loaders/load_demo_data.py
 ```
 
-## Running the seqcolapi API backend
+or:
+
+```
+refget add-fasta -p test_fasta/test_fasta_metadata.csv -r test_fasta
+```
+
+
+### Running the seqcolapi API backend
 
 Run the demo `seqcolapi` service like this:
 
@@ -75,22 +78,14 @@ uvicorn seqcolapi.main:app --reload --port 8100
 
 ### Running with docker
 
-To build the docker file, from the root of this repository:
-
-
-First you build the general-purpose image
+To build the docker file, first build the image from the root of this repository:
 
 ```
 docker build -f deployment/dockerhub/Dockerfile -t databio/seqcolapi seqcolapi
 ```
 
-Next you build the wrapped image (this just wraps the config into the app):
+To run in container:
 
-```
-docker build -f deployment/seqcolapi.databio.org/Dockerfile -t seqcolapi.databio.org deployment/seqcolapi.databio.org
-```
-
-To run in a container:
 ```
 source deployment/seqcolapi.databio.org/production.env
 docker run --rm -p 8000:80 --name seqcolapi \
@@ -98,25 +93,16 @@ docker run --rm -p 8000:80 --name seqcolapi \
   --env "POSTGRES_DB" \
   --env "POSTGRES_PASSWORD" \
   --env "POSTGRES_HOST" \
-  seqcolapi.databio.org
-```
-
-### Alternative: Mount the config
-
-Instead of building a bundle with the config, you could just mount it into the base image:
-```
-docker run --rm -p 8000:8000 --name sccon \
-  --env "POSTGRES_PASSWORD" \
-  --volume $CODE/seqcolapi.databio.org/config/seqcolapi.yaml:/config.yaml \
-  seqcolapi 
+  databio/seqcolapi
 ```
 
 ### Deploying container to dockerhub
 
-Use github action in this repo which deploys on release, or through manual dispatch.
-
+Use the github action in this repo which deploys on release, or through manual dispatch.
 
 ## Running the frontend
+
+Once you have a backend running, you can run a frontend to interact with it
 
 ### Local client with local server
 
@@ -134,28 +120,15 @@ npm i
 VITE_API_BASE="https://seqcolapi.databio.org" npm run dev
 ```
 
-
-
 ## Deploy to AWS ECS
 
 - Test locally first, using 1. native test; 2. local docker test.
 
 ### Deploying
 
-To upgrade the software:
-
-Use config file located in `/servers/seqcolapi.databio.org`. This will use the image in docker.io://databio/seqcolapi, github repo: [refgenie/seqcolapi](https://github.com/refgenie/seqcolapi) as base, bundle it with the above config, and deploy to the shefflab ECS.
-
 1. Ensure the [refget](https://github.com/refgenie/refget/) package master branch is as you want it.
 2. Deploy the updated [secqolapi](https://github.com/refgenie/seqcolapi/) app to dockerhub (using manual dispatch, or deploy on github release).
 3. Finally, deploy the instance with manual dispatch using the included GitHub action.
-
-
-
-
-
-
-
 
 ## Developer notes
 
@@ -167,3 +140,10 @@ The objects and attributes are represented as SQLModel objects in `refget/models
 2. change the function that creates the objects, to populate the new attribute.
 
 
+
+
+## Example of loading reference fasta datasets:
+
+```
+refget add-fasta -p ref_fasta.csv -r $BRICKYARD/datasets_downloaded/pangenome_fasta/reference_fasta
+```

@@ -5,7 +5,6 @@ from platform import python_version
 
 from ._version import __version__ as seqcolapi_version
 
-PKG_NAME = "seqcolapi"
 ALL_VERSIONS = {
     "seqcolapi_version": seqcolapi_version,
     "refget_pkg_version": refget_pkg_version,
@@ -14,4 +13,3 @@ ALL_VERSIONS = {
 }
 STATIC_DIRNAME = "static"
 STATIC_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), STATIC_DIRNAME)
-TEMPLATES_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")

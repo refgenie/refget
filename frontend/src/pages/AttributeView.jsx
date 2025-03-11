@@ -16,24 +16,20 @@ const AttributeView = () => {
     
     return (
       <div>
-        <h2>Attribute: {attribute}</h2>
+        <h2>Attribute: {attribute} </h2> <LinkedAttributeDigest attribute={attribute} digest={digest}/>
         <p className="text-muted fs-6">
           The <span className="font-monospace text-success">/attribute</span> endpoint lets you retrieve
           the value of a specific attribute of a sequence collection, given its digest.
         </p>
         <hr/>
         <div className="row align-items-center">
-          <div className="col-md-1">Digest:</div>
-          <div className="col">
-            <LinkedAttributeDigest attribute={attribute} digest={digest}/>
-          </div>
         <div className="row align-items-center">
-          <div className="col-md-1">API URL:</div>
+          <div className="col-md-1 text-secondary">API URL:</div>
           <div className="col"><Link to={api_url}>{api_url}</Link></div>
         </div>
         </div>
         <div className="row align-items-center">
-          <div className="col-md-1">Value:</div>
+          <div className="col-md-1 text-secondary">Value:</div>
           <div className="col"><AttributeValue value={attribute_value} /></div>
         </div>
         <h2 className="mt-4">Containing collections:</h2>

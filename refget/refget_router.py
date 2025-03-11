@@ -7,10 +7,11 @@ To use, first import it, then attach it to the app,
 then create a dbagent object to connect to the database,
 and attach it to the app state like this:
 
-from refget import seqcol_router
+from refget import create_refget_router
 from refget.agents import RefgetDBAgent
 
-app.include_router(seqcol_router, prefix="/seqcol")
+refget_router = create_refget_router(sequences=False, collections=True, pangenomes=False)
+app.include_router(refget_router, prefix="/seqcol")
 app.state.dbagent = RefgetDBAgent()
 """
 
@@ -24,26 +25,77 @@ from .examples import *
 
 _LOGGER = logging.getLogger(__name__)
 
-seqcol_router = APIRouter()
 
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
 async def get_dbagent(request: Request):
     return request.app.state.dbagent
 
 
-@seqcol_router.get(
+def create_refget_router(
+    sequences: bool = False, collections: bool = True, pangenomes: bool = False
+):
+    """
+    Create a FastAPI router for the sequence collection API.
+    This router provides endpoints for retrieving and comparing sequence collections.
+    You can choose which endpoints to include by setting the sequences, collections,
+    or pangenomes flags.
+
+    Args:
+        sequences (bool): Include sequence endpoints
+        collections (bool): Include sequence collection endpoints
+        pangenomes (bool): Include pangenome endpoints
+
+    Returns:
+        (APIRouter): A FastAPI router with the specified endpoints
+
+    Examples:
+        ```
+        app.include_router(create_refget_router(sequences=False, pangenomes=False))
+        ```
+    """
+
+    refget_router = APIRouter()
+    if sequences:
+        _LOGGER.info("Adding sequence endpoints...")
+        refget_router.include_router(seq_router)
+    if collections:
+        _LOGGER.info("Adding collection endpoints...")
+        refget_router.include_router(seqcol_router)
+    if pangenomes:
+        _LOGGER.info("Adding pangenome endpoints...")
+        refget_router.include_router(pangenome_router)
+    return refget_router
+
+
+seq_router = APIRouter()
+
+
+@seq_router.get(
     "/sequence/{sequence_digest}",
     summary="Retrieve raw sequence via original refget protocol",
-    include_in_schema=False,
+    include_in_schema=True,
     tags=["Retrieving data"],
 )
-async def refget(request: Request, sequence_digest: str = example_sequence):
-    raise HTTPException(
-        status_code=400,
-        detail="Error: this server does not support raw sequence retrieval. Use a refget server instead.",
-    )
-    # If you wanted to provide refget sequences API, you would do it here
-    return Response(content=dbagent.refget(sequence_digest))
+async def sequence(
+    dbagent=Depends(get_dbagent),
+    sequence_digest: str = example_sequence,
+    start: int = None,
+    end: int = None,
+):
+    return Response(content=dbagent.seq.get(sequence_digest, start, end), media_type="text/plain")
+
+
+@seq_router.get(
+    "/sequence/{sequence_digest}/metadata",
+    summary="Retrieve metadata for a sequence",
+    tags=["Retrieving data"],
+)
+async def seq_metadata(dbagent=Depends(get_dbagent), sequence_digest: str = example_sequence):
+    return NotImplementedError("Metadata retrieval not yet implemented.")
+    return JSONResponse(dbagent.seq.get_metadata(sequence_digest))
+
+
+seqcol_router = APIRouter()
 
 
 @seqcol_router.get(
@@ -67,7 +119,11 @@ async def collection(
         )
     try:
         if not collated:
-            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="itemwise", itemwise_limit=10000))
+            return JSONResponse(
+                dbagent.seqcol.get(
+                    collection_digest, return_format="itemwise", itemwise_limit=10000
+                )
+            )
         if attribute:
             return JSONResponse(dbagent.seqcol.get(collection_digest, attribute=attribute))
         if level == 1:
@@ -88,7 +144,9 @@ async def collection(
     tags=["Retrieving data"],
 )
 async def attribute(
-    dbagent=Depends(get_dbagent), attribute: str = "names", attribute_digest: str = example_attribute_digest
+    dbagent=Depends(get_dbagent),
+    attribute: str = "names",
+    attribute_digest: str = example_attribute_digest,
 ):
     try:
         return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
@@ -163,7 +221,7 @@ async def list_collections_by_offset(
     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
 
-    res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page*page_size)
+    res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
@@ -194,7 +252,9 @@ async def attribute_search(
     page: int = 0,
 ):
     # attr = dbagent.attribute.get(attribute, digest)
-    res = dbagent.attribute.search(attribute, attribute_digest, limit=page_size, offset=page*page_size)
+    res = dbagent.attribute.search(
+        attribute, attribute_digest, limit=page_size, offset=page * page_size
+    )
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
@@ -208,7 +268,7 @@ async def list_attributes(
     dbagent=Depends(get_dbagent), attribute: str = "names", page_size: int = 100, page: int = 0
 ):
     try:
-        res = dbagent.attribute.list(attribute, limit=page_size, offset=page*page_size)
+        res = dbagent.attribute.list(attribute, limit=page_size, offset=page * page_size)
         res["results"] = [x.digest for x in res["results"]]
         return JSONResponse(res)
     except KeyError as e:
@@ -218,24 +278,28 @@ async def list_attributes(
         )
 
 
-@seqcol_router.get(
+pangenome_router = APIRouter()
+
+
+@pangenome_router.get(
     "/list/pangenomes",
     summary="List pangenomes on the server, paged by offset",
     tags=["Discovering data"],
-    include_in_schema=False
+    include_in_schema=True,
 )
 async def list_cpangenomes_by_offset(
     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
-    res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page*page_size)
+    res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
-@seqcol_router.get(
+
+@pangenome_router.get(
     "/pangenome/{pangenome_digest}",
     summary="Retrieve a pangenome",
     tags=["Retrieving data"],
-    include_in_schema=False,
+    include_in_schema=True,
 )
 async def pangenome(
     dbagent=Depends(get_dbagent),
@@ -270,5 +334,3 @@ async def pangenome(
             status_code=404,
             detail=str(e),
         )
-
-

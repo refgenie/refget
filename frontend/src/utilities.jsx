@@ -1,6 +1,7 @@
 // const API_BASE = "http://127.0.0.1:8100"
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8100';
 import copyToClipboardIcon from './assets/copy_to_clipboard.svg'
+import barcodeIcon from './assets/barcode.svg'
 
 import { toast } from 'react-toastify';
 
@@ -14,6 +15,7 @@ const copyToClipboard = async (text) => {
 
 export { 
     API_BASE,
+    barcodeIcon,
     copyToClipboard,
     copyToClipboardIcon
 }

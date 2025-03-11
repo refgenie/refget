@@ -48,9 +48,9 @@ const fetchPangenomeLevels = async(digest, level="2", collated=true) => {
 }
 
 const fetchSeqColList = async() => {
-  const url = `${API_BASE}/list/collections?page_size=10&page=1`
+  const url = `${API_BASE}/list/collections?page_size=10&page=0`
   const url2 = `${API_BASE}/list/pangenomes?page_size=5`
-  const url3 = `${API_BASE}/list/attributes/sorted_name_length_pairs?page_size=5`
+  const url3 = `${API_BASE}/list/attributes/name_length_pairs?page_size=5`
   let resps = [
     fetch(url).then((response) => response.json()),
     fetch(url2).then((response) => response.json()),
@@ -64,15 +64,24 @@ const fetchSeqColDetails = async(digest, level="2", collated=true) => {
   return fetch(url).then((response) => response.json())
 }
 
-const fetchCollectionLevels = async(digest) => {
-  let url = `${API_BASE}/collection/${digest}?level=1`
-  let resps = [
-    fetch(url).then((response) => response.json()),
-    fetch(`${API_BASE}/collection/${digest}?level=2`).then((response) => response.json()),
-    fetch(`${API_BASE}/collection/${digest}?collated=false`).then((response) => response.json()) 
-  ]
-  return Promise.all(resps)
-}
+const fetchCollectionLevels = async (digest) => {
+  const urls = [
+    `${API_BASE}/collection/${digest}?level=1`,
+    `${API_BASE}/collection/${digest}?level=2`,
+    `${API_BASE}/collection/${digest}?collated=false`
+  ];
+
+  const responses = await Promise.all(urls.map(url =>
+    fetch(url).then(response => {
+      if (!response.ok) {
+        throw new Error(`Error fetching data from ${url}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+  ));
+
+  return responses;
+};
 
 
 const fecthComparison = async(digest1, digest2) => {
@@ -205,8 +214,8 @@ const CollectionTable = ({collections}) => {
 function ErrorBoundary() {
   const error = useRouteError();
   console.error(error);
-  return <div class="alert alert-danger" role="alert">
-    {error.message}
+  return <div className="alert alert-danger" role="alert">
+    {error.message}<br></br>
     Is the API service operating correctly at <a href={`${API_BASE}`}>{API_BASE}</a>?<br/>
     <button className="btn btn-danger" onClick={() => window.location.reload()}>Reload</button>
   </div>;
@@ -244,6 +253,7 @@ const router = createBrowserRouter([
       {
         path: "/collection/:digest",
         element: <CollectionView/>,
+        errorElement: <ErrorBoundary />,
         loader: (request) => {
           console.log("params", request.params)
           return fetchCollectionLevels(request.params.digest)

@@ -16,12 +16,13 @@ COLLECTION_TESTS = [
 ]
 
 COMPARISON_TESTS = [
-    f"{API_TEST_DIR}/comparison/compare_subset.json",  # subset
-    f"{API_TEST_DIR}/comparison/compare_different_names.json",  # same sequences, different names
-    f"{API_TEST_DIR}/comparison/compare_different_order.json",  # same sequences, name order switch, but equivalent coordinate system
-    f"{API_TEST_DIR}/comparison/compare_pair_swap.json",  # swapped name-length-pairs
-    f"{API_TEST_DIR}/comparison/compare_swap_wo_coords.json",  # swapped name-length-pairs, but no coord system change
+    f"{API_TEST_DIR}/comparison/compare_base.fa_subset.fa.json",  # subset
+    f"{API_TEST_DIR}/comparison/compare_base.fa_different_names.fa.json",  # same sequences, different names
+    f"{API_TEST_DIR}/comparison/compare_base.fa_different_order.fa.json",  # same sequences, name order switch, but equivalent coordinate system
+    f"{API_TEST_DIR}/comparison/compare_base.fa_pair_swap.fa.json",  # swapped name-length-pairs
+    f"{API_TEST_DIR}/comparison/compare_base.fa_swap_wo_coords.fa.json",  # swapped name-length-pairs, but no coord system change
 ]
+
 
 ATTRIBUTE_TESTS = [
     ("lengths", "7-_HdxYiRf-AJLBKOTaJUdxXrUkIXs6T", [8, 4]),

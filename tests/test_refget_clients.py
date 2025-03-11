@@ -1,6 +1,6 @@
 import pytest
 import os
-from refget import RefGetClient
+from refget import SequenceCollectionClient
 import tempfile
 
 DEMO_FILES = ["demo.fa", "demo2.fa", "demo3.fa", "demo4.fa", "demo5.fa"]
@@ -8,32 +8,32 @@ DEMO_FILES = ["demo.fa", "demo2.fa", "demo3.fa", "demo4.fa", "demo5.fa"]
 
 class TestEmptyConstructor:
     def test_no_schemas_required(self):
-        assert isinstance(RefGetClient(), RefGetClient)
+        assert isinstance(SequenceCollectionClient(), SequenceCollectionClient)
 
 
-class TestSequenceCollections:
+class TestSequenceCollectionClient:
     def test_get_collection(self):
-        rgc = RefGetClient()
-        seqcol = rgc.get_collection("fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32")
+        rgc = SequenceCollectionClient()
+        seqcol = rgc.get_collection("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk")
         assert isinstance(seqcol, dict)
 
     def test_list_collections(self):
-        rgc = RefGetClient()
+        rgc = SequenceCollectionClient()
         l = rgc.list_collections()
         assert isinstance(l, dict)
         assert "results" in l
         assert len(l["results"]) > 0
 
     def test_list_attributes(self):
-        rgc = RefGetClient()
+        rgc = SequenceCollectionClient()
         a = rgc.list_attributes("lengths")
         assert isinstance(a, dict)
         assert "results" in a
         assert len(a["results"]) > 0
 
     def test_compare(self):
-        rgc = RefGetClient()
-        c = rgc.compare("fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32", "fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32")
+        rgc = SequenceCollectionClient()
+        c = rgc.compare("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk", "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk")
         assert isinstance(c, dict)
         assert "digests" in c
 

@@ -1,23 +1,21 @@
-from sqlmodel import create_engine, SQLModel, Field, Session
-import refget, os
-from tests.conftest import DEMO_FILES
-from refget.models import *
-from refget.agents import *
+import os
+import json
+
+from refget.agents import RefgetDBAgent
 
 # Before running this script, you'll need to set up env vars like so:
 # source deployment/local_demo/local_demo.env
 
-
-dbc = RefgetDBAgent()
-print(f"SQL Engine: {dbc.engine}")
-
 fa_root = "test_fasta"
+DEMO_FASTA = json.load(open("test_fasta/test_fasta_digests.json"))
+dbc = RefgetDBAgent()  # Parameters are read from the environment
+print(f"SQL Engine: {dbc.engine}")
 
 # Load some fasta files into the database
 
 demo_results = {}
-for demo_file in DEMO_FILES:
-    f = os.path.join(fa_root, demo_file)
+for demo_file in DEMO_FASTA:
+    f = os.path.join(fa_root, demo_file["name"])
     print("Fasta file to be loaded: {}".format(f))
     demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
     print(demo_results[f])

@@ -1,42 +1,47 @@
 {
   "digests": {
-    "a": "fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32",
-    "b": "5TK2xeaOB3WmheaDFTzE6G2zdStHNQCM"
+    "a": "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk",
+    "b": "sv7GIP1K0qcskIKF3iaBmQpaum21vH74"
   },
   "attributes": {
     "a_only": [],
     "b_only": [],
     "a_and_b": [
       "lengths",
+      "name_length_pairs",
       "names",
       "sequences",
-      "sorted_name_length_pairs"
+      "sorted_sequences"
     ]
   },
   "array_elements": {
     "a": {
       "lengths": 3,
+      "name_length_pairs": 3,
       "names": 3,
       "sequences": 3,
-      "sorted_name_length_pairs": 3
+      "sorted_sequences": 3
     },
     "b": {
       "lengths": 2,
+      "name_length_pairs": 2,
       "names": 2,
       "sequences": 2,
-      "sorted_name_length_pairs": 2
+      "sorted_sequences": 2
     },
     "a_and_b": {
       "lengths": 2,
+      "name_length_pairs": 2,
       "names": 2,
-      "sequences": 0,
-      "sorted_name_length_pairs": 2
+      "sequences": 2,
+      "sorted_sequences": 2
     },
     "a_and_b_same_order": {
-      "lengths": true,
+      "lengths": null,
+      "name_length_pairs": true,
       "names": true,
-      "sequences": null,
-      "sorted_name_length_pairs": true
+      "sequences": true,
+      "sorted_sequences": true
     }
   }
 }
