@@ -8,14 +8,12 @@ p = phc.load_project("nsheff/pangenome_fasta")
 fa_root = os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_fasta/2023_hprc_draft")
 
 
-
-
-
 import peppy
 from refget.agents import RefgetDBAgent
+
 p = peppy.Project("test_fasta/test_fasta_metadata.csv")
 rga = RefgetDBAgent()
-fa_root="test_fasta"
+fa_root = "test_fasta"
 rga.seqcol.add_from_fasta_pep(p, fa_root)
 
 
@@ -44,4 +42,3 @@ print(results)
 
 
 rgc
-

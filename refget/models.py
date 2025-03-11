@@ -231,8 +231,6 @@ class SequenceCollection(SQLModel, table=True):
 
         return seqcol
 
-
-
     pangenomes: List[Pangenome] = Relationship(
         back_populates="collections", link_model=PangenomeCollectionLink
     )

@@ -250,7 +250,7 @@ class SequenceCollectionAgent(object):
 
     def add_from_fasta_pep(self, pep: peppy.Project, fa_root):
         """
-        Given a path to a PEP file and a root directory containing the fasta files, 
+        Given a path to a PEP file and a root directory containing the fasta files,
         load the fasta files into the refget database.
 
         Args:
@@ -261,6 +261,7 @@ class SequenceCollectionAgent(object):
         total_files = len(pep.samples)
         results = {}
         import time
+
         for i, s in enumerate(pep.samples, 1):
             fa_path = os.path.join(fa_root, s.fasta)
             _LOGGER.info(f"Loading {fa_path} ({i} of {total_files})")

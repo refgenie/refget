@@ -38,7 +38,9 @@ def build_argparser():
 
     add_fasta = subparsers.add_parser("add-fasta", help="Add a fasta file to the database")
     add_fasta.add_argument("--fasta-file", help="Path to the fasta file", default=None)
-    add_fasta.add_argument("--pep", "-p", help="Set to input a pep of FASTA files", type=str, default=False)
+    add_fasta.add_argument(
+        "--pep", "-p", help="Set to input a pep of FASTA files", type=str, default=False
+    )
     add_fasta.add_argument("--fa-root", "-r", help="Root directory for fasta files", default="")
 
     digest_fasta = subparsers.add_parser("digest-fasta", help="Digest a fasta file")
@@ -56,6 +58,7 @@ class BytesEncoder(json.JSONEncoder):
             return obj.decode(errors="ignore")  # or use base64 encoding
         return super().default(obj)
 
+
 def main(injected_args=None):
     parser = build_argparser()
     args = parser.parse_args()
@@ -68,6 +71,7 @@ def main(injected_args=None):
         if args.pep:
             _LOGGER.info(f"Adding fasta file from PEP: {args.pep}")
             import peppy
+
             p = peppy.Project(args.pep)
             agent = RefgetDBAgent()
             result = agent.seqcol.add_from_fasta_pep(p, args.fa_root)
