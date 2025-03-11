@@ -61,6 +61,12 @@ If you need to load test data into your server, then you have to install [gtars]
 python data_loaders/load_demo_data.py
 ```
 
+or:
+
+```
+refget add-fasta -p test_fasta/test_fasta_metadata.csv -r test_fasta
+```
+
 
 ### Running the seqcolapi API backend
 
@@ -134,3 +140,10 @@ The objects and attributes are represented as SQLModel objects in `refget/models
 2. change the function that creates the objects, to populate the new attribute.
 
 
+
+
+## Example of loading reference fasta datasets:
+
+```
+refget add-fasta -p ref_fasta.csv -r $BRICKYARD/datasets_downloaded/pangenome_fasta/reference_fasta
+```
