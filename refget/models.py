@@ -240,11 +240,11 @@ class SequenceCollection(SQLModel, table=True):
         Converts object into dict of level 2 representation of the SequenceCollection.
         """
         return {
-            "lengths": self.lengths_digest,
-            "names": self.names_digest,
-            "sequences": self.sequences_digest,
-            "sorted_sequences": self.sorted_sequences_digest,
-            "name_length_pairs": self.name_length_pairs_digest,
+            "lengths": self.lengths.digest,
+            "names": self.names.digest,
+            "sequences": self.sequences.digest,
+            "sorted_sequences": self.sorted_sequences.digest,
+            "name_length_pairs": self.name_length_pairs.digest,
             "sorted_name_length_pairs": self.sorted_name_length_pairs_digest,
         }
 
