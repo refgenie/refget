@@ -171,6 +171,9 @@ class SequenceCollectionAgent(object):
                 return seqcol
 
     def add(self, seqcol: SequenceCollection) -> SequenceCollection:
+        """
+        Add a sequence collection to the database, given a SeedCollection object
+        """
         with Session(self.engine, expire_on_commit=False) as session:
             with session.no_autoflush:
                 csc = session.get(SequenceCollection, seqcol.digest)
@@ -232,6 +235,9 @@ class SequenceCollectionAgent(object):
                 return csc_simplified
 
     def add_from_dict(self, seqcol_dict: dict):
+        """
+        Add a sequence collection from a seqcol dictionary
+        """
         seqcol = SequenceCollection.from_dict(seqcol_dict, self.inherent_attrs)
         _LOGGER.info(f"SeqCol: {seqcol}")
         _LOGGER.debug(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
@@ -239,7 +245,33 @@ class SequenceCollectionAgent(object):
 
     def add_from_fasta_file(self, fasta_file_path: str):
         CSC = fasta_to_seqcol_dict(fasta_file_path)
-        return self.add_from_dict(CSC)
+        seqcol = self.add_from_dict(CSC)
+        return seqcol
+
+    def add_from_fasta_pep(self, pep: peppy.Project, fa_root):
+        """
+        Given a path to a PEP file and a root directory containing the fasta files, 
+        load the fasta files into the refget database.
+
+        Args:
+        - pep_path (str): Path to the PEP file
+        - fa_root (str): Root directory containing the fasta files
+        """
+
+        total_files = len(pep.samples)
+        results = {}
+        import time
+        for i, s in enumerate(pep.samples, 1):
+            fa_path = os.path.join(fa_root, s.fasta)
+            _LOGGER.info(f"Loading {fa_path} ({i} of {total_files})")
+
+            start_time = time.time()  # Record start time
+            results[s.fasta] = self.add_from_fasta_file(fa_path).digest
+            elapsed_time = time.time() - start_time  # Calculate elapsed time
+
+            _LOGGER.info(f"Loaded in {elapsed_time:.2f} seconds")
+
+        return results
 
     def list_by_offset(self, limit=50, offset=0):
         with Session(self.engine) as session:

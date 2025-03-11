@@ -93,6 +93,35 @@ class SequenceCollection(SQLModel, table=True):
     A SQLModel/pydantic model that represents a refget sequence collection.
     """
 
+    digest: str = Field(primary_key=True)
+    """ Top-level digest of the SequenceCollection. """
+
+    sequences_digest: str = Field(foreign_key="sequencesattr.digest")
+    sequences: "SequencesAttr" = Relationship(back_populates="collection")
+    """ Array of sequence digests."""
+
+    sorted_sequences_digest: str = Field(foreign_key="sortedsequencesattr.digest")
+    sorted_sequences: "SortedSequencesAttr" = Relationship(back_populates="collection")
+    """ Array of sorted sequence digests."""
+
+    names_digest: str = Field(foreign_key="namesattr.digest")
+    names: "NamesAttr" = Relationship(back_populates="collection")
+    """ Array of sequence names. """
+
+    lengths_digest: str = Field(foreign_key="lengthsattr.digest")
+    lengths: "LengthsAttr" = Relationship(back_populates="collection")
+    """ Array of sequence lengths. """
+
+    sorted_name_length_pairs_digest: str = Field()
+    """ Digest of the sorted name-length pairs, representing a unique digest of sort-invariant coordinate system. """
+    # sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
+    # sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(
+    #     back_populates="collection"
+    # )
+    name_length_pairs_digest: str = Field(foreign_key="namelengthpairsattr.digest")
+    name_length_pairs: "NameLengthPairsAttr" = Relationship(back_populates="collection")
+    """ Array of name-length pairs, representing the coordinate system of the collection. """
+
     @classmethod
     def input_validate(cls, seqcol_obj: dict) -> bool:
         """
@@ -202,34 +231,7 @@ class SequenceCollection(SQLModel, table=True):
 
         return seqcol
 
-    digest: str = Field(primary_key=True)
-    """ Top-level digest of the SequenceCollection. """
 
-    sequences_digest: str = Field(foreign_key="sequencesattr.digest")
-    sequences: "SequencesAttr" = Relationship(back_populates="collection")
-    """ Array of sequence digests."""
-
-    sorted_sequences_digest: str = Field(foreign_key="sortedsequencesattr.digest")
-    sorted_sequences: "SortedSequencesAttr" = Relationship(back_populates="collection")
-    """ Array of sorted sequence digests."""
-
-    names_digest: str = Field(foreign_key="namesattr.digest")
-    names: "NamesAttr" = Relationship(back_populates="collection")
-    """ Array of sequence names. """
-
-    lengths_digest: str = Field(foreign_key="lengthsattr.digest")
-    lengths: "LengthsAttr" = Relationship(back_populates="collection")
-    """ Array of sequence lengths. """
-
-    sorted_name_length_pairs_digest: str = Field()
-    """ Digest of the sorted name-length pairs, representing a unique digest of sort-invariant coordinate system. """
-    # sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
-    # sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(
-    #     back_populates="collection"
-    # )
-    name_length_pairs_digest: str = Field(foreign_key="namelengthpairsattr.digest")
-    name_length_pairs: "NameLengthPairsAttr" = Relationship(back_populates="collection")
-    """ Array of name-length pairs, representing the coordinate system of the collection. """
 
     pangenomes: List[Pangenome] = Relationship(
         back_populates="collections", link_model=PangenomeCollectionLink

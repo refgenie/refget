@@ -37,7 +37,9 @@ def build_argparser():
     subparsers = parser.add_subparsers(dest="command")
 
     add_fasta = subparsers.add_parser("add-fasta", help="Add a fasta file to the database")
-    add_fasta.add_argument("fasta_file", help="Path to the fasta file")
+    add_fasta.add_argument("--fasta-file", help="Path to the fasta file", default=None)
+    add_fasta.add_argument("--pep", "-p", help="Set to input a pep of FASTA files", type=str, default=False)
+    add_fasta.add_argument("--fa-root", "-r", help="Root directory for fasta files", default="")
 
     digest_fasta = subparsers.add_parser("digest-fasta", help="Digest a fasta file")
     digest_fasta.add_argument("fasta_file", help="Path to the fasta file")
@@ -54,17 +56,27 @@ class BytesEncoder(json.JSONEncoder):
             return obj.decode(errors="ignore")  # or use base64 encoding
         return super().default(obj)
 
-
-def main():
+def main(injected_args=None):
     parser = build_argparser()
     args = parser.parse_args()
-    _LOGGER.info(args)
+    _LOGGER.debug(args)
 
+    if not args.command:
+        parser.print_help()
+        return
     if args.command == "add-fasta":
-        _LOGGER.info(f"Adding fasta file: {args.fasta_file}")
-        refget = RefgetDBAgent()
-        refget.seqcol.add_from_fasta_file(args.fasta_file)
-        _LOGGER.info("Added fasta file")
+        if args.pep:
+            _LOGGER.info(f"Adding fasta file from PEP: {args.pep}")
+            import peppy
+            p = peppy.Project(args.pep)
+            agent = RefgetDBAgent()
+            result = agent.seqcol.add_from_fasta_pep(p, args.fa_root)
+            print(json.dumps(result, indent=2, cls=BytesEncoder))
+        if args.fasta_file:
+            _LOGGER.info(f"Adding fasta file: {args.fasta_file}")
+            agent = RefgetDBAgent()
+            agent.seqcol.add_from_fasta_file(args.fasta_file)
+            _LOGGER.info("Added fasta file")
     elif args.command == "digest-fasta":
         _LOGGER.info(f"Digesting fasta file: {args.fasta_file}")
         if args.level == 0:

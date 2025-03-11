@@ -14,7 +14,7 @@ class TestEmptyConstructor:
 class TestSequenceCollectionClient:
     def test_get_collection(self):
         rgc = SequenceCollectionClient()
-        seqcol = rgc.get_collection("fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32")
+        seqcol = rgc.get_collection("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk")
         assert isinstance(seqcol, dict)
 
     def test_list_collections(self):
@@ -33,7 +33,7 @@ class TestSequenceCollectionClient:
 
     def test_compare(self):
         rgc = SequenceCollectionClient()
-        c = rgc.compare("fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32", "fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32")
+        c = rgc.compare("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk", "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk")
         assert isinstance(c, dict)
         assert "digests" in c
 
