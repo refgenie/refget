@@ -234,7 +234,7 @@ class SequenceCollectionAgent(object):
     def add_from_dict(self, seqcol_dict: dict):
         seqcol = SequenceCollection.from_dict(seqcol_dict, self.inherent_attrs)
         _LOGGER.info(f"SeqCol: {seqcol}")
-        _LOGGER.info(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
+        _LOGGER.debug(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
         return self.add(seqcol)
 
     def add_from_fasta_file(self, fasta_file_path: str):
@@ -474,7 +474,7 @@ class RefgetDBAgent(object):
         # Read schema
         if schema:
             self.schema_dict = load_json(schema)
-            _LOGGER.info(f"Schema: {self.schema_dict}")
+            _LOGGER.debug(f"Schema: {self.schema_dict}")
             try:
                 self.inherent_attrs = self.schema_dict["ga4gh"]["inherent"]
             except KeyError:
@@ -537,8 +537,8 @@ class RefgetDBAgent(object):
             result = session.exec(statement)
             statement = delete(SequencesAttr)
             result = session.exec(statement)
-            statement = delete(SortedNameLengthPairsAttr)
-            result = session.exec(statement)
+            # statement = delete(SortedNameLengthPairsAttr)
+            # result = session.exec(statement)
             statement = delete(NameLengthPairsAttr)
             result = session.exec(statement)
             statement = delete(SortedSequencesAttr)
