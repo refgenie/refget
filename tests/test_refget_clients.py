@@ -8,12 +8,13 @@ DEMO_FILES = ["demo.fa", "demo2.fa", "demo3.fa", "demo4.fa", "demo5.fa"]
 
 class TestEmptyConstructor:
     def test_no_schemas_required(self):
-        assert isinstance(SequenceCollectionClient(), SequenceCollectionClient)
+        assert isinstance(SequenceCollectionClient(urls=["http://0.0.0.0:8100"]), SequenceCollectionClient)
 
 
+@pytest.mark.require_service
 class TestSequenceCollectionClient:
     def test_get_collection(self):
-        rgc = SequenceCollectionClient()
+        rgc = SequenceCollectionClient(urls=["http://0.0.0.0:8100"])
         seqcol = rgc.get_collection("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk")
         assert isinstance(seqcol, dict)
 
