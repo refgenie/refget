@@ -1,7 +1,5 @@
 import pytest
-import os
 from refget import SequenceCollectionClient
-import tempfile
 
 DEMO_FILES = ["demo.fa", "demo2.fa", "demo3.fa", "demo4.fa", "demo5.fa"]
 
