@@ -14,6 +14,7 @@ import { PangenomeView } from './pages/PangenomeView.jsx'
 import { AttributeView } from './pages/AttributeView.jsx'
 import { DemoPage } from './pages/DemoPage.jsx'
 import { ComparisonView } from './pages/ComparisonView.jsx'
+import { ComparisonInput } from './pages/ComparisonInput.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { HPRCGenomes } from './pages/HPRCGenomes.jsx'
 
@@ -241,6 +242,10 @@ const router = createBrowserRouter([
       {
         path: "/hprc",
         element: <HPRCGenomes/>,
+      },
+      {
+        path : "/comparison",
+        element: <ComparisonInput/>,
       },
       {
         path: "/comparison/:digest1/:digest2",
