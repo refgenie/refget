@@ -3,6 +3,54 @@ import { useLoaderData, Link } from "react-router-dom"
 import { API_BASE } from "../utilities.jsx"
 
 
+
+const CoordSystemReport = ({message}) => {
+  return (
+    <div>
+      <div className="alert alert-warning">
+      <h3>Coordinate System</h3>
+        <p>{message}</p>
+      </div>
+    </div>
+  )
+}
+
+// Component to display the comparison between two collections
+// ✅❔❌❔
+const CoordinateSystemInterpretation = ({comparison}) => {
+  const lengthsANotB = comparison.array_elements.a.lengths - comparison.array_elements.a_and_b.lengths
+  const lengthsBNotA = comparison.array_elements.b.lengths - comparison.array_elements.a_and_b.lengths
+  const namesANotB = comparison.array_elements.a.names - comparison.array_elements.a_and_b.names
+  const namesBNotA = comparison.array_elements.b.names - comparison.array_elements.a_and_b.names
+  const nlpANotB = comparison.array_elements.a.name_length_pairs - comparison.array_elements.a_and_b.name_length_pairs
+  const nlpBNotA = comparison.array_elements.b.name_length_pairs - comparison.array_elements.a_and_b.name_length_pairs
+  // If the name_length_pairs match, then the coordinate systems are identical
+  if (nlpANotB === 0 && nlpBNotA === 0) {
+    return <CoordSystemReport message="🟰The coordinate systems are identical"/>
+  } else if (nlpANotB === 0 && nlpBNotA > 0) {  // If A nlp is a subset of B
+    return <CoordSystemReport message="Collection A's coordinate system is a subset of B's."/>
+  } else if (nlpANotB > 0 && nlpBNotA === 0) {  // If B nlp is a subset of A
+    return <CoordSystemReport message="Collection B's coordinate system is a subset of A's."/>
+  } else if (comparison.array_elements.a_and_b.name_length_pairs !== 0) {  // If there is some overlap
+    return <CoordSystemReport message="The coordinate systems are partially overlapping."/>
+  } else {  // If there is no overlap
+    const msgArray = []
+    msgArray.push("The coordinate systems are disjoint.")
+    // If the lengths match and names match
+    if (lengthsANotB === 0 && lengthsBNotA === 0 && namesANotB === 0 && namesBNotA === 0) {
+      msgArray.push("⚠️ Name pair swap!")
+    } else if (lengthsANotB === 0 && lengthsBNotA === 0) {  // If lengths match but names don't
+      msgArray.push("✅ Lengths  match. ⚠️ Names don't match.")
+    } else if (namesANotB === 0 && namesBNotA === 0) {  // If names match but lengths don't
+      msgArray.push("✅ Names match. ⚠️ Lengths don't match.")
+    }
+    return <CoordSystemReport message={msgArray.join(" ")}/>
+  }
+  return <CoordSystemReport message="I'm not sure what's going on with the coordinate systems."/>
+}
+
+
+
 const ComparisonView =({ paramComparison }) => { 
     const loaderData = useLoaderData()
     const comparison = paramComparison || loaderData
@@ -74,7 +122,7 @@ const ComparisonView =({ paramComparison }) => {
             <li>{interpretation["name_length_pairs"].interpretation}</li>
           </ul>
             </div>
-
+            <CoordinateSystemInterpretation comparison={comparison} />
 
 
         <h2>Details</h2>
