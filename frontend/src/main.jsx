@@ -143,7 +143,7 @@ const Nav = () => {
         <div className="collapse navbar-collapse me-auto" id="navbarSupportedContent">
           <ul className="navbar-nav ms-auto mb-2 mb-sm-0">        
               <li className="nav-item mx-2 my-0 h5"><a href="/" className="nav-link">Home</a></li>
-            
+              <li className="nav-item mx-2 my-0 h5"><a href="/scim" className="nav-link">SCIM</a></li>
               <li className="nav-item mx-2 my-0 h5"><a href={`${API_BASE}/docs`} className="nav-link">API Docs</a></li>
             
               <li className="nav-item mx-2 my-0 h5"><a href="https://github.com/refgenie/refget" className="nav-link">GitHub</a></li>
@@ -244,7 +244,7 @@ const router = createBrowserRouter([
         element: <HPRCGenomes/>,
       },
       {
-        path : "/comparison",
+        path : "/scim",
         element: <ComparisonInput/>,
       },
       {

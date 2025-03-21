@@ -54,7 +54,7 @@ const ComparisonInput = () => {
 
   return (
     <div>
-      <h2>Comparison Interpretation Module</h2>
+      <h2>SeqCol Comparison Interpretation Module (SCIM)</h2>
         <p>This tool runs a local interpretation of the output of a sequence collection comparison. Paste the output of `/comparison` here:</p>
       <textarea
         value={comparisonStr}

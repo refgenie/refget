@@ -83,11 +83,11 @@ const LinkToLocalComparison = ({ comparison }) => {
   const base64encodedComparison = btoa(JSON.stringify(comparison));
   return (
     <a 
-      href={`/comparison?val=${base64encodedComparison}`} 
+      href={`/scim?val=${base64encodedComparison}`} 
       title="View this comparison in Interpretation Module"
       className="text-decoration-none"
       >
-      <i className="bi bi-search"> View Interpretation Module</i>
+      <i className="bi bi-search"> View in SCIM Interpretation Module</i>
     </a>
   );
 }
@@ -138,7 +138,7 @@ const ComparisonView =({ paramComparison }) => {
       msgArray.push(`The collections' ${attribute} contents are partially overlapping; some are shared, and some are unique to each collection.`)
       interpTerm = "partial_overlap"
     }
-    
+
     return msgArray
   }
 
