@@ -152,14 +152,13 @@ def build_sorted_name_length_pairs(obj: dict, digest_function: DigestFunction = 
     """Builds the sorted_name_length_pairs attribute, which corresponds to the coordinate system"""
     sorted_name_length_pairs = []
     for i in range(len(obj["names"])):
-        print(i)
         sorted_name_length_pairs.append({"length": obj["lengths"][i], "name": obj["names"][i]})
-    nl_digests = []  # name-length digests
+    snlp_digests = []  # name-length digests
     for i in range(len(sorted_name_length_pairs)):
-        nl_digests.append(digest_function(canonical_str(sorted_name_length_pairs[i])))
+        snlp_digests.append(digest_function(canonical_str(sorted_name_length_pairs[i])))
 
-    nl_digests.sort()
-    return nl_digests
+    snlp_digests.sort()
+    return snlp_digests
 
 
 def build_name_length_pairs(obj: dict, digest_function: DigestFunction = sha512t24u_digest):
