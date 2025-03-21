@@ -89,7 +89,7 @@ async def service_info(dbagent=Depends(get_dbagent)):
         "name": "Sequence collections",
         "type": {
             "group": "org.ga4gh",
-            "artifact": "refget.seqcol",
+            "artifact": "refget-seqcol",
             "version": ALL_VERSIONS["seqcol_spec_version"],
         },
         "description": "An API providing metadata such as names, lengths, and other values for collections of reference sequences",
@@ -98,7 +98,7 @@ async def service_info(dbagent=Depends(get_dbagent)):
         "documentationUrl": "https://seqcolapi.databio.org",
         "updatedAt": "2025-02-20T00:00:00Z",
         "environment": "dev",
-        "version": ALL_VERSIONS["seqcolapi_version"],
+        "version": ALL_VERSIONS,
         "seqcol": {"schema": dbagent.schema_dict, "sorted_name_length_pairs": True},
     }
     return JSONResponse(content=ret)

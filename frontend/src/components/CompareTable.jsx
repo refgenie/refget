@@ -17,7 +17,7 @@ const CompareTable = ({seqColList}) => {
         for (let j = 0; j < seqColList.length; j++) {
           link_cells.push(
             <td key={i + "vs" + j} className="text-center">{ j == i ? "=" : <Link
-              to={`/comparison/${seqColList[i]}/${seqColList[j]}`}
+              to={`/scim/${seqColList[i]}/${seqColList[j]}`}
               key={`${seqColList[i]}-${seqColList[j]}`}
             ><img src={compare} alt="Compare" width="50" className="compare"/>
             </Link>}</td>

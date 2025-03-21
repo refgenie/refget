@@ -14,7 +14,7 @@ print(f"SQL Engine: {dbc.engine}")
 # Load some fasta files into the database
 
 demo_results = {}
-for demo_file in DEMO_FASTA:
+for name, demo_file in DEMO_FASTA.items():
     f = os.path.join(fa_root, demo_file["name"])
     print("Fasta file to be loaded: {}".format(f))
     demo_results[f] = dbc.seqcol.add_from_fasta_file(f)

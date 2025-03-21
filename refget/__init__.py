@@ -13,7 +13,8 @@ try:
     # Requires optional dependencies, so we catch the ImportError
     from .refget_router import create_refget_router, get_dbagent
 except ImportError:
-    create_seqcol_router = None
+    print("Optional dependencies not installed. Refget router will not be available.")
+    create_refget_router = None
     pass
 
 logging.basicConfig(level=logging.INFO)

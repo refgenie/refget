@@ -15,7 +15,6 @@ app.include_router(refget_router, prefix="/seqcol")
 app.state.dbagent = RefgetDBAgent()
 """
 
-import henge
 import logging
 
 from fastapi import APIRouter, Response, HTTPException, Request, Depends
@@ -177,7 +176,7 @@ async def compare_2_digests(
     result["digests"] = {"a": collection_digest1, "b": collection_digest2}
     try:
         result.update(dbagent.compare_digests(collection_digest1, collection_digest2))
-    except henge.NotFoundException as e:
+    except NotFoundException as e:
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
@@ -203,7 +202,7 @@ async def compare_1_digest(
     result["digests"] = {"a": collection_digest1, "b": "POSTed seqcol"}
     try:
         result.update(dbagent.compare_1_digest(collection_digest1, seqcolB))
-    except henge.NotFoundException as e:
+    except NotFoundException as e:
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,

@@ -1,6 +1,5 @@
 aiofiles
 fastapi
-henge>=0.2.1
 jinja2
 pipestat
 psycopg2-binary

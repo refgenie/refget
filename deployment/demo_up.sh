@@ -39,7 +39,8 @@ echo "Loading demo sequence collections..."
 python data_loaders/load_demo_seqcols.py
 
 # Set up cleanup on Ctrl+C
-trap cleanup SIGINT
+trap cleanup SIGINT EXIT
+
 
 # Wait indefinitely until Ctrl+C is pressed
 wait $PID
