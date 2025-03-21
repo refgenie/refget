@@ -18,23 +18,29 @@ from tests.conftest import DEMO_FILES
 
 fa_root = "test_fasta"
 demo_results = {}
-demo_results_json = []
+demo_results_json = {}
 for demo_file in DEMO_FILES:
     file_path = f"{fa_root}/{demo_file}"
     basename = os.path.basename(file_path)
     print(f"Fasta file to be loaded: {basename}")
     res = SequenceCollection.from_dict(
-        refget.fasta_to_seqcol(f"{fa_root}/{demo_file}"),
+        refget.fasta_to_seqcol_dict(f"{fa_root}/{demo_file}"),
         inherent_attrs=["names", "sequences"],
     )
     demo_results[basename] = res
-    demo_results_json.append(
-        {
+    demo_results_json[basename] = {
             "name": basename,
-            "digest": res.digest,
+            "top_level_digest": res.digest,
             "sorted_name_length_pairs_digest": res.sorted_name_length_pairs_digest,
+            "level1": res.level1(),
+            "level2": res.level2(),
         }
-    )
+
+
+print(json.dumps(demo_results_json, indent=2))
+
+
+
 
 for n, sc in demo_results.items():
     print(f"{n}: {sc.digest} {sc.sorted_name_length_pairs_digest}")

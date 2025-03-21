@@ -20,8 +20,8 @@ with open("test_fasta/test_fasta_digests.json") as fp:
 
 # make tuples of each correct answer to parameterize tests
 DIGEST_TESTS = []
-for fa_digest_bundle in correct_answers:
-    DIGEST_TESTS.append((fa_digest_bundle["name"], fa_digest_bundle["digest"]))
+for fa_name, fa_digest_bundle in correct_answers.items():
+    DIGEST_TESTS.append((fa_name, fa_digest_bundle))
 
 
 def check_comparison(fasta1, fasta2, expected_comparison):
@@ -66,11 +66,20 @@ class TestSequenceCollectionModel:
         print(sc)
         assert sc.digest == "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk"
 
-    @pytest.mark.parametrize("fa_file, correct_digest", DIGEST_TESTS)
-    def test_from_fasta_file(self, fa_file, correct_digest, fa_root):
+    @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
+    def test_from_fasta_file(self, fa_file, fa_digest_bundle, fa_root):
         """Ensures the top-level digest of a SequenceCollection matches."""
         d = refget.SequenceCollection.from_fasta_file(os.path.join(fa_root, fa_file))
-        assert d.digest == correct_digest
+        assert d.digest == fa_digest_bundle["top_level_digest"]
+        assert d.sorted_name_length_pairs_digest == fa_digest_bundle["sorted_name_length_pairs_digest"]
+
+        # Check level1 digests match expected answer
+        level1 = d.level1()
+        assert level1["lengths"] == fa_digest_bundle["level1"]["lengths"]
+        assert level1["names"] == fa_digest_bundle["level1"]["names"]
+        assert level1["sequences"] == fa_digest_bundle["level1"]["sequences"]
+        assert level1["sorted_sequences"] == fa_digest_bundle["level1"]["sorted_sequences"]
+        assert level1["name_length_pairs"] == fa_digest_bundle["level1"]["name_length_pairs"]
 
 
 class TestCompare:

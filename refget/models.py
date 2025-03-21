@@ -200,9 +200,11 @@ class SequenceCollection(SQLModel, table=True):
             snlp_digests.append(sha512t24u_digest(canonical_str(nlp[i])))
         snlp_digests.sort()
 
+        # you can build it like this, but instead I'm just building it from the nlp, to save compute
         # snlp = build_sorted_name_length_pairs(seqcol_dict)
         # v = ",".join(snlp)
         snlp_digest_level1 = sha512t24u_digest(canonical_str(snlp_digests))
+        # This is now a transient attribute, so we don't need to store it in the database.
         # snlp_attr = SortedNameLengthPairsAttr(digest=snlp_digest_level1, value=snlp_digests)
 
         sorted_sequences_value = copy(seqcol_dict["sequences"])
