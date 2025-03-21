@@ -36,4 +36,3 @@ ATTRIBUTE_LIST_TESTS = [
         f"{API_TEST_DIR}/attribute/cGRM.json",
     )
 ]
-
