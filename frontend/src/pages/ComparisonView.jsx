@@ -82,13 +82,13 @@ const coordinateSystemInterpretation = (comparison) => {
 const LinkToLocalComparison = ({ comparison }) => {
   const base64encodedComparison = btoa(JSON.stringify(comparison));
   return (
-    <a 
+    <span>Local link: <a 
       href={`/scim?val=${base64encodedComparison}`} 
-      title="View this comparison in Interpretation Module"
+      title="View this comparison in SCIM"
       className="text-decoration-none"
       >
-      <i className="bi bi-search"> View in SCIM Interpretation Module</i>
-    </a>
+      <i className="bi bi-search"> Interpret in SCIM</i>
+    </a></span>
   );
 }
 

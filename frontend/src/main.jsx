@@ -14,7 +14,7 @@ import { PangenomeView } from './pages/PangenomeView.jsx'
 import { AttributeView } from './pages/AttributeView.jsx'
 import { DemoPage } from './pages/DemoPage.jsx'
 import { ComparisonView } from './pages/ComparisonView.jsx'
-import { ComparisonInput } from './pages/ComparisonInput.jsx'
+import { SCIM } from './pages/SCIM.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { HPRCGenomes } from './pages/HPRCGenomes.jsx'
 
@@ -245,11 +245,11 @@ const router = createBrowserRouter([
       },
       {
         path : "/scim",
-        element: <ComparisonInput/>,
+        element: <SCIM/>,
       },
       {
-        path: "/comparison/:digest1/:digest2",
-        element: <ComparisonView/>,
+        path: "/scim/:digest1/:digest2",
+        element: <SCIM/>,
         loader: (request) => {
           console.log("params", request.params)
           return fecthComparison(request.params.digest1, request.params.digest2)
