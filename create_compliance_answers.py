@@ -29,17 +29,15 @@ for demo_file in DEMO_FILES:
     )
     demo_results[basename] = res
     demo_results_json[basename] = {
-            "name": basename,
-            "top_level_digest": res.digest,
-            "sorted_name_length_pairs_digest": res.sorted_name_length_pairs_digest,
-            "level1": res.level1(),
-            "level2": res.level2(),
-        }
+        "name": basename,
+        "top_level_digest": res.digest,
+        "sorted_name_length_pairs_digest": res.sorted_name_length_pairs_digest,
+        "level1": res.level1(),
+        "level2": res.level2(),
+    }
 
 
 print(json.dumps(demo_results_json, indent=2))
-
-
 
 
 for n, sc in demo_results.items():

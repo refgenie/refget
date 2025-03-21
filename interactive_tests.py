@@ -28,7 +28,6 @@ for i in range(len(nlp)):
 snlp_digests.sort()
 
 
-
 seqcols = dbc.seqcol.list()
 dbc.attribute.list("lengths")
 
@@ -74,7 +73,9 @@ print(
 
 
 refget.SequenceCollection.from_fasta_file("demo_fasta/demo0.fa")
-refget.SequenceCollection.from_fasta_file("/home/nsheff/sandbox/HG002.alt.pat.f1_v2.unmasked.fa.gz")
+refget.SequenceCollection.from_fasta_file(
+    "/home/nsheff/sandbox/HG002.alt.pat.f1_v2.unmasked.fa.gz"
+)
 
 import gtars
 
