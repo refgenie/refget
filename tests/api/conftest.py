@@ -1,10 +1,8 @@
 import pytest
-import requests
 
 from tests.conftest import DEMO_FILES
-
-REQ_SERVICE_MARK = "require_service"
-API_TEST_DIR = "test_api"
+# from tests.conftest import pytest_addoption, api_root, pytest_configure, pytest_collection_modifyitems, check_server_is_running
+from tests.conftest import API_TEST_DIR
 
 COLLECTION_TESTS = [
     (DEMO_FILES[0], f"{API_TEST_DIR}/collection/base_collection.json"),
