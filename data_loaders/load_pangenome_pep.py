@@ -14,7 +14,7 @@ for i, s in enumerate(p.samples, 1):
     print(f"Loading {fa_path} ({i} of {total_files})")
 
     start_time = time.time()  # Record start time
-    rga.seqcol.add_from_fasta_file(fa_path)
+    rga.seqcol.add_from_fasta_file(fa_path, update=True)
     elapsed_time = time.time() - start_time  # Calculate elapsed time
 
     print(f"Loaded in {elapsed_time:.2f} seconds")
