@@ -13,13 +13,6 @@ from refget.const import _schema_path
 REQ_SERVICE_MARK = "require_service"
 API_TEST_DIR = "tests/api"
 
-# This is a configuration object that can be used to set global variables
-class Config:
-# This is optional, so we could turn off for a compliance test
-    TEST_SORTED_NAME_LENGTH_PAIRS = True
-
-config = Config()
-
 DEMO_FILES = [
     "base.fa",
     "different_names.fa",
@@ -29,13 +22,16 @@ DEMO_FILES = [
     "swap_wo_coords.fa",
 ]
 
+# JSON with correct answers for digest tests
+TEST_FASTA_METADATA_FILE = "test_fasta/test_fasta_digests.json"
+
 # load json with right answers
-with open("test_fasta/test_fasta_digests.json") as fp:
-    correct_answers = json.load(fp)
+with open(TEST_FASTA_METADATA_FILE) as fp:
+    TEST_FASTA_DIGESTS = json.load(fp)
 
 # make tuples of each correct answer to parameterize tests
 DIGEST_TESTS = []
-for fa_name, fa_digest_bundle in correct_answers.items():
+for fa_name, fa_digest_bundle in TEST_FASTA_DIGESTS.items():
     DIGEST_TESTS.append((fa_name, fa_digest_bundle))
 
 
@@ -88,20 +84,8 @@ def pytest_addoption(parser):
     Add an option to specify the API root
     """
     parser.addoption("--api_root", "-R", action="store", default="http://0.0.0.0:8100")
-    parser.addoption("--no-snlp", action="store_false", default=True)
+    parser.addoption("--no-snlp", action="store_true", default=False)
 
-
-@pytest.fixture(scope="session", autouse=True)
-def set_snlp_env(pytestconfig):
-    """
-    Get the SNLP value from command line and set it as an environment variable
-    """
-    snlp_value = pytestconfig.getoption("no_snlp")
-    # Convert boolean to string for environment variable
-    # global TEST_SORTED_NAME_LENGTH_PAIRS
-    print("Setting SNLP to", snlp_value)
-    config.TEST_SORTED_NAME_LENGTH_PAIRS = bool(snlp_value)
-    return snlp_value
 
 @pytest.fixture()
 def api_root(pytestconfig):
@@ -129,19 +113,28 @@ def check_server_is_running(api_root):
 
 def pytest_configure(config):
     """
-    Register a custom marker for tests that require a server.
-    You can add this marker to a test with `@pytest.mark.require_service`,
-    and it will be skipped if the server is not running.
+    Register custom markers for tests that depend on CLI arguments
+    You can add these markers  `@pytest.mark.<marker>`
     """
     config.addinivalue_line(
-        "markers", f"{REQ_SERVICE_MARK}: test to only run when API root is available"
+        "markers", f"{REQ_SERVICE_MARK}: mark test as requiring the service to run"
+    )
+    config.addinivalue_line(
+        "markers", "snlp: mark test as requiring the SNLP service to run"
     )
 
 
+
+
+# Pytest evaluates `skipif` before CLI arguments, so to skip tests based on CLI args,  
+# we must modify them after collection but before execution.  
+# This hook adds a `skip` mark to tests that should be skipped based on CLI args.  
 def pytest_collection_modifyitems(config, items):
     """
-    Skip tests marked with `@pytest.mark.require_service` if the server is not running
+    Skip tests with marks, based on values from the command line.
     """
+
+    # Skip `@pytest.mark.require_service` if the server is not running
     api_root = config.getoption("api_root")
     skip_missing_service = pytest.mark.skip(reason="need API to run")
     if not check_server_is_running(api_root):
@@ -149,3 +142,11 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if REQ_SERVICE_MARK in item.keywords:
                 item.add_marker(skip_missing_service)
+
+    # Skip SNLP tests if --no-snlp is set
+    no_snlp = config.getoption("no_snlp")
+    skip_snlp = pytest.mark.skip(reason="Skipped due to --no-snlp option")
+    if no_snlp:
+        for item in items:
+            if "snlp" in item.keywords:
+                item.add_marker(skip_snlp)

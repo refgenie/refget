@@ -204,6 +204,7 @@ class SequenceCollection(SQLModel, table=True):
         # snlp = build_sorted_name_length_pairs(seqcol_dict)
         # v = ",".join(snlp)
         snlp_digest_level1 = sha512t24u_digest(canonical_str(snlp_digests))
+
         # This is now a transient attribute, so we don't need to store it in the database.
         # snlp_attr = SortedNameLengthPairsAttr(digest=snlp_digest_level1, value=snlp_digests)
 

@@ -165,3 +165,29 @@ col_client = refget.SequenceCollectionClient(urls=["https://seqcolapi.databio.or
 col_client.list_collections()
 col_client.get_collection("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk", level=1)
 
+
+# --------------------------------------------------
+# Inserting data into a database with an agent
+
+import refget
+from refget.agents import RefgetDBAgent
+from tests.conftest import TEST_FASTA_DIGESTS
+
+dbc = RefgetDBAgent()
+dbc.seqcol.list()
+
+dbc.seqcol.add_from_fasta_file("test_fasta/base.fa")
+
+new = refget.SequenceCollection.from_fasta_file("test_fasta/base.fa")
+new
+dbc.seqcol.add(new, update=True)
+
+
+# --------------------------------------------------
+from sqlmodel import create_engine, select, Session, delete, func, SQLModel
+from refget.models import SequenceCollection
+
+with Session(dbc.engine) as session:
+    statement = select(SequenceCollection).where(SequenceCollection.digest == x.digest)
+    results = session.exec(statement)
+    seqcol = results.one_or_none()

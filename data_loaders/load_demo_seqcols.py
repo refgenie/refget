@@ -19,7 +19,7 @@ demo_results = {}
 for name, demo_file in DEMO_FASTA.items():
     f = os.path.join(fa_root, demo_file["name"])
     print("Fasta file to be loaded: {}".format(f))
-    demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
+    demo_results[f] = dbc.seqcol.add_from_fasta_file(f, update=True)
     print(demo_results[f])
 
 

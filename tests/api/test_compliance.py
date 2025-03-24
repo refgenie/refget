@@ -14,7 +14,6 @@ from tests.api.conftest import (
 )
 from tests.conftest import DIGEST_TESTS
 
-from tests.conftest import config
 demo_root = "/home/nsheff/code/refget/test_fasta"
 demo_file = "demo0.fa"
 response_file = "tests/demo0_collection.json"
@@ -150,9 +149,13 @@ class TestAPI:
         digest = fa_digest_bundle["top_level_digest"]
         srv_response = client.get_collection(digest, level=1)
         print("Server response:", srv_response)
-        if config.TEST_SORTED_NAME_LENGTH_PAIRS:
-            assert (
-                srv_response["sorted_name_length_pairs"] == fa_digest_bundle["sorted_name_length_pairs_digest"]
-            ), f"Collection endpoint failed: sorted_name_length_pairs mismatch for {demo_file}"
-        else:
-            print("Skipping sorted_name_length_pairs check")
+
+    @pytest.mark.snlp
+    @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)    
+    def test_sorted_name_length_pairs(self, api_root, fa_file, fa_digest_bundle):
+        client = refget.SequenceCollectionClient(urls=[api_root])
+        digest = fa_digest_bundle["top_level_digest"]
+        srv_response = client.get_collection(digest, level=1)
+        assert (
+            srv_response["sorted_name_length_pairs"] == fa_digest_bundle["sorted_name_length_pairs_digest"]
+        ), f"Collection endpoint failed: sorted_name_length_pairs mismatch for {demo_file}"

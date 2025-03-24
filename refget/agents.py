@@ -153,6 +153,18 @@ class SequenceCollectionAgent(object):
         attribute: str = None,
         itemwise_limit: int = None,
     ) -> SequenceCollection:
+        """
+        Get a sequence collection by digest
+
+        Args:
+        - digest (str): The digest of the sequence collection
+        - return_format (str): The format in which to return the sequence collection
+        - attribute (str): Name of an attribute to return, if you just want an attribute
+        - itemwise_limit (int): Limit the number of items returned in itemwise format
+
+        Returns:
+        - (SequenceCollection): The sequence collection (in requested format)
+        """
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
             results = session.exec(statement)
@@ -170,85 +182,107 @@ class SequenceCollectionAgent(object):
             else:
                 return seqcol
 
-    def add(self, seqcol: SequenceCollection) -> SequenceCollection:
+    def add(self, seqcol: SequenceCollection, update: bool = False) -> SequenceCollection:
         """
-        Add a sequence collection to the database, given a SeedCollection object
+        Add a sequence collection to the database or update it if it exists
+        
+        Args:
+            seqcol: The sequence collection to add
+            update: If True, update an existing collection if it exists
+            
+        Returns:
+            The added or updated sequence collection
         """
         with Session(self.engine, expire_on_commit=False) as session:
             with session.no_autoflush:
-                csc = session.get(SequenceCollection, seqcol.digest)
-                if csc:  # already exists
-                    return csc
-                csc_simplified = SequenceCollection(
-                    digest=seqcol.digest,
-                    sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
-                )  # not linked to attributes
-
-                # Check if attributes exist; only create them if they don't
-                names = session.get(NamesAttr, seqcol.names.digest)
-                if not names:
-                    names = NamesAttr(**seqcol.names.model_dump())
-                    session.add(names)
-
-                sequences = session.get(SequencesAttr, seqcol.sequences.digest)
-                if not sequences:
-                    sequences = SequencesAttr(**seqcol.sequences.model_dump())
-                    session.add(sequences)
-
-                sorted_sequences = session.get(SortedSequencesAttr, seqcol.sorted_sequences.digest)
-                if not sorted_sequences:
-                    sorted_sequences = SortedSequencesAttr(**seqcol.sorted_sequences.model_dump())
-                    session.add(sorted_sequences)
-
-                lengths = session.get(LengthsAttr, seqcol.lengths.digest)
-                if not lengths:
-                    lengths = LengthsAttr(**seqcol.lengths.model_dump())
-                    session.add(lengths)
-
-                # This is a transient attribute
-                # sorted_name_length_pairs = session.get(
-                #     SortedNameLengthPairsAttr, seqcol.sorted_name_length_pairs.digest
-                # )
-                # if not sorted_name_length_pairs:
-                #     sorted_name_length_pairs = SortedNameLengthPairsAttr(
-                #         **seqcol.sorted_name_length_pairs.model_dump()
-                #     )
-                #     session.add(sorted_name_length_pairs)
-
-                name_length_pairs = session.get(
-                    NameLengthPairsAttr, seqcol.name_length_pairs.digest
-                )
-                if not name_length_pairs:
-                    name_length_pairs = NameLengthPairsAttr(
-                        **seqcol.name_length_pairs.model_dump()
+                # Check if collection exists
+                existing = session.get(SequenceCollection, seqcol.digest)
+                
+                if existing and not update:
+                    # Return existing without modification if not updating
+                    return existing
+                    
+                # Process attributes (create if needed)
+                attr_map = {
+                    "names": (NamesAttr, seqcol.names),
+                    "sequences": (SequencesAttr, seqcol.sequences),
+                    "sorted_sequences": (SortedSequencesAttr, seqcol.sorted_sequences),
+                    "lengths": (LengthsAttr, seqcol.lengths),
+                    "name_length_pairs": (NameLengthPairsAttr, seqcol.name_length_pairs)
+                }
+                
+                processed_attrs = {}
+                
+                # Create or retrieve attributes
+                for attr_name, (attr_class, attr_obj) in attr_map.items():
+                    attr = session.get(attr_class, attr_obj.digest)
+                    if not attr:
+                        attr = attr_class(**attr_obj.model_dump())
+                        session.add(attr)
+                    processed_attrs[attr_name] = attr
+                    
+                if existing and update:
+                    # Update existing collection
+                    for attr_name, attr in processed_attrs.items():
+                        # Update attribute reference
+                        setattr(existing, f"{attr_name}_digest", attr.digest)
+                        
+                        # Update relationship - first remove from all existing collections
+                        getattr(attr, "collection", []).append(existing)
+                        
+                    # Update transient attributes
+                    existing.sorted_name_length_pairs_digest = seqcol.sorted_name_length_pairs_digest
+                    
+                    session.commit()
+                    return existing
+                else:
+                    # Create new collection
+                    new_collection = SequenceCollection(
+                        digest=seqcol.digest,
+                        sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                     )
-                    session.add(name_length_pairs)
+                    
+                    # Link attributes to collection
+                    for attr in processed_attrs.values():
+                        getattr(attr, "collection", []).append(new_collection)
+                        
+                    session.add(new_collection)
+                    session.commit()
+                    return new_collection
 
-                # Link the attributes back to the sequence collection
-                names.collection.append(csc_simplified)
-                sequences.collection.append(csc_simplified)
-                sorted_sequences.collection.append(csc_simplified)
-                lengths.collection.append(csc_simplified)
-                # sorted_name_length_pairs.collection.append(csc_simplified)
-                name_length_pairs.collection.append(csc_simplified)
-                session.commit()
-                return csc_simplified
-
-    def add_from_dict(self, seqcol_dict: dict):
+    def add_from_dict(self, seqcol_dict: dict, update: bool = False) -> SequenceCollection:
         """
         Add a sequence collection from a seqcol dictionary
+
+        Args:
+        - seqcol_dict (dict): The sequence collection in dictionary form
+        - update (bool): If True, update an existing collection if it exists
+
+        Returns:
+        - (SequenceCollection): The added or updated sequence collection
         """
         seqcol = SequenceCollection.from_dict(seqcol_dict, self.inherent_attrs)
         _LOGGER.info(f"SeqCol: {seqcol}")
         _LOGGER.debug(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
-        return self.add(seqcol)
+        return self.add(seqcol, update)
 
-    def add_from_fasta_file(self, fasta_file_path: str):
+    def add_from_fasta_file(self, fasta_file_path: str, update: bool = False) -> SequenceCollection:
+        """
+        Given a path to a fasta file, load the sequences into the refget database.
+
+        Args:
+        - fasta_file_path (str): Path to the fasta file
+        - update (bool): If True, update an existing collection if it exists
+
+        Returns:
+        - (SequenceCollection): The added or updated sequence collection
+        """
+
         CSC = fasta_to_seqcol_dict(fasta_file_path)
-        seqcol = self.add_from_dict(CSC)
+        seqcol = self.add_from_dict(CSC, update)
         return seqcol
 
-    def add_from_fasta_pep(self, pep: peppy.Project, fa_root):
+    def add_from_fasta_pep(self, pep: peppy.Project, fa_root: str, update: bool = False) -> dict:
         """
         Given a path to a PEP file and a root directory containing the fasta files,
         load the fasta files into the refget database.
@@ -256,6 +290,9 @@ class SequenceCollectionAgent(object):
         Args:
         - pep_path (str): Path to the PEP file
         - fa_root (str): Root directory containing the fasta files
+
+        Returns:
+        - (dict): A dictionary of the digests of the added sequence collections
         """
 
         total_files = len(pep.samples)
@@ -267,14 +304,14 @@ class SequenceCollectionAgent(object):
             _LOGGER.info(f"Loading {fa_path} ({i} of {total_files})")
 
             start_time = time.time()  # Record start time
-            results[s.fasta] = self.add_from_fasta_file(fa_path).digest
+            results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
             elapsed_time = time.time() - start_time  # Calculate elapsed time
 
             _LOGGER.info(f"Loaded in {elapsed_time:.2f} seconds")
 
         return results
 
-    def list_by_offset(self, limit=50, offset=0):
+    def list_by_offset(self, limit=50, offset=0) -> dict:
         with Session(self.engine) as session:
             list_stmt = select(SequenceCollection).offset(offset).limit(limit)
             cnt_stmt = select(func.count(SequenceCollection.digest))
@@ -287,7 +324,7 @@ class SequenceCollectionAgent(object):
                 "results": seqcols,
             }
 
-    def list(self, page_size=100, cursor=None):
+    def list(self, page_size=100, cursor=None) -> dict:
         with Session(self.engine) as session:
             if cursor:
                 list_stmt = (
@@ -375,7 +412,7 @@ class PangenomeAgent(object):
                 session.commit()
                 return pg_simplified
 
-    def add_from_fasta_pep(self, pep: peppy.Project, fa_root):
+    def add_from_fasta_pep(self, pep: peppy.Project, fa_root: str, update: bool = False) -> Pangenome:
         # First add in the FASTA files individually, and build a dictionary of the results
         pangenome_obj = {}
         for s in pep.samples:
