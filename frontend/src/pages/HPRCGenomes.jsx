@@ -23,7 +23,7 @@ const HPRCGenomes = () => {
 
     for (let j of hprc) {
         let row_cells = []
-        row_cells.push(<td>{j.assembly}</td>)
+        row_cells.push(<td>{j.sample_name}</td>)
         row_cells.push(<td><a href={j.assembly_link}>{j.assembly_accession}</a></td>)
         row_cells.push(<td className="px-3"><LinkedCollectionDigest digest={j.seqcol_digest}/></td>)
         content_rows.push(<tr key={j["name"]}>{row_cells}</tr>)
