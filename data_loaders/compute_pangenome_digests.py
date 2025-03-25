@@ -1,3 +1,6 @@
+# This script computes the refget digest for each fasta file in the pangenome
+# and produces a json file with the digests.
+
 
 from refget import fasta_to_digest
 import json
@@ -18,6 +21,6 @@ for i, s in enumerate(p.samples, 1):
     s.refget_digest = results[s.fasta]
 
 updated_dict = p.to_dict()
-with open("frontend/assets/hprc.json", "w") as f:
-    f.write(json.dumps(updated_dict, indent=2))
+with open("frontend/src/assets/hprc.json", "w") as f:
+    f.write(json.dumps(updated_dict["samples"], indent=2))
 

@@ -1,7 +1,9 @@
-import pephubclient
-from refget.agents import RefgetDBAgent
+import json
 import os
+import pephubclient
 import time  # Add this import
+
+from refget.agents import RefgetDBAgent
 
 phc = pephubclient.PEPHubClient()
 p = phc.load_project("nsheff/pangenome_fasta")
@@ -18,6 +20,13 @@ for i, s in enumerate(p.samples, 1):
     elapsed_time = time.time() - start_time  # Calculate elapsed time
 
     print(f"Loaded in {elapsed_time:.2f} seconds")
+
+
+# Write out the results to a file:
+updated_dict = p.to_dict()
+with open("frontend/assets/human_reference.json", "w") as f:
+    f.write(json.dumps(updated_dict["samples"], indent=2))
+
 
 
 ## Say I want to add the digest now back into the PEP on PEPhub.
