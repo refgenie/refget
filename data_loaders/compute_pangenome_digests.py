@@ -23,4 +23,3 @@ for i, s in enumerate(p.samples, 1):
 updated_dict = p.to_dict()
 with open("frontend/src/assets/hprc.json", "w") as f:
     f.write(json.dumps(updated_dict["samples"], indent=2))
-

@@ -7,12 +7,25 @@ from tests.conftest import DEMO_FILES, DIGEST_TESTS, API_TEST_DIR
 
 # Pairs of files to compare, with the "correct" compare response
 COMPARE_TESTS = [
-    (DEMO_FILES[0], DEMO_FILES[1], f"{API_TEST_DIR}/comparison/compare_base.fa_different_names.fa.json"),
-    (DEMO_FILES[0], DEMO_FILES[2], f"{API_TEST_DIR}/comparison/compare_base.fa_different_order.fa.json"),
+    (
+        DEMO_FILES[0],
+        DEMO_FILES[1],
+        f"{API_TEST_DIR}/comparison/compare_base.fa_different_names.fa.json",
+    ),
+    (
+        DEMO_FILES[0],
+        DEMO_FILES[2],
+        f"{API_TEST_DIR}/comparison/compare_base.fa_different_order.fa.json",
+    ),
     (DEMO_FILES[0], DEMO_FILES[3], f"{API_TEST_DIR}/comparison/compare_base.fa_pair_swap.fa.json"),
     (DEMO_FILES[0], DEMO_FILES[4], f"{API_TEST_DIR}/comparison/compare_base.fa_subset.fa.json"),
-    (DEMO_FILES[0], DEMO_FILES[5], f"{API_TEST_DIR}/comparison/compare_base.fa_swap_wo_coords.fa.json"),
+    (
+        DEMO_FILES[0],
+        DEMO_FILES[5],
+        f"{API_TEST_DIR}/comparison/compare_base.fa_swap_wo_coords.fa.json",
+    ),
 ]
+
 
 def check_comparison(fasta1, fasta2, expected_comparison):
     """

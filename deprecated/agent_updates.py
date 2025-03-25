@@ -2,6 +2,7 @@
 # I can probably remove this if the new function works as expected.
 # This was on the SequenceCollectionAgent class.
 
+
 def add(self, seqcol: SequenceCollection) -> SequenceCollection:
     """
     Add a sequence collection to the database, given a SequenceCollection object
@@ -48,13 +49,9 @@ def add(self, seqcol: SequenceCollection) -> SequenceCollection:
             #     )
             #     session.add(sorted_name_length_pairs)
 
-            name_length_pairs = session.get(
-                NameLengthPairsAttr, seqcol.name_length_pairs.digest
-            )
+            name_length_pairs = session.get(NameLengthPairsAttr, seqcol.name_length_pairs.digest)
             if not name_length_pairs:
-                name_length_pairs = NameLengthPairsAttr(
-                    **seqcol.name_length_pairs.model_dump()
-                )
+                name_length_pairs = NameLengthPairsAttr(**seqcol.name_length_pairs.model_dump())
                 session.add(name_length_pairs)
 
             # Link the attributes back to the sequence collection

@@ -35,7 +35,6 @@ for fa_name, fa_digest_bundle in TEST_FASTA_DIGESTS.items():
     DIGEST_TESTS.append((fa_name, fa_digest_bundle))
 
 
-
 def ly(n, data_path):
     """Load YAML"""
     with open(os.path.join(data_path, n), "r") as f:
@@ -79,6 +78,7 @@ def schema_acd(schema_path):
 
 # Here add require_service marker, for testing clients
 
+
 def pytest_addoption(parser):
     """
     Add an option to specify the API root
@@ -107,7 +107,7 @@ def check_server_is_running(api_root):
         return True
     except Exception as e:
         print("Server is not running.")
-        print ("Error: ", sys.exc_info()[0])
+        print("Error: ", sys.exc_info()[0])
         return False
 
 
@@ -119,16 +119,12 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", f"{REQ_SERVICE_MARK}: mark test as requiring the service to run"
     )
-    config.addinivalue_line(
-        "markers", "snlp: mark test as requiring the SNLP service to run"
-    )
+    config.addinivalue_line("markers", "snlp: mark test as requiring the SNLP service to run")
 
 
-
-
-# Pytest evaluates `skipif` before CLI arguments, so to skip tests based on CLI args,  
-# we must modify them after collection but before execution.  
-# This hook adds a `skip` mark to tests that should be skipped based on CLI args.  
+# Pytest evaluates `skipif` before CLI arguments, so to skip tests based on CLI args,
+# we must modify them after collection but before execution.
+# This hook adds a `skip` mark to tests that should be skipped based on CLI args.
 def pytest_collection_modifyitems(config, items):
     """
     Skip tests with marks, based on values from the command line.

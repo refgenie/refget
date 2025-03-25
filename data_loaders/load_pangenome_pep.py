@@ -28,7 +28,6 @@ with open("frontend/assets/human_reference.json", "w") as f:
     f.write(json.dumps(updated_dict["samples"], indent=2))
 
 
-
 ## Say I want to add the digest now back into the PEP on PEPhub.
 # What's the best way to do it?
 # 1. Use pipestat?
@@ -37,4 +36,3 @@ with open("frontend/assets/human_reference.json", "w") as f:
 # Would it be better to instead do this?
 # import peppy
 # p = peppy.Project("nsheff/pangenome_fasta")
-

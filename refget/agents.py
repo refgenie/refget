@@ -185,11 +185,11 @@ class SequenceCollectionAgent(object):
     def add(self, seqcol: SequenceCollection, update: bool = False) -> SequenceCollection:
         """
         Add a sequence collection to the database or update it if it exists
-        
+
         Args:
             seqcol: The sequence collection to add
             update: If True, update an existing collection if it exists
-            
+
         Returns:
             The added or updated sequence collection
         """
@@ -197,22 +197,22 @@ class SequenceCollectionAgent(object):
             with session.no_autoflush:
                 # Check if collection exists
                 existing = session.get(SequenceCollection, seqcol.digest)
-                
+
                 if existing and not update:
                     # Return existing without modification if not updating
                     return existing
-                    
+
                 # Process attributes (create if needed)
                 attr_map = {
                     "names": (NamesAttr, seqcol.names),
                     "sequences": (SequencesAttr, seqcol.sequences),
                     "sorted_sequences": (SortedSequencesAttr, seqcol.sorted_sequences),
                     "lengths": (LengthsAttr, seqcol.lengths),
-                    "name_length_pairs": (NameLengthPairsAttr, seqcol.name_length_pairs)
+                    "name_length_pairs": (NameLengthPairsAttr, seqcol.name_length_pairs),
                 }
-                
+
                 processed_attrs = {}
-                
+
                 # Create or retrieve attributes
                 for attr_name, (attr_class, attr_obj) in attr_map.items():
                     attr = session.get(attr_class, attr_obj.digest)
@@ -220,19 +220,21 @@ class SequenceCollectionAgent(object):
                         attr = attr_class(**attr_obj.model_dump())
                         session.add(attr)
                     processed_attrs[attr_name] = attr
-                    
+
                 if existing and update:
                     # Update existing collection
                     for attr_name, attr in processed_attrs.items():
                         # Update attribute reference
                         setattr(existing, f"{attr_name}_digest", attr.digest)
-                        
+
                         # Update relationship - first remove from all existing collections
                         getattr(attr, "collection", []).append(existing)
-                        
+
                     # Update transient attributes
-                    existing.sorted_name_length_pairs_digest = seqcol.sorted_name_length_pairs_digest
-                    
+                    existing.sorted_name_length_pairs_digest = (
+                        seqcol.sorted_name_length_pairs_digest
+                    )
+
                     session.commit()
                     return existing
                 else:
@@ -241,11 +243,11 @@ class SequenceCollectionAgent(object):
                         digest=seqcol.digest,
                         sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                     )
-                    
+
                     # Link attributes to collection
                     for attr in processed_attrs.values():
                         getattr(attr, "collection", []).append(new_collection)
-                        
+
                     session.add(new_collection)
                     session.commit()
                     return new_collection
@@ -266,7 +268,9 @@ class SequenceCollectionAgent(object):
         _LOGGER.debug(f"SeqCol name_length_pairs: {seqcol.name_length_pairs.value}")
         return self.add(seqcol, update)
 
-    def add_from_fasta_file(self, fasta_file_path: str, update: bool = False) -> SequenceCollection:
+    def add_from_fasta_file(
+        self, fasta_file_path: str, update: bool = False
+    ) -> SequenceCollection:
         """
         Given a path to a fasta file, load the sequences into the refget database.
 
@@ -412,7 +416,9 @@ class PangenomeAgent(object):
                 session.commit()
                 return pg_simplified
 
-    def add_from_fasta_pep(self, pep: peppy.Project, fa_root: str, update: bool = False) -> Pangenome:
+    def add_from_fasta_pep(
+        self, pep: peppy.Project, fa_root: str, update: bool = False
+    ) -> Pangenome:
         # First add in the FASTA files individually, and build a dictionary of the results
         pangenome_obj = {}
         for s in pep.samples:

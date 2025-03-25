@@ -1,6 +1,7 @@
 import pytest
 
 from tests.conftest import DEMO_FILES
+
 # from tests.conftest import pytest_addoption, api_root, pytest_configure, pytest_collection_modifyitems, check_server_is_running
 from tests.conftest import API_TEST_DIR
 

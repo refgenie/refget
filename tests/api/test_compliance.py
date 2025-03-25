@@ -10,7 +10,7 @@ from tests.api.conftest import (
     COLLECTION_TESTS,
     COMPARISON_TESTS,
     ATTRIBUTE_TESTS,
-    ATTRIBUTE_LIST_TESTS
+    ATTRIBUTE_LIST_TESTS,
 )
 from tests.conftest import DIGEST_TESTS
 
@@ -19,6 +19,7 @@ demo_file = "demo0.fa"
 response_file = "tests/demo0_collection.json"
 
 print("Testing Compliance")
+
 
 def read_url(url):
     import requests
@@ -47,7 +48,7 @@ def check_collection(api_root, demo_file, response_file):
     res = requests.get(f"{api_root}/collection/{digest}")
 
     client = refget.SequenceCollectionClient(urls=[api_root])
-    
+
     srv_response = client.get_collection(digest, level=1)
     print("Server response:", srv_response)
     try:
@@ -151,11 +152,12 @@ class TestAPI:
         print("Server response:", srv_response)
 
     @pytest.mark.snlp
-    @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)    
+    @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
     def test_sorted_name_length_pairs(self, api_root, fa_file, fa_digest_bundle):
         client = refget.SequenceCollectionClient(urls=[api_root])
         digest = fa_digest_bundle["top_level_digest"]
         srv_response = client.get_collection(digest, level=1)
         assert (
-            srv_response["sorted_name_length_pairs"] == fa_digest_bundle["sorted_name_length_pairs_digest"]
+            srv_response["sorted_name_length_pairs"]
+            == fa_digest_bundle["sorted_name_length_pairs_digest"]
         ), f"Collection endpoint failed: sorted_name_length_pairs mismatch for {demo_file}"

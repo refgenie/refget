@@ -7,7 +7,6 @@ from refget.agents import RefgetDBAgent
 # source deployment/local_demo/local_demo.env
 
 
-
 fa_root = "test_fasta"
 DEMO_FASTA = json.load(open("test_fasta/test_fasta_digests.json"))
 dbc = RefgetDBAgent()  # Parameters are read from the environment

@@ -6,9 +6,7 @@ DEMO_FILES = ["demo.fa", "demo2.fa", "demo3.fa", "demo4.fa", "demo5.fa"]
 
 class TestEmptyConstructor:
     def test_no_schemas_required(self, api_root):
-        assert isinstance(
-            SequenceCollectionClient(urls=[api_root]), SequenceCollectionClient
-        )
+        assert isinstance(SequenceCollectionClient(urls=[api_root]), SequenceCollectionClient)
 
 
 @pytest.mark.require_service

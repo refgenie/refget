@@ -79,6 +79,3 @@ for x in demo_results.keys():
         comparison_file = f"{comparison_root}/compare_{x}_{y}.json"
         with open(comparison_file, "w") as f:
             f.write(json.dumps(res, indent=2))
-
-
-

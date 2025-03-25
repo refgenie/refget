@@ -16,7 +16,6 @@ with open("frontend/src/assets/ref_fasta.json", "w") as f:
     f.write(json.dumps(results, indent=2))
 
 
-
 # total_files = len(p.samples)
 # results = {}
 # for i, s in enumerate(p.samples, 1):
