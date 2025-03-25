@@ -23,6 +23,7 @@ import {
   fetchSeqColList,
   fetchCollectionLevels,
   fecthComparison,
+  fetchAttribute
 } from './services/fetchData.jsx'
 
 import { AttributeValue, LinkedAttributeDigest } from './components/ValuesAndDigests.jsx'
