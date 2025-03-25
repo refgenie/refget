@@ -1,5 +1,5 @@
 import { CompareTable } from '../components/CompareTable.jsx';
-import { LinkedCollectionDigest } from '../components/ValuesAndDigests';
+import { LinkedCollectionDigest } from '../components/ValuesAndDigests.jsx';
 
 function DemoPage() {
     const demo_seqcol_digests = {
@@ -32,7 +32,7 @@ function DemoPage() {
         })}
         </tbody>
       </table>
-      <CompareTable seqColList={Object.values(demo_seqcol_digests)}/>
+      <CompareTable seqColDict={demo_seqcol_digests}/>
     </div>
   
   }

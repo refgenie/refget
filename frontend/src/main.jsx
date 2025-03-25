@@ -16,6 +16,8 @@ import { DemoPage } from './pages/DemoPage.jsx'
 import { SCIM } from './pages/SCIM.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { HPRCGenomes } from './pages/HPRCGenomes.jsx'
+import { HumanReferencesView } from './pages/HumanReferences.jsx'
+
 
 import { 
   fetchServiceInfo,
@@ -177,6 +179,10 @@ const router = createBrowserRouter([
       { 
         path: "/demo",
         element: <DemoPage/>
+      },
+      {
+        path: "/human",
+        element: <HumanReferencesView/>,
       },
       {
         path: "/hprc",
