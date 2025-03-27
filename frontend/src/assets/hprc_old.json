@@ -1,6 +1,7 @@
 [
   {
-    "sample_name": "HG02257.alt.pat.f1_v2",
+    "assembly": "HG02257.alt.pat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018466835.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018466835.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -16,12 +17,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018466835.1/ensembl/genome/Homo_sapiens-GCA_018466835.1-unmasked.fa.gz",
     "local_file": "data/HG02257.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "2e96b5dbd086d4fb7ca895e05914f054",
-    "fasta": "HG02257.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "L5fggdWYz5tCr4v8XbPYoOwv79Sqmf1W"
+    "fasta": "analysis/data/HG02257.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "MFxJDHkVdTBlPvUFRbYWDZYxmycvHSRp"
   },
   {
-    "sample_name": "HG02257.pri.mat.f1_v2",
+    "assembly": "HG02257.pri.mat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018466845.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018466845.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -37,12 +38,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018466845.1/ensembl/genome/Homo_sapiens-GCA_018466845.1-unmasked.fa.gz",
     "local_file": "data/HG02257.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "45bd8419ecd3108a4fbe52b92e126f78",
-    "fasta": "HG02257.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "z96v5ZjkPeAOPWAkpncHa59zyhxlmA8C"
+    "fasta": "analysis/data/HG02257.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "PU_Crd5eY96THL1Jkf1oJ0ABf3hcQfPv"
   },
   {
-    "sample_name": "HG02559.alt.pat.f1_v2",
+    "assembly": "HG02559.alt.pat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018466855.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018466855.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -58,12 +59,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018466855.1/ensembl/genome/Homo_sapiens-GCA_018466855.1-unmasked.fa.gz",
     "local_file": "data/HG02559.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "799443909e745388ffca8aac49a15fc6",
-    "fasta": "HG02559.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "cXJuMM86vTyFfDg8YmS4zz_Y5pxc9EMA"
+    "fasta": "analysis/data/HG02559.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "OCV0NxSbsWc-Xh3nPSQ0GrnAmYpRGFAL"
   },
   {
-    "sample_name": "HG02559.pri.mat.f1_v2",
+    "assembly": "HG02559.pri.mat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018466985.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018466985.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -79,12 +80,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018466985.1/ensembl/genome/Homo_sapiens-GCA_018466985.1-unmasked.fa.gz",
     "local_file": "data/HG02559.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "715fdd9ffeeb45cd1fb3a313cfb72497",
-    "fasta": "HG02559.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "BY-s_FI0fxMmvkGCnpoz4z_Srp1QSnVF"
+    "fasta": "analysis/data/HG02559.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "-UZ3ln8PXKtOgREFMkdncoMzTSV-Eaj5"
   },
   {
-    "sample_name": "HG02486.alt.pat.f1_v2",
+    "assembly": "HG02486.alt.pat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018467005.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018467005.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -100,12 +101,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018467005.1/ensembl/genome/Homo_sapiens-GCA_018467005.1-unmasked.fa.gz",
     "local_file": "data/HG02486.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "d31fb1fdbe539928dd36563bff2a82df",
-    "fasta": "HG02486.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "9c-Gmzj9r3yI0EGRN5KXcEKZByxDRHJz"
+    "fasta": "analysis/data/HG02486.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "8Qlx8ZKwKL4U5s100-rjUZCA7UcWxpJr"
   },
   {
-    "sample_name": "HG02486.pri.mat.f1_v2",
+    "assembly": "HG02486.pri.mat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018467015.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018467015.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -121,12 +122,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018467015.1/ensembl/genome/Homo_sapiens-GCA_018467015.1-unmasked.fa.gz",
     "local_file": "data/HG02486.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "41aeeea769f7f0463746b2f6b3e1fbc1",
-    "fasta": "HG02486.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "Wv2J0rQt9jGmemVOkUKbiCPeKKh7K4hF"
+    "fasta": "analysis/data/HG02486.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "ZXK7B5SQ2iX_esmgYtwaOBtgTr3dwd7L"
   },
   {
-    "sample_name": "HG01891.pri.mat.f1_v2",
+    "assembly": "HG01891.pri.mat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018467155.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018467155.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -142,12 +143,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018467155.1/ensembl/genome/Homo_sapiens-GCA_018467155.1-unmasked.fa.gz",
     "local_file": "data/HG01891.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "8663b08821354bb98dad8f48778b75c9",
-    "fasta": "HG01891.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "Yl0xxd5KI6ck-HKE7mjqR0FGBSNCWsmP"
+    "fasta": "analysis/data/HG01891.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "vUoInwW05o32k_Cq6-xkenrzLWF9oZ4N"
   },
   {
-    "sample_name": "HG01891.alt.pat.f1_v2",
+    "assembly": "HG01891.alt.pat.f1_v2",
+    "population": "African Caribbean In Barbados",
     "assembly_accession": "GCA_018467165.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018467165.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -163,12 +164,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018467165.1/ensembl/genome/Homo_sapiens-GCA_018467165.1-unmasked.fa.gz",
     "local_file": "data/HG01891.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "f80e3ab39c3a3245cc7d3edadac1adfd",
-    "fasta": "HG01891.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "African Caribbean In Barbados",
-    "seqcol_digest": "tp9ZfZEkktdJCfmFlB1onGk9k8W7Xfjm"
+    "fasta": "analysis/data/HG01891.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "Zu_hdPQWU5DTGGRPa3cf_0TVNjdspvj-"
   },
   {
-    "sample_name": "HG01258.pri.mat.f1_v2",
+    "assembly": "HG01258.pri.mat.f1_v2",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469405.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469405.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -184,12 +185,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469405.1/ensembl/genome/Homo_sapiens-GCA_018469405.1-unmasked.fa.gz",
     "local_file": "data/HG01258.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "cf7d737137c312357b409b962eea0494",
-    "fasta": "HG01258.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "FZFXW2FOxEmBHn44zmjwBfapkZnI4Yzu"
+    "fasta": "analysis/data/HG01258.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "cH3KUtgjMAxCl6Tkn5aCPPl_Yqyo-mkl"
   },
   {
-    "sample_name": "HG03516.alt.pat.f1_v2",
+    "assembly": "HG03516.alt.pat.f1_v2",
+    "population": "Esan In Nigeria",
     "assembly_accession": "GCA_018469415.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469415.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -205,12 +206,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469415.1/ensembl/genome/Homo_sapiens-GCA_018469415.1-unmasked.fa.gz",
     "local_file": "data/HG03516.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "3e02ada4f382a7c26c0ff1fefa4a5f8d",
-    "fasta": "HG03516.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Esan In Nigeria",
-    "seqcol_digest": "3E2NkEjuuq2ZX1_TVE9tvhdZ45XONDXY"
+    "fasta": "analysis/data/HG03516.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "mSSLkiEl3Y7Bub48I1Ng-iVLCZm3_wli"
   },
   {
-    "sample_name": "HG03516.pri.mat.f1_v2",
+    "assembly": "HG03516.pri.mat.f1_v2",
+    "population": "Esan In Nigeria",
     "assembly_accession": "GCA_018469425.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469425.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -226,12 +227,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469425.1/ensembl/genome/Homo_sapiens-GCA_018469425.1-unmasked.fa.gz",
     "local_file": "data/HG03516.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "8e2142269f755accf58adfe87231681c",
-    "fasta": "HG03516.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Esan In Nigeria",
-    "seqcol_digest": "7CsoHohLou-p0Z4Y_Gldm2bB3MEq4C9t"
+    "fasta": "analysis/data/HG03516.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "S3kEaQ_QvrAYuZs2R8Un6hg3f_1ibteZ"
   },
   {
-    "sample_name": "HG01123.pri.mat.f1_v2.1",
+    "assembly": "HG01123.pri.mat.f1_v2.1",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469665.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469665.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -247,12 +248,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469665.1/ensembl/genome/Homo_sapiens-GCA_018469665.1-unmasked.fa.gz",
     "local_file": "data/HG01123.pri.mat.f1_v2.1.unmasked.fa.gz",
     "remote_md5": "e8a2f3cbf3ecef65102643b85e432cb3",
-    "fasta": "HG01123.pri.mat.f1_v2.1.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "9NiCPDwk78tGarBtS5ha8vmnXykoP83S"
+    "fasta": "analysis/data/HG01123.pri.mat.f1_v2.1.unmasked.fa.gz",
+    "seqcol_digest": "Ld18iSJB2oh7kTRGpFJD5bupqnHaXt-r"
   },
   {
-    "sample_name": "HG01258.alt.pat.f1_v2",
+    "assembly": "HG01258.alt.pat.f1_v2",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469675.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469675.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -268,12 +269,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469675.1/ensembl/genome/Homo_sapiens-GCA_018469675.1-unmasked.fa.gz",
     "local_file": "data/HG01258.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "00b6197b6b0f871e107c2f300527b3c0",
-    "fasta": "HG01258.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "ridlFVcLUGw5RsKjdoj-pgVB56C3ZhKS"
+    "fasta": "analysis/data/HG01258.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "SQuRKoVbeO2JdcGRSO_WxmZsmAxbqSdb"
   },
   {
-    "sample_name": "HG01361.pri.mat.f1_v2",
+    "assembly": "HG01361.pri.mat.f1_v2",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469685.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469685.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -289,12 +290,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469685.1/ensembl/genome/Homo_sapiens-GCA_018469685.1-unmasked.fa.gz",
     "local_file": "data/HG01361.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "28267a63241f7472dd6c0064745a04cc",
-    "fasta": "HG01361.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "ktq3ftHq5g-ugEpB8xnb_Cnk9c4Vzfg_"
+    "fasta": "analysis/data/HG01361.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "uc3BXswbHLIuPEuBa-pY7MAT8qNNFHhY"
   },
   {
-    "sample_name": "HG01123.alt.pat.f1_v2.1",
+    "assembly": "HG01123.alt.pat.f1_v2.1",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469695.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469695.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -310,12 +311,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469695.1/ensembl/genome/Homo_sapiens-GCA_018469695.1-unmasked.fa.gz",
     "local_file": "data/HG01123.alt.pat.f1_v2.1.unmasked.fa.gz",
     "remote_md5": "b4156cadfb3635810e91cd2ed38ec68e",
-    "fasta": "HG01123.alt.pat.f1_v2.1.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "-Z38q8izmrexleQATeOvcp0sZo6aSXMa"
+    "fasta": "analysis/data/HG01123.alt.pat.f1_v2.1.unmasked.fa.gz",
+    "seqcol_digest": "RfpuPSsslqdCmPGat5yqoQF10qZXA2OJ"
   },
   {
-    "sample_name": "HG01361.alt.pat.f1_v2",
+    "assembly": "HG01361.alt.pat.f1_v2",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469705.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469705.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -331,12 +332,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469705.1/ensembl/genome/Homo_sapiens-GCA_018469705.1-unmasked.fa.gz",
     "local_file": "data/HG01361.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "509ae5e85719f1f69ce88fdad0aa8934",
-    "fasta": "HG01361.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "YpME_umld1FGsSAlPZsJxz7q3Xz-UNo-"
+    "fasta": "analysis/data/HG01361.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "4YXbbLQwvkukFrZDm-NUQpZggJ81HeoO"
   },
   {
-    "sample_name": "HG01358.pri.mat.f1_v2.1",
+    "assembly": "HG01358.pri.mat.f1_v2.1",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469865.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469865.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -352,12 +353,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469865.1/ensembl/genome/Homo_sapiens-GCA_018469865.1-unmasked.fa.gz",
     "local_file": "data/HG01358.pri.mat.f1_v2.1.unmasked.fa.gz",
     "remote_md5": "b32ab893e2ecb28249d1772249f72649",
-    "fasta": "HG01358.pri.mat.f1_v2.1.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "X-54vS61VplNRcN3GJ0QHxqN7I5FFMKj"
+    "fasta": "analysis/data/HG01358.pri.mat.f1_v2.1.unmasked.fa.gz",
+    "seqcol_digest": "CxRryMc8SwVpuan6rL3Nw5-qnTU1JYCo"
   },
   {
-    "sample_name": "HG02622.pri.mat.f1_v2",
+    "assembly": "HG02622.pri.mat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018469875.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469875.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -373,12 +374,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469875.1/ensembl/genome/Homo_sapiens-GCA_018469875.1-unmasked.fa.gz",
     "local_file": "data/HG02622.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "91f9960e7c07927bacec902a5317df12",
-    "fasta": "HG02622.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "7XbdAKmGnJHJOBicVGkt4hBt0W0z2zB9"
+    "fasta": "analysis/data/HG02622.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "xCb3Ha1fm7Uz6dwvN5JXqdPLRVrMTTm9"
   },
   {
-    "sample_name": "HG02622.alt.pat.f1_v2",
+    "assembly": "HG02622.alt.pat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018469925.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469925.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -394,12 +395,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469925.1/ensembl/genome/Homo_sapiens-GCA_018469925.1-unmasked.fa.gz",
     "local_file": "data/HG02622.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "4896e208574f541516bdc0fb0a8830f1",
-    "fasta": "HG02622.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "EnZH-5CYVPgSxnnKFQ0-xro5OOrCbj_K"
+    "fasta": "analysis/data/HG02622.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "s8IHAP13yprMBvOzZaOkDkCP6wks008y"
   },
   {
-    "sample_name": "HG02717.pri.mat.f1_v2",
+    "assembly": "HG02717.pri.mat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018469935.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469935.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -415,12 +416,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469935.1/ensembl/genome/Homo_sapiens-GCA_018469935.1-unmasked.fa.gz",
     "local_file": "data/HG02717.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "2a3c2fc1fb4d0b770cf51504d7adfa7a",
-    "fasta": "HG02717.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "lT6s6i5mJWLjlSTtk1u1fzBsud-R1z3K"
+    "fasta": "analysis/data/HG02717.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "rQTvFXRJg1fktSlSFGfkf1tGN6jV57n8"
   },
   {
-    "sample_name": "HG02630.alt.pat.f1_v2",
+    "assembly": "HG02630.alt.pat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018469945.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469945.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -436,12 +437,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469945.1/ensembl/genome/Homo_sapiens-GCA_018469945.1-unmasked.fa.gz",
     "local_file": "data/HG02630.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "fc2ff0cd485855a7cc226258c29a04ee",
-    "fasta": "HG02630.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "hBL_bP6_TMwNz6d2onDk4exTM05pH571"
+    "fasta": "analysis/data/HG02630.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "G45RS0KtkiRThy4lp_tzRzoTNe__YZ6M"
   },
   {
-    "sample_name": "HG02630.pri.mat.f1_v2",
+    "assembly": "HG02630.pri.mat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018469955.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469955.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -457,12 +458,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469955.1/ensembl/genome/Homo_sapiens-GCA_018469955.1-unmasked.fa.gz",
     "local_file": "data/HG02630.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "33796474129661c2d89b586804386347",
-    "fasta": "HG02630.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "qx2unhq5rrjuRcBeVxW6-92Wl3hA8LPY"
+    "fasta": "analysis/data/HG02630.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "JiBQCxx8g1OqKfuQdxW5H4-XNIsJ_E1B"
   },
   {
-    "sample_name": "HG01358.alt.pat.f1_v2.1",
+    "assembly": "HG01358.alt.pat.f1_v2.1",
+    "population": "Colombian In Medellin, Colombia",
     "assembly_accession": "GCA_018469965.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018469965.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -478,12 +479,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018469965.1/ensembl/genome/Homo_sapiens-GCA_018469965.1-unmasked.fa.gz",
     "local_file": "data/HG01358.alt.pat.f1_v2.1.unmasked.fa.gz",
     "remote_md5": "558e7ac8eaf8ee4aabfe139934877d84",
-    "fasta": "HG01358.alt.pat.f1_v2.1.unmasked.fa.gz",
-    "population": "Colombian In Medellin, Colombia",
-    "seqcol_digest": "WwRUlIPk1nsiORfSBJ8DDjKMYLA7Awa1"
+    "fasta": "analysis/data/HG01358.alt.pat.f1_v2.1.unmasked.fa.gz",
+    "seqcol_digest": "f4NOc-aMUFU2JCm5tGQYAsBnzS9iTXwW"
   },
   {
-    "sample_name": "HG02717.alt.pat.f1_v2",
+    "assembly": "HG02717.alt.pat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018470425.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018470425.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -499,12 +500,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018470425.1/ensembl/genome/Homo_sapiens-GCA_018470425.1-unmasked.fa.gz",
     "local_file": "data/HG02717.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "c8c7882a32a24c362ce4f137898ba101",
-    "fasta": "HG02717.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "cUGYma8HKNZ-Qzy2UCDa-RUB1QlW2vcW"
+    "fasta": "analysis/data/HG02717.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "TppX7IsQ-f5TlUcLhqklj-Ya9KlytKIB"
   },
   {
-    "sample_name": "HG02572.alt.pat.f1_v2",
+    "assembly": "HG02572.alt.pat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018470435.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018470435.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -520,12 +521,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018470435.1/ensembl/genome/Homo_sapiens-GCA_018470435.1-unmasked.fa.gz",
     "local_file": "data/HG02572.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "5039506538e902389fab0a9c50fb283f",
-    "fasta": "HG02572.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "5ctzQDRIPLAVfzhX81OzXj1A6ofPIHXh"
+    "fasta": "analysis/data/HG02572.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "UIshAuHmM4BsVnAxjJEs3D7ZJV7Tx9uK"
   },
   {
-    "sample_name": "HG02572.pri.mat.f1_v2",
+    "assembly": "HG02572.pri.mat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018470445.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018470445.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -541,12 +542,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018470445.1/ensembl/genome/Homo_sapiens-GCA_018470445.1-unmasked.fa.gz",
     "local_file": "data/HG02572.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "b5b1327836faffc82862c901370b7e6d",
-    "fasta": "HG02572.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "5U4uuCojgp6NAMQsDl3YljwOfya_lczj"
+    "fasta": "analysis/data/HG02572.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "-xS7eWQFw9s3HxA-TQsHKtU-2qCc9J--"
   },
   {
-    "sample_name": "HG02886.pri.mat.f1_v2",
+    "assembly": "HG02886.pri.mat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018470455.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018470455.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -562,12 +563,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018470455.1/ensembl/genome/Homo_sapiens-GCA_018470455.1-unmasked.fa.gz",
     "local_file": "data/HG02886.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "824703c6da7a504575f2d072472bd7de",
-    "fasta": "HG02886.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "BARU2J9BmUUzKIoRJk8SlazBLgG_WnMB"
+    "fasta": "analysis/data/HG02886.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "5goiErAN_XrYjB-6MT9Og4QXZ0gsHca7"
   },
   {
-    "sample_name": "HG02886.alt.pat.f1_v2",
+    "assembly": "HG02886.alt.pat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018470465.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018470465.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -583,12 +584,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018470465.1/ensembl/genome/Homo_sapiens-GCA_018470465.1-unmasked.fa.gz",
     "local_file": "data/HG02886.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "1d510354a2142a1d7194c50742210735",
-    "fasta": "HG02886.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "uMILkzcfBLWf56Xq1PBK5UDaIalRdjEY"
+    "fasta": "analysis/data/HG02886.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "vTYYcCahSkIu5PME4JyLstVt7eOXekXD"
   },
   {
-    "sample_name": "HG01175.alt.pat.f1_v2",
+    "assembly": "HG01175.alt.pat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018471065.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471065.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -604,12 +605,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471065.1/ensembl/genome/Homo_sapiens-GCA_018471065.1-unmasked.fa.gz",
     "local_file": "data/HG01175.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "cbb9b39e672aa9e65393ba6904a61f53",
-    "fasta": "HG01175.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "viakH33D2OTwAAIYXcTn2rY2ArcJ486R"
+    "fasta": "analysis/data/HG01175.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "zhDl_7kiYDY49LpM5_g3SJ99gkAn3hGj"
   },
   {
-    "sample_name": "HG01106.alt.pat.f1_v2",
+    "assembly": "HG01106.alt.pat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018471075.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471075.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -625,12 +626,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471075.1/ensembl/genome/Homo_sapiens-GCA_018471075.1-unmasked.fa.gz",
     "local_file": "data/HG01106.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "6b807d1f6ebb98eec036906f8d8f9061",
-    "fasta": "HG01106.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "xI7Bug9JJh5cUUcq_HI6ONaVjOeN2yEa"
+    "fasta": "analysis/data/HG01106.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "b2veuoCX_cwS1bHf0E133npWU66K5X5Y"
   },
   {
-    "sample_name": "HG01175.pri.mat.f1_v2",
+    "assembly": "HG01175.pri.mat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018471085.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471085.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -646,12 +647,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471085.1/ensembl/genome/Homo_sapiens-GCA_018471085.1-unmasked.fa.gz",
     "local_file": "data/HG01175.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "0783ed2641f12e4686a94a2724952496",
-    "fasta": "HG01175.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "foP8Q5nxO0YZ1H7m2GN_xZGmbHXWCNIn"
+    "fasta": "analysis/data/HG01175.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "L2qjWuBkmwM1eDgVDCFuOjyqleUZ7X4U"
   },
   {
-    "sample_name": "HG00741.pri.mat.f1_v2",
+    "assembly": "HG00741.pri.mat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018471095.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471095.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -667,12 +668,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471095.1/ensembl/genome/Homo_sapiens-GCA_018471095.1-unmasked.fa.gz",
     "local_file": "data/HG00741.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "51be6f59cee928c5a5d314d753491f1b",
-    "fasta": "HG00741.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "1xqSjxx5xeZRYfo0sVKjV82bJKfxiNPH"
+    "fasta": "analysis/data/HG00741.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "sPeVwLWKqdHlatwcYf7u-OmcBJNmG_32"
   },
   {
-    "sample_name": "HG00741.alt.pat.f1_v2",
+    "assembly": "HG00741.alt.pat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018471105.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471105.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -688,12 +689,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471105.1/ensembl/genome/Homo_sapiens-GCA_018471105.1-unmasked.fa.gz",
     "local_file": "data/HG00741.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "290e556d24380546b2386311a1c90bca",
-    "fasta": "HG00741.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "ErA56bpzOfKEvKi9uTFmRz8nR595EH5h"
+    "fasta": "analysis/data/HG00741.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "xZ0Xf-pTJSKc0oGUDV3zL3_TcpO5nl1d"
   },
   {
-    "sample_name": "HG01106.pri.mat.f1_v2",
+    "assembly": "HG01106.pri.mat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018471345.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471345.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -709,12 +710,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471345.1/ensembl/genome/Homo_sapiens-GCA_018471345.1-unmasked.fa.gz",
     "local_file": "data/HG01106.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "2a970161fc9c961df36ccf495dc95b1a",
-    "fasta": "HG01106.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "tfNkR4jeFw8qKAYtOpHYRh01Et-CBXwV"
+    "fasta": "analysis/data/HG01106.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "73AP6Fn5d7P7RB04axUk-24ssrnJb4Ab"
   },
   {
-    "sample_name": "HG00438.pri.mat.f1_v2",
+    "assembly": "HG00438.pri.mat.f1_v2",
+    "population": "Han Chinese South",
     "assembly_accession": "GCA_018471515.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471515.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -730,12 +731,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471515.1/ensembl/genome/Homo_sapiens-GCA_018471515.1-unmasked.fa.gz",
     "local_file": "data/HG00438.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "29e073f52b15858364c963e6605ffb95",
-    "fasta": "HG00438.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Han Chinese South",
-    "seqcol_digest": "BlDP0j9QzBeAbvKdkprFR3vyDUTvzezl"
+    "fasta": "analysis/data/HG00438.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "-9M0kYfdvscDEVL13kKp87c8NCU2B5Hh"
   },
   {
-    "sample_name": "HG02148.alt.pat.f1_v2",
+    "assembly": "HG02148.alt.pat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018471525.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471525.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -751,12 +752,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471525.1/ensembl/genome/Homo_sapiens-GCA_018471525.1-unmasked.fa.gz",
     "local_file": "data/HG02148.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "a30d8b7a0574ca48a4008b9d544e50c9",
-    "fasta": "HG02148.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "F_lbBpEe8Co3ZFgkdkAMAq8tqlJOO6BK"
+    "fasta": "analysis/data/HG02148.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "mmZHq6GxnHALdsbider2E5Jp-AhVxWVt"
   },
   {
-    "sample_name": "HG02148.pri.mat.f1_v2",
+    "assembly": "HG02148.pri.mat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018471535.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471535.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -772,12 +773,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471535.1/ensembl/genome/Homo_sapiens-GCA_018471535.1-unmasked.fa.gz",
     "local_file": "data/HG02148.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "148fa5a74bebe33317a3593b906aa911",
-    "fasta": "HG02148.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "noca7T51pn-dra2DMpMeRMcTFlk9q2_p"
+    "fasta": "analysis/data/HG02148.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "cq2ryytoR7YEu8UUHtRnNr5KDA4NErUQ"
   },
   {
-    "sample_name": "HG01952.pri.mat.f1_v2",
+    "assembly": "HG01952.pri.mat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018471545.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471545.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -793,12 +794,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471545.1/ensembl/genome/Homo_sapiens-GCA_018471545.1-unmasked.fa.gz",
     "local_file": "data/HG01952.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "6e36a9eada094f75e42da9f32f2a3354",
-    "fasta": "HG01952.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "uylVMt4BIYBOfnMEPRUX7VVbnQufeGZr"
+    "fasta": "analysis/data/HG01952.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "jcQVpDWreZwQAVQicTW4dNPQ8Fz3eYjh"
   },
   {
-    "sample_name": "HG01952.alt.pat.f1_v2",
+    "assembly": "HG01952.alt.pat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018471555.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018471555.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -814,12 +815,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018471555.1/ensembl/genome/Homo_sapiens-GCA_018471555.1-unmasked.fa.gz",
     "local_file": "data/HG01952.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "18803d438a71f530f2d6dffb9d34de2f",
-    "fasta": "HG01952.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "Pv-mz-TS6t-rAyYf41UjiPWuJ6rK3R05"
+    "fasta": "analysis/data/HG01952.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "5Pum9BofAqDuL43GMQ6EqLwQVFQsTTSZ"
   },
   {
-    "sample_name": "HG00673.pri.mat.f1_v2",
+    "assembly": "HG00673.pri.mat.f1_v2",
+    "population": "Han Chinese South",
     "assembly_accession": "GCA_018472565.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472565.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -835,12 +836,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472565.1/ensembl/genome/Homo_sapiens-GCA_018472565.1-unmasked.fa.gz",
     "local_file": "data/HG00673.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "d39569e0b247f9c7e62c08aed53c88d2",
-    "fasta": "HG00673.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Han Chinese South",
-    "seqcol_digest": "Yn1FqmexS1iucDjTXRWw2Gg2Vj7bTcsT"
+    "fasta": "analysis/data/HG00673.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "fMW6DR6vGda_MfSmeScSip0XPmauTcLO"
   },
   {
-    "sample_name": "HG00621.alt.pat.f1_v2",
+    "assembly": "HG00621.alt.pat.f1_v2",
+    "population": "Han Chinese South",
     "assembly_accession": "GCA_018472575.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472575.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -856,12 +857,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472575.1/ensembl/genome/Homo_sapiens-GCA_018472575.1-unmasked.fa.gz",
     "local_file": "data/HG00621.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "f88e4f8c8dcc72865ef75e2d1014e30e",
-    "fasta": "HG00621.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Han Chinese South",
-    "seqcol_digest": "FQh-53xvRuCNaIiCmCg9nfOdngNfyEhf"
+    "fasta": "analysis/data/HG00621.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "7Z-1F3kSi-eXduHZIG5R3rZAGvJ5Depi"
   },
   {
-    "sample_name": "HG00673.alt.pat.f1_v2",
+    "assembly": "HG00673.alt.pat.f1_v2",
+    "population": "Han Chinese South",
     "assembly_accession": "GCA_018472585.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472585.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -877,12 +878,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472585.1/ensembl/genome/Homo_sapiens-GCA_018472585.1-unmasked.fa.gz",
     "local_file": "data/HG00673.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "3b3d214cbbf863dcf20657fae4c1e786",
-    "fasta": "HG00673.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Han Chinese South",
-    "seqcol_digest": "s0nMiOFHPsIBrm2bd3PkzWXKLKWQZq70"
+    "fasta": "analysis/data/HG00673.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "4HylbyjZIYZP7XlgQ3N8jw4xJ8pgl7bb"
   },
   {
-    "sample_name": "HG00438.alt.pat.f1_v2",
+    "assembly": "HG00438.alt.pat.f1_v2",
+    "population": "Han Chinese South",
     "assembly_accession": "GCA_018472595.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472595.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -898,12 +899,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472595.1/ensembl/genome/Homo_sapiens-GCA_018472595.1-unmasked.fa.gz",
     "local_file": "data/HG00438.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "e5ec457da9dad1e76b89e2bddfe1968d",
-    "fasta": "HG00438.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Han Chinese South",
-    "seqcol_digest": "FAImtq4VUhjhCzA8XUVeaPbN-FPP_dc1"
+    "fasta": "analysis/data/HG00438.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "Garq3gUkWDFi6vkyYkdQn_p5tUVu3_hm"
   },
   {
-    "sample_name": "HG00621.pri.mat.f1_v2",
+    "assembly": "HG00621.pri.mat.f1_v2",
+    "population": "Han Chinese South",
     "assembly_accession": "GCA_018472605.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472605.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -919,12 +920,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472605.1/ensembl/genome/Homo_sapiens-GCA_018472605.1-unmasked.fa.gz",
     "local_file": "data/HG00621.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "8ade3dd8ddc9b014cdde0c9cb6e74a55",
-    "fasta": "HG00621.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Han Chinese South",
-    "seqcol_digest": "WlLs87buR_PgAdrYGkD1tn1dExkPo7WO"
+    "fasta": "analysis/data/HG00621.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "BjbE7ZEeWbNVZeYqeyBXYScwlBVimZBB"
   },
   {
-    "sample_name": "HG01071.pri.mat.f1_v2",
+    "assembly": "HG01071.pri.mat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018472685.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472685.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -940,12 +941,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472685.1/ensembl/genome/Homo_sapiens-GCA_018472685.1-unmasked.fa.gz",
     "local_file": "data/HG01071.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "0c1069364a02f8820cc34368a499a334",
-    "fasta": "HG01071.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "kBKu6z2ngo2XZ-vxUaJ3RbtTwK9fR9UC"
+    "fasta": "analysis/data/HG01071.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "x0CrFmo9JcS1QVIm1GY4XWjpl9p8WHRl"
   },
   {
-    "sample_name": "HG01928.pri.mat.f1_v2",
+    "assembly": "HG01928.pri.mat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018472695.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472695.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -961,12 +962,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472695.1/ensembl/genome/Homo_sapiens-GCA_018472695.1-unmasked.fa.gz",
     "local_file": "data/HG01928.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "ada98ca9c92f2d6e28b5f369f8d083fa",
-    "fasta": "HG01928.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "J8YisyMpdmvsIcd7SQQvSsp58G38h0eT"
+    "fasta": "analysis/data/HG01928.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "p2xs5S6BOA1LiQKMSMJ3snTQVIF0NtjW"
   },
   {
-    "sample_name": "HG01928.alt.pat.f1_v2",
+    "assembly": "HG01928.alt.pat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018472705.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472705.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -982,12 +983,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472705.1/ensembl/genome/Homo_sapiens-GCA_018472705.1-unmasked.fa.gz",
     "local_file": "data/HG01928.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "fea1c2e5e1aec2fd63edbbc3290416d7",
-    "fasta": "HG01928.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "zZDivqzD2pxfCT4OiWa0ApQDuXB_I9Q7"
+    "fasta": "analysis/data/HG01928.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "emHHDrJgEwvhf03dJP-Pk8vXHK_KHeOr"
   },
   {
-    "sample_name": "HG00735.alt.pat.f1_v2",
+    "assembly": "HG00735.alt.pat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018472715.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472715.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1003,12 +1004,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472715.1/ensembl/genome/Homo_sapiens-GCA_018472715.1-unmasked.fa.gz",
     "local_file": "data/HG00735.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "1a1a675e898b354d7c7d925eaf6ec4db",
-    "fasta": "HG00735.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "P4qZHOwdErr9jB1RkyspfUqLMPazkU81"
+    "fasta": "analysis/data/HG00735.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "ny1PsG4UOLGUzECAX2ZTxRaYaQGLiZZi"
   },
   {
-    "sample_name": "HG01071.alt.pat.f1_v2",
+    "assembly": "HG01071.alt.pat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018472725.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472725.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1024,12 +1025,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472725.1/ensembl/genome/Homo_sapiens-GCA_018472725.1-unmasked.fa.gz",
     "local_file": "data/HG01071.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "9cad2eb5b216e993eb31b398d504d841",
-    "fasta": "HG01071.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "x1n0w2sabOjURD3JnXzh1oILsnHD7cze"
+    "fasta": "analysis/data/HG01071.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "soFuT59nkwqdZ3i9FZ6GsPaC8v0UqpZU"
   },
   {
-    "sample_name": "HG00735.pri.mat.f1_v2",
+    "assembly": "HG00735.pri.mat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018472765.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472765.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1045,12 +1046,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472765.1/ensembl/genome/Homo_sapiens-GCA_018472765.1-unmasked.fa.gz",
     "local_file": "data/HG00735.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "1c7c0a4750a0759ebef7ba3d8042bf3f",
-    "fasta": "HG00735.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "9pWYhSXKoPs5MztgG7lW6WbM6Nww5SSr"
+    "fasta": "analysis/data/HG00735.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "BbH1ZrRSfhBhVHhYLBYq8FNiaSeJHryC"
   },
   {
-    "sample_name": "HG03579.pri.mat.f1_v2",
+    "assembly": "HG03579.pri.mat.f1_v2",
+    "population": "Mende In Sierra Leone",
     "assembly_accession": "GCA_018472825.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472825.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1066,12 +1067,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472825.1/ensembl/genome/Homo_sapiens-GCA_018472825.1-unmasked.fa.gz",
     "local_file": "data/HG03579.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "eddfa84b08cfd18a09604f4a814e52b9",
-    "fasta": "HG03579.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Mende In Sierra Leone",
-    "seqcol_digest": "Up7qPEU3wLWvyPk5pAf_ophGONWttqBo"
+    "fasta": "analysis/data/HG03579.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "Hmdch7xzoR_8uyaCHQwvmGWn40e4c58U"
   },
   {
-    "sample_name": "HG03579.alt.pat.f1_v2",
+    "assembly": "HG03579.alt.pat.f1_v2",
+    "population": "Mende In Sierra Leone",
     "assembly_accession": "GCA_018472835.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472835.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1087,12 +1088,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472835.1/ensembl/genome/Homo_sapiens-GCA_018472835.1-unmasked.fa.gz",
     "local_file": "data/HG03579.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "839ba69f97883baa767207f8af749e59",
-    "fasta": "HG03579.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Mende In Sierra Leone",
-    "seqcol_digest": "S60ZrqFZW2btcYS_54hQhqLwB_PG46vS"
+    "fasta": "analysis/data/HG03579.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "cYrHK5KVoZeyjdS3Mo1srvDYoP44DtWn"
   },
   {
-    "sample_name": "HG01978.alt.pat.f1_v2",
+    "assembly": "HG01978.alt.pat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018472845.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472845.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1108,12 +1109,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472845.1/ensembl/genome/Homo_sapiens-GCA_018472845.1-unmasked.fa.gz",
     "local_file": "data/HG01978.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "e5bbc6c5672f31aac5bb11521ef74aac",
-    "fasta": "HG01978.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "YtHbWHlP60GTZCncgUBjMOPmp2ADfq2J"
+    "fasta": "analysis/data/HG01978.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "FBe70obDKdaLQbFC6rigZBlrkjjhOJ6o"
   },
   {
-    "sample_name": "HG03453.pri.mat.f1_v2",
+    "assembly": "HG03453.pri.mat.f1_v2",
+    "population": "Mende In Sierra Leone",
     "assembly_accession": "GCA_018472855.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472855.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1129,12 +1130,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472855.1/ensembl/genome/Homo_sapiens-GCA_018472855.1-unmasked.fa.gz",
     "local_file": "data/HG03453.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "2118bd8ce8c1c102a0f97f9616c38ad4",
-    "fasta": "HG03453.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Mende In Sierra Leone",
-    "seqcol_digest": "n-7ePSo865wXqyAoED8M0hxM9MwqiFr4"
+    "fasta": "analysis/data/HG03453.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "LXAPWhSKfrwQkCZsoGPy1W3XSGwwZJR1"
   },
   {
-    "sample_name": "HG01978.pri.mat.f1_v2",
+    "assembly": "HG01978.pri.mat.f1_v2",
+    "population": "Peruvian In Lima, Peru",
     "assembly_accession": "GCA_018472865.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018472865.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1150,12 +1151,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018472865.1/ensembl/genome/Homo_sapiens-GCA_018472865.1-unmasked.fa.gz",
     "local_file": "data/HG01978.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "ce31db162f3ff66d30d3d792cff3b000",
-    "fasta": "HG01978.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Peruvian In Lima, Peru",
-    "seqcol_digest": "s1oLd_T8-4SF_SQ7NJ24Eqc3cOqiWFha"
+    "fasta": "analysis/data/HG01978.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "r6ieZ0QGT0NLHuqtkpQQyCXiXXRBwExd"
   },
   {
-    "sample_name": "HG03540.pri.mat.f1_v2",
+    "assembly": "HG03540.pri.mat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018473295.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018473295.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1171,12 +1172,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018473295.1/ensembl/genome/Homo_sapiens-GCA_018473295.1-unmasked.fa.gz",
     "local_file": "data/HG03540.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "602905a25cf17b2681e218d56c357880",
-    "fasta": "HG03540.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "71sPqYAdG9B62MdODjOGBO9n34Oamukl"
+    "fasta": "analysis/data/HG03540.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "Kc-Q1c-dlAmYoTS9a5C-wnXXNTJZEL7Y"
   },
   {
-    "sample_name": "HG03453.alt.pat.f1_v2",
+    "assembly": "HG03453.alt.pat.f1_v2",
+    "population": "Mende In Sierra Leone",
     "assembly_accession": "GCA_018473305.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018473305.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1192,12 +1193,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018473305.1/ensembl/genome/Homo_sapiens-GCA_018473305.1-unmasked.fa.gz",
     "local_file": "data/HG03453.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "516bbc0d70e7ec3ea4a6d047b5350ceb",
-    "fasta": "HG03453.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Mende In Sierra Leone",
-    "seqcol_digest": "gjDBvYx_b8sLCOPq1hPHWiGHyuzph3iR"
+    "fasta": "analysis/data/HG03453.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "P0njMo_ngJB7KvnLAPjBPnGXoigeXAVA"
   },
   {
-    "sample_name": "HG03540.alt.pat.f1_v2",
+    "assembly": "HG03540.alt.pat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018473315.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018473315.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1213,12 +1214,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018473315.1/ensembl/genome/Homo_sapiens-GCA_018473315.1-unmasked.fa.gz",
     "local_file": "data/HG03540.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "25430999e4672398478e71634a5b2157",
-    "fasta": "HG03540.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "R105AJTp5LXkugKvtrpe0J1qhkXBndOe"
+    "fasta": "analysis/data/HG03540.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "y7kmkFlydCwj48nHNFJ76TMzNjfYPFno"
   },
   {
-    "sample_name": "HG03486.alt.pat.f1_v2",
+    "assembly": "HG03486.alt.pat.f1_v2",
+    "population": "Mende Of Sierra Leone",
     "assembly_accession": "GCA_018503245.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503245.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1234,12 +1235,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503245.1/ensembl/genome/Homo_sapiens-GCA_018503245.1-unmasked.fa.gz",
     "local_file": "data/HG03486.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "5ed6edea7c776cae9050163bf4222bb5",
-    "fasta": "HG03486.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Mende Of Sierra Leone",
-    "seqcol_digest": "9ejLildtKroMlW_--YOf7OIEvhIQ42xv"
+    "fasta": "analysis/data/HG03486.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "yK-YzwV_nIfvoov5f5yCfX2WK18booij"
   },
   {
-    "sample_name": "NA18906.pri.mat.f1_v2",
+    "assembly": "NA18906.pri.mat.f1_v2",
+    "population": "Yoruban In Ibadan, Nigeria",
     "assembly_accession": "GCA_018503255.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503255.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1255,12 +1256,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503255.1/ensembl/genome/Homo_sapiens-GCA_018503255.1-unmasked.fa.gz",
     "local_file": "data/NA18906.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "14f9fa8bf52a24b212c416de573cbae6",
-    "fasta": "NA18906.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Yoruban In Ibadan, Nigeria",
-    "seqcol_digest": "N22SVILZfhznaY_8FLYBpaMw2By-_J9Y"
+    "fasta": "analysis/data/NA18906.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "JLxVTGB1J1NsHwQc9Ph1G1uvJoF0vcmX"
   },
   {
-    "sample_name": "NA19240.alt.pat.f1_v2",
+    "assembly": "NA19240.alt.pat.f1_v2",
+    "population": "Yoruban",
     "assembly_accession": "GCA_018503265.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503265.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1268,20 +1269,18 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503265.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018503265.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503265.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018503265.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503265.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018503265.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503265.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca018503265v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_018503265.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503265.1/ensembl/genome/Homo_sapiens-GCA_018503265.1-unmasked.fa.gz",
     "local_file": "data/NA19240.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "8d670c301a0a84b3909553efbb176036",
-    "fasta": "NA19240.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Yoruban",
-    "seqcol_digest": "RGLI3hkWHeWUGSBXtS8BN80KZVX0K8im"
+    "fasta": "analysis/data/NA19240.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "EsxyPLersYlRzzZ-ccHQ5mJK0_sU2eUn"
   },
   {
-    "sample_name": "NA19240.pri.mat.f1_v2",
+    "assembly": "NA19240.pri.mat.f1_v2",
+    "population": "Yoruban",
     "assembly_accession": "GCA_018503275.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503275.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1289,20 +1288,18 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503275.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018503275.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503275.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018503275.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503275.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018503275.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503275.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca018503275v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_018503275.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503275.1/ensembl/genome/Homo_sapiens-GCA_018503275.1-unmasked.fa.gz",
     "local_file": "data/NA19240.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "c62cc96e857fb8f3b2be36b3784fbae0",
-    "fasta": "NA19240.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Yoruban",
-    "seqcol_digest": "t4ndxEKXlH5dgCcm1nQMd57HbXA7ExIf"
+    "fasta": "analysis/data/NA19240.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "rMLfj_2guPmN7lVgtRCiSS2_baCN1whg"
   },
   {
-    "sample_name": "NA18906.alt.pat.f1_v2",
+    "assembly": "NA18906.alt.pat.f1_v2",
+    "population": "Yoruban In Ibadan, Nigeria",
     "assembly_accession": "GCA_018503285.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503285.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1318,12 +1315,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503285.1/ensembl/genome/Homo_sapiens-GCA_018503285.1-unmasked.fa.gz",
     "local_file": "data/NA18906.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "a1507deac4fd57a4666d9d065adf32d5",
-    "fasta": "NA18906.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Yoruban In Ibadan, Nigeria",
-    "seqcol_digest": "AJTqvyFQv1mzQGUlzqLha92UYCH5fCqv"
+    "fasta": "analysis/data/NA18906.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "BqfaoAPziDGbqTeaTlLzQD_cf6frizzK"
   },
   {
-    "sample_name": "HG03486.pri.mat.f1_v2",
+    "assembly": "HG03486.pri.mat.f1_v2",
+    "population": "Mende Of Sierra Leone",
     "assembly_accession": "GCA_018503525.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503525.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1339,12 +1336,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503525.1/ensembl/genome/Homo_sapiens-GCA_018503525.1-unmasked.fa.gz",
     "local_file": "data/HG03486.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "97731317a00c2ccd27d26af0a3fd189b",
-    "fasta": "HG03486.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Mende Of Sierra Leone",
-    "seqcol_digest": "e0OIqapSqCGDsa-6glrVq3PED1AHB5AY"
+    "fasta": "analysis/data/HG03486.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "BuZj05B1DuUyRND9eYKf4LhrOMDBtyOk"
   },
   {
-    "sample_name": "HG02818.alt.pat.f1_v2",
+    "assembly": "HG02818.alt.pat.f1_v2",
+    "population": "Gambian In Western Division Of Gambia",
     "assembly_accession": "GCA_018503575.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503575.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1360,12 +1357,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503575.1/ensembl/genome/Homo_sapiens-GCA_018503575.1-unmasked.fa.gz",
     "local_file": "data/HG02818.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "59ee7ce66d889d16a7bf6c34d3e0e650",
-    "fasta": "HG02818.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division Of Gambia",
-    "seqcol_digest": "-Sfh5nx4f7dSrGDdfmz7xA0nsN5jh-mN"
+    "fasta": "analysis/data/HG02818.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "WtvqOdQqFvqVdAzs8ql5-d8vwwtEOXUD"
   },
   {
-    "sample_name": "HG02818.pri.mat.f1_v2",
+    "assembly": "HG02818.pri.mat.f1_v2",
+    "population": "Gambian In Western Division Of Gambia",
     "assembly_accession": "GCA_018503585.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018503585.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1381,12 +1378,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018503585.1/ensembl/genome/Homo_sapiens-GCA_018503585.1-unmasked.fa.gz",
     "local_file": "data/HG02818.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "febd82f4b23ffbf436b11b9c4d0609d7",
-    "fasta": "HG02818.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division Of Gambia",
-    "seqcol_digest": "D115Vk9KZyz5NIxf6udt0fpXaFaArK-1"
+    "fasta": "analysis/data/HG02818.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "iB8zea9dHlENH43vvkCtcxZlJ4wT1Uz1"
   },
   {
-    "sample_name": "HG01243.alt.pat.f1_v2",
+    "assembly": "HG01243.alt.pat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018504045.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504045.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1402,12 +1399,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504045.1/ensembl/genome/Homo_sapiens-GCA_018504045.1-unmasked.fa.gz",
     "local_file": "data/HG01243.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "658406a034f344e58a5ea97e69ca707e",
-    "fasta": "HG01243.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "2VZUmoMe5uteOo5nLZXc8-71IU6e82cS"
+    "fasta": "analysis/data/HG01243.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "yFCTQeIXhkSUukadRWjWvOVRsz_OyTGq"
   },
   {
-    "sample_name": "HG02080.alt.pat.f1_v2",
+    "assembly": "HG02080.alt.pat.f1_v2",
+    "population": "Vietnamese Kinh In Ho Chi Minh City, Vietnam",
     "assembly_accession": "GCA_018504055.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504055.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1423,12 +1420,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504055.1/ensembl/genome/Homo_sapiens-GCA_018504055.1-unmasked.fa.gz",
     "local_file": "data/HG02080.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "1a0a8b35b33c962278f4552f8bb4b517",
-    "fasta": "HG02080.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Vietnamese Kinh In Ho Chi Minh City, Vietnam",
-    "seqcol_digest": "IvT_UNXmjZ4MCVuNAYC8zqN6sUdKdj23"
+    "fasta": "analysis/data/HG02080.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "tt6XTgH0zmAtOqbVHzM28MomIrnW4SuA"
   },
   {
-    "sample_name": "HG02723.pri.mat.f1_v2",
+    "assembly": "HG02723.pri.mat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018504065.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504065.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1444,12 +1441,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504065.1/ensembl/genome/Homo_sapiens-GCA_018504065.1-unmasked.fa.gz",
     "local_file": "data/HG02723.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "49498bf3b43a29e8a804ade0894c9b05",
-    "fasta": "HG02723.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "ah6D9N3T9vQB-ilo3Y2fMBZVfl38ejiu"
+    "fasta": "analysis/data/HG02723.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "NcoX-bKBNYbA2o6EwJeQk1IH8ZtZZgps"
   },
   {
-    "sample_name": "HG02723.alt.pat.f1_v2",
+    "assembly": "HG02723.alt.pat.f1_v2",
+    "population": "Gambian In Western Division, The Gambia",
     "assembly_accession": "GCA_018504075.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504075.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1465,12 +1462,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504075.1/ensembl/genome/Homo_sapiens-GCA_018504075.1-unmasked.fa.gz",
     "local_file": "data/HG02723.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "28307bd71a67da1ad0159546139b1401",
-    "fasta": "HG02723.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Gambian In Western Division, The Gambia",
-    "seqcol_digest": "eC3SeAJvdmDHQ9-YwEcAcXupcFb633wG"
+    "fasta": "analysis/data/HG02723.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "Vdn0RtSTthV_5EImofY-lSeO3a3bwIQX"
   },
   {
-    "sample_name": "HG02080.pri.mat.f1_v2",
+    "assembly": "HG02080.pri.mat.f1_v2",
+    "population": "Vietnamese Kinh In Ho Chi Minh City, Vietnam",
     "assembly_accession": "GCA_018504085.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504085.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1486,12 +1483,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504085.1/ensembl/genome/Homo_sapiens-GCA_018504085.1-unmasked.fa.gz",
     "local_file": "data/HG02080.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "e9c11f469d48e9d9e3184a90057661ec",
-    "fasta": "HG02080.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Vietnamese Kinh In Ho Chi Minh City, Vietnam",
-    "seqcol_digest": "G-lXbNy5hM1rt0XTLAUfJpVZIVT_ZgpE"
+    "fasta": "analysis/data/HG02080.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "XVWtB0SreQEBLIfzbOjbKG5PEb1asj6k"
   },
   {
-    "sample_name": "HG01109.pri.mat.f1_v2",
+    "assembly": "HG01109.pri.mat.f1_v2",
+    "population": "Puerto Rico",
     "assembly_accession": "GCA_018504365.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504365.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1507,12 +1504,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504365.1/ensembl/genome/Homo_sapiens-GCA_018504365.1-unmasked.fa.gz",
     "local_file": "data/HG01109.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "f039a0ab089a8965eaabc610b5dfedc3",
-    "fasta": "HG01109.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rico",
-    "seqcol_digest": "XnH51MmuPgO2TNhlEiANnFQ2wvTYdNor"
+    "fasta": "analysis/data/HG01109.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "PhKsGQm9pHaNLkimAYQPsornvIZpqvnH"
   },
   {
-    "sample_name": "HG01243.pri.mat.f1_v2",
+    "assembly": "HG01243.pri.mat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018504375.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504375.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1528,12 +1525,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504375.1/ensembl/genome/Homo_sapiens-GCA_018504375.1-unmasked.fa.gz",
     "local_file": "data/HG01243.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "cbf1a1b084fb041e38d1a633d063cce5",
-    "fasta": "HG01243.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "jAgF570djYDrb7L9kBfLZ46fCPWiS5TW"
+    "fasta": "analysis/data/HG01243.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "03eDIlAb6h7tiYvcU2f43-A-RmJzN632"
   },
   {
-    "sample_name": "NA20129.alt.pat.f1_v2",
+    "assembly": "NA20129.alt.pat.f1_v2",
+    "population": "Southwest USA",
     "assembly_accession": "GCA_018504625.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504625.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1549,12 +1546,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504625.1/ensembl/genome/Homo_sapiens-GCA_018504625.1-unmasked.fa.gz",
     "local_file": "data/NA20129.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "c8db3e57c711a13bbf3e2ae8e8d7e6f0",
-    "fasta": "NA20129.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Southwest USA",
-    "seqcol_digest": "FH-REWvpU7rtFRmBiIa_2ep7OciOW4GR"
+    "fasta": "analysis/data/NA20129.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "tzg-YjJ70yBfIo5ijfN3LgsPAfc2fH-y"
   },
   {
-    "sample_name": "NA20129.pri.mat.f1_v2",
+    "assembly": "NA20129.pri.mat.f1_v2",
+    "population": "Southwest USA",
     "assembly_accession": "GCA_018504635.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504635.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1570,12 +1567,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504635.1/ensembl/genome/Homo_sapiens-GCA_018504635.1-unmasked.fa.gz",
     "local_file": "data/NA20129.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "87dbd592bdb1bd8a188cecf1d101bf95",
-    "fasta": "NA20129.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Southwest USA",
-    "seqcol_digest": "5PllS1Hx4hsVQbhz84-1qJ5ZZQOWAqNu"
+    "fasta": "analysis/data/NA20129.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "eYQOqMmclnUP_SYW5KnMCKcfCOtY2Jfn"
   },
   {
-    "sample_name": "HG01109.alt.pat.f1_v2",
+    "assembly": "HG01109.alt.pat.f1_v2",
+    "population": "Puerto Rico",
     "assembly_accession": "GCA_018504645.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504645.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1591,12 +1588,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504645.1/ensembl/genome/Homo_sapiens-GCA_018504645.1-unmasked.fa.gz",
     "local_file": "data/HG01109.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "25b3527476c1c97a0e1098eae1b67ec7",
-    "fasta": "HG01109.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rico",
-    "seqcol_digest": "JTKSBZJsyIzdS1IK1KKTdiCpC3nmqs1i"
+    "fasta": "analysis/data/HG01109.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "t2DLI454ZtI0hxz3ublokln-RrQtZfLO"
   },
   {
-    "sample_name": "NA21309.pri.mat.f1_v2",
+    "assembly": "NA21309.pri.mat.f1_v2",
+    "population": "Kinyawa, Kenya",
     "assembly_accession": "GCA_018504655.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504655.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1612,12 +1609,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504655.1/ensembl/genome/Homo_sapiens-GCA_018504655.1-unmasked.fa.gz",
     "local_file": "data/NA21309.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "20d3884c98205fa82f489c4fc4849e4c",
-    "fasta": "NA21309.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Kinyawa, Kenya",
-    "seqcol_digest": "KZ1LmrEYEsAvtF4v3wUBXuPENsOF0T8c"
+    "fasta": "analysis/data/NA21309.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "tJW0O7A3G4KGYoJ9OGwA0G2hLRm9MHQC"
   },
   {
-    "sample_name": "NA21309.alt.pat.f1_v2",
+    "assembly": "NA21309.alt.pat.f1_v2",
+    "population": "Kinyawa, Kenya",
     "assembly_accession": "GCA_018504665.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018504665.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1633,12 +1630,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018504665.1/ensembl/genome/Homo_sapiens-GCA_018504665.1-unmasked.fa.gz",
     "local_file": "data/NA21309.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "311ae4c8536990b27743611893c5d71c",
-    "fasta": "NA21309.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Kinyawa, Kenya",
-    "seqcol_digest": "qBmTdlCFm2J4cy9pQDJFYAAhulYftM8L"
+    "fasta": "analysis/data/NA21309.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "Sz7UMHSkMT6X29fRukTjWiKb2NPjkfpz"
   },
   {
-    "sample_name": "HG02109.pri.mat.f1_v2",
+    "assembly": "HG02109.pri.mat.f1_v2",
+    "population": "African Ancestry From Barbados In The Caribbean",
     "assembly_accession": "GCA_018505825.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018505825.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1654,12 +1651,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018505825.1/ensembl/genome/Homo_sapiens-GCA_018505825.1-unmasked.fa.gz",
     "local_file": "data/HG02109.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "d9a5a9bdcd6eba17b0341cf58d414b5d",
-    "fasta": "HG02109.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "African Ancestry From Barbados In The Caribbean",
-    "seqcol_digest": "qu9RljQ54ocenwxL1nwhbOwwhUXB-Jyi"
+    "fasta": "analysis/data/HG02109.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "kfe4S1NWXJrzdkn7-PEmO14qQ_97iPcT"
   },
   {
-    "sample_name": "HG03492.alt.pat.f1_v2",
+    "assembly": "HG03492.alt.pat.f1_v2",
+    "population": "Punjabi In Lahore, Pakistan",
     "assembly_accession": "GCA_018505835.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018505835.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1675,12 +1672,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018505835.1/ensembl/genome/Homo_sapiens-GCA_018505835.1-unmasked.fa.gz",
     "local_file": "data/HG03492.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "65b49458314bc3fed50b6b5fc173bc61",
-    "fasta": "HG03492.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Punjabi In Lahore, Pakistan",
-    "seqcol_digest": "41awQ9hgSvnbePsbamrEck9Pfj-lxoI-"
+    "fasta": "analysis/data/HG03492.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "Lt9FTvjBEThMyHAm-_st-2ygIlqTUcSK"
   },
   {
-    "sample_name": "HG03492.pri.mat.f1_v2",
+    "assembly": "HG03492.pri.mat.f1_v2",
+    "population": "Punjabi In Lahore, Pakistan",
     "assembly_accession": "GCA_018505845.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018505845.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1696,12 +1693,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018505845.1/ensembl/genome/Homo_sapiens-GCA_018505845.1-unmasked.fa.gz",
     "local_file": "data/HG03492.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "3178d976932b398021b2a445b9b4399b",
-    "fasta": "HG03492.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Punjabi In Lahore, Pakistan",
-    "seqcol_digest": "sEX03-p2sKmrN6DpsWxo1_uQVC8GxT8L"
+    "fasta": "analysis/data/HG03492.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "SXDV7XYbyfGfknp07q5u4Foz6P7j19pn"
   },
   {
-    "sample_name": "HG02055.alt.pat.f1_v2",
+    "assembly": "HG02055.alt.pat.f1_v2",
+    "population": "Barbados",
     "assembly_accession": "GCA_018505855.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018505855.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1717,12 +1714,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018505855.1/ensembl/genome/Homo_sapiens-GCA_018505855.1-unmasked.fa.gz",
     "local_file": "data/HG02055.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "39780bb545b1d635db908b86a34948f5",
-    "fasta": "HG02055.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Barbados",
-    "seqcol_digest": "R903f2HZFUgV3WtHy2-bkyNg9-7Nu0v7"
+    "fasta": "analysis/data/HG02055.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "av3aqrEvSnd3t2EM0m6jXTtjC0ap8hGm"
   },
   {
-    "sample_name": "HG02109.alt.pat.f1_v2",
+    "assembly": "HG02109.alt.pat.f1_v2",
+    "population": "African Ancestry From Barbados In The Caribbean",
     "assembly_accession": "GCA_018505865.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018505865.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1738,12 +1735,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018505865.1/ensembl/genome/Homo_sapiens-GCA_018505865.1-unmasked.fa.gz",
     "local_file": "data/HG02109.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "cb4153d3363327621b357b534722cc93",
-    "fasta": "HG02109.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "African Ancestry From Barbados In The Caribbean",
-    "seqcol_digest": "0qveCdMlbF_kYn6XWb7YBy-FtRZ6gSAL"
+    "fasta": "analysis/data/HG02109.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "fEQuZ-F9oVaqzhXzl-6Ziq4Zj8XUpXQf"
   },
   {
-    "sample_name": "HG02055.pri.mat.f1_v2",
+    "assembly": "HG02055.pri.mat.f1_v2",
+    "population": "Barbados",
     "assembly_accession": "GCA_018506125.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018506125.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1759,12 +1756,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506125.1/ensembl/genome/Homo_sapiens-GCA_018506125.1-unmasked.fa.gz",
     "local_file": "data/HG02055.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "1710edd2351a02583e5eb9be7f2b743e",
-    "fasta": "HG02055.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Barbados",
-    "seqcol_digest": "v8p2oLGpP6w9_wIK0CQ9WEgaCiHPGL9x"
+    "fasta": "analysis/data/HG02055.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "j1V8g5DkGVx7R_5W7y8M_yxMUwqgOXeF"
   },
   {
-    "sample_name": "HG03098.alt.pat.f1_v2",
+    "assembly": "HG03098.alt.pat.f1_v2",
+    "population": "Mende In Sierra Leone",
     "assembly_accession": "GCA_018506155.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018506155.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1780,12 +1777,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506155.1/ensembl/genome/Homo_sapiens-GCA_018506155.1-unmasked.fa.gz",
     "local_file": "data/HG03098.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "a5f80556fa455114d763b0ddab5509a1",
-    "fasta": "HG03098.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Mende In Sierra Leone",
-    "seqcol_digest": "S2LsYzDB_k60GIQM6omCxqD_NvmvCwn5"
+    "fasta": "analysis/data/HG03098.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "0PSK6PxA62LbmS0DRQb2VeH2UW2byEOl"
   },
   {
-    "sample_name": "HG03098.pri.mat.f1_v2",
+    "assembly": "HG03098.pri.mat.f1_v2",
+    "population": "Mende In Sierra Leone",
     "assembly_accession": "GCA_018506165.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018506165.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1801,12 +1798,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506165.1/ensembl/genome/Homo_sapiens-GCA_018506165.1-unmasked.fa.gz",
     "local_file": "data/HG03098.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "3f213903a3238b64b37dc40995b44cff",
-    "fasta": "HG03098.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Mende In Sierra Leone",
-    "seqcol_digest": "8KHugp4XuYhEmPCmZ3jF2p5gdii399Ao"
+    "fasta": "analysis/data/HG03098.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "tX5MdWuQMBqkg7lEbdozJNyseAKOdRqi"
   },
   {
-    "sample_name": "HG005.alt.pat.f1_v2",
+    "assembly": "HG005.alt.pat.f1_v2",
+    "population": "Asian",
     "assembly_accession": "GCA_018506945.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018506945.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1814,20 +1811,18 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506945.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018506945.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506945.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018506945.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506945.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018506945.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506945.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca018506945v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_018506945.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506945.1/ensembl/genome/Homo_sapiens-GCA_018506945.1-unmasked.fa.gz",
     "local_file": "data/HG005.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "d815c412ea96c765ac8b3fd241eacb30",
-    "fasta": "HG005.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Asian",
-    "seqcol_digest": "k0GGcUuZsX2r8ffpikvlVYm57Rxm-8_z"
+    "fasta": "analysis/data/HG005.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "MC8U95jiJqlpU7FkwtTWBILApRLW11tv"
   },
   {
-    "sample_name": "HG00733.alt.pat.f1_v2",
+    "assembly": "HG00733.alt.pat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018506955.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018506955.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1843,12 +1838,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506955.1/ensembl/genome/Homo_sapiens-GCA_018506955.1-unmasked.fa.gz",
     "local_file": "data/HG00733.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "aa8e2fa9f3a9b90193b3c803285164fb",
-    "fasta": "HG00733.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "tnf8kmb_OfmKlY5q8xsdmXMb05dNOCH1"
+    "fasta": "analysis/data/HG00733.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "OdOkD0fYg_ryMFWq5fgNjxR4DxsdgAMo"
   },
   {
-    "sample_name": "HG005.pri.mat.f1_v2",
+    "assembly": "HG005.pri.mat.f1_v2",
+    "population": "Asian",
     "assembly_accession": "GCA_018506965.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018506965.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1856,20 +1851,18 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506965.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018506965.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506965.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018506965.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506965.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018506965.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506965.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca018506965v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_018506965.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506965.1/ensembl/genome/Homo_sapiens-GCA_018506965.1-unmasked.fa.gz",
     "local_file": "data/HG005.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "759b6967cc0cd0140ce69ce8e40f96f4",
-    "fasta": "HG005.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Asian",
-    "seqcol_digest": "n-EXNThlm5QoXUZUBUsV5Np0467xppj0"
+    "fasta": "analysis/data/HG005.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "HhM9RLhBL4ggspYnU7_MI_QrLQZoUTqJ"
   },
   {
-    "sample_name": "HG00733.pri.mat.f1_v2",
+    "assembly": "HG00733.pri.mat.f1_v2",
+    "population": "Puerto Rican In Puerto Rico",
     "assembly_accession": "GCA_018506975.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018506975.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1885,12 +1878,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018506975.1/ensembl/genome/Homo_sapiens-GCA_018506975.1-unmasked.fa.gz",
     "local_file": "data/HG00733.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "cb03fa96865d034bf2b410b8d623df96",
-    "fasta": "HG00733.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Puerto Rican In Puerto Rico",
-    "seqcol_digest": "g0z0p74GAKsTO_PTWp6vgTBqedaEET6R"
+    "fasta": "analysis/data/HG00733.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "tFKFtJwX3jVBaQcYgyLEOOt82rlJqou8"
   },
   {
-    "sample_name": "HG02145.pri.mat.f1_v2",
+    "assembly": "HG02145.pri.mat.f1_v2",
+    "population": "African Ancestry From Barbados In The Caribbean",
     "assembly_accession": "GCA_018852585.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018852585.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1906,12 +1899,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852585.1/ensembl/genome/Homo_sapiens-GCA_018852585.1-unmasked.fa.gz",
     "local_file": "data/HG02145.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "5cf8dc4d731a7e69783554311365f781",
-    "fasta": "HG02145.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "African Ancestry From Barbados In The Caribbean",
-    "seqcol_digest": "ot_akRbQlKEuBSf6rC3gRIdApJZ1wuhx"
+    "fasta": "analysis/data/HG02145.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "VgBPdkMRNxWi6UR2VXQDrYNJYtNn0Uf4"
   },
   {
-    "sample_name": "HG02145.alt.pat.f1_v2",
+    "assembly": "HG02145.alt.pat.f1_v2",
+    "population": "African Ancestry From Barbados In The Caribbean",
     "assembly_accession": "GCA_018852595.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018852595.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1927,12 +1920,12 @@
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852595.1/ensembl/genome/Homo_sapiens-GCA_018852595.1-unmasked.fa.gz",
     "local_file": "data/HG02145.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "cfa7ec0f15c37eb6c067b0d34d93db92",
-    "fasta": "HG02145.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "African Ancestry From Barbados In The Caribbean",
-    "seqcol_digest": "DywREOPt14PI8grQujaR4LGG3J3jCho8"
+    "fasta": "analysis/data/HG02145.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "f0oF1fypWOJulxmykodrzqek3LEVHtTv"
   },
   {
-    "sample_name": "HG002.alt.pat.f1_v2",
+    "assembly": "HG002.alt.pat.f1_v2",
+    "population": "Caucasian",
     "assembly_accession": "GCA_018852605.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018852605.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1940,20 +1933,18 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852605.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018852605.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852605.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018852605.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852605.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018852605.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852605.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca018852605v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_018852605.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852605.1/ensembl/genome/Homo_sapiens-GCA_018852605.1-unmasked.fa.gz",
     "local_file": "data/HG002.alt.pat.f1_v2.unmasked.fa.gz",
     "remote_md5": "7fd1460fbb5f60de6cce889f0e7ad44d",
-    "fasta": "HG002.alt.pat.f1_v2.unmasked.fa.gz",
-    "population": "Caucasian",
-    "seqcol_digest": "7sLU_buKTJK1jP-y_BwN2nt5ee0aI4f4"
+    "fasta": "analysis/data/HG002.alt.pat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "rnrRAhWZmbGjP1CK-L9I1eHNfKJNqkoH"
   },
   {
-    "sample_name": "HG002.pri.mat.f1_v2",
+    "assembly": "HG002.pri.mat.f1_v2",
+    "population": "Caucasian",
     "assembly_accession": "GCA_018852615.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_018852615.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1961,20 +1952,18 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852615.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018852615.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852615.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018852615.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852615.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_018852615.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852615.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca018852615v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_018852615.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_018852615.1/ensembl/genome/Homo_sapiens-GCA_018852615.1-unmasked.fa.gz",
     "local_file": "data/HG002.pri.mat.f1_v2.unmasked.fa.gz",
     "remote_md5": "53edbb15ddc18de5cfe02a3a0bb44298",
-    "fasta": "HG002.pri.mat.f1_v2.unmasked.fa.gz",
-    "population": "Caucasian",
-    "seqcol_digest": "13BjQeM-FfCIEscfPDyvG4HttLg9UtQR"
+    "fasta": "analysis/data/HG002.pri.mat.f1_v2.unmasked.fa.gz",
+    "seqcol_digest": "tQLJhZVyD-ehl1lkqTMv-sieRJcejmvk"
   },
   {
-    "sample_name": "HG002.pat.cur.20211005",
+    "assembly": "HG002.pat.cur.20211005",
+    "population": "Caucasian",
     "assembly_accession": "GCA_021950905.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_021950905.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -1982,20 +1971,18 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021950905.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_021950905.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021950905.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_021950905.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021950905.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_021950905.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021950905.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca021950905v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_021950905.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021950905.1/ensembl/genome/Homo_sapiens-GCA_021950905.1-unmasked.fa.gz",
     "local_file": "data/HG002.pat.cur.20211005.unmasked.fa.gz",
     "remote_md5": "15138879ea44f4174ca245ded469fd7b",
-    "fasta": "HG002.pat.cur.20211005.unmasked.fa.gz",
-    "population": "Caucasian",
-    "seqcol_digest": "aarv58szdzAfvSvO9q5iW5gu0E3HXnnc"
+    "fasta": "analysis/data/HG002.pat.cur.20211005.unmasked.fa.gz",
+    "seqcol_digest": "6BCEz05tbMxTTl6k4x9gFmgkNaXECShd"
   },
   {
-    "sample_name": "HG002.mat.cur.20211005",
+    "assembly": "HG002.mat.cur.20211005",
+    "population": "Caucasian",
     "assembly_accession": "GCA_021951015.1",
     "assembly_link": "https://www.ebi.ac.uk/ena/browser/view/GCA_021951015.1",
     "assembly_submitter": "UCSC Genomics Institute",
@@ -2003,16 +1990,13 @@
     "annotation_gff3": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021951015.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_021951015.1-2022_07-genes.gff3.gz",
     "proteins": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021951015.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_021951015.1-2022_07-pep.fa.gz",
     "transcripts": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021951015.1/ensembl/geneset/2022_07/Homo_sapiens-GCA_021951015.1-2022_07-cdna.fa.gz",
-    "variants_clinvar": "",
-    "variants_gnomad": "",
     "ftp_dumps": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021951015.1",
     "rapid_link": "https://rapid.ensembl.org/Homo_sapiens_gca021951015v1/Info/Index",
     "file_name": "Homo_sapiens-GCA_021951015.1-unmasked.fa.gz",
     "url": "https://ftp.ensembl.org/pub/rapid-release/species/Homo_sapiens/GCA_021951015.1/ensembl/genome/Homo_sapiens-GCA_021951015.1-unmasked.fa.gz",
     "local_file": "data/HG002.mat.cur.20211005.unmasked.fa.gz",
     "remote_md5": "8351881dc69adbdf87dd77414d289813",
-    "fasta": "HG002.mat.cur.20211005.unmasked.fa.gz",
-    "population": "Caucasian",
-    "seqcol_digest": "I874VV52PMwV0JxIYIWmDlBpwSdcQUGT"
+    "fasta": "analysis/data/HG002.mat.cur.20211005.unmasked.fa.gz",
+    "seqcol_digest": "XjCjW7CHIqVb6lTzxhAVL-vaMohzgXAt"
   }
 ]

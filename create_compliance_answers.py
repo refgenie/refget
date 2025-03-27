@@ -59,7 +59,6 @@ refget.validate_seqcol(demo_results["base.fa"].level2())
 # For this we need to have a running server with the demo fasta files loaded
 
 col_client = refget.SequenceCollectionClient(urls=["http://127.0.0.1:8100"])
-
 # comparisons
 attribute_root = "test_api/attribute"
 collection_root = "test_api/collection"
@@ -80,16 +79,3 @@ for x in demo_results.keys():
         comparison_file = f"{comparison_root}/compare_{x}_{y}.json"
         with open(comparison_file, "w") as f:
             f.write(json.dumps(res, indent=2))
-
-
-# def serialize_sqlmodel(obj):
-#     data = obj.model_dump()
-#     for key, value in obj.__dict__.items():
-#         if key.startswith("_"):
-#             continue
-#         elif isinstance(value, SQLModel):
-#             data[key] = serialize_sqlmodel(value)  # Handle nested objects
-#     return data
-# serialize_sqlmodel(demo_results[x])
-
-# res = refget.compare_seqcols(serialize_sqlmodel(demo_results[x]), serialize_sqlmodel(demo_results[y]))

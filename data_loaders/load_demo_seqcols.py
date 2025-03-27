@@ -6,6 +6,7 @@ from refget.agents import RefgetDBAgent
 # Before running this script, you'll need to set up env vars like so:
 # source deployment/local_demo/local_demo.env
 
+
 fa_root = "test_fasta"
 DEMO_FASTA = json.load(open("test_fasta/test_fasta_digests.json"))
 dbc = RefgetDBAgent()  # Parameters are read from the environment
@@ -17,7 +18,7 @@ demo_results = {}
 for name, demo_file in DEMO_FASTA.items():
     f = os.path.join(fa_root, demo_file["name"])
     print("Fasta file to be loaded: {}".format(f))
-    demo_results[f] = dbc.seqcol.add_from_fasta_file(f)
+    demo_results[f] = dbc.seqcol.add_from_fasta_file(f, update=True)
     print(demo_results[f])
 
 

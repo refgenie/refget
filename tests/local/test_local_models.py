@@ -3,25 +3,28 @@ import os
 import pytest
 import refget
 
-from .conftest import DEMO_FILES
+from tests.conftest import DEMO_FILES, DIGEST_TESTS, API_TEST_DIR
 
 # Pairs of files to compare, with the "correct" compare response
 COMPARE_TESTS = [
-    (DEMO_FILES[0], DEMO_FILES[1], "test_api/comparison/compare_base.fa_different_names.fa.json"),
-    (DEMO_FILES[0], DEMO_FILES[2], "test_api/comparison/compare_base.fa_different_order.fa.json"),
-    (DEMO_FILES[0], DEMO_FILES[3], "test_api/comparison/compare_base.fa_pair_swap.fa.json"),
-    (DEMO_FILES[0], DEMO_FILES[4], "test_api/comparison/compare_base.fa_subset.fa.json"),
-    (DEMO_FILES[0], DEMO_FILES[5], "test_api/comparison/compare_base.fa_swap_wo_coords.fa.json"),
+    (
+        DEMO_FILES[0],
+        DEMO_FILES[1],
+        f"{API_TEST_DIR}/comparison/compare_base.fa_different_names.fa.json",
+    ),
+    (
+        DEMO_FILES[0],
+        DEMO_FILES[2],
+        f"{API_TEST_DIR}/comparison/compare_base.fa_different_order.fa.json",
+    ),
+    (DEMO_FILES[0], DEMO_FILES[3], f"{API_TEST_DIR}/comparison/compare_base.fa_pair_swap.fa.json"),
+    (DEMO_FILES[0], DEMO_FILES[4], f"{API_TEST_DIR}/comparison/compare_base.fa_subset.fa.json"),
+    (
+        DEMO_FILES[0],
+        DEMO_FILES[5],
+        f"{API_TEST_DIR}/comparison/compare_base.fa_swap_wo_coords.fa.json",
+    ),
 ]
-
-# load json with right answers
-with open("test_fasta/test_fasta_digests.json") as fp:
-    correct_answers = json.load(fp)
-
-# make tuples of each correct answer to parameterize tests
-DIGEST_TESTS = []
-for fa_name, fa_digest_bundle in correct_answers.items():
-    DIGEST_TESTS.append((fa_name, fa_digest_bundle))
 
 
 def check_comparison(fasta1, fasta2, expected_comparison):

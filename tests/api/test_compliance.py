@@ -6,46 +6,19 @@ import requests
 import refget
 
 # Collection endpoints
-
-from .conftest import (
-    DEMO_FILES,
+from tests.api.conftest import (
     COLLECTION_TESTS,
     COMPARISON_TESTS,
     ATTRIBUTE_TESTS,
     ATTRIBUTE_LIST_TESTS,
 )
+from tests.conftest import DIGEST_TESTS
 
-
-# This is optional, so we could turn off for a compliance test
-TEST_SORTED_NAME_LENGTH_PAIRS = False
-
-# api_root = "http://0.0.0.0:8100"
 demo_root = "/home/nsheff/code/refget/test_fasta"
 demo_file = "demo0.fa"
 response_file = "tests/demo0_collection.json"
 
 print("Testing Compliance")
-
-
-def read_url_old(url):
-    import yaml
-
-    print("Reading URL: {}".format(url))
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-
-    try:
-        print("here1")
-        response = urlopen(url)
-        print("here2")
-    except HTTPError as e:
-        raise e
-    print("here3")
-    data = response.read()  # a `bytes` object
-    print("here")
-    text = data.decode("utf-8")
-    print("here")
-    return yaml.safe_load(text)
 
 
 def read_url(url):
@@ -73,6 +46,11 @@ def check_collection(api_root, demo_file, response_file):
     digest = refget.fasta_to_digest(f"{demo_root}/{demo_file}", inherent_attrs=inherent_attrs)
     print(f"Checking digest: {digest}")
     res = requests.get(f"{api_root}/collection/{digest}")
+
+    client = refget.SequenceCollectionClient(urls=[api_root])
+
+    srv_response = client.get_collection(digest, level=1)
+    print("Server response:", srv_response)
     try:
         server_answer = json.loads(res.content)
     except json.decoder.JSONDecodeError:
@@ -90,10 +68,6 @@ def check_collection(api_root, demo_file, response_file):
     assert (
         server_answer["lengths"] == correct_answer["lengths"]
     ), f"Collection endpoint failed: lengths mismatch for {demo_file}"
-    if TEST_SORTED_NAME_LENGTH_PAIRS:
-        assert (
-            server_answer["sorted_name_length_pairs"] == correct_answer["sorted_name_length_pairs"]
-        ), f"Collection endpoint failed: sorted_name_length_pairs mismatch for {demo_file}"
 
 
 def check_comparison(api_root, response_file):
@@ -150,7 +124,6 @@ def check_list_collections_by_attribute(api_root, attribute_type, attribute, res
 
 @pytest.mark.require_service
 class TestAPI:
-
     print("Testing Compliance")
 
     @pytest.mark.parametrize("test_values", COLLECTION_TESTS)
@@ -170,3 +143,21 @@ class TestAPI:
     @pytest.mark.parametrize("test_values", ATTRIBUTE_LIST_TESTS)
     def test_attribute_list_endpoint(self, api_root, test_values):
         check_list_collections_by_attribute(api_root, *test_values)
+
+    @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
+    def test_collections(self, api_root, fa_file, fa_digest_bundle):
+        client = refget.SequenceCollectionClient(urls=[api_root])
+        digest = fa_digest_bundle["top_level_digest"]
+        srv_response = client.get_collection(digest, level=1)
+        print("Server response:", srv_response)
+
+    @pytest.mark.snlp
+    @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
+    def test_sorted_name_length_pairs(self, api_root, fa_file, fa_digest_bundle):
+        client = refget.SequenceCollectionClient(urls=[api_root])
+        digest = fa_digest_bundle["top_level_digest"]
+        srv_response = client.get_collection(digest, level=1)
+        assert (
+            srv_response["sorted_name_length_pairs"]
+            == fa_digest_bundle["sorted_name_length_pairs_digest"]
+        ), f"Collection endpoint failed: sorted_name_length_pairs mismatch for {demo_file}"

@@ -35,7 +35,13 @@ This will:
 - load up the demo data
 - block the terminal until you press Ctrl+C, which will shut down all services.
 
-### Setting up a database connection
+### Step-by-step process
+
+Alternatively, if you want to run each step separately to see what's really going on, start here.
+
+
+#### Setting up a database connection
+
 
 First configure a database connection through environment variables. Choose one of these:
 
@@ -58,7 +64,7 @@ docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
 If you need to load test data into your server, then you have to install [gtars](https://docs.bedbase.org/gtars/) (with `pip install gtars`), a Python package for computing GA4GH digests. You can then load test data like this:
 
 ```
-python data_loaders/load_demo_data.py
+python data_loaders/load_demo_seqcols.py
 ```
 
 or:
@@ -67,8 +73,7 @@ or:
 refget add-fasta -p test_fasta/test_fasta_metadata.csv -r test_fasta
 ```
 
-
-### Running the seqcolapi API backend
+#### Running the seqcolapi API backend
 
 Run the demo `seqcolapi` service like this:
 
@@ -76,7 +81,7 @@ Run the demo `seqcolapi` service like this:
 uvicorn seqcolapi.main:app --reload --port 8100
 ```
 
-### Running with docker
+#### Running with docker
 
 To build the docker file, first build the image from the root of this repository:
 
@@ -96,7 +101,7 @@ docker run --rm -p 8000:80 --name seqcolapi \
   databio/seqcolapi
 ```
 
-### Deploying container to dockerhub
+#### Deploying container to dockerhub
 
 Use the github action in this repo which deploys on release, or through manual dispatch.
 

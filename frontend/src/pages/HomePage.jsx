@@ -38,7 +38,7 @@ const HomePage = () => {
         <p>Welcome to the Refget Sequence Collections demo service!
           This landing page provides a way to explore the data in the server.
           You can go straight to the API itself using the <b>API Docs</b> link in the title bar.
-          Or, you can check out a few examples below. Here are two easy ways to browse:
+          Or, you can check out a few examples below. Here are some ways to browse:
         </p>
 
   
@@ -61,8 +61,15 @@ const HomePage = () => {
   
         <CollectionList collections={collections}/>
 
-        <h5 className="mt-4">3. Human Pangenome Reference Consortium genomes available on this server:</h5>
+        <h5 className="mt-4">3. Human Reference genomes available on this server:</h5>
+        
+        <ul>
+          <li><Link to="/human">Human reference genomes</Link></li>
+        </ul>
 
+
+
+        <h5 className="mt-4">4. Human Pangenome Reference Consortium genomes available on this server:</h5>
         
         <ul>
           <li><Link to="/hprc">HPRC genomes</Link></li>
