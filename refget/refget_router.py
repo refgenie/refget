@@ -186,6 +186,46 @@ async def compare_2_digests(
 
 
 @seqcol_router.post(
+    "/similarities/{collection_digest}",
+    summary="Calculate Jaccard similarities between a single sequence collection in the database and all other collections in the database",
+    tags=["Comparing sequence collections"],
+)
+async def calc_similarities(
+
+        collection_digest: str ,
+        page_size: int = 50,
+        page: int = 0,
+        dbagent=Depends(get_dbagent),
+):
+    _LOGGER.info("Calculating Jaccard similarities...")
+    try:
+        collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+
+        similarities = []
+        for seqcol in collections["results"]:
+            print(seqcol.digest)
+            jaccard_sims = dbagent.calc_similarities(collection_digest, seqcol.digest)
+            similarities.append({
+                "digest": seqcol.digest,
+                "similarities": jaccard_sims
+            })
+
+        result = {
+            "reference_digest": collection_digest,
+            "pagination": collections["pagination"],
+            "similarities": similarities
+        }
+
+    except Exception as e:
+        _LOGGER.debug(e)
+        raise HTTPException(
+            status_code=404,
+            detail="Error: collection not found. Check the digest and try again.",
+        )
+
+    return JSONResponse(result)
+
+@seqcol_router.post(
     "/comparison/{collection_digest1}",
     summary="Compare a local sequence collection to one on the server",
     tags=["Comparing sequence collections"],
