@@ -579,6 +579,15 @@ class RefgetDBAgent(object):
         B = self.seqcol.get(digestB, return_format="level2")
         return calc_jaccard_similarities(A,B)
 
+    # def calc_similarities_seqcol_dict(self, seqcolA, seqcolB):
+    #     A = SequenceCollection.from_dict(seqcolA, self.inherent_attrs).level2()
+    #     B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
+    #     return calc_jaccard_similarities(A,B)
+
+    def calc_similarities_seqcol_dict_and_digest(self, seqcolA, seqcolB_digest):
+        seqcolB = self.seqcol.get(seqcolB_digest, return_format="level2")
+        return calc_jaccard_similarities(seqcolA,seqcolB)
+
     def compare_1_digest(self, digestA, seqcolB):
         A = self.seqcol.get(digestA, return_format="level2")
         B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
