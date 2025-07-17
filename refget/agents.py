@@ -16,7 +16,7 @@ from .utilities import (
     fasta_to_seqcol_dict,
     compare_seqcols,
     build_pangenome_model,
-    calc_jaccard_similarities
+    calc_jaccard_similarities,
 )
 from .const import _LOGGER
 from .const import SCHEMA_FILEPATH
@@ -577,7 +577,7 @@ class RefgetDBAgent(object):
     def calc_similarities(self, digestA, digestB):
         A = self.seqcol.get(digestA, return_format="level2")
         B = self.seqcol.get(digestB, return_format="level2")
-        return calc_jaccard_similarities(A,B)
+        return calc_jaccard_similarities(A, B)
 
     # def calc_similarities_seqcol_dict(self, seqcolA, seqcolB):
     #     A = SequenceCollection.from_dict(seqcolA, self.inherent_attrs).level2()
@@ -586,7 +586,7 @@ class RefgetDBAgent(object):
 
     def calc_similarities_seqcol_dict_and_digest(self, seqcolA, seqcolB_digest):
         seqcolB = self.seqcol.get(seqcolB_digest, return_format="level2")
-        return calc_jaccard_similarities(seqcolA,seqcolB)
+        return calc_jaccard_similarities(seqcolA, seqcolB)
 
     def compare_1_digest(self, digestA, seqcolB):
         A = self.seqcol.get(digestA, return_format="level2")

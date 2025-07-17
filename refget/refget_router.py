@@ -191,11 +191,10 @@ async def compare_2_digests(
     tags=["Comparing sequence collections"],
 )
 async def calc_similarities(
-
-        collection_digest: str ,
-        page_size: int = 50,
-        page: int = 0,
-        dbagent=Depends(get_dbagent),
+    collection_digest: str,
+    page_size: int = 50,
+    page: int = 0,
+    dbagent=Depends(get_dbagent),
 ):
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
@@ -205,15 +204,12 @@ async def calc_similarities(
         for seqcol in collections["results"]:
             print(seqcol.digest)
             jaccard_sims = dbagent.calc_similarities(collection_digest, seqcol.digest)
-            similarities.append({
-                "digest": seqcol.digest,
-                "similarities": jaccard_sims
-            })
+            similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
 
         result = {
             "reference_digest": collection_digest,
             "pagination": collections["pagination"],
-            "similarities": similarities
+            "similarities": similarities,
         }
 
     except Exception as e:
@@ -232,10 +228,10 @@ async def calc_similarities(
     tags=["Comparing sequence collections"],
 )
 async def calc_similarities_from_json(
-        seqcolA: dict,
-        page_size: int = 50,
-        page: int = 0,
-        dbagent=Depends(get_dbagent),
+    seqcolA: dict,
+    page_size: int = 50,
+    page: int = 0,
+    dbagent=Depends(get_dbagent),
 ) -> JSONResponse:
     """
     Calculate Jaccard similarities between input sequence collection and all collections in DB.
@@ -252,15 +248,9 @@ async def calc_similarities_from_json(
         for seqcol in collections["results"]:
             print(seqcol.digest)
             jaccard_sims = dbagent.calc_similarities_seqcol_dict_and_digest(seqcolA, seqcol.digest)
-            similarities.append({
-                "digest": seqcol.digest,
-                "similarities": jaccard_sims
-            })
+            similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
 
-        result = {
-            "pagination": collections["pagination"],
-            "similarities": similarities
-        }
+        result = {"pagination": collections["pagination"], "similarities": similarities}
 
     except Exception as e:
         _LOGGER.debug(e)
@@ -270,6 +260,7 @@ async def calc_similarities_from_json(
         )
 
     return JSONResponse(result)
+
 
 @seqcol_router.post(
     "/comparison/{collection_digest1}",
