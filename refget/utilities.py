@@ -224,6 +224,43 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     return return_obj
 
 
+def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
+    """
+    Takes two sequence collections and calculates jaccard similarties for all attributes
+
+    @param A Sequence collection A
+    @param B Sequence collection B
+    @return dict jaccard similarities for all attributes
+    """
+
+    def calc_jaccard_similarity(A_B_intersection, A_B_union):
+        if A_B_union == 0:
+            return 0.0
+        jaccard_similarity = A_B_intersection / A_B_union
+        return jaccard_similarity
+
+    jaccard_similarities = {}
+
+    comparison_dict = compare_seqcols(A, B)
+
+    list_a_keys = list(comparison_dict["array_elements"]["a_and_b"].keys())
+
+    for key in list_a_keys:
+
+        intersection_seqcol = comparison_dict["array_elements"]["a_and_b"].get(key)
+
+        a = comparison_dict["array_elements"]["a"].get(key)
+        b = comparison_dict["array_elements"]["b"].get(key)
+
+        if a and b and intersection_seqcol:
+            union_seqcol = (
+                a + b - intersection_seqcol
+            )  # inclusion-exclusion principal for calculating union
+            jaccard_similarity = calc_jaccard_similarity(intersection_seqcol, union_seqcol)
+            jaccard_similarities.update({key: jaccard_similarity})
+    return jaccard_similarities
+
+
 def _compare_elements(A: list, B: list) -> dict:
     """
     Compare elements between two arrays. Helper function for individual elements used by workhorse compare_seqcols function
