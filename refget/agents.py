@@ -575,6 +575,20 @@ class RefgetDBAgent(object):
         return compare_seqcols(A, B)
 
     def calc_similarities(self, digestA, digestB):
+        """
+        Calculates the Jaccard similarity between two sequence collections.
+
+        This method retrieves two sequence collections using their digests and then
+        computes jaccard simialrties for all attributes.
+
+        Args:
+            digestA (str): The digest (identifier) for the first sequence collection.
+            digestB (str): The digest (identifier) for the second sequence collection.
+
+        Returns:
+            dict: The Jaccard similarity score between the two sequence collections for all present and shared attributes.
+
+        """
         A = self.seqcol.get(digestA, return_format="level2")
         B = self.seqcol.get(digestB, return_format="level2")
         return calc_jaccard_similarities(A, B)
@@ -585,6 +599,20 @@ class RefgetDBAgent(object):
     #     return calc_jaccard_similarities(A,B)
 
     def calc_similarities_seqcol_dict_and_digest(self, seqcolA, seqcolB_digest):
+        """
+        Calculates the Jaccard similarity between two sequence collections.
+
+        This method retrieves one sequence collections using a digests and then
+        computes jaccard simialrties versus another input sequence collection dictionary.
+
+        Args:
+            seqcolA (dict): the first sequence collection in dict format.
+            digestB (str): The digest (identifier) for the second sequence collection.
+
+        Returns:
+            dict: The Jaccard similarity score between the two sequence collections for all present and shared attributes.
+
+        """
         seqcolB = self.seqcol.get(seqcolB_digest, return_format="level2")
         return calc_jaccard_similarities(seqcolA, seqcolB)
 
