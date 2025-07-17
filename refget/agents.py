@@ -579,7 +579,7 @@ class RefgetDBAgent(object):
         Calculates the Jaccard similarity between two sequence collections.
 
         This method retrieves two sequence collections using their digests and then
-        computes jaccard simialrties for all attributes.
+        computes jaccard similarities for all attributes.
 
         Args:
             digestA (str): The digest (identifier) for the first sequence collection.
@@ -603,7 +603,7 @@ class RefgetDBAgent(object):
         Calculates the Jaccard similarity between two sequence collections.
 
         This method retrieves one sequence collections using a digests and then
-        computes jaccard simialrties versus another input sequence collection dictionary.
+        computes jaccard similarities versus another input sequence collection dictionary.
 
         Args:
             seqcolA (dict): the first sequence collection in dict format.
