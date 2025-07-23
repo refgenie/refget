@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 
 from tests.conftest import DEMO_FILES
 
@@ -35,3 +36,9 @@ ATTRIBUTE_LIST_TESTS = [
         f"{API_TEST_DIR}/attribute/cGRM.json",
     )
 ]
+
+@pytest.fixture(scope="session")
+def test_data_root():
+    """Provides the absolute path to the test_fasta directory."""
+    current_dir = Path(__file__).parent.parent
+    return current_dir.parent / "test_fasta"

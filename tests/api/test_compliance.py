@@ -14,8 +14,6 @@ from tests.api.conftest import (
 )
 from tests.conftest import DIGEST_TESTS
 
-demo_root = "/home/nsheff/code/refget/test_fasta" # TODO this shouldn't be hard coded
-demo_root = "/home/drc/GITHUB/refget/test_fasta"
 demo_file = "demo0.fa"
 response_file = "tests/demo0_collection.json"
 
@@ -35,7 +33,7 @@ def read_url(url):
     return yaml.safe_load(data)
 
 
-def check_collection(api_root, demo_file, response_file):
+def check_collection(api_root, demo_file, response_file,data_root):
 
     # Need schema to make sure we eliminate inherent attributes correctly
     # schema_path = "https://schema.databio.org/refget/SeqColArraySetInherent.yaml"
@@ -43,8 +41,8 @@ def check_collection(api_root, demo_file, response_file):
     # inherent_attrs = schema["inherent"]
 
     inherent_attrs = ["names", "sequences"]
-    print(f"Loading fasta file at '{demo_root}/{demo_file}'")
-    digest = refget.fasta_to_digest(f"{demo_root}/{demo_file}", inherent_attrs=inherent_attrs)
+    print(f"Loading fasta file at '{data_root}/{demo_file}'")
+    digest = refget.fasta_to_digest(f"{data_root}/{demo_file}", inherent_attrs=inherent_attrs)
     print(f"Checking digest: {digest}")
     res = requests.get(f"{api_root}/collection/{digest}")
 
@@ -128,9 +126,9 @@ class TestAPI:
     print("Testing Compliance")
 
     @pytest.mark.parametrize("test_values", COLLECTION_TESTS)
-    def test_collection_endpoint(self, api_root, test_values):
+    def test_collection_endpoint(self, api_root, test_values, test_data_root):
         print("Testing collection endpoint")
-        check_collection(api_root, *test_values)
+        check_collection(api_root, *test_values, test_data_root)
 
     @pytest.mark.parametrize("response_file", COMPARISON_TESTS)
     def test_comparison_endpoint(self, api_root, response_file):
