@@ -6,6 +6,7 @@ from typing import Callable, Union
 
 from .const import GTARS_INSTALLED
 
+
 def trunc512_digest(seq, offset=24) -> str:
     """Deprecated GA4GH digest function"""
     digest = hashlib.sha512(seq.encode()).digest()
@@ -32,6 +33,7 @@ def py_md5_digest(seq) -> str:
     """MD5 digest function in Python"""
     return hashlib.md5(seq.encode()).hexdigest()
 
+
 if GTARS_INSTALLED:
 
     from gtars.refget import sha512t24u_digest as gtars_sha512t24u_digest
@@ -56,6 +58,3 @@ else:
 
 DigestFunction = Callable[[Union[str, bytes]], str]
 """ A type alias for a digest function that takes a sequence and returns a digest. """
-
-
-

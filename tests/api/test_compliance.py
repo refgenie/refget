@@ -33,7 +33,7 @@ def read_url(url):
     return yaml.safe_load(data)
 
 
-def check_collection(api_root, demo_file, response_file,data_root):
+def check_collection(api_root, demo_file, response_file, data_root):
 
     # Need schema to make sure we eliminate inherent attributes correctly
     # schema_path = "https://schema.databio.org/refget/SeqColArraySetInherent.yaml"

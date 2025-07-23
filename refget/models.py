@@ -20,12 +20,15 @@ _LOGGER = logging.getLogger(__name__)
 
 
 try:
-    from gtars.refget import ( # Adjust this import path to where your PyO3 module is
+    from gtars.refget import (  # Adjust this import path to where your PyO3 module is
         SequenceCollection as gtarsSequenceCollection,
     )
+
     _RUST_BINDINGS_AVAILABLE = True
 except ImportError as e:
-    _LOGGER.info(f"Could not import gtars python bindings. `from_PySequenceCollection` will not be available.")
+    _LOGGER.info(
+        f"Could not import gtars python bindings. `from_PySequenceCollection` will not be available."
+    )
     _RUST_BINDINGS_AVAILABLE = False
 
 
@@ -248,7 +251,9 @@ class SequenceCollection(SQLModel, table=True):
     )
 
     @classmethod
-    def from_PySequenceCollection(cls, gtars_seq_col: gtarsSequenceCollection) -> "SequenceCollection":
+    def from_PySequenceCollection(
+        cls, gtars_seq_col: gtarsSequenceCollection
+    ) -> "SequenceCollection":
         """
         Given a PySequenceCollection object (from Rust bindings), create a SequenceCollection object.
 
@@ -260,14 +265,14 @@ class SequenceCollection(SQLModel, table=True):
         """
         if not _RUST_BINDINGS_AVAILABLE:
             raise RuntimeError(
-                "Rust sequence collection bindings are not available. Cannot use `from_PySequenceCollection`.")
+                "Rust sequence collection bindings are not available. Cannot use `from_PySequenceCollection`."
+            )
 
         sequences_value = []
         names_value = []
         lengths_value = []
 
         temp_seqcol_dict = {"names": [], "lengths": [], "sequences": []}
-
 
         for record in gtars_seq_col.sequences:
             sequences_value.append(record.metadata.sha512t24u)
@@ -276,39 +281,33 @@ class SequenceCollection(SQLModel, table=True):
 
             temp_seqcol_dict["names"].append(record.metadata.name)
             temp_seqcol_dict["lengths"].append(record.metadata.length)
-            temp_seqcol_dict["sequences"].append(record.metadata.sha512t24u) # Assuming this is the sequence digest
+            temp_seqcol_dict["sequences"].append(
+                record.metadata.sha512t24u
+            )  # Assuming this is the sequence digest
 
         sequences_attr = SequencesAttr(
-            digest=gtars_seq_col.lvl1.sequences_digest,
-            value=sequences_value
+            digest=gtars_seq_col.lvl1.sequences_digest, value=sequences_value
         )
         _LOGGER.debug(f"SequencesAttr: {sequences_attr}")
 
-        names_attr = NamesAttr(
-            digest=gtars_seq_col.lvl1.names_digest,
-            value=names_value
-        )
+        names_attr = NamesAttr(digest=gtars_seq_col.lvl1.names_digest, value=names_value)
         _LOGGER.debug(f"NamesAttr: {names_attr}")
 
         lengths_attr = LengthsAttr(
-            digest=gtars_seq_col.lvl1.lengths_digest, # Use digest from py_seqcol.lvl1
-            value=lengths_value
+            digest=gtars_seq_col.lvl1.lengths_digest,  # Use digest from py_seqcol.lvl1
+            value=lengths_value,
         )
         _LOGGER.debug(f"LengthsAttr: {lengths_attr}")
 
         nlp = build_name_length_pairs(temp_seqcol_dict)
-        nlp_attr = NameLengthPairsAttr(
-            digest=sha512t24u_digest(canonical_str(nlp)),
-            value=nlp
-        )
+        nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
         _LOGGER.debug(f"NameLengthPairsAttr: {nlp_attr}")
 
         sorted_sequences_value = copy(sequences_value)
         sorted_sequences_value.sort()
         sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
         sorted_sequences_attr = SortedSequencesAttr(
-            digest=sorted_sequences_digest,
-            value=sorted_sequences_value
+            digest=sorted_sequences_digest, value=sorted_sequences_value
         )
         _LOGGER.debug(f"SortedSequencesAttr: {sorted_sequences_attr}")
 
@@ -319,10 +318,8 @@ class SequenceCollection(SQLModel, table=True):
         sorted_name_length_pairs_digest = sha512t24u_digest(canonical_str(snlp_digests))
         _LOGGER.debug(f"Sorted Name Length Pairs Digest: {sorted_name_length_pairs_digest}")
 
-
-
         seqcol = SequenceCollection(
-            digest=gtars_seq_col.digest, # Top-level digest from Rust object
+            digest=gtars_seq_col.digest,  # Top-level digest from Rust object
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
@@ -333,7 +330,6 @@ class SequenceCollection(SQLModel, table=True):
 
         _LOGGER.debug(f"Created SequenceCollection from PySequenceCollection: {seqcol}")
         return seqcol
-
 
     def level1(self):
         """

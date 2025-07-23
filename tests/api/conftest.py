@@ -37,6 +37,7 @@ ATTRIBUTE_LIST_TESTS = [
     )
 ]
 
+
 @pytest.fixture(scope="session")
 def test_data_root():
     """Provides the absolute path to the test_fasta directory."""
