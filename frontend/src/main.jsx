@@ -1,5 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { Toaster } from 'react-hot-toast';
+
 import './index.css'
 
 import databio_logo from "./assets/logo_databio_long.svg"
@@ -9,14 +11,20 @@ import { useState } from 'react'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+import 'bootstrap/dist/css/bootstrap.css';
+import 'bootstrap/dist/js/bootstrap.bundle.js';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 import { CollectionView } from './pages/CollectionView.jsx'
 import { PangenomeView } from './pages/PangenomeView.jsx'
 import { AttributeView } from './pages/AttributeView.jsx'
 import { DemoPage } from './pages/DemoPage.jsx'
 import { SCIM } from './pages/SCIM.jsx'
+import { Similarities } from './pages/Similarities.jsx'
 import { HomePage } from './pages/HomePage.jsx'
 import { HPRCGenomes } from './pages/HPRCGenomes.jsx'
 import { HumanReferencesView } from './pages/HumanReferences.jsx'
+
 
 
 import { 
@@ -24,7 +32,7 @@ import {
   fetchPangenomeLevels,
   fetchSeqColList,
   fetchCollectionLevels,
-  fecthComparison,
+  fetchComparison,
   fetchAttribute
 } from './services/fetchData.jsx'
 
@@ -83,13 +91,14 @@ const Nav = () => {
 
         <div className="collapse navbar-collapse me-auto" id="navbarSupportedContent">
           <ul className="navbar-nav ms-auto mb-2 mb-sm-0">        
-              <li className="nav-item mx-2 my-0 h5"><a href="/" className="nav-link">Home</a></li>
-              <li className="nav-item mx-2 my-0 h5"><a href="/scim" className="nav-link">SCIM</a></li>
-              <li className="nav-item mx-2 my-0 h5"><a href={`${API_BASE}/docs`} className="nav-link">API Docs</a></li>
+              <li className="nav-item mx-2 my-0 h6"><a href="/" className="nav-link">Home</a></li>
+              <li className="nav-item mx-2 my-0 h6"><a href="/scim" className="nav-link">SCIM</a></li>
+              <li className="nav-item mx-2 my-0 h6"><a href="/similarities" className="nav-link">Similarities</a></li>
+              <li className="nav-item mx-2 my-0 h6"><a href={`${API_BASE}/docs`} className="nav-link">API</a></li>
             
-              <li className="nav-item mx-2 my-0 h5"><a href="https://github.com/refgenie/refget" className="nav-link">GitHub</a></li>
+              <li className="nav-item mx-2 my-0 h6"><a href="https://github.com/refgenie/refget" className="nav-link">GitHub</a></li>
             
-              <li className="nav-item mx-2 my-0 h5"><a href="https://ga4gh.github.io/refget/" className="nav-link">Spec</a></li>
+              <li className="nav-item mx-2 my-0 h6"><a href="https://ga4gh.github.io/refget/" className="nav-link">Specification</a></li>
             
           </ul>
         </div>
@@ -193,11 +202,16 @@ const router = createBrowserRouter([
         element: <SCIM/>,
       },
       {
+        path : "/similarities",
+        element: <Similarities/>,
+        loader: fetchSeqColList
+      },
+      {
         path: "/scim/:digest1/:digest2",
         element: <SCIM/>,
         loader: (request) => {
           console.log("params", request.params)
-          return fecthComparison(request.params.digest1, request.params.digest2)
+          return fetchComparison(request.params.digest1, request.params.digest2)
         }
       },
       {
@@ -230,6 +244,7 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <Toaster position='top-right'/>
     <RouterProvider router={router} />
   </React.StrictMode>,
 )

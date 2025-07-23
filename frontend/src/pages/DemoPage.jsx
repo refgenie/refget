@@ -11,10 +11,10 @@ function DemoPage() {
       swap_wo_coords_collection: "aVzHaGFlUDUNF2IEmNdzS_A8lCY0stQH",
     }
   
-  return <div>
-    <h2>Demo sequence collection comparisons</h2>
-      The server loads several demo FASTA files that showcase different comparisons.
-      <table>
+  return <div className='home'>
+    <h4 className='fw-light'>Demo Sequence Collection Comparisons</h4>
+      <p className='text-muted mt-3'>The server loads several demo FASTA files that showcase different comparisons.</p>
+      <table className='mt-4'>
         <thead>
           <tr>
             <th>collection name</th>

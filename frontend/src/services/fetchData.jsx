@@ -55,7 +55,7 @@ export const fetchCollectionLevels = async (digest) => {
     return responses;
 };
 
-export const fecthComparison = async (digest1, digest2) => {
+export const fetchComparison = async (digest1, digest2) => {
     const url = `${API_BASE}/comparison/${digest1}/${digest2}`
     return fetch(url).then((response) => response.json())
 }
@@ -68,4 +68,25 @@ export const fetchAttribute = async (attribute, digest) => {
         fetch(url2).then((response) => response.json())
     ]
     return Promise.all(resps)
+}
+
+export const fetchSimilarities = async (digest) => {
+    const url = `${API_BASE}/similarities/${digest}`
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json'
+        }
+    }).then((response) => response.json())
+}
+
+export const fetchSimilaritiesJSON = async (data) => {
+   const url = `${API_BASE}/similarities/`
+   return fetch(url, {
+       method: 'POST',
+       headers: {
+           'Content-Type': 'application/json'
+       },
+       body: JSON.stringify(data)
+   }).then((response) => response.json())
 }

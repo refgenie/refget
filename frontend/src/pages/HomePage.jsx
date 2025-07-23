@@ -24,24 +24,21 @@ const HomePage = () => {
     }
   
     return (
-      <div>
+      <div className='home'>
 
-        <div className="d-flex justify-content-end float-end">
+        <div className="d-flex justify-content-end float-end ms-3">
           <div className="card">
-            <div className="card-body">
+            <div className="card-body tiny">
               This server is hosting <b>{collections?.pagination?.total ?? 0}</b> collections.
             </div>
           </div>
         </div>
-
 
         <p>Welcome to the Refget Sequence Collections demo service!
           This landing page provides a way to explore the data in the server.
           You can go straight to the API itself using the <b>API Docs</b> link in the title bar.
           Or, you can check out a few examples below. Here are some ways to browse:
         </p>
-
-  
 
         <h5>1. View and compare the demo sequence collections:</h5>
         <p className="text-muted fs-6">

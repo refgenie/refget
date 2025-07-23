@@ -54,8 +54,8 @@ const SCIM = () => {
 
   return (
     <div>
-      <h2>Seqcol Comparison Interpretation Module (SCIM)</h2>
-        <p>This tool runs a local interpretation of the output of a sequence collection comparison. Paste the output of `/comparison` here:</p>
+      <h4 className='fw-light'>Seqcol Comparison Interpretation Module (SCIM)</h4>
+        <p className='mt-3 mb-1'>This tool runs a local interpretation of the output of a sequence collection comparison. Paste the output of `/comparison` here:</p>
       <textarea
         value={comparisonStr}
         onChange={handleComparisonChange}
@@ -68,14 +68,14 @@ const SCIM = () => {
       > Submit </button>
 
       <button onClick={clearComparison} 
-        className="btn btn-primary mt-3 mx-3">Clear</button>
+        className="btn btn-primary mt-3 mx-2">Clear</button>
 
       <Link 
         to={`/scim?val=eyJkaWdlc3RzIjp7ImEiOiJYWmxyY0VHaTZtbG9wWjJ1RDhPYkhrUUIxZDBvRHdLayIsImIiOiJRdlQ1dEFRMEI4Vmt4ZC1xRmZ0bHpFazJReWZQdGdPdiJ9LCJhdHRyaWJ1dGVzIjp7ImFfb25seSI6W10sImJfb25seSI6W10sImFfYW5kX2IiOlsibGVuZ3RocyIsIm5hbWVfbGVuZ3RoX3BhaXJzIiwibmFtZXMiLCJzZXF1ZW5jZXMiLCJzb3J0ZWRfc2VxdWVuY2VzIl19LCJhcnJheV9lbGVtZW50cyI6eyJhIjp7Imxlbmd0aHMiOjMsIm5hbWVfbGVuZ3RoX3BhaXJzIjozLCJuYW1lcyI6Mywic2VxdWVuY2VzIjozLCJzb3J0ZWRfc2VxdWVuY2VzIjozfSwiYiI6eyJsZW5ndGhzIjozLCJuYW1lX2xlbmd0aF9wYWlycyI6MywibmFtZXMiOjMsInNlcXVlbmNlcyI6Mywic29ydGVkX3NlcXVlbmNlcyI6M30sImFfYW5kX2IiOnsibGVuZ3RocyI6MywibmFtZV9sZW5ndGhfcGFpcnMiOjAsIm5hbWVzIjowLCJzZXF1ZW5jZXMiOjMsInNvcnRlZF9zZXF1ZW5jZXMiOjN9LCJhX2FuZF9iX3NhbWVfb3JkZXIiOnsibGVuZ3RocyI6dHJ1ZSwibmFtZV9sZW5ndGhfcGFpcnMiOm51bGwsIm5hbWVzIjpudWxsLCJzZXF1ZW5jZXMiOnRydWUsInNvcnRlZF9zZXF1ZW5jZXMiOnRydWV9fX0=`}
         className="btn btn-primary mt-3">
         Load Example
       </Link>
-      <hr/>
+      {/* <hr/> */}
       {comparison && <ComparisonView paramComparison={comparison} />}
     </div>
   );

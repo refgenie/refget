@@ -1,14 +1,15 @@
+import { useState } from "react";
 import { LinkedCollectionDigest } from "../components/ValuesAndDigests.jsx"
-import { useLoaderData, Link } from "react-router-dom"
+import { useLoaderData, Link, useNavigate } from "react-router-dom"
 import { API_BASE } from "../utilities.jsx"
 
 
 const CoordSystemReport = ({ messageArray }) => {
   return (
     <div className="alert alert-warning">
-      <h3 className="alert-heading">
+      <h4 className="alert-heading fw-light">
         Coordinate System<span 
-          className="ms-2 badge bg-secondary text-white" 
+          className=" badge bg-secondary text-white" 
           data-bs-toggle="tooltip" 
           data-bs-placement="right"
           title="This assessment reports on the compatibility of the names and lengths of the sequences, without regard to sequence content."
@@ -16,7 +17,7 @@ const CoordSystemReport = ({ messageArray }) => {
         >
           ?
         </span>
-      </h3>
+      </h4>
       <hr />
       <ul>{messageArray.map((msg, index) => (<li key={index}>{msg}</li>))}</ul>
     </div>
@@ -26,7 +27,7 @@ const CoordSystemReport = ({ messageArray }) => {
 const SequencesReport = ({messageArray}) => {
   return (
     <div className="alert alert-warning">
-      <h3 className="alert-heading">
+      <h5 className="alert-heading fw-light">
         Sequences<span 
           className="ms-2 badge bg-secondary text-white" 
           data-bs-toggle="tooltip" 
@@ -36,7 +37,7 @@ const SequencesReport = ({messageArray}) => {
         >
           ?
         </span>
-      </h3>
+      </h5>
       <hr />
       <ul>{messageArray.map((msg, index) => (<li key={index}>{msg}</li>))}</ul>
     </div>
@@ -80,31 +81,43 @@ const coordinateSystemInterpretation = (comparison) => {
 }
 
 const LinkToLocalComparison = ({ comparison }) => {
+  const [copied, setCopied] = useState(false);
   const base64encodedComparison = btoa(JSON.stringify(comparison));
   return (
-    <span>Local link: <a 
-      href={`/scim?val=${base64encodedComparison}`} 
-      title="View this comparison in SCIM"
-      className="text-decoration-none"
-      >
-      <i className="bi bi-search"> Interpret in SCIM</i>
-    </a></span>
+    <button 
+      className='btn btn-secondary btn-sm'
+      onClick={() => {
+        navigator.clipboard.writeText(`${window.location.origin}/scim?val=${base64encodedComparison}`);
+        setCopied(true);
+        setTimeout(() => {
+          setCopied(false);
+        }, 2000);s
+      }}
+    >
+      {copied ? (
+        <><i className='bi bi-check me-2' />Copied!</>
+      ) : (
+        <><i className='bi bi-clipboard-fill me-2' />Result URL</>
+      )}
+    </button>
   );
 }
 
 
 const ComparisonView =({ paramComparison }) => { 
-    const loaderData = useLoaderData()
-    const comparison = paramComparison || loaderData
-    console.log("ComparisonView", comparison)
-    const comp_str = JSON.stringify(comparison, null, 2)
-    
-    let api_url = `${API_BASE}/comparison/${comparison.digests.a}/${comparison.digests.b}`
+  const loaderData = useLoaderData()
+  const comparison = paramComparison || loaderData
+  console.log("ComparisonView", comparison)
+  const comp_str = JSON.stringify(comparison, null, 2)
+  
+  let api_url = `${API_BASE}/comparison/${comparison.digests.a}/${comparison.digests.b}`
 
-    // Do some analysis for interpretation
+  // Do some analysis for interpretation
 
 // ✅❔❌
   const getInterpretation = (comparison, attribute) => {
+    const navigate = useNavigate();
+
     const nSequencesA = comparison.array_elements.a[attribute]
     const nSequencesB = comparison.array_elements.b[attribute]
     const aNotB = comparison.array_elements.a[attribute] - comparison.array_elements.a_and_b[attribute]
@@ -152,20 +165,25 @@ const ComparisonView =({ paramComparison }) => {
   const coordSystemMessages = coordinateSystemInterpretation(comparison)
 
     return (
-      <div>
-        <h2>Comparison</h2>
-        <LinkToLocalComparison comparison={comparison} />
-        <h3>Collections being compared</h3>
-        <div className="d-flex">
-          <label className="col-sm-3 d-flex fw-bold justify-content-end px-4">Digest A:</label>
-          <LinkedCollectionDigest digest={comparison.digests.a}/>
-          </div>
-        <div className="d-flex">
-          <label className="col-sm-3 d-flex fw-bold justify-content-end px-4">Digest B:</label>
-          <LinkedCollectionDigest digest={comparison.digests.b}/>
+      <div className='mt-5'>
+        <div className='d-flex justify-content-between align-items-center'>
+          <h4 className='fw-light'>Comparison Results</h4>
+          <LinkToLocalComparison comparison={comparison} />
         </div>
 
-        <h2>Interpretation Summary</h2>        
+        <h6 className='fw-semibold mt-3'>Collections being compared:</h6>
+        <div className="d-flex justify-content-evenly">
+          <div className="d-inline">
+            <label className="fw-medium d-inline-block">Digest A:</label>
+            <LinkedCollectionDigest digest={comparison.digests.a}/>
+          </div>
+          <div className="d-inline">
+            <label className="fw-medium d-inline-block">Digest B:</label>
+            <LinkedCollectionDigest digest={comparison.digests.b}/>
+          </div>
+        </div>
+
+        <h4 className='fw-light mt-4'>Interpretation Summary</h4>        
             <div className="container-fluid">
               <div className="row">
                 <div className="col-md-6">
@@ -177,46 +195,52 @@ const ComparisonView =({ paramComparison }) => {
               </div>
             </div>
 
-        <h2>Details</h2>
-        <h3>Attributes</h3>
+        <h4 className='fw-light mt-3'>Details</h4>
+
+        <h6 className='fw-semibold mt-3'>Attributes:</h6>
         <div className="d-flex">
-        <label className="col-sm-3 d-flex fw-bold justify-content-end px-4">Found in collection A only:</label>
-        {comparison.attributes.a_only != "" ? comparison.attributes.a_only.join(', ') : <span className='text-muted'>None</span>}
+          <label className="col-sm-3 d-flex justify-content-end px-4 fw-medium">Found in collection A only:</label>
+          {comparison.attributes.a_only != "" ? comparison.attributes.a_only.join(', ') : <span className='text-muted'>None</span>}
         </div>
         <div className="d-flex">
-        <label className="col-sm-3 d-flex fw-bold justify-content-end px-4">Found in collection B only:</label>
-        {comparison.attributes.b_only != "" ? comparison.attributes.b_only.join(', ') : <span className='text-muted'>None</span>}
+          <label className="col-sm-3 d-flex justify-content-end px-4 fw-medium">Found in collection B only:</label>
+          {comparison.attributes.b_only != "" ? comparison.attributes.b_only.join(', ') : <span className='text-muted'>None</span>}
         </div>
-        <div className="d-flex">
-        <label className="col-sm-3 d-flex fw-bold justify-content-end px-4">Found in both:</label>
-        {comparison.attributes.a_and_b != "" ? comparison.attributes.a_and_b.join(', ') : <span className='text-muted'>None</span>}
+        <div className="d-flex mb-3">
+          <label className="col-sm-3 d-flex justify-content-end px-4 fw-medium">Found in both:</label>
+          {comparison.attributes.a_and_b != "" ? comparison.attributes.a_and_b.join(', ') : <span className='text-muted'>None</span>}
         </div>
         
-        <h3>Array Elements</h3>
+        <h6 className='fw-semibold mt-2'>Array Elements <span className='fw-normal'>(number of elements found in both)</span>:</h6>
         <div className="row mb-3">
-        <label className="col-sm-4 fw-bold">Number of elements found in both:</label>
         {Object.entries(comparison.array_elements.a_and_b).map(([key, value]) => (
           <div className="d-flex"  key={key}>
-            <label className="col-sm-3 d-flex justify-content-end px-4">{key}:</label>{value}
+            <label className="col-sm-3 d-flex justify-content-end px-4 fw-medium">{key}:</label>{value}
           </div>
         ))}
         </div>
 
-        <h3>Sequence order check</h3>
+        <h6 className='fw-semibold mt-2'>Sequence Order Check <span className='fw-normal'>(are the elements in matching order?)</span>:</h6>
         <div className="row mb-3">
-        <label className="col-sm-4 fw-bold">Are the elements in matching order?:</label>
         {Object.entries(comparison.array_elements.a_and_b_same_order).map(([key, value]) => (
           <div className="d-flex"  key={key}>
-            <label className="col-sm-3 d-flex justify-content-end px-4">{key}:</label>{value !== null ? value.toString() : 'null'}
+            <label className="col-sm-3 d-flex justify-content-end px-4 fw-medium">{key}:</label>{value !== null ? value.toString() : 'null'}
           </div>
-        ))
-        
-        
-        }
+        ))}
         </div>
 
-        <h2>Raw view:</h2>
-        API URL: <Link to={api_url}>{api_url}</Link><br/>
+        <div className='d-flex justify-content-between align-items-center'>
+          <h4 className='fw-light mt-3'>Raw View</h4>
+          <a 
+            className='btn btn-secondary btn-sm' 
+            href={api_url} 
+            target='_blank' 
+            rel='noopener noreferrer'
+          >
+            <i className='bi bi-box-arrow-up-right me-2' />API
+          </a>
+        </div>
+        
         <pre className="card card-body bg-light">
         {comp_str}
         </pre>

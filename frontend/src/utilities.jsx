@@ -11,11 +11,14 @@ const copyToClipboard = async (text) => {
     return await navigator.clipboard.writeText(text)
 }
   
-  
+const snakeToTitle = str => str
+  .replace(/_/g, ' ')
+  .replace(/\b\w/g, char => char.toUpperCase());
 
 export { 
     API_BASE,
     barcodeIcon,
     copyToClipboard,
-    copyToClipboardIcon
+    copyToClipboardIcon,
+    snakeToTitle
 }
