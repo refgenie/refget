@@ -3,7 +3,7 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 try:
-    from gtars import ( # Adjust this import path to where your PyO3 module is
+    from gtars.refget import ( # Adjust this import path to where your PyO3 module is
         SequenceCollection,
 
     )
@@ -18,4 +18,4 @@ except ImportError as e:
 class TestRustPySequenceCollection:
     def test_pysequencecollection(self):
         assert True
-        #assert _RUST_BINDINGS_AVAILABLE
+        assert _RUST_BINDINGS_AVAILABLE
