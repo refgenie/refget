@@ -129,9 +129,9 @@ def fasta_to_seqcol_dict(
         "sorted_sequences": [],
     }
     for s in fasta_seq_digests:
-        seq_name = s.id
-        seq_length = s.length
-        seq_digest = "SQ." + s.sha512t24u
+        seq_name = s.metadata.name
+        seq_length = s.metadata.length
+        seq_digest = "SQ." + s.metadata.sha512t24u
         nlp = {"length": seq_length, "name": seq_name}  # for name_length_pairs
         # snlp_digest = digest_function(canonical_str(nlp)) # for sorted_name_length_pairs
         snlp_digest = canonical_str(nlp)  # for sorted_name_length_pairs

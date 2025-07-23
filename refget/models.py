@@ -15,7 +15,22 @@ from .utilities import (
     level1_dict_to_seqcol_digest,
 )
 
+
 _LOGGER = logging.getLogger(__name__)
+
+
+# try:
+#     from gtars import ( # Adjust this import path to where your PyO3 module is
+#         PySequenceCollection,
+#         # PySequenceRecord,
+#         # PySequenceMetadata,
+#         # PyAlphabetType,
+#         # PySeqColDigestLvl1,
+#     )
+#     _RUST_BINDINGS_AVAILABLE = True
+# except ImportError as e:
+#     _LOGGER.info(f"Could not import gtars python bindings. `from_PySequenceCollection` will not be available.")
+#     _RUST_BINDINGS_AVAILABLE = False
 
 
 class Sequence(SQLModel, table=True):

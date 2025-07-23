@@ -14,7 +14,8 @@ from tests.api.conftest import (
 )
 from tests.conftest import DIGEST_TESTS
 
-demo_root = "/home/nsheff/code/refget/test_fasta"
+demo_root = "/home/nsheff/code/refget/test_fasta" # TODO this shouldn't be hard coded
+demo_root = "/home/drc/GITHUB/refget/test_fasta"
 demo_file = "demo0.fa"
 response_file = "tests/demo0_collection.json"
 
