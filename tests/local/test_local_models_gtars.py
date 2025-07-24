@@ -3,11 +3,11 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 from pathlib import Path
-from refget import fasta_to_seqcol_dict
+
 from refget.models import SequenceCollection as pythonSequenceCollection
 
 try:
-    from gtars.refget import (  # Adjust this import path to where your PyO3 module is
+    from gtars.refget import (
         SequenceCollection as gtarsSequenceCollection,
         digest_fasta,
     )
