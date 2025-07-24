@@ -36,3 +36,8 @@ class TestRustPySequenceCollection:
         assert (
             bridged_seq_col.digest == python_seq_col.digest == gtars_digested_seq_col.digest
         ), "Top-level digest mismatch!"
+
+        assert bridged_seq_col.sequences.digest == python_seq_col.sequences.digest
+        # assert bridged_seq_col.sequences.value == python_seq_col.sequences.value
+        # assert bridged_seq_col.sequences == python_seq_col.sequences
+        assert bridged_seq_col.lengths == python_seq_col.lengths
