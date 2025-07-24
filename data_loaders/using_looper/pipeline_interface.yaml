@@ -1,0 +1,4 @@
+pipeline_name: seqcol_adding_references
+sample_interface:
+  command_template: > 
+    python3 add_single_ref_via_looper.py {sample.fasta}

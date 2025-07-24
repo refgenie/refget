@@ -1,0 +1,4 @@
+pep_config: donaldcampbelljr/human_mouse_fasta_brickyard:default
+output_dir: ${RESULTS}
+pipeline_interfaces:
+  - pipeline_interface.yaml

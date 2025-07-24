@@ -42,4 +42,4 @@ class TestRustDigest:
         res_str = fasta_to_seq_digests("test_fasta/base.fa")
 
         for i in range(len(res_path)):
-            assert res_path[i].sha512t24u == res_str[i].sha512t24u
+            assert res_path[i].metadata.sha512t24u == res_str[i].metadata.sha512t24u
