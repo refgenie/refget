@@ -38,6 +38,14 @@ class TestRustPySequenceCollection:
         ), "Top-level digest mismatch!"
 
         assert bridged_seq_col.sequences.digest == python_seq_col.sequences.digest
-        # assert bridged_seq_col.sequences.value == python_seq_col.sequences.value
-        # assert bridged_seq_col.sequences == python_seq_col.sequences
+        assert bridged_seq_col.sequences.value == python_seq_col.sequences.value
+        assert bridged_seq_col.sequences == python_seq_col.sequences
         assert bridged_seq_col.lengths == python_seq_col.lengths
+        assert bridged_seq_col.names == python_seq_col.names
+        assert bridged_seq_col.sorted_sequences == python_seq_col.sorted_sequences
+        assert bridged_seq_col.sorted_sequences_digest == python_seq_col.sorted_sequences_digest
+        assert bridged_seq_col.name_length_pairs == python_seq_col.name_length_pairs
+        assert (
+            bridged_seq_col.sorted_name_length_pairs_digest
+            == python_seq_col.sorted_name_length_pairs_digest
+        )

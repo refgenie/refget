@@ -275,15 +275,13 @@ class SequenceCollection(SQLModel, table=True):
         temp_seqcol_dict = {"names": [], "lengths": [], "sequences": []}
 
         for record in gtars_seq_col.sequences:
-            sequences_value.append(record.metadata.sha512t24u)
+            sequences_value.append("SQ." + record.metadata.sha512t24u)
             names_value.append(record.metadata.name)
             lengths_value.append(record.metadata.length)
 
             temp_seqcol_dict["names"].append(record.metadata.name)
             temp_seqcol_dict["lengths"].append(record.metadata.length)
-            temp_seqcol_dict["sequences"].append(
-                record.metadata.sha512t24u
-            )  # Assuming this is the sequence digest
+            temp_seqcol_dict["sequences"].append(record.metadata.sha512t24u)
 
         sequences_attr = SequencesAttr(
             digest=gtars_seq_col.lvl1.sequences_digest, value=sequences_value
@@ -294,7 +292,7 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"NamesAttr: {names_attr}")
 
         lengths_attr = LengthsAttr(
-            digest=gtars_seq_col.lvl1.lengths_digest,  # Use digest from py_seqcol.lvl1
+            digest=gtars_seq_col.lvl1.lengths_digest,
             value=lengths_value,
         )
         _LOGGER.debug(f"LengthsAttr: {lengths_attr}")
@@ -319,7 +317,7 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"Sorted Name Length Pairs Digest: {sorted_name_length_pairs_digest}")
 
         seqcol = SequenceCollection(
-            digest=gtars_seq_col.digest,  # Top-level digest from Rust object
+            digest=gtars_seq_col.digest,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
