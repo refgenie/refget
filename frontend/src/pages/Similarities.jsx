@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 
 import { fetchSimilarities, fetchSimilaritiesJSON } from '../services/fetchData.jsx'
 import { HeatmapPlot } from '../components/HeatmapPlot.jsx'
-import { ScatterPlot } from '../components/ScatterPlot.jsx'
+import { StripPlot } from '../components/StripPlot.jsx'
 import { NetworkGraph } from '../components/NetworkGraph.jsx';
 
 
@@ -14,17 +14,20 @@ const Similarities = () => {
   const loaderData = useLoaderData()
   const collections = loaderData[0]
 
-  const [selectedCollectionsIndex, setSelectedCollectionsIndex] = useState(new Array(collections.results.length).fill(true));
+  const [selectedCollectionsIndex, setSelectedCollectionsIndex] = useState(collections.results.map((_, index) => index === 0));
   const [customCollections, setCustomCollections] = useState([]);
   const allCollections = [...collections.results, ...customCollections.map(c => c.selectedDigest)];
 
   const [customCollectionName, setCustomCollectionName] = useState('');
   const [customCollectionJSON, setCustomCollectionJSON] = useState('');
+  const [customCount, setCustomCount] = useState(1);
+
   const [similarities, setSimilarities] = useState(null);
+
+  const [stripJitter, setStripJitter] = useState('none');
   const [heatmapMetric, setHeatmapMetric] = useState('sequences');
   const [networkMetric, setNetworkMetric] = useState('sequences');
-  const [networkThreshold, setNetworkThreshold] = useState(0.50);
-  const [customCount, setCustomCount] = useState(1);
+  const [networkThreshold, setNetworkThreshold] = useState(0.80);
 
   const selectedCollections = allCollections.filter((_, index) => selectedCollectionsIndex[index])
 
@@ -215,8 +218,17 @@ const Similarities = () => {
       {similarities ? (
         <div className='row'>
           <div className='col-12'>
-
             <div className='d-flex align-items-end justify-content-between mt-4 mb-2'>
+              <h5 className='fw-light'>Strip Plot</h5>
+              <select className='form-select form-select-sm w-25' aria-label='strip-jitter' value={stripJitter} onChange={e => setStripJitter(e.target.value)}>
+                <option value='none'>Stacked Points</option>
+                <option value='uniform'>Uniformly Distributed Points</option>
+                <option value='normal'>Normally Distributed Points</option>
+              </select>
+            </div>
+            <StripPlot similarities={similarities} jitter={stripJitter} />
+
+            <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
               <h5 className='fw-light'>Heatmap</h5>
               <select className='form-select form-select-sm w-25' aria-label='heatmap-select' value={heatmapMetric} onChange={e => setHeatmapMetric(e.target.value)}>
                 <option value='lengths'>Lengths</option>
@@ -227,9 +239,6 @@ const Similarities = () => {
               </select>
             </div>
             <HeatmapPlot similarities={similarities} metric={heatmapMetric} />
-
-            {/* <h5 className='fw-light mt-4'>Scatterplot</h5>
-            <ScatterPlot similarities={similarities} /> */}
 
             <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
               <h5 className='fw-light'>Network Graph</h5>
@@ -299,7 +308,7 @@ const Similarities = () => {
           </div>
         </div>
       ) : (
-        <p className='mt-4'>Loading...</p>
+        selectedCollections.length > 0 ? (<p className='mt-4'>Loading...</p>) : (<br />)
       )}
     </>
   );

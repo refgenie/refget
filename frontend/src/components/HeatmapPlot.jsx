@@ -27,7 +27,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
           sort: null,
           axis: {
             labelAngle: -33,
-            labelLimit: 100,
+            labelLimit: 111,
             domain: false
           }
         },
@@ -38,7 +38,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
           sort: null,
           axis: {
             labelAngle: -33,
-            labelLimit: 100,
+            labelLimit: 111,
             domain: false
           }
         },

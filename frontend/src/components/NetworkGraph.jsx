@@ -57,35 +57,32 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
       .style('fill', 'url(#background-gradient)')
       .style('pointer-events', 'none');
 
-    // Filter similarities by threshold and exclude self-connections
-    const filteredSimilarities = similarities.filter(d => 
-      d[metric] !== null && d[metric] !== undefined && d[metric] >= threshold &&
-      d.selectedDigest !== d.comparedDigest // Exclude self-connections
-    );
-    if (filteredSimilarities.length === 0) {
-      // Draw empty state
+    // Get ALL unique nodes from the similarities data (not just filtered ones)
+    const allNodeSet = new Set();
+    similarities.forEach(d => {
+      if (d.selectedDigest !== d.comparedDigest) { // Still exclude self-connections
+        allNodeSet.add(d.selectedDigest);
+        allNodeSet.add(d.comparedDigest);
+      }
+    });
+    const allNodes = Array.from(allNodeSet);
+
+    // If no nodes at all, show empty state
+    if (allNodes.length === 0) {
       container.append('text')
         .attr('x', width/2)
         .attr('y', height/2)
         .attr('text-anchor', 'middle')
         .style('font-size', '16px')
         .style('fill', '#666')
-        .text('No connections meet the threshold');
+        .text('No data available');
       return;
     }
 
-    // Get unique nodes from filtered data
-    const nodeSet = new Set();
-    filteredSimilarities.forEach(d => {
-      nodeSet.add(d.selectedDigest);
-      nodeSet.add(d.comparedDigest);
-    });
-    const nodes = Array.from(nodeSet);
-
-    // Position nodes in circle
+    // Position ALL nodes in circle
     const nodePositions = {};
-    nodes.forEach((node, i) => {
-      const angle = (i / nodes.length) * 2 * Math.PI;
+    allNodes.forEach((node, i) => {
+      const angle = (i / allNodes.length) * 2 * Math.PI;
       nodePositions[node] = {
         x: width/2 + Math.cos(angle) * radius,
         y: height/2 + Math.sin(angle) * radius,
@@ -95,9 +92,15 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
       };
     });
 
-    // Count connections from filtered data
+    // Filter similarities by threshold for connections only
+    const filteredSimilarities = similarities.filter(d => 
+      d[metric] !== null && d[metric] !== undefined && d[metric] >= threshold &&
+      d.selectedDigest !== d.comparedDigest // Exclude self-connections
+    );
+
+    // Count connections from filtered data (for styling nodes based on connectivity)
     const connectionCount = {};
-    nodes.forEach(node => connectionCount[node] = 0);
+    allNodes.forEach(node => connectionCount[node] = 0);
     filteredSimilarities.forEach(d => {
       connectionCount[d.selectedDigest]++;
       connectionCount[d.comparedDigest]++;
@@ -118,7 +121,7 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
       .style('z-index', '1000')
       .style('opacity', 0);
 
-    // Draw connections
+    // Draw connections (only those meeting threshold)
     container.selectAll('.connection-line')
       .data(filteredSimilarities)
       .enter().append('path')
@@ -163,7 +166,7 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
         tooltip.transition().duration(500).style('opacity', 0);
       });
 
-    // Draw nodes
+    // Draw ALL nodes (including isolated ones)
     container.selectAll('.digest-point')
       .data(Object.values(nodePositions))
       .enter().append('circle')
@@ -171,27 +174,28 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
       .attr('cx', d => d.x)
       .attr('cy', d => d.y)
       .attr('r', d => 6)
-      .style('fill', 'black')
+      .style('fill', d => connectionCount[d.id] > 0 ? 'black' : '#cccccc') // Gray out isolated nodes
       .style('stroke', 'white')
       .style('stroke-width', 3)
       .style('cursor', 'pointer')
+      .style('opacity', d => connectionCount[d.id] > 0 ? 1.0 : 0.6) // Make isolated nodes more transparent
       .on('mouseover', function(event, d) {
-        // d3.select(this).style('stroke-width', 3);
-        
         tooltip.transition().duration(200).style('opacity', 0.9);
+        const connectionText = connectionCount[d.id] > 0 ? 
+          `<br/><strong>Connections:</strong> ${connectionCount[d.id]}` : 
+          '<br/><em>No connections above threshold</em>';
         tooltip.html(`
           <strong>Digest:</strong><br/>
-          ${d.id}<br/>
+          ${d.id}${connectionText}
         `)
         .style('left', (event.pageX + 10) + 'px')
         .style('top', (event.pageY - 28) + 'px');
       })
       .on('mouseout', function() {
-      //   d3.select(this).style('stroke-width', 2);
         tooltip.transition().duration(500).style('opacity', 0);
       });
 
-    // Add labels
+    // Add labels for ALL nodes
     container.selectAll('.digest-label')
       .data(Object.values(nodePositions))
       .enter().append('text')
@@ -219,8 +223,9 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
       })
       .style('font-size', '10px')
       .style('font-weight', 'bold')
-      .style('fill', '#333')
+      .style('fill', d => connectionCount[d.id] > 0 ? '#333' : '#999') // Gray out labels for isolated nodes
       .style('pointer-events', 'none')
+      .style('opacity', d => connectionCount[d.id] > 0 ? 1.0 : 0.7)
       .text(d => d.shortId);
 
   }, [similarities, metric, tension, threshold]);
