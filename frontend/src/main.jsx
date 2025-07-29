@@ -28,6 +28,7 @@ import {
   fetchServiceInfo,
   fetchPangenomeLevels,
   fetchSeqColList,
+  fetchAllSeqCols,
   fetchCollectionLevels,
   fetchComparison,
   fetchAttribute,
@@ -338,7 +339,7 @@ const router = createBrowserRouter([
       {
         path: '/similarities',
         element: <Similarities />,
-        loader: fetchSeqColList,
+        loader: fetchAllSeqCols,
       },
       {
         path: '/scim/:digest1/:digest2',

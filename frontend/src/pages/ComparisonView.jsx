@@ -291,7 +291,7 @@ const ComparisonView = ({ paramComparison }) => {
       </div>
 
       <div className='d-flex align-items-end justify-content-between home'>
-        <h6 className='fw-semibold mt-4'>Collections being compared:</h6>
+        <h6 className='fw-semibold mt-3'>Selected Collections:</h6>
         <div className='d-inline'>
           <label className='fw-medium d-inline-block'>Digest A:</label>
           <LinkedCollectionDigest digest={comparison.digests.a} />
@@ -322,7 +322,7 @@ const ComparisonView = ({ paramComparison }) => {
         {comparison.attributes.a_only != '' ? (
           comparison.attributes.a_only.join(', ')
         ) : (
-          <span className='text-muted'>None</span>
+          <span className=''>None</span>
         )}
       </div>
       <div className='d-flex'>
@@ -332,7 +332,7 @@ const ComparisonView = ({ paramComparison }) => {
         {comparison.attributes.b_only != '' ? (
           comparison.attributes.b_only.join(', ')
         ) : (
-          <span className='text-muted'>None</span>
+          <span className=''>None</span>
         )}
       </div>
       <div className='d-flex mb-3'>
@@ -342,7 +342,7 @@ const ComparisonView = ({ paramComparison }) => {
         {comparison.attributes.a_and_b != '' ? (
           comparison.attributes.a_and_b.join(', ')
         ) : (
-          <span className='text-muted'>None</span>
+          <span className=''>None</span>
         )}
       </div>
 

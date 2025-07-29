@@ -34,6 +34,12 @@ export const fetchSeqColList = async () => {
   return Promise.all(resps);
 };
 
+export const fetchAllSeqCols = async () => {
+  const url = `${API_BASE}/list/collections?page_size=1000&page=0`;
+  let resps = [fetch(url).then((response) => response.json())];
+  return Promise.all(resps);
+};
+
 export const fetchSeqColDetails = async (
   digest,
   level = '2',

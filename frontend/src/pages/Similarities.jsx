@@ -298,7 +298,35 @@ const Similarities = () => {
                     <span className='fw-bold'>
                       Selected Sequence Collections
                     </span>
-                    <span>({selectedCollections.length} selected)</span>
+                    <button
+                      className='btn btn-outline-dark btn-xs ms-auto'
+                      style={{
+                        pointerEvents: 'none',
+                        borderColor: 'var(--bs-border-color-translucent)',
+                      }}
+                    >
+                      {selectedCollections.length} Selected
+                    </button>
+                    <button
+                      className='btn btn-success btn-xs shadow-sm ms-1'
+                      onClick={() =>
+                        setSelectedCollectionsIndex((prev) =>
+                          prev.map(() => true),
+                        )
+                      }
+                    >
+                      Select All
+                    </button>
+                    <button
+                      className='btn btn-danger btn-xs shadow-sm ms-1'
+                      onClick={() =>
+                        setSelectedCollectionsIndex((prev) =>
+                          prev.map(() => false),
+                        )
+                      }
+                    >
+                      Reset
+                    </button>
                   </div>
                   <ul
                     className='list-group list-group-flush overflow-auto'
@@ -323,7 +351,7 @@ const Similarities = () => {
                                 {collection}
                               </label>
                             </div>
-                            {index >= collections.results.length && (
+                            {index >= collections.results.length ? (
                               <span
                                 className='ms-auto bi bi-trash-fill text-danger cursor-pointer'
                                 onClick={() => {
@@ -338,6 +366,8 @@ const Similarities = () => {
                                   toast.success('Custom collection removed.');
                                 }}
                               />
+                            ) : (
+                              <span className='ms-auto bi bi-cloud text-body-tertiary' />
                             )}
                           </div>
                         </li>
@@ -374,75 +404,83 @@ const Similarities = () => {
             <StripPlot similarities={similarities} jitter={stripJitter} />
 
             {relationship === 'manyToMany' && (
-            <>
-              <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
-                <h5 className='fw-light'>Heatmap</h5>
-                <select
-                  className='form-select form-select-sm w-25'
-                  aria-label='heatmap-select'
-                  value={heatmapMetric}
-                  onChange={(e) => setHeatmapMetric(e.target.value)}
-                >
-                  <option value='lengths'>Lengths</option>
-                  <option value='name_length_pairs'>Name Length Pairs</option>
-                  <option value='names'>Names</option>
-                  <option value='sequences'>Sequences</option>
-                  <option value='sorted_sequences'>Sorted Sequences</option>
-                </select>
-              </div>
-              <HeatmapPlot similarities={similarities} metric={heatmapMetric} />
-
-              <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
-                <h5 className='fw-light'>Network Graph</h5>
-                <div className='input-group input-group-sm ms-auto w-25'>
-                  <span className='input-group-text'>Threshold</span>
-                  <input
-                    type='range'
-                    min='0'
-                    max='1'
-                    step='0.01'
-                    value={networkThreshold}
-                    onChange={(e) =>
-                      setNetworkThreshold(Number(e.target.value))
-                    }
-                    className='form-control form-range'
-                    style={{ height: 'inherit' }}
-                  />
-                  <input
-                    type='number'
-                    min='0'
-                    max='1'
-                    step='0.01'
-                    value={networkThreshold}
-                    onChange={(e) =>
-                      setNetworkThreshold(Number(e.target.value))
-                    }
-                    className='form-control'
-                    style={{ maxWidth: '70px' }}
-                  />
+              <>
+                <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
+                  <h5 className='fw-light'>Heatmap</h5>
+                  <select
+                    className='form-select form-select-sm w-25'
+                    aria-label='heatmap-select'
+                    value={heatmapMetric}
+                    onChange={(e) => setHeatmapMetric(e.target.value)}
+                  >
+                    <option value='lengths'>Lengths</option>
+                    <option value='name_length_pairs'>Name Length Pairs</option>
+                    <option value='names'>Names</option>
+                    <option value='sequences'>Sequences</option>
+                    <option value='sorted_sequences'>Sorted Sequences</option>
+                  </select>
                 </div>
-                <select
-                  className='form-select form-select-sm w-25 ms-2'
-                  aria-label='network-select'
-                  value={networkMetric}
-                  onChange={(e) => setNetworkMetric(e.target.value)}
-                >
-                  <option value='lengths'>Lengths</option>
-                  <option value='name_length_pairs'>Name Length Pairs</option>
-                  <option value='names'>Names</option>
-                  <option value='sequences'>Sequences</option>
-                  <option value='sorted_sequences'>Sorted Sequences</option>
-                </select>
-              </div>
-              <NetworkGraph
-                similarities={similarities}
-                metric={networkMetric}
-                threshold={networkThreshold}
-              />
-            </>
+                <HeatmapPlot
+                  similarities={similarities}
+                  metric={heatmapMetric}
+                />
+
+                <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
+                  <h5 className='fw-light'>Network Graph</h5>
+                  <div className='input-group input-group-sm ms-auto w-25'>
+                    <span className='input-group-text'>Threshold</span>
+                    <input
+                      type='range'
+                      min='0'
+                      max='1'
+                      step='0.01'
+                      value={networkThreshold}
+                      onChange={(e) =>
+                        setNetworkThreshold(Number(e.target.value))
+                      }
+                      className='form-control form-range'
+                      style={{ height: 'inherit' }}
+                    />
+                    <input
+                      type='number'
+                      min='0'
+                      max='1'
+                      step='0.01'
+                      value={networkThreshold}
+                      onChange={(e) =>
+                        setNetworkThreshold(Number(e.target.value))
+                      }
+                      className='form-control'
+                      style={{ maxWidth: '70px' }}
+                    />
+                  </div>
+                  <select
+                    className='form-select form-select-sm w-25 ms-2'
+                    aria-label='network-select'
+                    value={networkMetric}
+                    onChange={(e) => setNetworkMetric(e.target.value)}
+                  >
+                    <option value='lengths'>Lengths</option>
+                    <option value='name_length_pairs'>Name Length Pairs</option>
+                    <option value='names'>Names</option>
+                    <option value='sequences'>Sequences</option>
+                    <option value='sorted_sequences'>Sorted Sequences</option>
+                  </select>
+                </div>
+                <NetworkGraph
+                  similarities={similarities}
+                  metric={networkMetric}
+                  threshold={networkThreshold}
+                />
+              </>
             )}
 
-            <h5 className='fw-light mt-5'>Summary Table</h5>
+            <div className='d-flex align-items-end justify-content-between'>
+              <h5 className='fw-light mt-5'>Summary Table</h5>
+              <p className='mb-2 text-muted'>
+                Click on a row to view a detailed 1-1 comparison in SCIM.
+              </p>
+            </div>
             <div className='rounded shadow-sm border tiny overflow-x-auto'>
               <table className='table table-striped table-hover table-rounded'>
                 <thead>
