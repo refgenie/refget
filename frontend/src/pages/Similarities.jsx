@@ -78,19 +78,22 @@ const Similarities = () => {
   };
 
   const handleRelationshipChange = (newRelationship) => {
-    if (newRelationship !== relationship) {
-      if (
-        newRelationship === 'oneToMany' &&
-        relationship === 'manyToMany' &&
-        customCount > 1
-      ) {
-        setCustomCollections([]);
-        setSelectedCollectionsIndex(collections.results.map(() => false));
-        setCustomCount(1);
-      }
-      setStripJitter('none');
-      setRelationship(newRelationship);
+    if (
+      newRelationship === 'oneToMany' &&
+      relationship === 'manyToMany' &&
+      customCount > 1
+    ) {
+      setCustomCollections([]);
+      setSelectedCollectionsIndex(collections.results.map(() => false));
+      setCustomCount(1);
     }
+    setSelectedCollectionsIndex((prev) =>
+      prev.map((item, index) =>
+        index < collections.results.length ? false : item,
+      ),
+    );
+    setStripJitter('none');
+    setRelationship(newRelationship);
   };
 
   const handleAddCustomCollection = async (data, name) => {
@@ -143,7 +146,6 @@ const Similarities = () => {
             ...prev.slice(0, collections.results.length),
             true,
           ]);
-          setCustomCount(1);
         } else {
           // Add to existing custom collections
           setCustomCollections((prev) => [
@@ -154,9 +156,8 @@ const Similarities = () => {
             },
           ]);
           setSelectedCollectionsIndex((prev) => [...prev, true]);
-          setCustomCount((prev) => prev + 1);
         }
-
+        setCustomCount((prev) => prev + 1);
         toast.success('Collection added.');
       }
     } catch (e) {

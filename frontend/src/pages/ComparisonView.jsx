@@ -8,8 +8,18 @@ const CoordSystemReport = ({ messageArray }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className='card border'>
-      <div className='card-header bg-warning bg-opacity-25 border-bottom'>
+    <div
+      className='card'
+      style={{
+        borderColor: 'var(--bs-border-color-translucent)',
+      }}
+    >
+      <div
+        className='card-header bg-warning bg-opacity-25'
+        style={{
+          borderColor: 'var(--bs-border-color-translucent)',
+        }}
+      >
         <div className='d-flex align-items-center'>
           <span className='fw-medium text-warning-emphasis'>
             Coordinate System
@@ -47,7 +57,7 @@ const CoordSystemReport = ({ messageArray }) => {
         </div>
       </div>
 
-      <div className='card-body bg-warning bg-opacity-10'>
+      <div className='card-body bg-warning bg-opacity-10 rounded-bottom-1'>
         <ul className='mb-0'>
           {messageArray.map((msg, index) => (
             <li key={index}>{msg}</li>
@@ -62,8 +72,18 @@ const SequencesReport = ({ messageArray }) => {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className='card border'>
-      <div className='card-header bg-info bg-opacity-25 border-bottom'>
+    <div
+      className='card'
+      style={{
+        borderColor: 'var(--bs-border-color-translucent)',
+      }}
+    >
+      <div
+        className='card-header bg-info bg-opacity-25'
+        style={{
+          borderColor: 'var(--bs-border-color-translucent)',
+        }}
+      >
         <div className='d-flex align-items-center'>
           <span className='fw-medium text-info-emphasis'>Sequences</span>
           <div className='position-relative'>
@@ -99,7 +119,7 @@ const SequencesReport = ({ messageArray }) => {
         </div>
       </div>
 
-      <div className='card-body bg-info bg-opacity-10'>
+      <div className='card-body bg-info bg-opacity-10 rounded-bottom-1'>
         <ul className='mb-0'>
           {messageArray.map((msg, index) => (
             <li key={index}>{msg}</li>
