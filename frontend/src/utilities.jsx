@@ -15,10 +15,30 @@ const snakeToTitle = str => str
   .replace(/_/g, ' ')
   .replace(/\b\w/g, char => char.toUpperCase());
 
+const encodeComparison = (input) => {
+  let jsonString;
+  
+  if (typeof input === 'string') {
+    try {
+      JSON.parse(input);
+      jsonString = input;
+    } catch (error) {
+      throw new Error('Invalid JSON string provided');
+    }
+  } else if (typeof input === 'object' && input !== null) {
+    jsonString = JSON.stringify(input);
+  } else {
+    throw new Error('Input must be an object or valid JSON string');
+  }
+  
+  return btoa(jsonString);
+};
+
 export { 
     API_BASE,
     barcodeIcon,
     copyToClipboard,
     copyToClipboardIcon,
-    snakeToTitle
+    snakeToTitle,
+    encodeComparison
 }

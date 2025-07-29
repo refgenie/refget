@@ -6,9 +6,8 @@ import './index.css'
 
 import databio_logo from "./assets/logo_databio_long.svg"
 import seqcol_logo from "./assets/seqcol_logo.svg"
-import { useState } from 'react'
 
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import 'bootstrap/dist/css/bootstrap.css';
@@ -47,7 +46,9 @@ import {
   RouterProvider,
   useLoaderData,
   useParams,
-  useRouteError
+  useRouteError,
+  useNavigate,
+  useLocation
 } from "react-router-dom";
 
 
@@ -79,27 +80,45 @@ const Level2Collection = ({collection}) => {
 
 
 const Nav = () => {
+  const navigate = useNavigate();
+  const location = useLocation().pathname.substring(1) || '';
+  console.log(location)
+
   return  (
     <nav className="navbar navbar-expand-lg py-2 mb-4 border-bottom navbar-light" aria-label="navbar">
       <div className="container">
-        <a href="/" className="align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
-        <img src={seqcol_logo} alt="Refget Sequence Collections" height="40"/> Refget Sequence Collections
-        </a>
+        <div 
+          onClick={() => navigate('/')}
+          className="align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none cursor-pointer"
+          role="button"
+        >
+          <img src={seqcol_logo} alt="Refget Sequence Collections" height="40"/> Refget Sequence Collections
+        </div>
+        
         <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
           <span className="navbar-toggler-icon"></span>
         </button>
 
         <div className="collapse navbar-collapse me-auto" id="navbarSupportedContent">
           <ul className="navbar-nav ms-auto mb-2 mb-sm-0">        
-              <li className="nav-item mx-2 my-0 h6"><a href="/" className="nav-link">Home</a></li>
-              <li className="nav-item mx-2 my-0 h6"><a href="/scim" className="nav-link">SCIM</a></li>
-              <li className="nav-item mx-2 my-0 h6"><a href="/similarities" className="nav-link">Similarities</a></li>
-              <li className="nav-item mx-2 my-0 h6"><a href={`${API_BASE}/docs`} className="nav-link">API</a></li>
-            
-              <li className="nav-item mx-2 my-0 h6"><a href="https://github.com/refgenie/refget" className="nav-link">GitHub</a></li>
-            
-              <li className="nav-item mx-2 my-0 h6"><a href="https://ga4gh.github.io/refget/" className="nav-link">Specification</a></li>
-            
+            <li className="nav-item mx-2 my-0 h6">
+              <span onClick={() => navigate('/')} className={`nav-link cursor-pointer ${location === '' && 'fw-semibold text-black'}`}>Home</span>
+            </li>
+            <li className="nav-item mx-2 my-0 h6">
+              <span onClick={() => navigate('/scim')} className={`nav-link cursor-pointer ${location === 'scim' && 'fw-semibold text-black'}`}>SCIM</span>
+            </li>
+            <li className="nav-item mx-2 my-0 h6">
+              <span onClick={() => navigate('/similarities')} className={`nav-link cursor-pointer ${location === 'similarities' && 'fw-semibold text-black'}`}>Similarities</span>
+            </li>
+            <li className="nav-item mx-2 my-0 h6">
+              <a href={`${API_BASE}/docs`} className="nav-link" target="_blank" rel="noopener noreferrer">API</a>
+            </li>
+            <li className="nav-item mx-2 my-0 h6">
+              <a href="https://github.com/refgenie/refget" className="nav-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </li>
+            <li className="nav-item mx-2 my-0 h6">
+              <a href="https://ga4gh.github.io/refget/" className="nav-link" target="_blank" rel="noopener noreferrer">Specification</a>
+            </li>
           </ul>
         </div>
       </div>

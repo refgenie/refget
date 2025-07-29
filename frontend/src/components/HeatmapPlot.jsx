@@ -70,7 +70,10 @@ const HeatmapPlot = ({ similarities, metric }) => {
     if (plotRef.current && similarities && metric) {
       const spec = heatmapSpec(similarities, metric);
       try {
-        embed(plotRef.current, spec, { actions: true })
+        embed(plotRef.current, spec, { actions: true, config: {
+    // Force Vega to use relative URLs for gradients
+    baseURL: ''
+  } })
           .catch(error => {
             console.error('Embed error after parsing:', error);
           });

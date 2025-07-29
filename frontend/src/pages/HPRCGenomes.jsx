@@ -30,15 +30,17 @@ const HPRCGenomes = () => {
 
     }
     let header_row = <tr>{header_cells}</tr>;
-    let table = <table border="0">
+    let table = <div className='rounded shadow-sm border tiny overflow-x-auto mt-3'>
+        <table className='table table-striped table-hover table-rounded'>
         <thead>{header_row}</thead>
-        <tbody>{content_rows}</tbody>
-    </table>;
+         <tbody>{content_rows}</tbody>
+        </table>
+    </div>;
 
 
     return (
-        <div>
-            <h2>Some genomes from the HPRC</h2>
+        <div className='home mb-5'>
+            <h4 className='fw-light'>Some Genomes from the HPRC</h4>
             {table}
         </div>
     )

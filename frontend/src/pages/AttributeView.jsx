@@ -15,9 +15,9 @@ const AttributeView = () => {
     console.log("AttributeView results: " , results)
     
     return (
-      <div>
-        <h2>Attribute: {attribute} </h2> <LinkedAttributeDigest attribute={attribute} digest={digest}/>
-        <p className="text-muted fs-6">
+      <div className="mb-5 home">
+        <h4 className="fw-light">Attribute: {attribute} </h4> <LinkedAttributeDigest attribute={attribute} digest={digest}/>
+        <p className=" mt-3 text-muted">
           The <span className="font-monospace text-success">/attribute</span> endpoint lets you retrieve
           the value of a specific attribute of a sequence collection, given its digest.
         </p>
@@ -32,8 +32,8 @@ const AttributeView = () => {
           <div className="col-md-1 text-secondary">Value:</div>
           <div className="col"><AttributeValue value={attribute_value} /></div>
         </div>
-        <h2 className="mt-4">Containing collections:</h2>
-        <p className="text-muted fs-6">
+        <h5 className="mt-4">Containing collections:</h5>
+        <p className="mt-3 text-muted">
           This uses the <span className="font-monospace text-success">/list/collections</span> endpoint,
           passing the attribute name and digest to discover all collections 
           with the attribute <span className="font-monospace text-success">{attribute}</span> that 

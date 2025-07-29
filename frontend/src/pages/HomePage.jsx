@@ -24,7 +24,7 @@ const HomePage = () => {
     }
   
     return (
-      <div className='home'>
+      <div className='home mb-5'>
 
         <div className="d-flex justify-content-end float-end ms-3">
           <div className="card">

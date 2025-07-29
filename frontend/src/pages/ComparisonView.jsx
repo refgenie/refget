@@ -1,49 +1,103 @@
 import { useState } from "react";
 import { LinkedCollectionDigest } from "../components/ValuesAndDigests.jsx"
-import { useLoaderData, Link, useNavigate } from "react-router-dom"
+import { useLoaderData } from "react-router-dom"
+
 import { API_BASE } from "../utilities.jsx"
 
 
 const CoordSystemReport = ({ messageArray }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
-    <div className="alert alert-warning">
-      <h4 className="alert-heading fw-light">
-        Coordinate System<span 
-          className=" badge bg-secondary text-white" 
-          data-bs-toggle="tooltip" 
-          data-bs-placement="right"
-          title="This assessment reports on the compatibility of the names and lengths of the sequences, without regard to sequence content."
-          style={{ cursor: 'pointer', fontSize: '0.7rem' }}
-        >
-          ?
-        </span>
-      </h4>
-      <hr />
-      <ul>{messageArray.map((msg, index) => (<li key={index}>{msg}</li>))}</ul>
+    <div className="card border">
+      <div className="card-header bg-warning bg-opacity-25 border-bottom">
+        <div className="d-flex align-items-center">
+          <span className='fw-medium text-warning-emphasis'>Coordinate System</span>
+          <div className="position-relative">
+            <span
+              className="ms-2 text-warning-emphasis"
+              style={{ 
+                width: '20px', 
+                height: '20px', 
+                fontSize: '0.7rem', 
+                cursor: 'pointer' 
+              }}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <i className="bi bi-question-circle-fill"></i>
+            </span>
+            {showTooltip && (
+              <div 
+                className="position-absolute bg-dark text-white rounded p-2 shadow-lg"
+                style={{
+                  left: '25px',
+                  top: '0',
+                  width: '250px',
+                  fontSize: '0.75rem',
+                  zIndex: 1050
+                }}
+              >
+                This assessment reports on the compatibility of the names and lengths of the sequences, without regard to sequence content.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="card-body bg-warning bg-opacity-10">
+        <ul className="mb-0">{messageArray.map((msg, index) => (<li key={index}>{msg}</li>))}</ul>
+      </div>
     </div>
   );
 };
 
-const SequencesReport = ({messageArray}) => {
+const SequencesReport = ({ messageArray }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
   return (
-    <div className="alert alert-warning">
-      <h5 className="alert-heading fw-light">
-        Sequences<span 
-          className="ms-2 badge bg-secondary text-white" 
-          data-bs-toggle="tooltip" 
-          data-bs-placement="right"
-          title="This assessment reports on the sequences only, without regard to their names."
-          style={{ cursor: 'pointer', fontSize: '0.7rem' }}
-        >
-          ?
-        </span>
-      </h5>
-      <hr />
-      <ul>{messageArray.map((msg, index) => (<li key={index}>{msg}</li>))}</ul>
+    <div className="card border">
+      <div className="card-header bg-info bg-opacity-25 border-bottom">
+        <div className="d-flex align-items-center">
+          <span className='fw-medium text-info-emphasis'>Sequences</span>
+          <div className="position-relative">
+            <span
+              className="ms-2 text-info-emphasis"
+              style={{ 
+                width: '20px', 
+                height: '20px', 
+                fontSize: '0.7rem', 
+                cursor: 'pointer' 
+              }}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+            >
+              <i className="bi bi-question-circle-fill"></i>
+            </span>
+            {showTooltip && (
+              <div 
+                className="position-absolute bg-dark text-white rounded p-2 shadow-lg"
+                style={{
+                  left: '25px',
+                  top: '0',
+                  width: '250px',
+                  fontSize: '0.75rem',
+                  zIndex: 1050
+                }}
+              >
+                This assessment reports on the sequences only, without regard to their names.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="card-body bg-info bg-opacity-10">
+        <ul className="mb-0">{messageArray.map((msg, index) => (<li key={index}>{msg}</li>))}</ul>
+      </div>
     </div>
   );
 };
-
 
 
 // Component to display the comparison between two collections
@@ -59,6 +113,7 @@ const coordinateSystemInterpretation = (comparison) => {
   // If the name_length_pairs match, then the coordinate systems are identical
   if (nlpANotB === 0 && nlpBNotA === 0) {
     msgArray.push("🟰 The coordinate systems are identical")
+    msgArray.push("✅ Names match. ✅ Lengths match.")
   } else if (nlpANotB === 0 && nlpBNotA > 0) {  // If A nlp is a subset of B
     msgArray.push("Collection A's coordinate system is a subset of B's.")
   } else if (nlpANotB > 0 && nlpBNotA === 0) {  // If B nlp is a subset of A
@@ -116,8 +171,6 @@ const ComparisonView =({ paramComparison }) => {
 
 // ✅❔❌
   const getInterpretation = (comparison, attribute) => {
-    const navigate = useNavigate();
-
     const nSequencesA = comparison.array_elements.a[attribute]
     const nSequencesB = comparison.array_elements.b[attribute]
     const aNotB = comparison.array_elements.a[attribute] - comparison.array_elements.a_and_b[attribute]
@@ -171,8 +224,9 @@ const ComparisonView =({ paramComparison }) => {
           <LinkToLocalComparison comparison={comparison} />
         </div>
 
-        <h6 className='fw-semibold mt-3'>Collections being compared:</h6>
-        <div className="d-flex justify-content-evenly">
+        
+        <div className="d-flex align-items-end justify-content-between home">
+          <h6 className='fw-semibold mt-4'>Collections being compared:</h6>
           <div className="d-inline">
             <label className="fw-medium d-inline-block">Digest A:</label>
             <LinkedCollectionDigest digest={comparison.digests.a}/>
@@ -183,19 +237,17 @@ const ComparisonView =({ paramComparison }) => {
           </div>
         </div>
 
-        <h4 className='fw-light mt-4'>Interpretation Summary</h4>        
-            <div className="container-fluid">
-              <div className="row">
-                <div className="col-md-6">
-                <SequencesReport messageArray={interpretation["sequences"]} />
-                </div>
-                <div className="col-md-6">
-                <CoordSystemReport messageArray={coordSystemMessages}/>
-                </div>
-              </div>
-            </div>
+        <h5 className='mt-4'>Interpretation Summary</h5>        
+        <div className="row">
+          <div className="col-md-6">
+            <SequencesReport messageArray={interpretation["sequences"]} />
+          </div>
+          <div className="col-md-6">
+            <CoordSystemReport messageArray={coordSystemMessages}/>
+          </div>
+        </div>
 
-        <h4 className='fw-light mt-3'>Details</h4>
+        <h5 className='mt-4'>Details</h5>
 
         <h6 className='fw-semibold mt-3'>Attributes:</h6>
         <div className="d-flex">
@@ -230,7 +282,7 @@ const ComparisonView =({ paramComparison }) => {
         </div>
 
         <div className='d-flex justify-content-between align-items-center'>
-          <h4 className='fw-light mt-3'>Raw View</h4>
+          <h5 className='mt-4'>Raw View</h5>
           <a 
             className='btn btn-secondary btn-sm' 
             href={api_url} 

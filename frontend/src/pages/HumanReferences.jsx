@@ -5,9 +5,10 @@ import reference_digests from '../assets/ref_fasta.json'
 
 function HumanReferencesView() {
  
-  return <div>
-    <h2>Human reference genome comparisons</h2>
-      The server hosts several demo common human references from different providers, which you can compare.
+  return <div className='home mb-5'>
+    <h4 className='fw-light'>Human Reference Genome Comparisons</h4>
+    <p className='mt-3 text-muted'>The server hosts several demo common human references from different providers, which you can compare.</p>  
+      
       <table>
         <thead>
           <tr>

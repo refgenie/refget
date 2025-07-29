@@ -49,15 +49,15 @@ const CollectionView = (params) => {
     for ( let attribute in level2) {
       attribute_list_views.push(
       <div key={attribute}>
-      <h5 className="mb-2 mt-3 fw-normal">{attribute}</h5>
-      <div className="row align-items-center">
-        <div className="col-md-1 text-secondary">Digest:</div>
+      <h6 className="mb-2 mt-4 fw-medium">{attribute}</h6>
+      <div className="row align-items-center home">
+        <div className="col-md-1 text-muted">Digest:</div>
         <div className="col">
           <LinkedAttributeDigest attribute={attribute} digest={level1[attribute]}/>
         </div>
       </div>
       <div className="row align-items-center">
-        <div className="col-md-1 text-secondary">Value:</div>
+        <div className="col-md-1 text-muted">Value:</div>
         <div className="col">
           <AttributeValue value={level2[attribute]} />
         </div>
@@ -74,7 +74,7 @@ const CollectionView = (params) => {
           the value of a sequence collection, in various forms, given its digest.
         </p>
         {/* <hr/> */}
-        <h4 className='fw-light mt-4 pt-2'>Attribute View</h4>
+        <h5 className='mt-4 pt-2'>Attribute View</h5>
         <p className="text-muted fs-6">
           Individual attributes have their own digests and values. 
           Click on a digest to see the <span className="font-monospace text-success">/attribute</span> page
@@ -82,7 +82,7 @@ const CollectionView = (params) => {
         </p>
         {attribute_list_views}
         {/* <hr/> */}
-        <h4 className='fw-light mt-4 pt-2'>Raw View</h4>
+        <h5 className='mt-4 pt-2'>Raw View</h5>
         <p className="text-muted fs-6">
           Sequence collections can be retrieved from the API in various forms.
           Choose among views below to see what is returned by the different endpoint options.

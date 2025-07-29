@@ -29,6 +29,80 @@ const StripPlot = ({ similarities, jitter = 'none' }) => {
         }));
     });
 
+    if (jitter === 'bars') {
+      return {
+        $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+        data: {
+          values: transformedData
+        },
+        params: [
+          {
+            name: 'metric_selection',
+            select: {
+              type: 'point',
+              fields: ['metric'],
+            },
+            bind: 'legend'
+          }
+        ],
+        mark: {
+          type: 'bar',
+          tooltip: true
+        },
+        encoding: {
+          x: {
+            field: 'value',
+            type: 'quantitative',
+            title: 'Similarity Score',
+            scale: {domain: [0, 1]}
+          },
+          y: {
+            field: 'comparedDigest',
+            type: 'nominal',
+            title: 'Compared Digest',
+            axis: {
+              labelAngle: -33,
+              labelLimit: 111,
+              grid: false
+            }
+          },
+          yOffset: {
+            field: 'metric',
+            type: 'nominal'
+          },
+          color: {
+            field: 'metric',
+            type: 'nominal',
+            title: 'Metric',
+            legend: {
+              orient: 'right'
+            }
+          },
+          opacity: {
+            condition: [
+              {
+                test: "!length(data('metric_selection_store'))",
+                value: 0.8
+              },
+              {
+                param: 'metric_selection',
+                value: 1
+              }
+            ],
+            value: 0.1
+          },
+          tooltip: [
+            {field: 'selectedDigest', title: 'Selected'},
+            {field: 'comparedDigest', title: 'Compared'},
+            {field: 'metric', title: 'Metric'},
+            {field: 'value', title: 'Value', format: '.3f'},
+          ]
+        },
+        width: 'container',
+        height: 60 * comparedCount
+      };
+    }
+
     return {
       $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
       data: {

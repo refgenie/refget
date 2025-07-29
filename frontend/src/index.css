@@ -127,3 +127,49 @@ table {
 .z-active:active {
   z-index: 999;
 }
+
+.nav-pills .nav-link.active { 
+  background-color: white !important;
+  color: black !important;
+  box-shadow: .5px 1px 7px 1px #00000010 !important;
+}
+
+.nav-pills .nav-item {
+  margin-left: 1px;
+}
+
+.nav-pills .nav-item:first-child {
+  margin-left: 0;
+  margin-right: 0;
+} 
+
+.nav-pills .nav-item:last-child {
+  margin-right: -1.5px;
+} 
+
+.nav-pills .nav-link { 
+  color: #000000aa;
+  padding-left: 0;
+  padding-right: 0;
+  width: calc(100% - 1.5px);
+}
+
+.nav-pills .nav-link:hover {
+  color: black;
+  transition: all 180ms;
+  background-color: #ffffff80;
+}
+
+.nav-tabs .nav-link.active { 
+  color: black !important;
+}
+
+.nav-tabs .nav-link { 
+  color: #000000aa;
+  padding-top: .4;
+  padding-bottom: .4;
+}
+
+.nav-tabs .nav-link:hover {
+  color: black;
+}

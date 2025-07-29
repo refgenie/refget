@@ -35,7 +35,7 @@ const CompareTable = ({seqColDict}) => {
     }
   
     return  <>     
-      <h4 className='fw-light mt-4 pt-2'>Comparison table</h4>
+      <h5 className='mt-4 pt-2'>Comparison table</h5>
       {buildCompareLinks(seqColDigests)}
     </>
   }

@@ -60,6 +60,17 @@ export const fetchComparison = async (digest1, digest2) => {
     return fetch(url).then((response) => response.json())
 }
 
+export const fetchComparisonJSON = async (data, digest) => {
+   const url = `${API_BASE}/comparison/${digest}`
+   return fetch(url, {
+       method: 'POST',
+       headers: {
+           'Content-Type': 'application/json'
+       },
+       body: JSON.stringify(data)
+   }).then((response) => response.json())
+}
+
 export const fetchAttribute = async (attribute, digest) => {
     const url = `${API_BASE}/list/collections/${attribute}/${digest}`
     const url2 = `${API_BASE}/attribute/collection/${attribute}/${digest}`
