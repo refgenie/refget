@@ -3,11 +3,16 @@ import * as d3 from 'd3';
 
 import { snakeToTitle } from '../utilities';
 
-
-const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, threshold = 0.0 }) => {
+const NetworkGraph = ({
+  similarities,
+  metric = 'sequences',
+  tension = 0.1,
+  threshold = 0.0,
+}) => {
   const svgRef = useRef(null);
 
-  const selectedCount = [...new Set(similarities.map(e => e.selectedDigest))].length;
+  const selectedCount = [...new Set(similarities.map((e) => e.selectedDigest))]
+    .length;
 
   const drawNetwork = useCallback(() => {
     if (!svgRef.current || !similarities || similarities.length === 0) return;
@@ -28,29 +33,34 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
 
     // Create radial gradient for background circle
     const defs = svg.append('defs');
-    const gradient = defs.append('radialGradient')
+    const gradient = defs
+      .append('radialGradient')
       .attr('id', 'background-gradient')
       .attr('cx', '50%')
       .attr('cy', '50%')
       .attr('r', '50%');
 
-    gradient.append('stop')
+    gradient
+      .append('stop')
       .attr('offset', '0%')
       .attr('stop-color', '#ffeaa7')
       .attr('stop-opacity', 0.33);
 
-    gradient.append('stop')
+    gradient
+      .append('stop')
       .attr('offset', '67%')
       .attr('stop-color', '#ffeaa7')
       .attr('stop-opacity', 0.11);
 
-    gradient.append('stop')
+    gradient
+      .append('stop')
       .attr('offset', '100%')
       .attr('stop-color', '#ffeaa7')
       .attr('stop-opacity', 0);
 
     // Add background circle
-    container.append('circle')
+    container
+      .append('circle')
       .attr('cx', width / 2)
       .attr('cy', height / 2)
       .attr('r', radius + 100)
@@ -59,8 +69,9 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
 
     // Get ALL unique nodes from the similarities data (not just filtered ones)
     const allNodeSet = new Set();
-    similarities.forEach(d => {
-      if (d.selectedDigest !== d.comparedDigest) { // Still exclude self-connections
+    similarities.forEach((d) => {
+      if (d.selectedDigest !== d.comparedDigest) {
+        // Still exclude self-connections
         allNodeSet.add(d.selectedDigest);
         allNodeSet.add(d.comparedDigest);
       }
@@ -69,9 +80,10 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
 
     // If no nodes at all, show empty state
     if (allNodes.length === 0) {
-      container.append('text')
-        .attr('x', width/2)
-        .attr('y', height/2)
+      container
+        .append('text')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
         .attr('text-anchor', 'middle')
         .style('font-size', '16px')
         .style('fill', '#666')
@@ -84,30 +96,35 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
     allNodes.forEach((node, i) => {
       const angle = (i / allNodes.length) * 2 * Math.PI;
       nodePositions[node] = {
-        x: width/2 + Math.cos(angle) * radius,
-        y: height/2 + Math.sin(angle) * radius,
+        x: width / 2 + Math.cos(angle) * radius,
+        y: height / 2 + Math.sin(angle) * radius,
         angle: angle,
         id: node,
-        shortId: node.substring(0, 10) + "..."
+        shortId: node.substring(0, 10) + '...',
       };
     });
 
     // Filter similarities by threshold for connections only
-    const filteredSimilarities = similarities.filter(d => 
-      d[metric] !== null && d[metric] !== undefined && d[metric] >= threshold &&
-      d.selectedDigest !== d.comparedDigest // Exclude self-connections
+    const filteredSimilarities = similarities.filter(
+      (d) =>
+        d[metric] !== null &&
+        d[metric] !== undefined &&
+        d[metric] >= threshold &&
+        d.selectedDigest !== d.comparedDigest, // Exclude self-connections
     );
 
     // Count connections from filtered data (for styling nodes based on connectivity)
     const connectionCount = {};
-    allNodes.forEach(node => connectionCount[node] = 0);
-    filteredSimilarities.forEach(d => {
+    allNodes.forEach((node) => (connectionCount[node] = 0));
+    filteredSimilarities.forEach((d) => {
       connectionCount[d.selectedDigest]++;
       connectionCount[d.comparedDigest]++;
     });
 
     // Create tooltip
-    const tooltip = d3.select('body').selectAll('.network-tooltip')
+    const tooltip = d3
+      .select('body')
+      .selectAll('.network-tooltip')
       .data([0])
       .join('div')
       .attr('class', 'network-tooltip')
@@ -122,14 +139,16 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
       .style('opacity', 0);
 
     // Draw connections (only those meeting threshold)
-    container.selectAll('.connection-line')
+    container
+      .selectAll('.connection-line')
       .data(filteredSimilarities)
-      .enter().append('path')
+      .enter()
+      .append('path')
       .attr('class', 'connection-line')
-      .attr('d', d => {
+      .attr('d', (d) => {
         const source = nodePositions[d.selectedDigest];
         const target = nodePositions[d.comparedDigest];
-        
+
         if (tension === 0) {
           return `M${source.x},${source.y} L${target.x},${target.y}`;
         } else {
@@ -137,99 +156,111 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
           const centerY = height / 2;
           const midX = (source.x + target.x) / 2;
           const midY = (source.y + target.y) / 2;
-          
+
           const controlX = midX + (centerX - midX) * tension;
           const controlY = midY + (centerY - midY) * tension;
-          
+
           return `M${source.x},${source.y} Q${controlX},${controlY} ${target.x},${target.y}`;
         }
       })
-      .style('stroke', d => d3.interpolateBuPu(d[metric] || 0))
+      .style('stroke', (d) => d3.interpolateBuPu(d[metric] || 0))
       .style('stroke-width', selectedCount > 6 ? 1.5 : 2.25)
       .style('fill', 'none')
       .style('opacity', 0.7)
       .style('cursor', 'pointer')
-      .on('mouseover', function(event, d) {
+      .on('mouseover', function (event, d) {
         d3.select(this).style('opacity', 1.0).style('stroke-width', 3);
-        
+
         tooltip.transition().duration(200).style('opacity', 0.9);
-        tooltip.html(`
+        tooltip
+          .html(
+            `
           <strong>Digest 1:</strong> ${nodePositions[d.selectedDigest].id}<br/>
           <strong>Digest 2:</strong> ${nodePositions[d.comparedDigest].id}<br/>
           <strong>${snakeToTitle(metric)}:</strong> ${(d[metric] || 0).toFixed(3)}
-        `)
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY - 28) + 'px');
+        `,
+          )
+          .style('left', event.pageX + 10 + 'px')
+          .style('top', event.pageY - 28 + 'px');
       })
-      .on('mouseout', function() {
+      .on('mouseout', function () {
         d3.select(this).style('opacity', 0.7).style('stroke-width', 2);
         tooltip.transition().duration(500).style('opacity', 0);
       });
 
     // Draw ALL nodes (including isolated ones)
-    container.selectAll('.digest-point')
+    container
+      .selectAll('.digest-point')
       .data(Object.values(nodePositions))
-      .enter().append('circle')
+      .enter()
+      .append('circle')
       .attr('class', 'digest-point')
-      .attr('cx', d => d.x)
-      .attr('cy', d => d.y)
-      .attr('r', d => 6)
-      .style('fill', d => connectionCount[d.id] > 0 ? 'black' : '#cccccc') // Gray out isolated nodes
+      .attr('cx', (d) => d.x)
+      .attr('cy', (d) => d.y)
+      .attr('r', (d) => 6)
+      .style('fill', (d) => (connectionCount[d.id] > 0 ? 'black' : '#cccccc')) // Gray out isolated nodes
       .style('stroke', 'white')
       .style('stroke-width', 3)
       .style('cursor', 'pointer')
-      .style('opacity', d => connectionCount[d.id] > 0 ? 1.0 : 0.6) // Make isolated nodes more transparent
-      .on('mouseover', function(event, d) {
+      .style('opacity', (d) => (connectionCount[d.id] > 0 ? 1.0 : 0.6)) // Make isolated nodes more transparent
+      .on('mouseover', function (event, d) {
         tooltip.transition().duration(200).style('opacity', 0.9);
-        const connectionText = connectionCount[d.id] > 0 ? 
-          `<br/><strong>Connections:</strong> ${connectionCount[d.id]}` : 
-          '<br/><em>No connections above threshold</em>';
-        tooltip.html(`
+        const connectionText =
+          connectionCount[d.id] > 0
+            ? `<br/><strong>Connections:</strong> ${connectionCount[d.id]}`
+            : '<br/><em>No connections above threshold</em>';
+        tooltip
+          .html(
+            `
           <strong>Digest:</strong><br/>
           ${d.id}${connectionText}
-        `)
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY - 28) + 'px');
+        `,
+          )
+          .style('left', event.pageX + 10 + 'px')
+          .style('top', event.pageY - 28 + 'px');
       })
-      .on('mouseout', function() {
+      .on('mouseout', function () {
         tooltip.transition().duration(500).style('opacity', 0);
       });
 
     // Add labels for ALL nodes
-    container.selectAll('.digest-label')
+    container
+      .selectAll('.digest-label')
       .data(Object.values(nodePositions))
-      .enter().append('text')
+      .enter()
+      .append('text')
       .attr('class', 'digest-label')
-      .attr('x', d => {
+      .attr('x', (d) => {
         const labelRadius = radius + 20;
-        return width/2 + Math.cos(d.angle) * labelRadius;
+        return width / 2 + Math.cos(d.angle) * labelRadius;
       })
-      .attr('y', d => {
+      .attr('y', (d) => {
         const labelRadius = radius + 20;
-        return height/2 + Math.sin(d.angle) * labelRadius;
+        return height / 2 + Math.sin(d.angle) * labelRadius;
       })
       .attr('dy', '0.35em')
-      .style('text-anchor', d => {
-        if (d.angle > Math.PI/2 && d.angle < 3*Math.PI/2) return 'end';
+      .style('text-anchor', (d) => {
+        if (d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2) return 'end';
         return 'start';
       })
-      .attr('transform', d => {
+      .attr('transform', (d) => {
         const labelRadius = radius + 20;
-        const x = width/2 + Math.cos(d.angle) * labelRadius;
-        const y = height/2 + Math.sin(d.angle) * labelRadius;
-        const rotation = d.angle > Math.PI/2 && d.angle < 3*Math.PI/2 ? 
-          (d.angle * 180/Math.PI + 180) : (d.angle * 180/Math.PI);
+        const x = width / 2 + Math.cos(d.angle) * labelRadius;
+        const y = height / 2 + Math.sin(d.angle) * labelRadius;
+        const rotation =
+          d.angle > Math.PI / 2 && d.angle < (3 * Math.PI) / 2
+            ? (d.angle * 180) / Math.PI + 180
+            : (d.angle * 180) / Math.PI;
         return `rotate(${rotation}, ${x}, ${y})`;
       })
       .style('font-size', '10px')
       .style('font-weight', 'bold')
-      .style('fill', d => connectionCount[d.id] > 0 ? '#333' : '#999') // Gray out labels for isolated nodes
+      .style('fill', (d) => (connectionCount[d.id] > 0 ? '#333' : '#999')) // Gray out labels for isolated nodes
       .style('pointer-events', 'none')
-      .style('opacity', d => connectionCount[d.id] > 0 ? 1.0 : 0.7)
-      .text(d => d.shortId);
-
+      .style('opacity', (d) => (connectionCount[d.id] > 0 ? 1.0 : 0.7))
+      .text((d) => d.shortId);
   }, [similarities, metric, tension, threshold]);
-  
+
   useEffect(() => {
     // Initial draw
     drawNetwork();
@@ -242,7 +273,7 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
     };
 
     window.addEventListener('resize', handleResize);
-    
+
     // Optional: Listen for orientation changes on mobile devices
     window.addEventListener('orientationchange', () => {
       setTimeout(drawNetwork, 100); // Small delay for orientation change
@@ -268,12 +299,8 @@ const NetworkGraph = ({ similarities, metric = 'sequences', tension = 0.1, thres
   }, []);
 
   return (
-    <div className="w-100">
-      <svg 
-        ref={svgRef} 
-        className="w-100"
-        style={{ minHeight: '600px' }}
-      />
+    <div className='w-100'>
+      <svg ref={svgRef} className='w-100' style={{ minHeight: '600px' }} />
     </div>
   );
 };

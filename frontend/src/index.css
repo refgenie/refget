@@ -59,7 +59,6 @@ button:focus-visible {
   }
 }
 
-
 .compare {
   padding: 5px;
 }
@@ -71,9 +70,7 @@ th.rotated-text {
 }
 
 th.rotated-text > div {
-  transform:
-      translate(15px, 175px)
-      rotate(270deg);
+  transform: translate(15px, 175px) rotate(270deg);
   width: 15px;
 }
 
@@ -81,9 +78,8 @@ th.rotated-text > div > span {
   padding: 5px 10px;
 }
 
-
 nav {
-  background-color: #EFF3F6;
+  background-color: #eff3f6;
 }
 
 .tiny {
@@ -91,8 +87,8 @@ nav {
 }
 
 table {
-  border-collapse:separate;
-  border-spacing:4px 4px;
+  border-collapse: separate;
+  border-spacing: 4px 4px;
 }
 
 .btn-xs {
@@ -128,10 +124,10 @@ table {
   z-index: 999;
 }
 
-.nav-pills .nav-link.active { 
+.nav-pills .nav-link.active {
   background-color: white !important;
   color: black !important;
-  box-shadow: .5px 1px 7px 1px #00000010 !important;
+  box-shadow: 0.5px 1px 7px 1px #00000010 !important;
 }
 
 .nav-pills .nav-item {
@@ -141,13 +137,13 @@ table {
 .nav-pills .nav-item:first-child {
   margin-left: 0;
   margin-right: 0;
-} 
+}
 
 .nav-pills .nav-item:last-child {
   margin-right: -1.5px;
-} 
+}
 
-.nav-pills .nav-link { 
+.nav-pills .nav-link {
   color: #000000aa;
   padding-left: 0;
   padding-right: 0;
@@ -160,14 +156,14 @@ table {
   background-color: #ffffff80;
 }
 
-.nav-tabs .nav-link.active { 
+.nav-tabs .nav-link.active {
   color: black !important;
 }
 
-.nav-tabs .nav-link { 
+.nav-tabs .nav-link {
   color: #000000aa;
-  padding-top: .4;
-  padding-bottom: .4;
+  padding-top: 0.4;
+  padding-bottom: 0.4;
 }
 
 .nav-tabs .nav-link:hover {
