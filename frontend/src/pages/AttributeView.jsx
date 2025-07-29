@@ -14,9 +14,6 @@ const AttributeView = () => {
   let results = content[0];
   let attribute_value = content[1];
 
-  console.log('AttributeView attribute_value: ', attribute_value);
-  console.log('AttributeView results: ', results);
-
   return (
     <div className='mb-5 home'>
       <h4 className='fw-light'>Attribute: {attribute} </h4>

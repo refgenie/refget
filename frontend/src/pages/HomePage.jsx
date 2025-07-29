@@ -6,7 +6,6 @@ import { AttributeList } from '../components/ObjectLists';
 
 const HomePage = () => {
   const loaderData = useLoaderData();
-  console.log('HomePage loaderData ', loaderData);
   const collections = loaderData[0];
   const pangenomes = loaderData[1];
   const name_length_pairs = loaderData[2];

@@ -81,7 +81,7 @@ const Similarities = () => {
     if (
       newRelationship === 'oneToMany' &&
       relationship === 'manyToMany' &&
-      customCount > 1
+      selectedCollections.length > 1
     ) {
       setCustomCollections([]);
       setSelectedCollectionsIndex(collections.results.map(() => false));

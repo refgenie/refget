@@ -6,8 +6,6 @@ import {
 } from '../utilities';
 
 const AttributeValue = ({ value }) => {
-  console.log('AttributeValue', value);
-  console.log('typeof', typeof value);
   if (value === null) {
     return (
       <pre className='m-0 p-2 border border-muted'>

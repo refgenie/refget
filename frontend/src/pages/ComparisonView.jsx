@@ -221,7 +221,6 @@ const LinkToLocalComparison = ({ comparison }) => {
 const ComparisonView = ({ paramComparison }) => {
   const loaderData = useLoaderData();
   const comparison = paramComparison || loaderData;
-  console.log('ComparisonView', comparison);
   const comp_str = JSON.stringify(comparison, null, 2);
 
   let api_url = `${API_BASE}/comparison/${comparison.digests.a}/${comparison.digests.b}`;
@@ -299,8 +298,6 @@ const ComparisonView = ({ paramComparison }) => {
   for (let attribute of attributesToCheck) {
     interpretation[attribute] = getInterpretation(comparison, attribute);
   }
-  // console.log(interpretation)
-  console.log('Comparison:', comparison);
   const coordSystemMessages = coordinateSystemInterpretation(comparison);
 
   return (

@@ -11,8 +11,6 @@ const PangenomeView = ({ params }) => {
   const pangenome = useLoaderData();
   const { digest } = useParams();
 
-  console.log('PangenomeView pangenome:', pangenome);
-
   let level1 = pangenome[0];
   let level2 = pangenome[1];
   let itemwise = pangenome[2];

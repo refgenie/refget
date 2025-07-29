@@ -5,8 +5,6 @@ import { LinkedCollectionDigest } from '../components/ValuesAndDigests.jsx';
 
 const HPRCGenomes = () => {
   // Build a table of genomes from the HPRC
-  console.log('Building HPRC genomes table...');
-  console.log(Object.keys(hprc[0]));
   let header_cells = [];
   let content_rows = [];
   // for (let i of Object.keys(hprc[0])) {

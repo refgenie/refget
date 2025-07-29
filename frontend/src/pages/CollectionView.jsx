@@ -11,19 +11,14 @@ const CollectionView = (params) => {
   const [collectionRepresentation, setCollectionRepresentation] =
     useState(null);
   const { digest } = useParams();
-  console.log('CollectionView', collection);
 
   let level1 = collection[0];
   let level2 = collection[1];
   let uncollated = collection[2];
 
-  console.log('Lev 1', level1);
-
   // const col_str = (2 == 1 ? "asdf" : <pre>{JSON.stringify(collectionRepresentation, null, 2)}</pre>)
   const showLevel = (level, collated = true) => {
-    console.log(`showing level ${level}`);
     fetchSeqColDetails(digest, level, collated).then((data) => {
-      console.log('got data', data);
       if (level == 1) {
         data = Level1Collection(data);
       } else if (level == 2) {
@@ -33,9 +28,7 @@ const CollectionView = (params) => {
     });
 
     const showUncollated = () => {
-      console.log('showing uncollated');
       fetchSeqColDetails(digest, 'uncollated').then((data) => {
-        console.log('got data', data);
         setCollectionRepresentation(data);
       });
     };

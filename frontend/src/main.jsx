@@ -7,9 +7,6 @@ import './index.css';
 import databio_logo from './assets/logo_databio_long.svg';
 import seqcol_logo from './assets/seqcol_logo.svg';
 
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-
 import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.bundle.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -93,7 +90,6 @@ const Level2Collection = ({ collection }) => {
 const Nav = () => {
   const navigate = useNavigate();
   const location = useLocation().pathname.substring(1) || '';
-  console.log(location);
 
   return (
     <nav
@@ -234,14 +230,12 @@ const App = () => {
           </div>
         </footer>
       </div>
-      <ToastContainer />
     </>
   );
 };
 
 const CollectionTable = ({ collections }) => {
   const seqColList = collections || useLoaderData();
-  console.log('seqColList', seqColList);
   return (
     <table>
       <thead>
@@ -345,7 +339,6 @@ const router = createBrowserRouter([
         path: '/scim/:digest1/:digest2',
         element: <SCIM />,
         loader: (request) => {
-          console.log('params', request.params);
           return fetchComparison(
             request.params.digest1,
             request.params.digest2,
@@ -357,7 +350,6 @@ const router = createBrowserRouter([
         element: <CollectionView />,
         errorElement: <ErrorBoundary />,
         loader: (request) => {
-          console.log('params', request.params);
           return fetchCollectionLevels(request.params.digest);
         },
       },
@@ -365,7 +357,6 @@ const router = createBrowserRouter([
         path: '/attribute/:attribute/:digest',
         element: <AttributeView />,
         loader: (request) => {
-          console.log('params', request.params);
           return fetchAttribute(
             request.params.attribute,
             request.params.digest,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, useLoaderData } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -30,7 +30,6 @@ const SCIM = () => {
   useEffect(() => {
     const comparisonFromQuery = searchParams.get('val');
     if (comparisonFromQuery) {
-      console.log('Encoded comparison from query param:', comparisonFromQuery);
       // decode base64encoded string
       const decodedComparisonFromQuery = atob(comparisonFromQuery);
       // prettify the comparison string
@@ -39,7 +38,6 @@ const SCIM = () => {
         null,
         2,
       );
-      console.log('Decoded comparison from query:', prettyComparison);
       setComparisonStr(prettyComparison);
 
       const parsedComparison = JSON.parse(decodedComparisonFromQuery);
@@ -90,7 +88,6 @@ const SCIM = () => {
   };
 
   const clearComparison = () => {
-    console.log('Clearing comparison');
     setComparisonStr('');
     setComparison(null);
     window.history.pushState({}, '', `${window.location.pathname}`);
@@ -100,7 +97,6 @@ const SCIM = () => {
     const exampleData =
       'eyJkaWdlc3RzIjp7ImEiOiJYWmxyY0VHaTZtbG9wWjJ1RDhPYkhrUUIxZDBvRHdLayIsImIiOiJRdlQ1dEFRMEI4Vmt4ZC1xRmZ0bHpFazJReWZQdGdPdiJ9LCJhdHRyaWJ1dGVzIjp7ImFfb25seSI6W10sImJfb25seSI6W10sImFfYW5kX2IiOlsibGVuZ3RocyIsIm5hbWVfbGVuZ3RoX3BhaXJzIiwibmFtZXMiLCJzZXF1ZW5jZXMiLCJzb3J0ZWRfc2VxdWVuY2VzIl19LCJhcnJheV9lbGVtZW50cyI6eyJhIjp7Imxlbmd0aHMiOjMsIm5hbWVfbGVuZ3RoX3BhaXJzIjozLCJuYW1lcyI6Mywic2VxdWVuY2VzIjozLCJzb3J0ZWRfc2VxdWVuY2VzIjozfSwiYiI6eyJsZW5ndGhzIjozLCJuYW1lX2xlbmd0aF9wYWlycyI6MywibmFtZXMiOjMsInNlcXVlbmNlcyI6Mywic29ydGVkX3NlcXVlbmNlcyI6M30sImFfYW5kX2IiOnsibGVuZ3RocyI6MywibmFtZV9sZW5ndGhfcGFpcnMiOjAsIm5hbWVzIjowLCJzZXF1ZW5jZXMiOjMsInNvcnRlZF9zZXF1ZW5jZXMiOjN9LCJhX2FuZF9iX3NhbWVfb3JkZXIiOnsibGVuZ3RocyI6dHJ1ZSwibmFtZV9sZW5ndGhfcGFpcnMiOm51bGwsIm5hbWVzIjpudWxsLCJzZXF1ZW5jZXMiOnRydWUsInNvcnRlZF9zZXF1ZW5jZXMiOnRydWV9fX0=';
 
-    console.log('Loading example data:', exampleData);
     const decodedComparison = atob(exampleData);
     const prettyComparison = JSON.stringify(
       JSON.parse(decodedComparison),

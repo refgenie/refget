@@ -4,7 +4,6 @@ import { useLoaderData } from 'react-router-dom';
 // Basic list of Sequence Collections
 const CollectionList = ({ collections }) => {
   const seqColList = collections || useLoaderData()[0];
-  console.log('seqColList', seqColList);
 
   return (
     <>
@@ -26,7 +25,6 @@ const CollectionList = ({ collections }) => {
 
 const AttributeList = ({ attributeName, attributeDigests }) => {
   const attrList = attributeDigests || useLoaderData()[0];
-  console.log('attrList', attrList);
 
   return (
     <>
@@ -47,7 +45,6 @@ const AttributeList = ({ attributeName, attributeDigests }) => {
 // Basic list of Pangenomes
 const PangenomeList = ({ pangenomes }) => {
   const pangenomeList = pangenomes || useLoaderData()[1];
-  console.log('pangenomeList', pangenomeList);
 
   return (
     <>
