@@ -402,30 +402,35 @@ const Similarities = () => {
                 )}
               </select>
             </div>
-            <StripPlot similarities={similarities} jitter={stripJitter} />
+            <StripPlot
+              similarities={similarities}
+              jitter={stripJitter}
+              pointSize={
+                relationship === 'oneToMany' || selectedCollections.length <= 1
+                  ? 'big'
+                  : 'normal'
+              }
+            />
+
+            <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
+              <h5 className='fw-light'>Heatmap</h5>
+              <select
+                className='form-select form-select-sm w-25'
+                aria-label='heatmap-select'
+                value={heatmapMetric}
+                onChange={(e) => setHeatmapMetric(e.target.value)}
+              >
+                <option value='lengths'>Lengths</option>
+                <option value='name_length_pairs'>Name Length Pairs</option>
+                <option value='names'>Names</option>
+                <option value='sequences'>Sequences</option>
+                <option value='sorted_sequences'>Sorted Sequences</option>
+              </select>
+            </div>
+            <HeatmapPlot similarities={similarities} metric={heatmapMetric} />
 
             {relationship === 'manyToMany' && (
               <>
-                <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
-                  <h5 className='fw-light'>Heatmap</h5>
-                  <select
-                    className='form-select form-select-sm w-25'
-                    aria-label='heatmap-select'
-                    value={heatmapMetric}
-                    onChange={(e) => setHeatmapMetric(e.target.value)}
-                  >
-                    <option value='lengths'>Lengths</option>
-                    <option value='name_length_pairs'>Name Length Pairs</option>
-                    <option value='names'>Names</option>
-                    <option value='sequences'>Sequences</option>
-                    <option value='sorted_sequences'>Sorted Sequences</option>
-                  </select>
-                </div>
-                <HeatmapPlot
-                  similarities={similarities}
-                  metric={heatmapMetric}
-                />
-
                 <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
                   <h5 className='fw-light'>Network Graph</h5>
                   <div className='input-group input-group-sm ms-auto w-25'>

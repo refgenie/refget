@@ -164,7 +164,10 @@ const NetworkGraph = ({
         }
       })
       .style('stroke', (d) => d3.interpolateBuPu(d[metric] || 0))
-      .style('stroke-width', selectedCount > 6 ? 1.5 : 2.25)
+      .style(
+        'stroke-width',
+        selectedCount > 6 ? 1.4 : selectedCount > 12 ? 0.7 : 2,
+      )
       .style('fill', 'none')
       .style('opacity', 0.7)
       .style('cursor', 'pointer')
@@ -184,7 +187,12 @@ const NetworkGraph = ({
           .style('top', event.pageY - 28 + 'px');
       })
       .on('mouseout', function () {
-        d3.select(this).style('opacity', 0.7).style('stroke-width', 2);
+        d3.select(this)
+          .style('opacity', 0.7)
+          .style(
+            'stroke-width',
+            selectedCount > 6 ? 1.4 : selectedCount > 12 ? 0.7 : 2,
+          );
         tooltip.transition().duration(500).style('opacity', 0);
       });
 

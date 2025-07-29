@@ -63,7 +63,12 @@ const HeatmapPlot = ({ similarities, metric }) => {
         ],
       },
       width: 'container',
-      height: selectedCount < 15 ? 50 * selectedCount : 22 * selectedCount,
+      height:
+        selectedCount < 10
+          ? 50 * selectedCount
+          : selectedCount < 20
+            ? 22 * selectedCount
+            : 13 * selectedCount,
     };
   };
 

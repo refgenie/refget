@@ -3,7 +3,7 @@ import embed from 'vega-embed';
 
 import { snakeToTitle } from '../utilities';
 
-const StripPlot = ({ similarities, jitter = 'none' }) => {
+const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
   const plotRef = useRef(null);
 
   const comparedCount = [...new Set(similarities.map((e) => e.comparedDigest))]
@@ -16,7 +16,7 @@ const StripPlot = ({ similarities, jitter = 'none' }) => {
     'names',
   ];
 
-  const stripSpec = (similarities, jitter) => {
+  const stripSpec = (similarities, jitter, pointSize) => {
     const transformedData = similarities.flatMap((item) => {
       return metrics
         .filter((metric) => item[metric] !== undefined)
@@ -223,11 +223,11 @@ const StripPlot = ({ similarities, jitter = 'none' }) => {
               condition: [
                 {
                   test: "!length(data('metric_selection_store'))",
-                  value: 44,
+                  value: pointSize === 'big' ? 88 : 44,
                 },
                 {
                   param: 'metric_selection',
-                  value: 66,
+                  value: pointSize === 'big' ? 132 : 66,
                 },
               ],
               value: 44,
@@ -285,11 +285,11 @@ const StripPlot = ({ similarities, jitter = 'none' }) => {
               condition: [
                 {
                   test: "!length(data('metric_selection_store'))",
-                  value: 44,
+                  value: pointSize === 'big' ? 88 : 44,
                 },
                 {
                   param: 'metric_selection',
-                  value: 66,
+                  value: pointSize === 'big' ? 132 : 66,
                 },
               ],
               value: 0,
@@ -314,7 +314,7 @@ const StripPlot = ({ similarities, jitter = 'none' }) => {
 
   useEffect(() => {
     if (plotRef.current && similarities) {
-      const spec = stripSpec(similarities, jitter);
+      const spec = stripSpec(similarities, jitter, pointSize);
       try {
         embed(plotRef.current, spec, { actions: true }).catch((error) => {
           console.error('Embed error after parsing:', error);
