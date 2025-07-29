@@ -309,7 +309,7 @@ const Similarities = () => {
                       {selectedCollections.length} Selected
                     </button>
                     <button
-                      className='btn btn-success btn-xs shadow-sm ms-1'
+                      className='btn btn-secondary btn-xs shadow-sm ms-1'
                       onClick={() =>
                         setSelectedCollectionsIndex((prev) =>
                           prev.map(() => true),

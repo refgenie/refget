@@ -110,8 +110,8 @@ const Nav = () => {
             src={seqcol_logo}
             alt='Refget Sequence Collections'
             height='40'
-          />{' '}
-          Refget Sequence Collections
+          />
+          <span className='ms-2'>Refget Sequence Collections</span>
         </div>
 
         <button
@@ -134,7 +134,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <span
                 onClick={() => navigate('/')}
-                className={`nav-link cursor-pointer ${location === '' && 'fw-semibold text-black'}`}
+                className={`nav-link cursor-pointer ${location === '' ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 Home
               </span>
@@ -142,7 +142,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <span
                 onClick={() => navigate('/scim')}
-                className={`nav-link cursor-pointer ${location === 'scim' && 'fw-semibold text-black'}`}
+                className={`nav-link cursor-pointer ${location === 'scim' ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 SCIM
               </span>
@@ -150,7 +150,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <span
                 onClick={() => navigate('/similarities')}
-                className={`nav-link cursor-pointer ${location === 'similarities' && 'fw-semibold text-black'}`}
+                className={`nav-link cursor-pointer ${location === 'similarities' ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 Similarities
               </span>
@@ -158,7 +158,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <a
                 href={`${API_BASE}/docs`}
-                className='nav-link'
+                className='nav-link fw-light'
                 target='_blank'
                 rel='noopener noreferrer'
               >
@@ -168,7 +168,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <a
                 href='https://github.com/refgenie/refget'
-                className='nav-link'
+                className='nav-link fw-light'
                 target='_blank'
                 rel='noopener noreferrer'
               >
@@ -178,7 +178,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <a
                 href='https://ga4gh.github.io/refget/'
-                className='nav-link'
+                className='nav-link fw-light'
                 target='_blank'
                 rel='noopener noreferrer'
               >
