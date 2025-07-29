@@ -13,15 +13,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
+.home a {
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
-a:hover {
+.home a:hover {
   color: #535bf2;
 }
-
 
 h1 {
   font-size: 3.2em;
@@ -60,7 +59,6 @@ button:focus-visible {
   }
 }
 
-
 .compare {
   padding: 5px;
 }
@@ -72,9 +70,7 @@ th.rotated-text {
 }
 
 th.rotated-text > div {
-  transform:
-      translate(15px, 175px)
-      rotate(270deg);
+  transform: translate(15px, 175px) rotate(270deg);
   width: 15px;
 }
 
@@ -82,16 +78,94 @@ th.rotated-text > div > span {
   padding: 5px 10px;
 }
 
-
 nav {
-  background-color: #EFF3F6;
+  background-color: #eff3f6;
 }
 
 .tiny {
-  font-size: 0.8em;
+  font-size: 0.8em !important;
 }
 
 table {
-  border-collapse:separate;
-  border-spacing:4px 4px;
-}​​​​​​​​​​​​​
+  border-collapse: separate;
+  border-spacing: 4px 4px;
+}
+
+.btn-xs {
+  padding: 0.125rem 0.6rem !important;
+  font-size: 0.7rem !important;
+  line-height: 1.2 !important;
+  border-radius: 0.25rem !important;
+}
+
+.btn-xs > .bi {
+  font-size: 0.7rem;
+  vertical-align: -0.125em;
+}
+
+.table-rounded thead tr:first-child th:first-child {
+  border-top-left-radius: 0.375rem;
+}
+
+.table-rounded thead tr:first-child th:last-child {
+  border-top-right-radius: 0.375rem;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.card-header:has(+ .collapse:not(.show)) {
+  border-bottom: none;
+}
+
+.z-active:focus,
+.z-active:active {
+  z-index: 999;
+}
+
+.nav-pills .nav-link.active {
+  background-color: white !important;
+  color: black !important;
+  box-shadow: 0.5px 1px 7px 1px #00000010 !important;
+}
+
+.nav-pills .nav-item {
+  margin-left: 1px;
+}
+
+.nav-pills .nav-item:first-child {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.nav-pills .nav-item:last-child {
+  margin-right: -1.5px;
+}
+
+.nav-pills .nav-link {
+  color: #000000aa;
+  padding-left: 0;
+  padding-right: 0;
+  width: calc(100% - 1.5px);
+}
+
+.nav-pills .nav-link:hover {
+  color: black;
+  transition: all 180ms;
+  background-color: #ffffff80;
+}
+
+.nav-tabs .nav-link.active {
+  color: black !important;
+}
+
+.nav-tabs .nav-link {
+  color: #000000aa;
+  padding-top: 0.4;
+  padding-bottom: 0.4;
+}
+
+.nav-tabs .nav-link:hover {
+  color: black;
+}
