@@ -1,5 +1,5 @@
 jsonschema
-gtars @ git+https://github.com/databio/gtars.git@dev#subdirectory=bindings/python
+gtars>=0.3.0
 pyyaml
 requests
 sqlmodel
