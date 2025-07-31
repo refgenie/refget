@@ -26,9 +26,10 @@
 on:
   workflow_dispatch:
     inputs: null   
-  push:
-    paths:
-      - deployment/seqcolapi.databio.org/seqcolapi.yaml
+  workflow_run:
+    workflows: ["Deploy to Dockerhub on release"]
+    types:
+      - completed
 
 name: Deploy to Amazon ECS - primary
 
