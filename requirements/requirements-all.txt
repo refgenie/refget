@@ -1,5 +1,5 @@
 jsonschema
-gtars>=0.2.4
+gtars>=0.3.0
 pyyaml
 requests
 sqlmodel

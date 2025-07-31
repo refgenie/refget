@@ -1,62 +1,64 @@
-import { Link } from "react-router-dom"
-import { useLoaderData } from "react-router-dom"
-
+import { Link } from 'react-router-dom';
+import { useLoaderData } from 'react-router-dom';
 
 // Basic list of Sequence Collections
-const CollectionList = ({collections}) => {
-    const seqColList = collections || useLoaderData()[0]
-    console.log("seqColList", seqColList)
-  
-    return (<>
+const CollectionList = ({ collections }) => {
+  const seqColList = collections || useLoaderData()[0];
+
+  return (
+    <>
       <div>
         <ul>
           {seqColList.results.map((seqCol) => (
             <li key={seqCol}>
-              Collection: <Link to={`/collection/${seqCol}`} className="font-monospace">{seqCol}</Link>
+              Collection:{' '}
+              <Link to={`/collection/${seqCol}`} className='font-monospace'>
+                {seqCol}
+              </Link>
             </li>
           ))}
         </ul>
-      </div></>
-    )
-  }
+      </div>
+    </>
+  );
+};
 
-const AttributeList = ({attributeName, attributeDigests}) => {
-  const attrList = attributeDigests || useLoaderData()[0]
-  console.log("attrList", attrList)
+const AttributeList = ({ attributeName, attributeDigests }) => {
+  const attrList = attributeDigests || useLoaderData()[0];
 
-  return (<>
-    <div>
-      <ul>
-        {attrList.results?.map((attr) => (
-          <li key={attr}>
-            Attribute: <Link to={`/attribute/${attributeName}/${attr}`}>{attr}</Link>
-          </li>
-        ))}
-      </ul>
-    </div></>
-  )
-}
-
+  return (
+    <>
+      <div>
+        <ul>
+          {attrList.results?.map((attr) => (
+            <li key={attr}>
+              Attribute:{' '}
+              <Link to={`/attribute/${attributeName}/${attr}`}>{attr}</Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+};
 
 // Basic list of Pangenomes
-const PangenomeList = ({pangenomes}) => {
-  const pangenomeList = pangenomes || useLoaderData()[1]
-  console.log("pangenomeList", pangenomeList)
+const PangenomeList = ({ pangenomes }) => {
+  const pangenomeList = pangenomes || useLoaderData()[1];
 
-  return (<>
-    <div>
-      <ul>
-        {pangenomeList.results?.map((pangenome) => (
-          <li key={pangenome}>
-            <Link to={`/pangenome/${pangenome}`}>{pangenome}</Link>
-          </li>
-        ))}
-      </ul>
-    </div></>
-  )
-}
+  return (
+    <>
+      <div>
+        <ul>
+          {pangenomeList.results?.map((pangenome) => (
+            <li key={pangenome}>
+              <Link to={`/pangenome/${pangenome}`}>{pangenome}</Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+};
 
-
-
-  export { AttributeList, CollectionList, PangenomeList }
-  
+export { AttributeList, CollectionList, PangenomeList };
