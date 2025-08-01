@@ -202,7 +202,6 @@ async def calc_similarities(
 
         similarities = []
         for seqcol in collections["results"]:
-            print(seqcol.digest)
             jaccard_sims = dbagent.calc_similarities(collection_digest, seqcol.digest)
             similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
 
@@ -246,7 +245,6 @@ async def calc_similarities_from_json(
         similarities = []
 
         for seqcol in collections["results"]:
-            print(seqcol.digest)
             jaccard_sims = dbagent.calc_similarities_seqcol_dict_and_digest(seqcolA, seqcol.digest)
             similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
 
