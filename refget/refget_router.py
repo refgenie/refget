@@ -199,11 +199,12 @@ async def calc_similarities(
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
         collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+        seqcolA = dbagent.seqcol.get_one_seqcol(digest=collection_digest)
 
         similarities = []
-        for seqcol in collections["results"]:
-            jaccard_sims = dbagent.calc_similarities(collection_digest, seqcol.digest)
-            similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
+        for seqcolB in collections["results"]:
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcolB)
+            similarities.append({"digest": seqcolB.digest, "similarities": jaccard_sims})
 
         result = {
             "reference_digest": collection_digest,
@@ -241,12 +242,11 @@ async def calc_similarities_from_json(
 
     try:
         collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
-
         similarities = []
 
-        for seqcol in collections["results"]:
-            jaccard_sims = dbagent.calc_similarities_seqcol_dict_and_digest(seqcolA, seqcol.digest)
-            similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
+        for seqcolB in collections["results"]:
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcolB)
+            similarities.append({"digest": seqcolB.digest, "similarities": jaccard_sims})
 
         result = {"pagination": collections["pagination"], "similarities": similarities}
 

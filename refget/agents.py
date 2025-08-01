@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from .models import *
 from .utilities import (
@@ -182,6 +182,121 @@ class SequenceCollectionAgent(object):
                 return seqcol.itemwise(itemwise_limit)
             else:
                 return seqcol
+
+    def get_one_seqcol(
+        self,
+        digest: str,
+        return_format: str = "level2",
+        attribute: str = None,
+        itemwise_limit: int = None,
+    ) -> SequenceCollection:
+        """
+        Get a sequence collection by digest
+
+        Args:
+        - digest (str): The digest of the sequence collection
+        - return_format (str): The format in which to return the sequence collection
+        - attribute (str): Name of an attribute to return, if you just want an attribute
+        - itemwise_limit (int): Limit the number of items returned in itemwise format
+
+        Returns:
+        - (SequenceCollection): The sequence collection (in requested format)
+        """
+        with Session(self.engine) as session:
+            statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
+            results = session.exec(statement)
+            seqcol = results.one_or_none()
+            if not seqcol:
+                raise ValueError(f"SequenceCollection with digest '{digest}' not found")
+            if attribute:
+                return getattr(seqcol, attribute).value
+            elif return_format == "level2":
+                return seqcol.level2()
+            elif return_format == "level1":
+                return seqcol.level1()
+            elif return_format == "itemwise":
+                return seqcol.itemwise(itemwise_limit)
+            else:
+                return seqcol
+
+    # def get_many(
+    #         self,
+    #         digests: List[str],
+    #         return_format: str = "level2",
+    #         attribute: str = None,
+    #         itemwise_limit: int = None,
+    # ) -> Dict[str, Any]:
+    #     """
+    #     Get multiple sequence collections by a list of digests in a single database call.
+    #
+    #     Args:
+    #     - digests (List[str]): A list of digests for the sequence collections.
+    #     - return_format (str): The format in which to return the sequence collection.
+    #                            Valid options are "level2", "level1", "itemwise".
+    #                            This is ignored if 'attribute' is provided.
+    #     - attribute (str): The name of an attribute to return. If provided, the function
+    #                        will return a dictionary mapping each digest to its attribute's
+    #                        value.
+    #     - itemwise_limit (int): Limit the number of items returned in itemwise format.
+    #                            This is only used if return_format is "itemwise".
+    #
+    #     Returns:
+    #     - (Dict[str, Any]): A dictionary mapping each found digest to its corresponding
+    #                         sequence collection (in the requested format) or attribute value.
+    #
+    #     Raises:
+    #     - ValueError: If none of the provided digests are found in the database.
+    #     - AttributeError: If the specified attribute does not exist on a SequenceCollection object.
+    #     """
+    #
+    #
+    #     if not digests:
+    #         # Handle the case where an empty list is provided
+    #         return {}
+    #
+    #     print("Getting many!!!!")
+    #
+    #     with Session(self.engine) as session:
+    #         # Construct a single query to fetch all SequenceCollections whose digest is in the provided list.
+    #         # The .in_() method is used for this purpose and is highly efficient.
+    #         statement = select(SequenceCollection).where(SequenceCollection.digest.in_(digests))
+    #         results = session.exec(statement).all()
+    #
+    #         if not results:
+    #             # If no results are found, it means none of the digests were valid.
+    #             raise ValueError(f"No SequenceCollections found for the provided digests.")
+    #
+    #         # Create a dictionary to store the results, keyed by the digest.
+    #         found_collections = {seqcol.digest: seqcol for seqcol in results}
+    #
+    #         # Determine the final output based on the provided arguments.
+    #         if attribute:
+    #             # If an attribute is requested, return a dictionary of digests mapped to the attribute's value.
+    #             # Use getattr() to dynamically access the attribute.
+    #             return {
+    #                 digest: getattr(seqcol, attribute).value
+    #                 for digest, seqcol in found_collections.items()
+    #             }
+    #
+    #         # If a specific format is requested, apply the corresponding method to each found collection.
+    #         # Use a match statement for cleaner logic.
+    #         output = {}
+    #         # NOTE: Assuming the necessary methods (level2, level1, itemwise) exist on SequenceCollection
+    #         match return_format:
+    #             case "level2":
+    #                 for digest, seqcol in found_collections.items():
+    #                     output[digest] = seqcol.level2()
+    #             case "level1":
+    #                 for digest, seqcol in found_collections.items():
+    #                     output[digest] = seqcol.level1()
+    #             case "itemwise":
+    #                 for digest, seqcol in found_collections.items():
+    #                     output[digest] = seqcol.itemwise(itemwise_limit)
+    #             case _:
+    #                 # Default case to return the raw objects if an unrecognized format is provided.
+    #                 output = found_collections
+    #
+    #         return output
 
     def add(self, seqcol: SequenceCollection, update: bool = False) -> SequenceCollection:
         """
@@ -598,7 +713,7 @@ class RefgetDBAgent(object):
     #     B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
     #     return calc_jaccard_similarities(A,B)
 
-    def calc_similarities_seqcol_dict_and_digest(self, seqcolA, seqcolB_digest):
+    def calc_similarities_seqcol_dicts(self, seqcolA, seqcolB):
         """
         Calculates the Jaccard similarity between two sequence collections.
 
@@ -607,13 +722,13 @@ class RefgetDBAgent(object):
 
         Args:
             seqcolA (dict): the first sequence collection in dict format.
-            digestB (str): The digest (identifier) for the second sequence collection.
+            seqcolB (dict): the second sequence collection in dict format.
 
         Returns:
             dict: The Jaccard similarity score between the two sequence collections for all present and shared attributes.
 
         """
-        seqcolB = self.seqcol.get(seqcolB_digest, return_format="level2")
+
         return calc_jaccard_similarities(seqcolA, seqcolB)
 
     def compare_1_digest(self, digestA, seqcolB):
