@@ -619,8 +619,6 @@ class RefgetDBAgent(object):
     def compare_1_digest(self, digestA, seqcolB):
         A = self.seqcol.get(digestA, return_format="level2")
         B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
-        _LOGGER.info(f"Comparing...")
-        _LOGGER.info(f"B: {B}")
         return compare_seqcols(A, B)
 
     @property
