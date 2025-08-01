@@ -200,7 +200,6 @@ const LinkToLocalComparison = ({ comparison }) => {
         setTimeout(() => {
           setCopied(false);
         }, 2000);
-        s;
       }}
     >
       {copied ? (

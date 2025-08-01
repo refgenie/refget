@@ -106,7 +106,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
           ],
         },
         width: 'container',
-        height: 60 * comparedCount,
+        height: 460,
       };
     }
 
@@ -308,7 +308,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
         },
       ],
       width: 'container',
-      height: 60 * comparedCount,
+      height: 460,
     };
   };
 
