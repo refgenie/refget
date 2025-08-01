@@ -99,7 +99,7 @@ export const fetchAttribute = async (attribute, digest) => {
 };
 
 export const fetchSimilarities = async (digest) => {
-  const url = `${API_BASE}/similarities/${digest}`;
+  const url = `${API_BASE}/similarities/${digest}?page_size=500`;
   return fetch(url, {
     method: 'POST',
     headers: {
@@ -109,7 +109,7 @@ export const fetchSimilarities = async (digest) => {
 };
 
 export const fetchSimilaritiesJSON = async (data) => {
-  const url = `${API_BASE}/similarities/`;
+  const url = `${API_BASE}/similarities/?page_size=500`;
   return fetch(url, {
     method: 'POST',
     headers: {

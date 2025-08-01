@@ -6,8 +6,7 @@ import { snakeToTitle } from '../utilities';
 const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
   const plotRef = useRef(null);
 
-  const comparedCount = [...new Set(similarities.map((e) => e.comparedDigest))]
-    .length;
+  // const comparedCount = [...new Set(similarities.map((e) => e.comparedDigest))].length;
   const metrics = [
     'lengths',
     'sequences',
@@ -15,6 +14,20 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
     'name_length_pairs',
     'names',
   ];
+
+  const getPlottedRowCount = (similarities, metrics) => {
+    const rowsWithData = new Set();
+    
+    similarities.forEach((item) => {
+      const hasAnyMetric = metrics.some(metric => item[metric] !== undefined && item[metric] !== null);
+      if (hasAnyMetric) {
+        rowsWithData.add(item.comparedDigest);
+      }
+    });
+    
+    return rowsWithData.size;
+  };
+  const plottedRowCount = getPlottedRowCount(similarities, metrics);
 
   const stripSpec = (similarities, jitter, pointSize) => {
     const transformedData = similarities.flatMap((item) => {
@@ -106,7 +119,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
           ],
         },
         width: 'container',
-        height: 460,
+        height: 50 * plottedRowCount,
       };
     }
 
@@ -308,7 +321,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
         },
       ],
       width: 'container',
-      height: 460,
+      height: 50 * plottedRowCount,
     };
   };
 
