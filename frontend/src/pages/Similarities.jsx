@@ -13,35 +13,80 @@ import { HeatmapPlot } from '../components/HeatmapPlot.jsx';
 import { StripPlot } from '../components/StripPlot.jsx';
 import { NetworkGraph } from '../components/NetworkGraph.jsx';
 
+import { useSimilaritiesStore } from '../stores/similarities';
+
+
 const Similarities = () => {
   const navigate = useNavigate();
   const loaderData = useLoaderData();
   const collections = loaderData[0];
 
-  const [selectedCollectionsIndex, setSelectedCollectionsIndex] = useState(
-    collections.results.map(() => false),
-  );
-  const [customCollections, setCustomCollections] = useState([]);
-  const allCollections = [
-    ...collections.results,
-    ...customCollections.map((c) => c.selectedDigest),
-  ];
-
-  const [customCollectionName, setCustomCollectionName] = useState('');
-  const [customCollectionJSON, setCustomCollectionJSON] = useState('');
-  const [customCount, setCustomCount] = useState(1);
-
-  const [similarities, setSimilarities] = useState(null);
+  const { 
+    selectedCollectionsIndex, 
+    setSelectedCollectionsIndex,
+    customCollections,
+    setCustomCollections,
+    customCollectionName,
+    setCustomCollectionName,
+    customCollectionJSON,
+    setCustomCollectionJSON,
+    customCount,
+    setCustomCount,
+    similarities,
+    setSimilarities,
+    getAllCollections,
+    initializeSelectedCollections 
+  } = useSimilaritiesStore();
 
   const [stripJitter, setStripJitter] = useState('none');
   const [heatmapMetric, setHeatmapMetric] = useState('sequences');
   const [networkMetric, setNetworkMetric] = useState('sequences');
   const [networkThreshold, setNetworkThreshold] = useState(0.8);
   const [relationship, setRelationship] = useState('oneToMany');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const allCollections = getAllCollections(collections);
+
+  useEffect(() => {
+    initializeSelectedCollections(collections);
+  }, [collections, initializeSelectedCollections]);
 
   const selectedCollections = allCollections.filter(
     (_, index) => selectedCollectionsIndex[index],
   );
+
+  const sampleJSON = {
+    "lengths": [8, 4, 4],
+    "names": [
+      "chrX",
+      "chr2",
+      "chr1"
+    ],
+    "sequences": [
+      "SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw",
+      "SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj",
+      "SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6"
+    ],
+    "sorted_sequences": [
+      "SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6",
+      "SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj",
+      "SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw"
+    ],
+    "name_length_pairs": [
+      {
+        "length": 8,
+        "name": "chrX"
+      },
+      {
+        "length": 4,
+        "name": "chr2"
+      },
+      {
+        "length": 4,
+        "name": "chr1"
+      }
+    ]
+  }
 
   const handleSelectCollection = (index) => {
     setSelectedCollectionsIndex((prev) => {
@@ -51,18 +96,18 @@ const Similarities = () => {
     });
   };
 
-  const handleNavigateSCIM = async (similiarityRow) => {
+  const handleNavigateSCIM = async (similarityRow) => {
     try {
       let comparison;
-      if (similiarityRow.custom) {
+      if (similarityRow.custom) {
         comparison = await fetchComparisonJSON(
-          similiarityRow.raw,
-          similiarityRow.comparedDigest,
+          similarityRow.raw,
+          similarityRow.comparedDigest,
         );
       } else {
         comparison = await fetchComparison(
-          similiarityRow.selectedDigest,
-          similiarityRow.comparedDigest,
+          similarityRow.selectedDigest,
+          similarityRow.comparedDigest,
         );
       }
       const encodedComparison = encodeComparison(comparison);
@@ -119,6 +164,7 @@ const Similarities = () => {
     }
 
     try {
+      setIsLoading(true);
       const result = await fetchSimilaritiesJSON(data);
       if (result?.similarities) {
         const customDigest = 'custom' + customCount;
@@ -168,6 +214,8 @@ const Similarities = () => {
         </span>,
       );
       return;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -226,7 +274,7 @@ const Similarities = () => {
         <div className='col-12'>
           <div className='d-flex align-items-end justify-content-between'>
             <h4 className='fw-light'>Seqcol Similarity Metrics</h4>
-            <ul className='nav nav-pills border border-2 border-light-subtle rounded rounded-3 bg-body-secondary'>
+            {/* <ul className='nav nav-pills border border-2 border-light-subtle rounded rounded-3 bg-body-secondary'>
               <li className='nav-item pointer-cursor'>
                 <span
                   className={`nav-link px-3 py-1 me-1 tiny cursor-pointer fw-medium ${relationship === 'oneToMany' && 'active'}`}
@@ -243,17 +291,17 @@ const Similarities = () => {
                   Many-to-Many
                 </span>
               </li>
-            </ul>
+            </ul> */}
           </div>
 
           <p className='mt-2 mb-0 text-muted'>
             This tool provides similarity metrics for comparisons between all
             sequence collections on the server and one of your choice.
           </p>
-          <p className='mb-2 text-muted'>
+          {/* <p className='mb-2 text-muted'>
             If you would like to view metrics for multiple sequence collections
             at once, use the "Many-to-Many" tab.
-          </p>
+          </p> */}
 
           <div className='row mt-4'>
             <div
@@ -263,7 +311,8 @@ const Similarities = () => {
                 <div className='card-header tiny d-flex justify-content-between'>
                   <span className='fw-bold'>Custom Collection Output</span>
                   <button
-                    className='btn btn-success btn-xs shadow-sm'
+                    className='btn btn-success btn-xs shadow-sm ms-auto'
+                    disabled={isLoading}
                     onClick={async () =>
                       handleAddCustomCollection(
                         customCollectionJSON,
@@ -271,7 +320,20 @@ const Similarities = () => {
                       )
                     }
                   >
-                    {relationship === 'oneToMany' ? 'Compare' : 'Add'}
+                    {isLoading ? 'Loading...' : (relationship === 'oneToMany' ? 'Submit' : 'Add')}
+                  </button>
+                  <button
+                    className='btn btn-secondary btn-xs shadow-sm ms-1'
+                    disabled={isLoading}
+                    onClick={async () => {
+                      setCustomCollectionJSON(JSON.stringify(sampleJSON, null, 4));
+                      handleAddCustomCollection(
+                        JSON.stringify(sampleJSON),
+                        customCollectionName,
+                      )
+                    }}
+                  >
+                    Example
                   </button>
                 </div>
                 <input
@@ -284,6 +346,7 @@ const Similarities = () => {
                 <textarea
                   id='custom-collection-json'
                   onChange={(e) => setCustomCollectionJSON(e.target.value)}
+                  value={customCollectionJSON}
                   placeholder='If you have a custom sequence collection, enter the output of `refget digest-fasta "yourfasta.fa" -l 2` here.'
                   className='form-control tiny border-0 rounded-0 rounded-bottom z-active'
                   style={{ maxHeight: 'calc(200px - 32.333333px)' }}
@@ -381,7 +444,7 @@ const Similarities = () => {
         </div>
       </div>
 
-      {similarities ? (
+      {(similarities && !isLoading) ? (
         <div className='row'>
           <div className='col-12'>
             <div className='d-flex align-items-end justify-content-between mt-4 mb-2'>
@@ -522,7 +585,7 @@ const Similarities = () => {
           </div>
         </div>
       ) : (
-        selectedCollections.length > 0 && <p className='mt-4'>Loading...</p>
+        (selectedCollections.length > 0 || isLoading)  && <p className='mt-4'>Loading...</p>
       )}
     </div>
   );
