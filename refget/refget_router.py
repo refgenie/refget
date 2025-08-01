@@ -203,7 +203,7 @@ async def calc_similarities(
 
         similarities = []
         for seqcolB in collections["results"]:
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcolB)
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcolB.level1())
             similarities.append({"digest": seqcolB.digest, "similarities": jaccard_sims})
 
         result = {
@@ -245,7 +245,7 @@ async def calc_similarities_from_json(
         similarities = []
 
         for seqcolB in collections["results"]:
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcolB)
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcolB.level1())
             similarities.append({"digest": seqcolB.digest, "similarities": jaccard_sims})
 
         result = {"pagination": collections["pagination"], "similarities": similarities}
@@ -254,7 +254,7 @@ async def calc_similarities_from_json(
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
-            detail="Error: collection not found. Check the digest and try again.",
+            detail=f"Error: collection not found. Check the digest and try again. {e}",
         )
 
     return JSONResponse(result)
