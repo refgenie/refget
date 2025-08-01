@@ -79,6 +79,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
           y: {
             field: 'comparedDigest',
             type: 'nominal',
+            sort: false,
             title: 'Compared Digest',
             axis: {
               labelAngle: -33,
@@ -146,6 +147,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
             y: {
               field: 'comparedDigest',
               type: 'nominal',
+              sort: false,
             },
             opacity:
               jitter === 'none'
@@ -194,6 +196,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
             y: {
               field: 'comparedDigest',
               type: 'nominal',
+              sort: false,
               title: 'Compared Digest',
               axis: {
                 labelAngle: -33,
@@ -266,6 +269,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
             y: {
               field: 'comparedDigest',
               type: 'nominal',
+              sort: false,
               title: 'Compared Digest',
               axis: {
                 labelAngle: -33,
@@ -342,7 +346,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
         plotRef.current.innerHTML = '';
       }
     };
-  }, [similarities, jitter]);
+  }, [similarities, jitter, pointSize]);
 
   return <div className='w-100' ref={plotRef} />;
 };

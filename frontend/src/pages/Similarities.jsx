@@ -96,18 +96,18 @@ const Similarities = () => {
     });
   };
 
-  const handleNavigateSCIM = async (similiarityRow) => {
+  const handleNavigateSCIM = async (similarityRow) => {
     try {
       let comparison;
-      if (similiarityRow.custom) {
+      if (similarityRow.custom) {
         comparison = await fetchComparisonJSON(
-          similiarityRow.raw,
-          similiarityRow.comparedDigest,
+          similarityRow.raw,
+          similarityRow.comparedDigest,
         );
       } else {
         comparison = await fetchComparison(
-          similiarityRow.selectedDigest,
-          similiarityRow.comparedDigest,
+          similarityRow.selectedDigest,
+          similarityRow.comparedDigest,
         );
       }
       const encodedComparison = encodeComparison(comparison);
@@ -444,7 +444,7 @@ const Similarities = () => {
         </div>
       </div>
 
-      {similarities ? (
+      {(similarities && !isLoading) ? (
         <div className='row'>
           <div className='col-12'>
             <div className='d-flex align-items-end justify-content-between mt-4 mb-2'>

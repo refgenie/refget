@@ -25,7 +25,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
           field: 'comparedDigest',
           type: 'nominal',
           title: 'Compared Digest',
-          sort: null,
+          sort: false,
           axis: {
             labelAngle: -33,
             labelLimit: 111,
@@ -36,7 +36,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
           field: 'selectedDigest',
           type: 'nominal',
           title: 'Selected Digest',
-          sort: null,
+          sort: false,
           axis: {
             labelAngle: -33,
             labelLimit: 111,
