@@ -321,7 +321,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal' }) => {
         },
       ],
       width: 'container',
-      height: 50 * plottedRowCount,
+      height: jitter === 'none' ? 25 * plottedRowCount : 50 * plottedRowCount,
     };
   };
 

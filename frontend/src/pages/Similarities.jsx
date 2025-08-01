@@ -43,6 +43,7 @@ const Similarities = () => {
   const [networkMetric, setNetworkMetric] = useState('sequences');
   const [networkThreshold, setNetworkThreshold] = useState(0.8);
   const [relationship, setRelationship] = useState('oneToMany');
+  const [isLoading, setIsLoading] = useState(false);
 
   const allCollections = getAllCollections(collections);
 
@@ -163,6 +164,7 @@ const Similarities = () => {
     }
 
     try {
+      setIsLoading(true);
       const result = await fetchSimilaritiesJSON(data);
       if (result?.similarities) {
         const customDigest = 'custom' + customCount;
@@ -212,6 +214,8 @@ const Similarities = () => {
         </span>,
       );
       return;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -308,6 +312,7 @@ const Similarities = () => {
                   <span className='fw-bold'>Custom Collection Output</span>
                   <button
                     className='btn btn-success btn-xs shadow-sm ms-auto'
+                    disabled={isLoading}
                     onClick={async () =>
                       handleAddCustomCollection(
                         customCollectionJSON,
@@ -315,10 +320,11 @@ const Similarities = () => {
                       )
                     }
                   >
-                    {relationship === 'oneToMany' ? 'Submit' : 'Add'}
+                    {isLoading ? 'Loading...' : (relationship === 'oneToMany' ? 'Submit' : 'Add')}
                   </button>
                   <button
                     className='btn btn-secondary btn-xs shadow-sm ms-1'
+                    disabled={isLoading}
                     onClick={async () => {
                       setCustomCollectionJSON(JSON.stringify(sampleJSON, null, 4));
                       handleAddCustomCollection(
@@ -579,7 +585,7 @@ const Similarities = () => {
           </div>
         </div>
       ) : (
-        selectedCollections.length > 0 && <p className='mt-4'>Loading...</p>
+        (selectedCollections.length > 0 || isLoading)  && <p className='mt-4'>Loading...</p>
       )}
     </div>
   );
