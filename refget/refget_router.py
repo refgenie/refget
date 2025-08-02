@@ -199,11 +199,14 @@ async def calc_similarities(
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
         collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+        seqcols = dbagent.seqcol.get_many(digests=collections["results"])
+
+        seqcolA = dbagent.seqcol.get(digest=collection_digest)
 
         similarities = []
-        for seqcol in collections["results"]:
-            jaccard_sims = dbagent.calc_similarities(collection_digest, seqcol.digest)
-            similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
+        for key in seqcols.keys():
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcols[key])
+            similarities.append({"digest": key, "similarities": jaccard_sims})
 
         result = {
             "reference_digest": collection_digest,
@@ -215,7 +218,7 @@ async def calc_similarities(
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
-            detail="Error: collection not found. Check the digest and try again.",
+            detail=f"Error: collection not found. Check the digest and try again.{e}",
         )
 
     return JSONResponse(result)
@@ -241,12 +244,11 @@ async def calc_similarities_from_json(
 
     try:
         collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
-
+        seqcols = dbagent.seqcol.get_many(digests=collections["results"])
         similarities = []
-
-        for seqcol in collections["results"]:
-            jaccard_sims = dbagent.calc_similarities_seqcol_dict_and_digest(seqcolA, seqcol.digest)
-            similarities.append({"digest": seqcol.digest, "similarities": jaccard_sims})
+        for key in seqcols.keys():
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcols[key])
+            similarities.append({"digest": key, "similarities": jaccard_sims})
 
         result = {"pagination": collections["pagination"], "similarities": similarities}
 
@@ -254,7 +256,7 @@ async def calc_similarities_from_json(
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
-            detail="Error: collection not found. Check the digest and try again.",
+            detail=f"Error: collection not found. Check the digest and try again. {e}",
         )
 
     return JSONResponse(result)
