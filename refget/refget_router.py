@@ -201,7 +201,7 @@ async def calc_similarities(
         collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
         seqcols = dbagent.seqcol.get_many(digests=collections["results"])
 
-        seqcolA = dbagent.seqcol.get_one_seqcol(digest=collection_digest)
+        seqcolA = dbagent.seqcol.get(digest=collection_digest)
 
         similarities = []
         for key in seqcols.keys():
