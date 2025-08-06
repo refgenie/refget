@@ -306,16 +306,18 @@ async def list_collections_by_offset(
     summary="List sequence collections as level 2 on the server",
     tags=["Discovering data"],
 )
-async def list_collections_by_offset(
+async def list_collections_by_offset_level2(
     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
 
-    collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
-    seqcols = dbagent.seqcol.get_many(digests=collections["results"])
-    results = []
-    for key in seqcols.keys():
-        level2 = dbagent.seqcol.retrieve_level2_digest(key)
-        results.append({"digest": key, "dict_level2": level2})
+    # collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+    # seqcols = dbagent.seqcol.get_many(digests=collections["results"])
+    # results = []
+    # for key in seqcols.keys():
+    #     level2 = seqcols[key]
+    #     results.append({"digest": key, "dict_level2": level2}) #TODO this is not quite the proper structure of the level 2
+
+    results = dbagent.seqcol.get_many_level2_offset(limit=page_size)
 
     return JSONResponse(results)
 

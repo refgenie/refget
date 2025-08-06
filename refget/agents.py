@@ -183,6 +183,28 @@ class SequenceCollectionAgent(object):
             else:
                 return seqcol
 
+
+    def get_many_level2_offset(self,
+            return_format: str = "level2",
+                               limit=50, offset=0
+    ) -> Dict[str, Any]:
+
+        final_results = {}
+
+        with Session(self.engine) as session:
+            list_stmt = select(SequenceCollection).offset(offset).limit(limit)
+            cnt_stmt = select(func.count(SequenceCollection.digest))
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqcols = list_res.all()
+
+            for seq in seqcols:
+                final_results[seq.digest] = seq.level2()
+
+            return final_results
+
+
     def get_many(
             self,
             digests: List[str],
