@@ -699,6 +699,11 @@ class RefgetDBAgent(object):
         B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
         return compare_seqcols(A, B)
 
+    def retrieve_level2_digest(self, seqcoldigest):
+        A = self.seqcol.get(seqcoldigest, return_format="level2")
+        return A
+
+
     @property
     def seq(self) -> SequenceAgent:
         return self.__sequence
