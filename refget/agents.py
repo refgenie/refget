@@ -187,7 +187,7 @@ class SequenceCollectionAgent(object):
 
     def get_many_level2_offset(self,
                                limit=50, offset=0
-    ) -> Dict[str, Any]:
+    ) -> ResultsSequenceCollections:
 
         final_results = {}
 
@@ -202,10 +202,12 @@ class SequenceCollectionAgent(object):
             for seq in seqcols:
                 final_results[seq.digest] = seq.level2()
 
-            return {
-                "pagination": {"page": int(offset / limit), "page_size": limit, "total": count},
-                "results": final_results,
-            }
+            return ResultsSequenceCollections(
+
+                pagination=PaginationResult(page=int(offset / limit), page_size=limit, total=count),
+                results=final_results
+
+            )
 
 
 

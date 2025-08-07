@@ -3,7 +3,8 @@ import logging
 from copy import copy
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 
 
 from .digest_functions import sha512t24u_digest
@@ -405,6 +406,27 @@ class NameLengthPairsAttr(SQLModel, table=True):
     value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="name_length_pairs")
 
+
+class PaginationResult(BaseModel):
+    page: int = 0
+    page_size: int = 10
+    total: int
+
+class ResultsSequenceCollections(BaseModel):
+    """
+    Sequence collection results with pagination
+    """
+    pagination: PaginationResult
+    results: Dict[str,dict]
+
+
+class Similarities(BaseModel):
+    """
+    Model to contain results from similarities calculations
+    """
+    similarities: List[Dict[str,Any]]
+    pagination: PaginationResult
+    reference_digest: Optional[str]=None
 
 # This is now a transient attribute, so we don't need to store it in the database.
 # class SortedNameLengthPairsAttr(SQLModel, table=True):

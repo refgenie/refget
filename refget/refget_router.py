@@ -19,6 +19,7 @@ import logging
 
 from fastapi import APIRouter, Response, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
+from .models import Similarities, PaginationResult
 
 from .examples import *
 
@@ -189,13 +190,14 @@ async def compare_2_digests(
     "/similarities/{collection_digest}",
     summary="Calculate Jaccard similarities between a single sequence collection in the database and all other collections in the database",
     tags=["Comparing sequence collections"],
+    response_model=Similarities,
 )
 async def calc_similarities(
     collection_digest: str,
     page_size: int = 50,
     page: int = 0,
     dbagent=Depends(get_dbagent),
-):
+)-> Similarities:
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
         results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
@@ -203,15 +205,12 @@ async def calc_similarities(
         seqcolA = dbagent.seqcol.get(digest=collection_digest)
 
         similarities = []
-        for key in results["results"].keys():
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results["results"][key])
+        for key in results.results.keys():
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
             similarities.append({"digest": key, "similarities": jaccard_sims})
 
-        result = {
-            "reference_digest": collection_digest,
-            "pagination": results["pagination"],
-            "similarities": similarities,
-        }
+        result = Similarities(similarities=similarities, pagination=results.pagination, reference_digest=collection_digest)
+
 
     except Exception as e:
         _LOGGER.debug(e)
@@ -220,20 +219,21 @@ async def calc_similarities(
             detail=f"Error: collection not found. Check the digest and try again.{e}",
         )
 
-    return JSONResponse(result)
+    return result
 
 
 @seqcol_router.post(
     "/similarities/",
     summary="Calculate Jaccard similarities between input sequence collection and all collections in database",
     tags=["Comparing sequence collections"],
+    response_model=Similarities,
 )
 async def calc_similarities_from_json(
     seqcolA: dict,
     page_size: int = 50,
     page: int = 0,
     dbagent=Depends(get_dbagent),
-) -> JSONResponse:
+) -> Similarities:
     """
     Calculate Jaccard similarities between input sequence collection and all collections in DB.
     Takes a JSON sequence collection directly instead of a digest.
@@ -244,11 +244,11 @@ async def calc_similarities_from_json(
     try:
         results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
         similarities = []
-        for key in results["results"].keys():
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results["results"][key])
+        for key in results.results.keys():
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
             similarities.append({"digest": key, "similarities": jaccard_sims})
 
-        result = {"pagination": results["pagination"], "similarities": similarities}
+        result = Similarities(similarities=similarities, pagination=results.pagination)
 
     except Exception as e:
         _LOGGER.debug(e)
@@ -257,7 +257,7 @@ async def calc_similarities_from_json(
             detail=f"Error: collection not found. Check the digest and try again. {e}",
         )
 
-    return JSONResponse(result)
+    return result
 
 
 @seqcol_router.post(
