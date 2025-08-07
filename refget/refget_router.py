@@ -299,32 +299,6 @@ async def list_collections_by_offset(
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
-# @seqcol_router.get(
-#     "/list/collectionslevel2",
-#     summary="List sequence collections as level 2 on the server",
-#     tags=["Discovering data"],
-# )
-# async def list_collections_by_offset_level2(
-#     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
-# ):
-#
-#     results = dbagent.seqcol.get_many_level2_offset(limit=page_size)
-#
-#     return JSONResponse(results)
-
-
-# @seqcol_router.get(
-#     "/list-by-cursor",
-#     summary="List sequence collections on the server, paged by cursor",
-#     tags=["Discovering data"],
-# )
-# async def list_collections_by_token(
-#     dbagent=Depends(get_dbagent), page_size: int = 100, cursor: str = None
-# ):
-#     res = dbagent.seqcol.list(page_size=page_size, cursor=cursor)
-#     res["results"] = [x.digest for x in res["results"]]
-#     return JSONResponse(res)
-
 
 @seqcol_router.get(
     "/list/collections/{attribute}/{attribute_digest}",
