@@ -324,6 +324,7 @@ class SequenceCollection(SQLModel, table=True):
 
         seqcol = SequenceCollection(
             digest=gtars_seq_col.digest,
+            human_readable_name=None,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
