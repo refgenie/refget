@@ -192,15 +192,9 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     a_lengths = {}
     b_lengths = {}
     for k in a_keys:
-        if A.get(k):
-            a_lengths[k] = len(A[k])
-        else:
-            a_lengths[k] = 0
+        a_lengths[k] = len(A[k])
     for k in b_keys:
-        if B.get(k):
-            b_lengths[k] = len(B[k])
-        else:
-            b_lengths[k] = 0
+        b_lengths[k] = len(B[k])
 
     return_obj = {
         "attributes": {"a_only": [], "b_only": [], "a_and_b": []},
@@ -246,6 +240,13 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
         return jaccard_similarity
 
     jaccard_similarities = {}
+
+    if (
+        "human_readable_name" in A.keys()
+    ):  # this can cause issues if key exists but is NoneType when comparing with compare_seqcols()
+        del A["human_readable_name"]
+    if "human_readable_name" in B.keys():
+        del B["human_readable_name"]
 
     comparison_dict = compare_seqcols(A, B)
 
