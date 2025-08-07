@@ -207,7 +207,7 @@ async def calc_similarities(
         similarities = []
         for key in results.results.keys():
             jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
-            similarities.append({"digest": key, "similarities": jaccard_sims})
+            similarities.append({"digest": key, "name": results.results[key]["name"],"similarities": jaccard_sims})
 
         result = Similarities(similarities=similarities, pagination=results.pagination, reference_digest=collection_digest)
 
@@ -246,7 +246,7 @@ async def calc_similarities_from_json(
         similarities = []
         for key in results.results.keys():
             jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
-            similarities.append({"digest": key, "similarities": jaccard_sims})
+            similarities.append({"digest": key, "name": results.results[key]["name"],"similarities": jaccard_sims})
 
         result = Similarities(similarities=similarities, pagination=results.pagination)
 

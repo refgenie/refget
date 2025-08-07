@@ -201,6 +201,7 @@ class SequenceCollectionAgent(object):
 
             for seq in seqcols:
                 final_results[seq.digest] = seq.level2()
+                final_results[seq.digest]["name"] = seq.human_readable_name
 
             return ResultsSequenceCollections(
 
@@ -253,6 +254,7 @@ class SequenceCollectionAgent(object):
 
                 if existing and update:
                     # Update existing collection
+                    existing.human_readable_name = seqcol.human_readable_name
                     for attr_name, attr in processed_attrs.items():
                         # Update attribute reference
                         setattr(existing, f"{attr_name}_digest", attr.digest)
@@ -271,6 +273,7 @@ class SequenceCollectionAgent(object):
                     # Create new collection
                     new_collection = SequenceCollection(
                         digest=seqcol.digest,
+                        human_readable_name=seqcol.human_readable_name,
                         sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                     )
 
@@ -316,6 +319,26 @@ class SequenceCollectionAgent(object):
         seqcol = self.add_from_dict(CSC, update)
         return seqcol
 
+    def add_from_fasta_file_with_name(
+            self, fasta_file_path: str, human_name: str,update: bool = False,
+    ) -> SequenceCollection:
+        """
+        Given a path to a fasta file, and a human-readable name, load the sequences into the refget database.
+
+        Args:
+        - fasta_file_path (str): Path to the fasta file
+        - human_name (str): human_readable_name
+        - update (bool): If True, update an existing collection if it exists
+
+        Returns:
+        - (SequenceCollection): The added or updated sequence collection
+        """
+
+        CSC = fasta_to_seqcol_dict(fasta_file_path)
+        CSC["human_readable_name"]=human_name
+        seqcol = self.add_from_dict(CSC, update)
+        return seqcol
+
     def add_from_fasta_pep(self, pep: peppy.Project, fa_root: str, update: bool = False) -> dict:
         """
         Given a path to a PEP file and a root directory containing the fasta files,
@@ -338,7 +361,10 @@ class SequenceCollectionAgent(object):
             _LOGGER.info(f"Loading {fa_path} ({i} of {total_files})")
 
             start_time = time.time()  # Record start time
-            results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
+            if s.sample_name:
+                results[s.fasta] = self.add_from_fasta_file_with_name(fa_path, s.sample_name, update).digest
+            else:
+                results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
             elapsed_time = time.time() - start_time  # Calculate elapsed time
 
             _LOGGER.info(f"Loaded in {elapsed_time:.2f} seconds")

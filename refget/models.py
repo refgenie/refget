@@ -111,6 +111,8 @@ class SequenceCollection(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     """ Top-level digest of the SequenceCollection. """
 
+    human_readable_name: Optional[str] = Field(default=None)
+
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
     sequences: "SequencesAttr" = Relationship(back_populates="collection")
     """ Array of sequence digests."""
@@ -233,8 +235,14 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"sorted_sequences_digest: {sorted_sequences_digest}")
         _LOGGER.debug(f"sorted_sequences_attr: {sorted_sequences_attr}")
 
+        if  seqcol_dict.get("human_readable_name"):
+            human_readable_name = seqcol_dict["human_readable_name"]
+        else:
+            human_readable_name = None
+
         seqcol = SequenceCollection(
             digest=seqcol_digest,
+            human_readable_name=human_readable_name,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
