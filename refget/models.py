@@ -235,7 +235,7 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"sorted_sequences_digest: {sorted_sequences_digest}")
         _LOGGER.debug(f"sorted_sequences_attr: {sorted_sequences_attr}")
 
-        if  seqcol_dict.get("human_readable_name"):
+        if seqcol_dict.get("human_readable_name"):
             human_readable_name = seqcol_dict["human_readable_name"]
         else:
             human_readable_name = None
@@ -420,21 +420,25 @@ class PaginationResult(BaseModel):
     page_size: int = 10
     total: int
 
+
 class ResultsSequenceCollections(BaseModel):
     """
     Sequence collection results with pagination
     """
+
     pagination: PaginationResult
-    results: Dict[str,dict]
+    results: Dict[str, dict]
 
 
 class Similarities(BaseModel):
     """
     Model to contain results from similarities calculations
     """
-    similarities: List[Dict[str,Any]]
+
+    similarities: List[Dict[str, Any]]
     pagination: PaginationResult
-    reference_digest: Optional[str]=None
+    reference_digest: Optional[str] = None
+
 
 # This is now a transient attribute, so we don't need to store it in the database.
 # class SortedNameLengthPairsAttr(SQLModel, table=True):

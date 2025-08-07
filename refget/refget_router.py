@@ -197,7 +197,7 @@ async def calc_similarities(
     page_size: int = 50,
     page: int = 0,
     dbagent=Depends(get_dbagent),
-)-> Similarities:
+) -> Similarities:
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
         results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
@@ -207,10 +207,15 @@ async def calc_similarities(
         similarities = []
         for key in results.results.keys():
             jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
-            similarities.append({"digest": key, "name": results.results[key]["name"],"similarities": jaccard_sims})
+            similarities.append(
+                {"digest": key, "name": results.results[key]["name"], "similarities": jaccard_sims}
+            )
 
-        result = Similarities(similarities=similarities, pagination=results.pagination, reference_digest=collection_digest)
-
+        result = Similarities(
+            similarities=similarities,
+            pagination=results.pagination,
+            reference_digest=collection_digest,
+        )
 
     except Exception as e:
         _LOGGER.debug(e)
@@ -246,7 +251,9 @@ async def calc_similarities_from_json(
         similarities = []
         for key in results.results.keys():
             jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
-            similarities.append({"digest": key, "name": results.results[key]["name"],"similarities": jaccard_sims})
+            similarities.append(
+                {"digest": key, "name": results.results[key]["name"], "similarities": jaccard_sims}
+            )
 
         result = Similarities(similarities=similarities, pagination=results.pagination)
 

@@ -184,15 +184,23 @@ class SequenceCollectionAgent(object):
             else:
                 return seqcol
 
-
-    def get_many_level2_offset(self,
-                               limit=50, offset=0
-    ) -> ResultsSequenceCollections:
+    def get_many_level2_offset(self, limit=50, offset=0) -> ResultsSequenceCollections:
 
         final_results = {}
 
         with Session(self.engine) as session:
-            list_stmt = select(SequenceCollection).options(selectinload(SequenceCollection.lengths),selectinload(SequenceCollection.sequences),selectinload(SequenceCollection.sorted_sequences),selectinload(SequenceCollection.names), selectinload(SequenceCollection.name_length_pairs)).offset(offset).limit(limit)
+            list_stmt = (
+                select(SequenceCollection)
+                .options(
+                    selectinload(SequenceCollection.lengths),
+                    selectinload(SequenceCollection.sequences),
+                    selectinload(SequenceCollection.sorted_sequences),
+                    selectinload(SequenceCollection.names),
+                    selectinload(SequenceCollection.name_length_pairs),
+                )
+                .offset(offset)
+                .limit(limit)
+            )
             cnt_stmt = select(func.count(SequenceCollection.digest))
             cnt_res = session.exec(cnt_stmt)
             list_res = session.exec(list_stmt)
@@ -204,14 +212,11 @@ class SequenceCollectionAgent(object):
                 final_results[seq.digest]["name"] = seq.human_readable_name
 
             return ResultsSequenceCollections(
-
-                pagination=PaginationResult(page=int(offset / limit), page_size=limit, total=count),
-                results=final_results
-
+                pagination=PaginationResult(
+                    page=int(offset / limit), page_size=limit, total=count
+                ),
+                results=final_results,
             )
-
-
-
 
     def add(self, seqcol: SequenceCollection, update: bool = False) -> SequenceCollection:
         """
@@ -320,7 +325,10 @@ class SequenceCollectionAgent(object):
         return seqcol
 
     def add_from_fasta_file_with_name(
-            self, fasta_file_path: str, human_readable_name: str,update: bool = False,
+        self,
+        fasta_file_path: str,
+        human_readable_name: str,
+        update: bool = False,
     ) -> SequenceCollection:
         """
         Given a path to a fasta file, and a human-readable name, load the sequences into the refget database.
@@ -335,7 +343,7 @@ class SequenceCollectionAgent(object):
         """
 
         CSC = fasta_to_seqcol_dict(fasta_file_path)
-        CSC["human_readable_name"]=human_readable_name
+        CSC["human_readable_name"] = human_readable_name
         seqcol = self.add_from_dict(CSC, update)
         return seqcol
 
@@ -362,7 +370,9 @@ class SequenceCollectionAgent(object):
 
             start_time = time.time()  # Record start time
             if s.sample_name:
-                results[s.fasta] = self.add_from_fasta_file_with_name(fa_path, s.sample_name, update).digest
+                results[s.fasta] = self.add_from_fasta_file_with_name(
+                    fa_path, s.sample_name, update
+                ).digest
             else:
                 results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
             elapsed_time = time.time() - start_time  # Calculate elapsed time
@@ -679,7 +689,6 @@ class RefgetDBAgent(object):
     def retrieve_level2_digest(self, seqcoldigest):
         A = self.seqcol.get(seqcoldigest, return_format="level2")
         return A
-
 
     @property
     def seq(self) -> SequenceAgent:
