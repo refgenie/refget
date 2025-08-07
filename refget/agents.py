@@ -6,6 +6,7 @@ import requests
 
 from sqlmodel import create_engine, select, Session, delete, func, SQLModel
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
@@ -192,11 +193,8 @@ class SequenceCollectionAgent(object):
         final_results = {}
 
         with Session(self.engine) as session:
-            list_stmt = select(SequenceCollection).offset(offset).limit(limit)
-            cnt_stmt = select(func.count(SequenceCollection.digest))
-            cnt_res = session.exec(cnt_stmt)
+            list_stmt = select(SequenceCollection).options(selectinload(SequenceCollection.lengths),selectinload(SequenceCollection.sequences),selectinload(SequenceCollection.sorted_sequences),selectinload(SequenceCollection.names), selectinload(SequenceCollection.name_length_pairs)).offset(offset).limit(limit)
             list_res = session.exec(list_stmt)
-            count = cnt_res.one()
             seqcols = list_res.all()
 
             for seq in seqcols:
