@@ -243,14 +243,13 @@ async def calc_similarities_from_json(
     _LOGGER.info("Calculating Jaccard similarities from input sequence collection...")
 
     try:
-        collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
-        seqcols = dbagent.seqcol.get_many(digests=collections["results"])
+        results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
         similarities = []
-        for key in seqcols.keys():
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcols[key])
+        for key in results["results"].keys():
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results["results"][key])
             similarities.append({"digest": key, "similarities": jaccard_sims})
 
-        result = {"pagination": collections["pagination"], "similarities": similarities}
+        result = {"pagination": results["pagination"], "similarities": similarities}
 
     except Exception as e:
         _LOGGER.debug(e)
@@ -301,18 +300,18 @@ async def list_collections_by_offset(
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
-@seqcol_router.get(
-    "/list/collectionslevel2",
-    summary="List sequence collections as level 2 on the server",
-    tags=["Discovering data"],
-)
-async def list_collections_by_offset_level2(
-    dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
-):
-
-    results = dbagent.seqcol.get_many_level2_offset(limit=page_size)
-
-    return JSONResponse(results)
+# @seqcol_router.get(
+#     "/list/collectionslevel2",
+#     summary="List sequence collections as level 2 on the server",
+#     tags=["Discovering data"],
+# )
+# async def list_collections_by_offset_level2(
+#     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
+# ):
+#
+#     results = dbagent.seqcol.get_many_level2_offset(limit=page_size)
+#
+#     return JSONResponse(results)
 
 
 # @seqcol_router.get(
