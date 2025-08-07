@@ -320,7 +320,7 @@ class SequenceCollectionAgent(object):
         return seqcol
 
     def add_from_fasta_file_with_name(
-            self, fasta_file_path: str, human_name: str,update: bool = False,
+            self, fasta_file_path: str, human_readable_name: str,update: bool = False,
     ) -> SequenceCollection:
         """
         Given a path to a fasta file, and a human-readable name, load the sequences into the refget database.
@@ -335,7 +335,7 @@ class SequenceCollectionAgent(object):
         """
 
         CSC = fasta_to_seqcol_dict(fasta_file_path)
-        CSC["human_readable_name"]=human_name
+        CSC["human_readable_name"]=human_readable_name
         seqcol = self.add_from_dict(CSC, update)
         return seqcol
 
