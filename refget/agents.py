@@ -209,7 +209,7 @@ class SequenceCollectionAgent(object):
 
             for seq in seqcols:
                 final_results[seq.digest] = seq.level2()
-                final_results[seq.digest]["name"] = seq.human_readable_name
+                final_results[seq.digest]["human_readable_name"] = seq.human_readable_name
 
             return ResultsSequenceCollections(
                 pagination=PaginationResult(

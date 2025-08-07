@@ -192,9 +192,15 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     a_lengths = {}
     b_lengths = {}
     for k in a_keys:
-        a_lengths[k] = len(A[k])
+        if A.get(k):
+            a_lengths[k] = len(A[k])
+        else:
+            a_lengths[k] = 0
     for k in b_keys:
-        b_lengths[k] = len(B[k])
+        if B.get(k):
+            b_lengths[k] = len(B[k])
+        else:
+            b_lengths[k] = 0
 
     return_obj = {
         "attributes": {"a_only": [], "b_only": [], "a_and_b": []},
