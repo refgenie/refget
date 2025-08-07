@@ -198,19 +198,18 @@ async def calc_similarities(
 ):
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
-        collections = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
-        seqcols = dbagent.seqcol.get_many(digests=collections["results"])
+        results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
 
         seqcolA = dbagent.seqcol.get(digest=collection_digest)
 
         similarities = []
-        for key in seqcols.keys():
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, seqcols[key])
+        for key in results["results"].keys():
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results["results"][key])
             similarities.append({"digest": key, "similarities": jaccard_sims})
 
         result = {
             "reference_digest": collection_digest,
-            "pagination": collections["pagination"],
+            "pagination": results["pagination"],
             "similarities": similarities,
         }
 
