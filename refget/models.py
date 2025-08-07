@@ -235,10 +235,7 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"sorted_sequences_digest: {sorted_sequences_digest}")
         _LOGGER.debug(f"sorted_sequences_attr: {sorted_sequences_attr}")
 
-        if seqcol_dict.get("human_readable_name"):
-            human_readable_name = seqcol_dict["human_readable_name"]
-        else:
-            human_readable_name = None
+        human_readable_name = seqcol_dict.get("human_readable_name")
 
         seqcol = SequenceCollection(
             digest=seqcol_digest,

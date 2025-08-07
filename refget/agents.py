@@ -335,7 +335,7 @@ class SequenceCollectionAgent(object):
 
         Args:
         - fasta_file_path (str): Path to the fasta file
-        - human_name (str): human_readable_name
+        - human_readable_name (str): human_readable_name
         - update (bool): If True, update an existing collection if it exists
 
         Returns:
