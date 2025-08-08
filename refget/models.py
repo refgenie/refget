@@ -111,6 +111,8 @@ class SequenceCollection(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     """ Top-level digest of the SequenceCollection. """
 
+    human_readable_name: Optional[str] = Field(default=None)
+
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
     sequences: "SequencesAttr" = Relationship(back_populates="collection")
     """ Array of sequence digests."""
@@ -233,8 +235,11 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"sorted_sequences_digest: {sorted_sequences_digest}")
         _LOGGER.debug(f"sorted_sequences_attr: {sorted_sequences_attr}")
 
+        human_readable_name = seqcol_dict.get("human_readable_name")
+
         seqcol = SequenceCollection(
             digest=seqcol_digest,
+            human_readable_name=human_readable_name,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
@@ -319,6 +324,7 @@ class SequenceCollection(SQLModel, table=True):
 
         seqcol = SequenceCollection(
             digest=gtars_seq_col.digest,
+            human_readable_name=None,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
@@ -412,21 +418,25 @@ class PaginationResult(BaseModel):
     page_size: int = 10
     total: int
 
+
 class ResultsSequenceCollections(BaseModel):
     """
     Sequence collection results with pagination
     """
+
     pagination: PaginationResult
-    results: Dict[str,dict]
+    results: Dict[str, dict]
 
 
 class Similarities(BaseModel):
     """
     Model to contain results from similarities calculations
     """
-    similarities: List[Dict[str,Any]]
+
+    similarities: List[Dict[str, Any]]
     pagination: PaginationResult
-    reference_digest: Optional[str]=None
+    reference_digest: Optional[str] = None
+
 
 # This is now a transient attribute, so we don't need to store it in the database.
 # class SortedNameLengthPairsAttr(SQLModel, table=True):

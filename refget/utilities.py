@@ -241,23 +241,26 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
 
     jaccard_similarities = {}
 
+    if (
+        "human_readable_name" in A.keys()
+    ):  # this can cause issues if key exists but is NoneType when comparing with compare_seqcols()
+        del A["human_readable_name"]
+    if "human_readable_name" in B.keys():
+        del B["human_readable_name"]
+
     comparison_dict = compare_seqcols(A, B)
 
     list_a_keys = list(comparison_dict["array_elements"]["a_and_b"].keys())
 
     for key in list_a_keys:
-
         intersection_seqcol = comparison_dict["array_elements"]["a_and_b"].get(key)
-
         a = comparison_dict["array_elements"]["a"].get(key)
         b = comparison_dict["array_elements"]["b"].get(key)
-
-        if a and b and intersection_seqcol:
-            union_seqcol = (
-                a + b - intersection_seqcol
-            )  # inclusion-exclusion principal for calculating union
-            jaccard_similarity = calc_jaccard_similarity(intersection_seqcol, union_seqcol)
-            jaccard_similarities.update({key: jaccard_similarity})
+        union_seqcol = (
+            a + b - intersection_seqcol
+        )  # inclusion-exclusion principal for calculating union
+        jaccard_similarity = calc_jaccard_similarity(intersection_seqcol, union_seqcol)
+        jaccard_similarities.update({key: jaccard_similarity})
     return jaccard_similarities
 
 
