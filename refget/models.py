@@ -3,7 +3,8 @@ import logging
 from copy import copy
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 
 
 from .digest_functions import sha512t24u_digest
@@ -109,6 +110,8 @@ class SequenceCollection(SQLModel, table=True):
 
     digest: str = Field(primary_key=True)
     """ Top-level digest of the SequenceCollection. """
+
+    human_readable_name: Optional[str] = Field(default=None)
 
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
     sequences: "SequencesAttr" = Relationship(back_populates="collection")
@@ -232,8 +235,11 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"sorted_sequences_digest: {sorted_sequences_digest}")
         _LOGGER.debug(f"sorted_sequences_attr: {sorted_sequences_attr}")
 
+        human_readable_name = seqcol_dict.get("human_readable_name")
+
         seqcol = SequenceCollection(
             digest=seqcol_digest,
+            human_readable_name=human_readable_name,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
@@ -318,6 +324,7 @@ class SequenceCollection(SQLModel, table=True):
 
         seqcol = SequenceCollection(
             digest=gtars_seq_col.digest,
+            human_readable_name=None,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
@@ -404,6 +411,31 @@ class NameLengthPairsAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="name_length_pairs")
+
+
+class PaginationResult(BaseModel):
+    page: int = 0
+    page_size: int = 10
+    total: int
+
+
+class ResultsSequenceCollections(BaseModel):
+    """
+    Sequence collection results with pagination
+    """
+
+    pagination: PaginationResult
+    results: Dict[str, dict]
+
+
+class Similarities(BaseModel):
+    """
+    Model to contain results from similarities calculations
+    """
+
+    similarities: List[Dict[str, Any]]
+    pagination: PaginationResult
+    reference_digest: Optional[str] = None
 
 
 # This is now a transient attribute, so we don't need to store it in the database.
