@@ -2,11 +2,6 @@
 # from refget.agents import RefgetDBAgent
 # import os
 #
-#
-# # a_root = "test_fasta"
-# # dbc = RefgetDBAgent()
-# # print(f"SQL Engine: {dbc.engine}")
-# #
 # # demo_results = {}
 # # f ="/home/drc/Downloads/fasta_DL_test/GCA_000001405.29.fa.gz"
 # # f="/home/drc/Downloads/hg38.p14.fa.masked.gz"
@@ -18,4 +13,4 @@
 # p = phc.load_project("donaldcampbelljr/add_fasta_to_refget:default")
 # fa_root = os.path.expandvars("/home/drc/Downloads/test_adding_fastas/")
 # rga = RefgetDBAgent()
-# results = rga.seqcol.add_from_fasta_pep(p, fa_root)
+# results = rga.seqcol.add_from_fasta_pep(p, fa_root, update=True)
