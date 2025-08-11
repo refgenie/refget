@@ -102,7 +102,6 @@ class SequenceAgent(object):
 
             results = session.exec(statement)
             response = results.first()
-            print(response)
 
             # Raise ValueError if not found or if the subsequence is empty
             if not response:
