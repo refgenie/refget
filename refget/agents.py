@@ -259,10 +259,18 @@ class SequenceCollectionAgent(object):
                     #existing.human_readable_names = seqcol.human_readable_names
                     existing_names = [name_model.human_readable_name for name_model in existing.human_readable_names]
                     #print(existing_names)
-                    all_names=[]
+
                     for name_model in seqcol.human_readable_names:
                         if name_model.human_readable_name not in existing_names:
-                            all_names.append(name_model)
+
+                            new_name = HumanReadableNames(
+                                human_readable_name=name_model.human_readable_name,
+                                digest=existing.digest
+                            )
+
+                            session.add(new_name)
+
+                            existing.human_readable_names.append(new_name)
 
                     for attr_name, attr in processed_attrs.items():
                         # Update attribute reference
@@ -271,7 +279,7 @@ class SequenceCollectionAgent(object):
                         # Update relationship - first remove from all existing collections
                         getattr(attr, "collection", []).append(existing)
 
-                    setattr(existing, "human_readable_names", all_names)
+                    #setattr(existing, "human_readable_names", all_names)
                     # Update transient attributes
                     existing.sorted_name_length_pairs_digest = (
                         seqcol.sorted_name_length_pairs_digest
