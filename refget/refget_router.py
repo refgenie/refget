@@ -206,12 +206,12 @@ async def calc_similarities(
 
         similarities = []
         for key in results.results.keys():
-            human_readable_name = results.results[key]["human_readable_name"]
+            human_readable_names = results.results[key]["human_readable_names"]
             jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
             similarities.append(
                 {
                     "digest": key,
-                    "human_readable_name": human_readable_name,
+                    "human_readable_names": human_readable_names,
                     "similarities": jaccard_sims,
                 }
             )
@@ -255,12 +255,12 @@ async def calc_similarities_from_json(
         results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
         similarities = []
         for key in results.results.keys():
-            human_readable_name = results.results[key]["human_readable_name"]
+            human_readable_names = results.results[key]["human_readable_names"]
             jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
             similarities.append(
                 {
                     "digest": key,
-                    "human_readable_name": human_readable_name,
+                    "human_readable_names": human_readable_names,
                     "similarities": jaccard_sims,
                 }
             )
