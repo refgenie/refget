@@ -240,6 +240,7 @@ async def calc_similarities(
 )
 async def calc_similarities_from_json(
     seqcolA: dict,
+    species: str = "human",
     page_size: int = 50,
     page: int = 0,
     dbagent=Depends(get_dbagent),
@@ -248,11 +249,19 @@ async def calc_similarities_from_json(
     Calculate Jaccard similarities between input sequence collection and all collections in DB.
     Takes a JSON sequence collection directly instead of a digest.
     Take output from: refget digest-fasta "yourfasta.fa" -l 2 > myoutput.json
+
+    Args:
+        seqcolA: Input sequence collection dictionary
+        species: Species to filter by ("human" or "mouse"), defaults to "human"
+        page_size: Number of results per page
+        page: Page number
+        dbagent: Database agent dependency
     """
     _LOGGER.info("Calculating Jaccard similarities from input sequence collection...")
 
     try:
         results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
+
         similarities = []
         for key in results.results.keys():
             human_readable_names = results.results[key]["human_readable_names"]

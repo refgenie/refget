@@ -183,7 +183,7 @@ class SequenceCollectionAgent(object):
             else:
                 return seqcol
 
-    def get_many_level2_offset(self, limit=50, offset=0) -> ResultsSequenceCollections:
+    def get_many_level2_offset(self, limit=50, offset=0, target_digests=None) -> ResultsSequenceCollections:
 
         final_results = {}
 
@@ -196,11 +196,21 @@ class SequenceCollectionAgent(object):
                     selectinload(SequenceCollection.sorted_sequences),
                     selectinload(SequenceCollection.names),
                     selectinload(SequenceCollection.name_length_pairs),
+                    selectinload(SequenceCollection.human_readable_names),
                 )
-                .offset(offset)
-                .limit(limit)
             )
-            cnt_stmt = select(func.count(SequenceCollection.digest))
+
+            # Filter by target digests if provided
+            if target_digests:
+                list_stmt = list_stmt.where(SequenceCollection.digest.in_(target_digests))
+                cnt_stmt = select(func.count(SequenceCollection.digest)).where(
+                    SequenceCollection.digest.in_(target_digests)
+                )
+            else:
+                cnt_stmt = select(func.count(SequenceCollection.digest))
+
+            list_stmt = list_stmt.offset(offset).limit(limit)
+
             cnt_res = session.exec(cnt_stmt)
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
@@ -208,7 +218,9 @@ class SequenceCollectionAgent(object):
 
             for seq in seqcols:
                 final_results[seq.digest] = seq.level2()
-                final_results[seq.digest]["human_readable_names"] = seq.human_readable_names
+                final_results[seq.digest]["human_readable_names"] = [
+                    name.human_readable_name for name in seq.human_readable_names
+                ]
 
             return ResultsSequenceCollections(
                 pagination=PaginationResult(

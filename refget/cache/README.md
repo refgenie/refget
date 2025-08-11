@@ -1,0 +1,2 @@
+The txt files in this folder contain the original samples names for reference genomes used in "Taming the reference genome jungle: Improving interoperability and reproducibility in genomics through the GA4GH refget sequence collections standard".
+These are pre-loaded to save on compute when a user queries the endpoint for running jaccard similarities.
