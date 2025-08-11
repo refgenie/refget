@@ -253,18 +253,20 @@ class SequenceCollectionAgent(object):
                         attr = attr_class(**attr_obj.model_dump())
                         session.add(attr)
                     processed_attrs[attr_name] = attr
-
+                #session.commit()
                 if existing and update:
                     # Update existing collection
-                    existing.human_readable_name = seqcol.human_readable_name
+                    #existing.human_readable_names = seqcol.human_readable_names
                     for attr_name, attr in processed_attrs.items():
                         # Update attribute reference
                         setattr(existing, f"{attr_name}_digest", attr.digest)
 
                         # Update relationship - first remove from all existing collections
                         getattr(attr, "collection", []).append(existing)
-
+                    #session.commit()
                     # Update transient attributes
+                    #existing.human_readable_names = seqcol.human_readable_names
+                    #print(seqcol.sorted_name_length_pairs_digest)
                     existing.sorted_name_length_pairs_digest = (
                         seqcol.sorted_name_length_pairs_digest
                     )
@@ -340,7 +342,7 @@ class SequenceCollectionAgent(object):
         """
 
         CSC = fasta_to_seqcol_dict(fasta_file_path)
-        CSC["human_readable_name"] = human_readable_name
+        CSC["human_readable_names"] = human_readable_name
         seqcol = self.add_from_dict(CSC, update)
         return seqcol
 

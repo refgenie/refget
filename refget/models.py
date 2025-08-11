@@ -105,7 +105,7 @@ class HumanReadableNames(SQLModel, table=True):
     """
     id: Optional[int] = Field(default=None, primary_key=True)
     human_readable_name: str = Field(unique=True)
-    digest: str = Field(foreign_key="sequencecollection.digest")
+    digest: str = Field(foreign_key="sequencecollection.digest", nullable=False)
     collection: "SequenceCollection" = Relationship(back_populates="human_readable_names")
 
     # hpow to add data to this table
@@ -249,14 +249,14 @@ class SequenceCollection(SQLModel, table=True):
 
 
         human_readable_names_list = []
-        if "human_readable_name" in seqcol_dict and seqcol_dict["human_readable_name"]:
+        if "human_readable_names" in seqcol_dict and seqcol_dict["human_readable_names"]:
             # Assuming 'human_readable_name' is a list of strings in the input dictionary
-            if isinstance(seqcol_dict["human_readable_name"], list):
-                for name_str in seqcol_dict["human_readable_name"]:
-                    human_readable_names_list.append(HumanReadableNames(human_readable_name=name_str))
+            if isinstance(seqcol_dict["human_readable_names"], list):
+                for name_str in seqcol_dict["human_readable_names"]:
+                    human_readable_names_list.append(HumanReadableNames(human_readable_name=name_str, digest=seqcol_digest))
             # Handle the case where a single string is provided for backward compatibility
-            elif isinstance(seqcol_dict["human_readable_name"], str):
-                human_readable_names_list.append(HumanReadableNames(human_readable_name=seqcol_dict["human_readable_name"]))
+            elif isinstance(seqcol_dict["human_readable_names"], str):
+                human_readable_names_list.append(HumanReadableNames(human_readable_name=seqcol_dict["human_readable_names"],digest=seqcol_digest))
 
         seqcol = SequenceCollection(
             digest=seqcol_digest,
