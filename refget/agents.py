@@ -208,7 +208,7 @@ class SequenceCollectionAgent(object):
 
             for seq in seqcols:
                 final_results[seq.digest] = seq.level2()
-                final_results[seq.digest]["human_readable_name"] = seq.human_readable_name
+                final_results[seq.digest]["human_readable_names"] = seq.human_readable_names
 
             return ResultsSequenceCollections(
                 pagination=PaginationResult(
@@ -230,11 +230,9 @@ class SequenceCollectionAgent(object):
         """
         with Session(self.engine, expire_on_commit=False) as session:
             with session.no_autoflush:
-                # Check if collection exists
                 existing = session.get(SequenceCollection, seqcol.digest)
 
                 if existing and not update:
-                    # Return existing without modification if not updating
                     return existing
 
                 # Process attributes (create if needed)
@@ -277,7 +275,7 @@ class SequenceCollectionAgent(object):
                     # Create new collection
                     new_collection = SequenceCollection(
                         digest=seqcol.digest,
-                        human_readable_name=seqcol.human_readable_name,
+                        human_readable_names=seqcol.human_readable_names,
                         sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                     )
 

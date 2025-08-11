@@ -99,6 +99,18 @@ class CollectionNamesAttr(SQLModel, table=True):
     pangenome: List["Pangenome"] = Relationship(back_populates="names")
     # value: List[str] = Field(sa_column=Column(ARRAY(String)))
 
+class HumanReadableNames(SQLModel, table=True):
+    """
+    A SQLModel/pydantic model that represents a refget sequence collection.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    human_readable_name: str = Field(unique=True)
+    digest: str = Field(foreign_key="sequencecollection.digest")
+    collection: "SequenceCollection" = Relationship(back_populates="human_readable_names")
+
+    # hpow to add data to this table
+    # how to enter the data
+
 
 # For a transient attribute, like sorted_name_length_pairs, you just need the attr_digest value.
 # For attributes where you want to store the values in a table, you would also have the
@@ -107,11 +119,11 @@ class SequenceCollection(SQLModel, table=True):
     """
     A SQLModel/pydantic model that represents a refget sequence collection.
     """
-
     digest: str = Field(primary_key=True)
     """ Top-level digest of the SequenceCollection. """
 
-    human_readable_name: Optional[str] = Field(default=None)
+    # human_readable_name: Optional[str] = Field(default=None)
+    human_readable_names: List["HumanReadableNames"] = Relationship(back_populates="collection")
 
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
     sequences: "SequencesAttr" = Relationship(back_populates="collection")
@@ -235,11 +247,20 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"sorted_sequences_digest: {sorted_sequences_digest}")
         _LOGGER.debug(f"sorted_sequences_attr: {sorted_sequences_attr}")
 
-        human_readable_name = seqcol_dict.get("human_readable_name")
+
+        human_readable_names_list = []
+        if "human_readable_name" in seqcol_dict and seqcol_dict["human_readable_name"]:
+            # Assuming 'human_readable_name' is a list of strings in the input dictionary
+            if isinstance(seqcol_dict["human_readable_name"], list):
+                for name_str in seqcol_dict["human_readable_name"]:
+                    human_readable_names_list.append(HumanReadableNames(human_readable_name=name_str))
+            # Handle the case where a single string is provided for backward compatibility
+            elif isinstance(seqcol_dict["human_readable_name"], str):
+                human_readable_names_list.append(HumanReadableNames(human_readable_name=seqcol_dict["human_readable_name"]))
 
         seqcol = SequenceCollection(
             digest=seqcol_digest,
-            human_readable_name=human_readable_name,
+            human_readable_names=human_readable_names_list,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,

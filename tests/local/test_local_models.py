@@ -77,7 +77,8 @@ class TestSequenceCollectionModel:
             "human_readable_name": "Test Collection",
         }
         sc = refget.SequenceCollection.from_dict(seqcol_dict)
-        assert sc.human_readable_name == "Test Collection"
+        assert sc.human_readable_names[0].human_readable_name == "Test Collection"
+        #print(sc)
 
     @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
     def test_from_fasta_file(self, fa_file, fa_digest_bundle, fa_root):

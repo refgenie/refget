@@ -23,6 +23,22 @@ for name, demo_file in DEMO_FASTA.items():
     )
     print(demo_results[f])
 
+# demo_results = {}
+# try:
+#     name, demo_file = next(iter(DEMO_FASTA.items()))
+#     f = os.path.join(fa_root, demo_file["name"])
+#     print("Fasta file to be loaded: {}".format(f))
+#
+#     # change name so that we essentially have a duplicate seq_collection but with two nicknames!
+#     name = name+"_ADDITIONAL_NICKNAME"
+#     demo_results[f] = dbc.seqcol.add_from_fasta_file_with_name(
+#         f, human_readable_name=name, update=True
+#     )
+#     print(demo_results[f])
+# except StopIteration:
+#     print("DEMO_FASTA is empty.")
+
+
 
 # You can explore these results like this:
 # with Session(dbc.engine) as session:
