@@ -110,9 +110,6 @@ class HumanReadableNames(SQLModel, table=True):
     digest: str = Field(foreign_key="sequencecollection.digest", nullable=False)
     collection: "SequenceCollection" = Relationship(back_populates="human_readable_names")
 
-    # hpow to add data to this table
-    # how to enter the data
-
 
 # For a transient attribute, like sorted_name_length_pairs, you just need the attr_digest value.
 # For attributes where you want to store the values in a table, you would also have the

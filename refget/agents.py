@@ -264,15 +264,14 @@ class SequenceCollectionAgent(object):
                         attr = attr_class(**attr_obj.model_dump())
                         session.add(attr)
                     processed_attrs[attr_name] = attr
-                # session.commit()
+
                 if existing and update:
                     # Update existing collection
-                    # existing.human_readable_names = seqcol.human_readable_names
+
                     existing_names = [
                         name_model.human_readable_name
                         for name_model in existing.human_readable_names
                     ]
-                    # print(existing_names)
 
                     for name_model in seqcol.human_readable_names:
                         if name_model.human_readable_name not in existing_names:
@@ -293,7 +292,6 @@ class SequenceCollectionAgent(object):
                         # Update relationship - first remove from all existing collections
                         getattr(attr, "collection", []).append(existing)
 
-                    # setattr(existing, "human_readable_names", all_names)
                     # Update transient attributes
                     existing.sorted_name_length_pairs_digest = (
                         seqcol.sorted_name_length_pairs_digest

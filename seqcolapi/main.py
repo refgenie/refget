@@ -37,26 +37,20 @@ async def lifespan_loader(app):
     dbagent = RefgetDBAgent()
     app.state.dbagent = dbagent
 
-    # Define species and their sample lists
     species_samples = {"human": HUMANS_SAMPLE_LIST, "mouse": MOUSE_SAMPLES_LIST}
 
-    # TODO this start up can be even faster, do all the names at once
     for species, sample_names in species_samples.items():
         try:
             _LOGGER.info(f"Loading {len(sample_names)} sample names for {species}")
 
-            # Query database to get digests for these human readable names
-            target_digests = []
             with Session(dbagent.engine) as session:
-                for name in sample_names:
-                    statement = select(HumanReadableNames).where(
-                        HumanReadableNames.human_readable_name == name
-                    )
-                    result = session.exec(statement).first()
-                    if result:
-                        target_digests.append(result.digest)
+                statement = select(HumanReadableNames).where(
+                    HumanReadableNames.human_readable_name.in_(sample_names)
+                )
+                results = session.exec(statement).all()
 
-            # Store the digests for this species in the global variable
+                target_digests = [result.digest for result in results]
+
             _SAMPLE_DIGESTS[species] = target_digests
             _LOGGER.info(f"Pre-loaded {len(target_digests)} digests for {species}")
 
@@ -68,7 +62,7 @@ async def lifespan_loader(app):
 
     yield  # Application runs here
 
-    # Cleanup (if needed)
+    # Cleanup
     _LOGGER.info("Lifespan shutdown: Cleaning up sample data...")
     _SAMPLE_DIGESTS.clear()
 
