@@ -32,7 +32,14 @@ except ImportError:
     _LOGGER.error("gtars not installed. Some functions will be slower or unavailable.")
 
 
-HUMANS_SAMPLE_LIST = ["base.fa"]
+HUMANS_SAMPLE_LIST = [
+    "base.fa",
+    "different_names.fa",
+    "different_order.fa",
+    "pair_swap.fa",
+    "subset.fa",
+    "swap_wo_coords.fa",
+]
 #
 # HUMANS_SAMPLE_LIST = [
 #     "GRCh38.p14-fasta-no-alt-analysis",

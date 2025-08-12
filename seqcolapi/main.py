@@ -40,7 +40,7 @@ async def lifespan_loader(app):
     # Define species and their sample lists
     species_samples = {"human": HUMANS_SAMPLE_LIST, "mouse": MOUSE_SAMPLES_LIST}
 
-    #TODO this start up can be even faster, do all the names at once
+    # TODO this start up can be even faster, do all the names at once
     for species, sample_names in species_samples.items():
         try:
             _LOGGER.info(f"Loading {len(sample_names)} sample names for {species}")
