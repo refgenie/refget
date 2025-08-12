@@ -148,7 +148,7 @@ const Nav = () => {
                 onClick={() => navigate('/similarities')}
                 className={`nav-link cursor-pointer ${location === 'similarities' ? 'fw-medium text-black' : 'fw-light'}`}
               >
-                Similarities
+                SCOM
               </span>
             </li>
             <li className='nav-item mx-2 my-0 h6'>

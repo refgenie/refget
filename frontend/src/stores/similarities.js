@@ -7,6 +7,32 @@ export const useSimilaritiesStore = create((set, get) => ({
   customCollectionJSON: '',
   customCount: 1,
   similarities: null,
+  sortBy: null,
+  sortAscending: false,
+
+  setSortBy: (value) => set({ sortBy: value }),
+  setSortAscending: (value) => set({ sortAscending: value }),
+
+  sortSimilarities: () => {
+    const { similarities, sortBy, sortAscending } = get();
+    
+    if (!similarities || !sortBy) return;
+    
+    const sampleValue = similarities.find(item => item[sortBy] != null)?.[sortBy];
+    
+    const sorted = [...similarities];
+    
+    if (typeof sampleValue === 'number') {
+      sorted.sort((a, b) => sortAscending ? a[sortBy] - b[sortBy] : b[sortBy] - a[sortBy]);
+    } else {
+      sorted.sort((a, b) => sortAscending 
+        ? String(a[sortBy]).localeCompare(String(b[sortBy]))
+        : String(b[sortBy]).localeCompare(String(a[sortBy]))
+      );
+    }
+    
+    set({ similarities: sorted });
+  },
 
   setSelectedCollectionsIndex: (value) => {
     if (typeof value === 'function') {
@@ -38,7 +64,28 @@ export const useSimilaritiesStore = create((set, get) => ({
     }
   },
 
-  setSimilarities: (value) => set({ similarities: value }),
+  setSimilarities: (value) => {
+    const { sortBy, sortAscending } = get();
+    
+    if (!sortBy) {
+      set({ similarities: value });
+      return;
+    }
+
+    const sampleValue = value.find(item => item[sortBy] != null)?.[sortBy];
+
+    if (typeof sampleValue === 'number') {
+      set({ similarities: sortAscending
+        ? value.sort((a, b) => a[sortBy] - b[sortBy]) 
+        : value.sort((a, b) => b[sortBy] - a[sortBy]) 
+      });
+    } else {
+      set({ similarities: sortAscending
+        ? value.sort((a, b) => a[sortBy].localeCompare(b[sortBy])) 
+        : value.sort((a, b) => b[sortBy].localeCompare(a[sortBy])) 
+      });
+    }
+  },
 
   getAllCollections: (collections) => {
     const { customCollections } = get();

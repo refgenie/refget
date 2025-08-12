@@ -11,7 +11,7 @@ import {
 } from '../services/fetchData.jsx';
 import { HeatmapPlot } from '../components/HeatmapPlot.jsx';
 import { StripPlot } from '../components/StripPlot.jsx';
-import { NetworkGraph } from '../components/NetworkGraph.jsx';
+// import { NetworkGraph } from '../components/NetworkGraph.jsx';
 
 import { useSimilaritiesStore } from '../stores/similarities';
 
@@ -35,17 +35,24 @@ const Similarities = () => {
     similarities,
     setSimilarities,
     getAllCollections,
-    initializeSelectedCollections 
+    initializeSelectedCollections, 
+    sortBy,
+    setSortBy,
+    sortAscending,
+    setSortAscending,
+    sortSimilarities
   } = useSimilaritiesStore();
 
   const [stripJitter, setStripJitter] = useState('none');
+  const [stripOrientation, setStripOrientation] = useState('horizontal');
   const [heatmapMetric, setHeatmapMetric] = useState('sequences');
-  const [networkMetric, setNetworkMetric] = useState('sequences');
-  const [networkThreshold, setNetworkThreshold] = useState(0.8);
+  // const [networkMetric, setNetworkMetric] = useState('sequences');
+  // const [networkThreshold, setNetworkThreshold] = useState(0.8);
   const [relationship, setRelationship] = useState('oneToMany');
   const [isLoading, setIsLoading] = useState(false);
 
   const allCollections = getAllCollections(collections);
+  console.log(allCollections)
 
   useEffect(() => {
     initializeSelectedCollections(collections);
@@ -88,13 +95,13 @@ const Similarities = () => {
     ]
   }
 
-  const handleSelectCollection = (index) => {
-    setSelectedCollectionsIndex((prev) => {
-      const newArray = [...prev];
-      newArray[index] = !newArray[index];
-      return newArray;
-    });
-  };
+  // const handleSelectCollection = (index) => {
+  //   setSelectedCollectionsIndex((prev) => {
+  //     const newArray = [...prev];
+  //     newArray[index] = !newArray[index];
+  //     return newArray;
+  //   });
+  // };
 
   const handleNavigateSCIM = async (similarityRow) => {
     try {
@@ -122,24 +129,24 @@ const Similarities = () => {
     }
   };
 
-  const handleRelationshipChange = (newRelationship) => {
-    if (
-      newRelationship === 'oneToMany' &&
-      relationship === 'manyToMany' &&
-      selectedCollections.length > 1
-    ) {
-      setCustomCollections([]);
-      setSelectedCollectionsIndex(collections.results.map(() => false));
-      setCustomCount(1);
-    }
-    setSelectedCollectionsIndex((prev) =>
-      prev.map((item, index) =>
-        index < collections.results.length ? false : item,
-      ),
-    );
-    setStripJitter('none');
-    setRelationship(newRelationship);
-  };
+  // const handleRelationshipChange = (newRelationship) => {
+  //   if (
+  //     newRelationship === 'oneToMany' &&
+  //     relationship === 'manyToMany' &&
+  //     selectedCollections.length > 1
+  //   ) {
+  //     setCustomCollections([]);
+  //     setSelectedCollectionsIndex(collections.results.map(() => false));
+  //     setCustomCount(1);
+  //   }
+  //   setSelectedCollectionsIndex((prev) =>
+  //     prev.map((item, index) =>
+  //       index < collections.results.length ? false : item,
+  //     ),
+  //   );
+  //   setStripJitter('none');
+  //   setRelationship(newRelationship);
+  // };
 
   const handleAddCustomCollection = async (data, name) => {
     try {
@@ -167,11 +174,13 @@ const Similarities = () => {
       setIsLoading(true);
       const result = await fetchSimilaritiesJSON(data);
       if (result?.similarities) {
-        const customDigest = 'custom' + customCount;
+        // const customDigest = 'query_seqcol' + (customCount > 1 ? customCount : '');
+        const customDigest = 'query_seqcol';
 
         const flattenedSimilarities = result.similarities.map((s) => ({
           selectedDigest: name !== '' ? name : customDigest,
           comparedDigest: s.digest,
+          comparedAlias: s.human_readable_name,
           lengths: s.similarities.lengths,
           name_length_pairs: s.similarities.name_length_pairs,
           names: s.similarities.names,
@@ -204,7 +213,7 @@ const Similarities = () => {
           setSelectedCollectionsIndex((prev) => [...prev, true]);
         }
         setCustomCount((prev) => prev + 1);
-        toast.success('Collection added.');
+        toast.success('Input processed.');
       }
     } catch (e) {
       toast.error(
@@ -236,6 +245,7 @@ const Similarities = () => {
               const flattenedSimilarities = result.similarities.map((s) => ({
                 selectedDigest: collection,
                 comparedDigest: s.digest,
+                comparedAlias: s.human_readable_name,
                 lengths: s.similarities.lengths,
                 name_length_pairs: s.similarities.name_length_pairs,
                 names: s.similarities.names,
@@ -268,12 +278,23 @@ const Similarities = () => {
     fetchAllSimilarities();
   }, [selectedCollectionsIndex, customCollections]);
 
+  const handleSortTable = (column) => {
+    if (sortBy === column) {
+      setSortAscending(!sortAscending)
+      sortSimilarities()
+    } else {
+      setSortBy(column)
+      setSortAscending(false)
+      sortSimilarities()
+    } 
+  };
+
   return (
     <div className='mb-5'>
       <div className='row'>
         <div className='col-12'>
           <div className='d-flex align-items-end justify-content-between'>
-            <h4 className='fw-light'>Seqcol Similarity Metrics</h4>
+            <h4 className='fw-light'>Seqcol Comparison Overview Module (SCOM)</h4>
             {/* <ul className='nav nav-pills border border-2 border-light-subtle rounded rounded-3 bg-body-secondary'>
               <li className='nav-item pointer-cursor'>
                 <span
@@ -295,7 +316,7 @@ const Similarities = () => {
           </div>
 
           <p className='mt-2 mb-0 text-muted'>
-            This tool provides similarity metrics for comparisons between all
+            This tool provides summary similarity metrics for comparisons between all
             sequence collections on the server and one of your choice.
           </p>
           {/* <p className='mb-2 text-muted'>
@@ -349,13 +370,13 @@ const Similarities = () => {
                   value={customCollectionJSON}
                   placeholder='If you have a custom sequence collection, enter the output of `refget digest-fasta "yourfasta.fa" -l 2` here.'
                   className='form-control tiny border-0 rounded-0 rounded-bottom z-active'
-                  style={{ maxHeight: 'calc(200px - 32.333333px)' }}
+                  // style={{ maxHeight: 'calc(200px - 32.333333px)' }}
                   rows='12'
                 />
               </div>
             </div>
 
-            {relationship === 'manyToMany' && (
+            {/* {relationship === 'manyToMany' && (
               <div className='col-6'>
                 <div className='card'>
                   <div className='card-header tiny d-flex justify-content-between'>
@@ -439,7 +460,7 @@ const Similarities = () => {
                   </ul>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -450,7 +471,18 @@ const Similarities = () => {
             <div className='d-flex align-items-end justify-content-between mt-4 mb-2'>
               <h5 className='fw-light'>Strip Plot</h5>
               <select
-                className='form-select form-select-sm w-25'
+                className='form-select form-select-sm ms-auto'
+                style={{width: '20%'}}
+                aria-label='strip-orientation'
+                value={stripOrientation}
+                onChange={(e) => setStripOrientation(e.target.value)}
+              >
+                <option value='horizontal'>Horizontal Plot</option>
+                <option value='vertical'>Vertical Plot</option>
+              </select>
+              <select
+                className='form-select form-select-sm ms-2'
+                style={{width: '20%'}}
                 aria-label='strip-jitter'
                 value={stripJitter}
                 onChange={(e) => setStripJitter(e.target.value)}
@@ -466,19 +498,21 @@ const Similarities = () => {
               </select>
             </div>
             <StripPlot
-              similarities={similarities}
+              similarities={similarities.map(({ raw, ...rest }) => rest)}
               jitter={stripJitter}
               pointSize={
                 relationship === 'oneToMany' || selectedCollections.length <= 1
                   ? 'big'
                   : 'normal'
               }
+              orientation={stripOrientation}
             />
 
             <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
               <h5 className='fw-light'>Heatmap</h5>
               <select
-                className='form-select form-select-sm w-25'
+                className='form-select form-select-sm'
+                style={{width: '20%'}}
                 aria-label='heatmap-select'
                 value={heatmapMetric}
                 onChange={(e) => setHeatmapMetric(e.target.value)}
@@ -490,9 +524,9 @@ const Similarities = () => {
                 <option value='sorted_sequences'>Sorted Sequences</option>
               </select>
             </div>
-            <HeatmapPlot similarities={similarities} metric={heatmapMetric} />
+            <HeatmapPlot similarities={similarities.map(({ raw, ...rest }) => rest)} metric={heatmapMetric} />
 
-            {relationship === 'manyToMany' && (
+            {/* {relationship === 'manyToMany' && (
               <>
                 <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
                   <h5 className='fw-light'>Network Graph</h5>
@@ -537,15 +571,15 @@ const Similarities = () => {
                   </select>
                 </div>
                 <NetworkGraph
-                  similarities={similarities}
+                  similarities={similarities.map(({ raw, ...rest }) => rest)}
                   metric={networkMetric}
                   threshold={networkThreshold}
                 />
               </>
-            )}
+            )} */}
 
             <div className='d-flex align-items-end justify-content-between'>
-              <h5 className='fw-light mt-5'>Summary Table</h5>
+              <h5 className='fw-light mt-5'>Seqcol Comparison Summary Table</h5>
               <p className='mb-2 text-muted'>
                 Click on a row to view a detailed 1-1 comparison in SCIM.
               </p>
@@ -554,13 +588,13 @@ const Similarities = () => {
               <table className='table table-striped table-hover table-rounded'>
                 <thead>
                   <tr>
-                    <th>Selected Digest</th>
-                    <th>Compared Digest</th>
-                    <th>Lengths</th>
-                    <th>Name Length Pairs</th>
-                    <th>Names</th>
-                    <th>Sequences</th>
-                    <th>Sorted Sequences</th>
+                    <th onClick={() => handleSortTable('selectedDigest')}>Seqcol A <i className={sortBy === 'selectedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th onClick={() => handleSortTable('comparedDigest')}>Seqcol B <i className={sortBy === 'comparedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th onClick={() => handleSortTable('lengths')}>Lengths <i className={sortBy === 'lengths' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th onClick={() => handleSortTable('name_length_pairs')}>Name Length Pairs <i className={sortBy === 'name_length_pairs' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th onClick={() => handleSortTable('names')}>Names <i className={sortBy === 'names' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th onClick={() => handleSortTable('sequences')}>Sequences <i className={sortBy === 'sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th onClick={() => handleSortTable('sorted_sequences')}>Sorted Sequences <i className={sortBy === 'sorted_sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -571,7 +605,7 @@ const Similarities = () => {
                       onClick={() => handleNavigateSCIM(row)}
                     >
                       <td>{row.selectedDigest}</td>
-                      <td>{row.comparedDigest}</td>
+                      <td>{row.comparedAlias ? row.comparedAlias : row.comparedDigest}</td>
                       <td>{row.lengths}</td>
                       <td>{row.name_length_pairs}</td>
                       <td>{row.names}</td>

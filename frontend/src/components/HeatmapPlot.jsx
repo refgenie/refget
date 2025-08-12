@@ -24,23 +24,27 @@ const HeatmapPlot = ({ similarities, metric }) => {
         x: {
           field: 'comparedDigest',
           type: 'nominal',
-          title: 'Compared Digest',
+          title: 'Server Seqcols',
           sort: false,
           axis: {
-            labelAngle: -33,
-            labelLimit: 111,
+            // labelAngle: -33,
+            // labelLimit: 111,
             domain: false,
+            labels: false,
+            ticks: false
           },
         },
         y: {
           field: 'selectedDigest',
           type: 'nominal',
-          title: 'Selected Digest',
+          title: 'Input Seqcol',
           sort: false,
           axis: {
-            labelAngle: -33,
-            labelLimit: 111,
+            // labelAngle: -33,
+            // labelLimit: 111,
             domain: false,
+            labels: false,
+            ticks: false
           },
         },
         color: {
@@ -53,7 +57,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
             domain: [0, 1],
           },
           legend: {
-            format: '.2f',
+            format: '.2f'
           },
         },
         tooltip: [
@@ -62,10 +66,24 @@ const HeatmapPlot = ({ similarities, metric }) => {
           { field: metric, title: snakeToTitle(metric), format: '.3f' },
         ],
       },
+      config: {
+        legend: {
+          orient: 'bottom',
+          layout: {
+            bottom: {
+              anchor: 'end'
+            }
+          },
+          titleAlign: 'right',
+          titleAnchor: 'end',
+          titlePadding: 2.5,
+          offset: -5,
+        },
+      },
       width: 'container',
       height:
         selectedCount < 10
-          ? 50 * selectedCount
+          ? 40 * selectedCount
           : selectedCount < 20
             ? 22 * selectedCount
             : 13 * selectedCount,

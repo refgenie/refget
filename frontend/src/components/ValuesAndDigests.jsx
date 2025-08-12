@@ -21,7 +21,7 @@ const AttributeValue = ({ value }) => {
     );
   }
   return (
-    <pre className=' m-0 p-2 border border-muted'>
+    <pre className='m-0 p-2 border border-muted'>
       <code>{value}</code>
     </pre>
   );
@@ -67,7 +67,7 @@ const LinkedCollectionDigest = ({ digest, clipboard = true }) => {
           alt='Copy'
           width='24'
           className='copy-to-clipboard mx-2'
-          onClick={() => navigator.clipboard.writeText(digest)}
+          onClick={() => copyToClipboard(digest)}
         />
       ) : (
         ''
