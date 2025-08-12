@@ -183,21 +183,20 @@ class SequenceCollectionAgent(object):
             else:
                 return seqcol
 
-    def get_many_level2_offset(self, limit=50, offset=0, target_digests=None) -> ResultsSequenceCollections:
+    def get_many_level2_offset(
+        self, limit=50, offset=0, target_digests=None
+    ) -> ResultsSequenceCollections:
 
         final_results = {}
 
         with Session(self.engine) as session:
-            list_stmt = (
-                select(SequenceCollection)
-                .options(
-                    selectinload(SequenceCollection.lengths),
-                    selectinload(SequenceCollection.sequences),
-                    selectinload(SequenceCollection.sorted_sequences),
-                    selectinload(SequenceCollection.names),
-                    selectinload(SequenceCollection.name_length_pairs),
-                    selectinload(SequenceCollection.human_readable_names),
-                )
+            list_stmt = select(SequenceCollection).options(
+                selectinload(SequenceCollection.lengths),
+                selectinload(SequenceCollection.sequences),
+                selectinload(SequenceCollection.sorted_sequences),
+                selectinload(SequenceCollection.names),
+                selectinload(SequenceCollection.name_length_pairs),
+                selectinload(SequenceCollection.human_readable_names),
             )
 
             # Filter by target digests if provided

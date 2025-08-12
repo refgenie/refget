@@ -7,9 +7,15 @@ from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from refget import create_refget_router, get_dbagent
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
+from sqlmodel import Session, select
+from contextlib import asynccontextmanager
 
 from .const import ALL_VERSIONS, STATIC_PATH, STATIC_DIRNAME
+from refget.const import HUMANS_SAMPLE_LIST, MOUSE_SAMPLES_LIST
+from refget.models import HumanReadableNames
 from .examples import *
+
+from refget.refget_router import _SAMPLE_DIGESTS
 
 global _LOGGER
 _LOGGER = logging.getLogger(__name__)
@@ -17,10 +23,61 @@ _LOGGER = logging.getLogger(__name__)
 for key, value in ALL_VERSIONS.items():
     _LOGGER.info(f"{key}: {value}")
 
+
+@asynccontextmanager
+async def lifespan_loader(app):
+    """
+    Lifespan event to pre-load sample names and their digests
+    """
+    _LOGGER.info("Starting lifespan: Loading sample data...")
+
+    # Initialize database agent and store in app state
+    from refget.agents import RefgetDBAgent
+
+    dbagent = RefgetDBAgent()
+    app.state.dbagent = dbagent
+
+    # Define species and their sample lists
+    species_samples = {"human": HUMANS_SAMPLE_LIST, "mouse": MOUSE_SAMPLES_LIST}
+
+    #TODO this start up can be even faster, do all the names at once
+    for species, sample_names in species_samples.items():
+        try:
+            _LOGGER.info(f"Loading {len(sample_names)} sample names for {species}")
+
+            # Query database to get digests for these human readable names
+            target_digests = []
+            with Session(dbagent.engine) as session:
+                for name in sample_names:
+                    statement = select(HumanReadableNames).where(
+                        HumanReadableNames.human_readable_name == name
+                    )
+                    result = session.exec(statement).first()
+                    if result:
+                        target_digests.append(result.digest)
+
+            # Store the digests for this species in the global variable
+            _SAMPLE_DIGESTS[species] = target_digests
+            _LOGGER.info(f"Pre-loaded {len(target_digests)} digests for {species}")
+
+        except Exception as e:
+            _LOGGER.error(f"Error loading sample data for {species}: {e}")
+            _SAMPLE_DIGESTS[species] = []
+
+    _LOGGER.info("Lifespan startup complete: Sample data loaded")
+
+    yield  # Application runs here
+
+    # Cleanup (if needed)
+    _LOGGER.info("Lifespan shutdown: Cleaning up sample data...")
+    _SAMPLE_DIGESTS.clear()
+
+
 app = FastAPI(
     title="Sequence Collections API",
     description="An API providing metadata such as names, lengths, and other values for collections of reference sequences",
     version=ALL_VERSIONS["seqcolapi_version"],
+    lifespan=lifespan_loader,
 )
 
 origins = ["*"]
