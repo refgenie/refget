@@ -183,24 +183,33 @@ class SequenceCollectionAgent(object):
             else:
                 return seqcol
 
-    def get_many_level2_offset(self, limit=50, offset=0) -> ResultsSequenceCollections:
+    def get_many_level2_offset(
+        self, limit=50, offset=0, target_digests=None
+    ) -> ResultsSequenceCollections:
 
         final_results = {}
 
         with Session(self.engine) as session:
-            list_stmt = (
-                select(SequenceCollection)
-                .options(
-                    selectinload(SequenceCollection.lengths),
-                    selectinload(SequenceCollection.sequences),
-                    selectinload(SequenceCollection.sorted_sequences),
-                    selectinload(SequenceCollection.names),
-                    selectinload(SequenceCollection.name_length_pairs),
-                )
-                .offset(offset)
-                .limit(limit)
+            list_stmt = select(SequenceCollection).options(
+                selectinload(SequenceCollection.lengths),
+                selectinload(SequenceCollection.sequences),
+                selectinload(SequenceCollection.sorted_sequences),
+                selectinload(SequenceCollection.names),
+                selectinload(SequenceCollection.name_length_pairs),
+                selectinload(SequenceCollection.human_readable_names),
             )
-            cnt_stmt = select(func.count(SequenceCollection.digest))
+
+            # Filter by target digests if provided
+            if target_digests:
+                list_stmt = list_stmt.where(SequenceCollection.digest.in_(target_digests))
+                cnt_stmt = select(func.count(SequenceCollection.digest)).where(
+                    SequenceCollection.digest.in_(target_digests)
+                )
+            else:
+                cnt_stmt = select(func.count(SequenceCollection.digest))
+
+            list_stmt = list_stmt.offset(offset).limit(limit)
+
             cnt_res = session.exec(cnt_stmt)
             list_res = session.exec(list_stmt)
             count = cnt_res.one()
@@ -208,7 +217,9 @@ class SequenceCollectionAgent(object):
 
             for seq in seqcols:
                 final_results[seq.digest] = seq.level2()
-                final_results[seq.digest]["human_readable_name"] = seq.human_readable_name
+                final_results[seq.digest]["human_readable_names"] = [
+                    name.human_readable_name for name in seq.human_readable_names
+                ]
 
             return ResultsSequenceCollections(
                 pagination=PaginationResult(
@@ -230,11 +241,9 @@ class SequenceCollectionAgent(object):
         """
         with Session(self.engine, expire_on_commit=False) as session:
             with session.no_autoflush:
-                # Check if collection exists
                 existing = session.get(SequenceCollection, seqcol.digest)
 
                 if existing and not update:
-                    # Return existing without modification if not updating
                     return existing
 
                 # Process attributes (create if needed)
@@ -258,7 +267,24 @@ class SequenceCollectionAgent(object):
 
                 if existing and update:
                     # Update existing collection
-                    existing.human_readable_name = seqcol.human_readable_name
+
+                    existing_names = [
+                        name_model.human_readable_name
+                        for name_model in existing.human_readable_names
+                    ]
+
+                    for name_model in seqcol.human_readable_names:
+                        if name_model.human_readable_name not in existing_names:
+
+                            new_name = HumanReadableNames(
+                                human_readable_name=name_model.human_readable_name,
+                                digest=existing.digest,
+                            )
+
+                            session.add(new_name)
+
+                            existing.human_readable_names.append(new_name)
+
                     for attr_name, attr in processed_attrs.items():
                         # Update attribute reference
                         setattr(existing, f"{attr_name}_digest", attr.digest)
@@ -277,7 +303,7 @@ class SequenceCollectionAgent(object):
                     # Create new collection
                     new_collection = SequenceCollection(
                         digest=seqcol.digest,
-                        human_readable_name=seqcol.human_readable_name,
+                        human_readable_names=seqcol.human_readable_names,
                         sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                     )
 
@@ -342,7 +368,7 @@ class SequenceCollectionAgent(object):
         """
 
         CSC = fasta_to_seqcol_dict(fasta_file_path)
-        CSC["human_readable_name"] = human_readable_name
+        CSC["human_readable_names"] = human_readable_name
         seqcol = self.add_from_dict(CSC, update)
         return seqcol
 

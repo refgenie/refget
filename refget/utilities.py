@@ -242,11 +242,11 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
     jaccard_similarities = {}
 
     if (
-        "human_readable_name" in A.keys()
+        "human_readable_names" in A.keys()
     ):  # this can cause issues if key exists but is NoneType when comparing with compare_seqcols()
-        del A["human_readable_name"]
-    if "human_readable_name" in B.keys():
-        del B["human_readable_name"]
+        del A["human_readable_names"]
+    if "human_readable_names" in B.keys():
+        del B["human_readable_names"]
 
     comparison_dict = compare_seqcols(A, B)
 
