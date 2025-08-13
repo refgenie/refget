@@ -9,9 +9,9 @@ import {
   fetchComparison,
   fetchComparisonJSON,
 } from '../services/fetchData.jsx';
-import { HeatmapPlot } from '../components/HeatmapPlot.jsx';
+import { MultiMetricHeatmapPlot } from '../components/MultiMetricHeatmapPlot.jsx';
 import { StripPlot } from '../components/StripPlot.jsx';
-import { NetworkGraph } from '../components/NetworkGraph.jsx';
+// import { NetworkGraph } from '../components/NetworkGraph.jsx';
 
 import { useSimilaritiesStore } from '../stores/similarities';
 
@@ -35,13 +35,21 @@ const Similarities = () => {
     similarities,
     setSimilarities,
     getAllCollections,
-    initializeSelectedCollections 
+    initializeSelectedCollections, 
+    sortBy,
+    setSortBy,
+    sortAscending,
+    setSortAscending,
+    sortSimilarities,
+    species,
+    setSpecies
   } = useSimilaritiesStore();
 
   const [stripJitter, setStripJitter] = useState('none');
+  const [stripOrientation, setStripOrientation] = useState('horizontal');
   const [heatmapMetric, setHeatmapMetric] = useState('sequences');
-  const [networkMetric, setNetworkMetric] = useState('sequences');
-  const [networkThreshold, setNetworkThreshold] = useState(0.8);
+  // const [networkMetric, setNetworkMetric] = useState('sequences');
+  // const [networkThreshold, setNetworkThreshold] = useState(0.8);
   const [relationship, setRelationship] = useState('oneToMany');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -56,45 +64,199 @@ const Similarities = () => {
   );
 
   const sampleJSON = {
-    "lengths": [8, 4, 4],
+    "lengths": [249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663, 146364022, 141213431, 135534747, 135006516, 133851895, 115169878, 107349540, 102531392, 90354753, 81195210, 78077248, 59128983, 63025520, 48129895, 51304566, 155270560, 59373566, 16569],
     "names": [
-      "chrX",
-      "chr2",
-      "chr1"
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "X",
+      "Y",
+      "MT"
     ],
     "sequences": [
-      "SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw",
-      "SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj",
-      "SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6"
+      "SQ.S_KjnFVz-FE7M0W6yoaUDgYxLPc1jyWU",
+      "SQ.9KdcA9ZpY1Cpvxvg8bMSLYDUpsX6GDLO",
+      "SQ.VNBualIltAyi2AI_uXcKU7M9XUOuA7MS",
+      "SQ.iy7Zfceb5_VGtTQzJ-v5JpPbpeifHD_V",
+      "SQ.vbjOdMfHJvTjK_nqvFvpaSKhZillW0SX",
+      "SQ.KqaUhJMW3CDjhoVtBetdEKT1n6hM-7Ek",
+      "SQ.IW78mgV5Cqf6M24hy52hPjyyo5tCCd86",
+      "SQ.tTm7wmhz0G4lpt8wPspcNkAD_qiminj6",
+      "SQ.HBckYGQ4wYG9APHLpjoQ9UUe9v7NxExt",
+      "SQ.-BOZ8Esn8J88qDwNiSEwUr5425UXdiGX",
+      "SQ.XXi2_O1ly-CCOi3HP5TypAw7LtC6niFG",
+      "SQ.105bBysLoDFQHhajooTAUyUkNiZ8LJEH",
+      "SQ.Ewb9qlgTqN6e_XQiRVYpoUfZJHXeiUfH",
+      "SQ.5Ji6FGEKfejK1U6BMScqrdKJK8GqmIGf",
+      "SQ.zIMZb3Ft7RdWa5XYq0PxIlezLY2ccCgt",
+      "SQ.W6wLoIFOn4G7cjopxPxYNk2lcEqhLQFb",
+      "SQ.AjWXsI7AkTK35XW9pgd3UbjpC3MAevlz",
+      "SQ.BTj4BDaaHYoPhD3oY2GdwC_l0uqZ92UD",
+      "SQ.ItRDD47aMoioDCNW_occY5fWKZBKlxCX",
+      "SQ.iy_UbUrvECxFRX5LPTH_KPojdlT7BKsf",
+      "SQ.LpTaNW-hwuY_yARP0rtarCnpCQLkgVCg",
+      "SQ.XOgHwwR3Upfp5sZYk6ZKzvV25a4RBVu8",
+      "SQ.v7noePfnNpK8ghYXEqZ9NukMXW7YeNsm",
+      "SQ.fbS5kAwZUB5-1xVpa7xZ4s_lyDpLPVUo",
+      "SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct"
     ],
     "sorted_sequences": [
-      "SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6",
-      "SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj",
-      "SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw"
+      "SQ.-BOZ8Esn8J88qDwNiSEwUr5425UXdiGX",
+      "SQ.105bBysLoDFQHhajooTAUyUkNiZ8LJEH",
+      "SQ.5Ji6FGEKfejK1U6BMScqrdKJK8GqmIGf",
+      "SQ.9KdcA9ZpY1Cpvxvg8bMSLYDUpsX6GDLO",
+      "SQ.AjWXsI7AkTK35XW9pgd3UbjpC3MAevlz",
+      "SQ.BTj4BDaaHYoPhD3oY2GdwC_l0uqZ92UD",
+      "SQ.Ewb9qlgTqN6e_XQiRVYpoUfZJHXeiUfH",
+      "SQ.HBckYGQ4wYG9APHLpjoQ9UUe9v7NxExt",
+      "SQ.IW78mgV5Cqf6M24hy52hPjyyo5tCCd86",
+      "SQ.ItRDD47aMoioDCNW_occY5fWKZBKlxCX",
+      "SQ.KqaUhJMW3CDjhoVtBetdEKT1n6hM-7Ek",
+      "SQ.LpTaNW-hwuY_yARP0rtarCnpCQLkgVCg",
+      "SQ.S_KjnFVz-FE7M0W6yoaUDgYxLPc1jyWU",
+      "SQ.VNBualIltAyi2AI_uXcKU7M9XUOuA7MS",
+      "SQ.W6wLoIFOn4G7cjopxPxYNk2lcEqhLQFb",
+      "SQ.XOgHwwR3Upfp5sZYk6ZKzvV25a4RBVu8",
+      "SQ.XXi2_O1ly-CCOi3HP5TypAw7LtC6niFG",
+      "SQ.fbS5kAwZUB5-1xVpa7xZ4s_lyDpLPVUo",
+      "SQ.iy7Zfceb5_VGtTQzJ-v5JpPbpeifHD_V",
+      "SQ.iy_UbUrvECxFRX5LPTH_KPojdlT7BKsf",
+      "SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct",
+      "SQ.tTm7wmhz0G4lpt8wPspcNkAD_qiminj6",
+      "SQ.v7noePfnNpK8ghYXEqZ9NukMXW7YeNsm",
+      "SQ.vbjOdMfHJvTjK_nqvFvpaSKhZillW0SX",
+      "SQ.zIMZb3Ft7RdWa5XYq0PxIlezLY2ccCgt"
     ],
     "name_length_pairs": [
       {
-        "length": 8,
-        "name": "chrX"
+        "length": 249250621,
+        "name": "1"
       },
       {
-        "length": 4,
-        "name": "chr2"
+        "length": 243199373,
+        "name": "2"
       },
       {
-        "length": 4,
-        "name": "chr1"
+        "length": 198022430,
+        "name": "3"
+      },
+      {
+        "length": 191154276,
+        "name": "4"
+      },
+      {
+        "length": 180915260,
+        "name": "5"
+      },
+      {
+        "length": 171115067,
+        "name": "6"
+      },
+      {
+        "length": 159138663,
+        "name": "7"
+      },
+      {
+        "length": 146364022,
+        "name": "8"
+      },
+      {
+        "length": 141213431,
+        "name": "9"
+      },
+      {
+        "length": 135534747,
+        "name": "10"
+      },
+      {
+        "length": 135006516,
+        "name": "11"
+      },
+      {
+        "length": 133851895,
+        "name": "12"
+      },
+      {
+        "length": 115169878,
+        "name": "13"
+      },
+      {
+        "length": 107349540,
+        "name": "14"
+      },
+      {
+        "length": 102531392,
+        "name": "15"
+      },
+      {
+        "length": 90354753,
+        "name": "16"
+      },
+      {
+        "length": 81195210,
+        "name": "17"
+      },
+      {
+        "length": 78077248,
+        "name": "18"
+      },
+      {
+        "length": 59128983,
+        "name": "19"
+      },
+      {
+        "length": 63025520,
+        "name": "20"
+      },
+      {
+        "length": 48129895,
+        "name": "21"
+      },
+      {
+        "length": 51304566,
+        "name": "22"
+      },
+      {
+        "length": 155270560,
+        "name": "X"
+      },
+      {
+        "length": 59373566,
+        "name": "Y"
+      },
+      {
+        "length": 16569,
+        "name": "MT"
       }
     ]
   }
 
-  const handleSelectCollection = (index) => {
-    setSelectedCollectionsIndex((prev) => {
-      const newArray = [...prev];
-      newArray[index] = !newArray[index];
-      return newArray;
-    });
-  };
+  // const handleSelectCollection = (index) => {
+  //   setSelectedCollectionsIndex((prev) => {
+  //     const newArray = [...prev];
+  //     newArray[index] = !newArray[index];
+  //     return newArray;
+  //   });
+  // };
 
   const handleNavigateSCIM = async (similarityRow) => {
     try {
@@ -122,24 +284,24 @@ const Similarities = () => {
     }
   };
 
-  const handleRelationshipChange = (newRelationship) => {
-    if (
-      newRelationship === 'oneToMany' &&
-      relationship === 'manyToMany' &&
-      selectedCollections.length > 1
-    ) {
-      setCustomCollections([]);
-      setSelectedCollectionsIndex(collections.results.map(() => false));
-      setCustomCount(1);
-    }
-    setSelectedCollectionsIndex((prev) =>
-      prev.map((item, index) =>
-        index < collections.results.length ? false : item,
-      ),
-    );
-    setStripJitter('none');
-    setRelationship(newRelationship);
-  };
+  // const handleRelationshipChange = (newRelationship) => {
+  //   if (
+  //     newRelationship === 'oneToMany' &&
+  //     relationship === 'manyToMany' &&
+  //     selectedCollections.length > 1
+  //   ) {
+  //     setCustomCollections([]);
+  //     setSelectedCollectionsIndex(collections.results.map(() => false));
+  //     setCustomCount(1);
+  //   }
+  //   setSelectedCollectionsIndex((prev) =>
+  //     prev.map((item, index) =>
+  //       index < collections.results.length ? false : item,
+  //     ),
+  //   );
+  //   setStripJitter('none');
+  //   setRelationship(newRelationship);
+  // };
 
   const handleAddCustomCollection = async (data, name) => {
     try {
@@ -153,33 +315,37 @@ const Similarities = () => {
       return;
     }
 
-    if (relationship === 'manyToMany' && allCollections.includes(name)) {
-      toast.error(
-        <span>
-          <strong>Error:</strong> Collection with name already exists. Please
-          try another name.
-        </span>,
-      );
-      return;
-    }
+    // if (relationship === 'manyToMany' && allCollections.includes(name)) {
+    //   toast.error(
+    //     <span>
+    //       <strong>Error:</strong> Collection with name already exists. Please
+    //       try another name.
+    //     </span>,
+    //   );
+    //   return;
+    // }
 
     try {
       setIsLoading(true);
-      const result = await fetchSimilaritiesJSON(data);
+      const result = await fetchSimilaritiesJSON(data, species);
       if (result?.similarities) {
-        const customDigest = 'custom' + customCount;
-
-        const flattenedSimilarities = result.similarities.map((s) => ({
-          selectedDigest: name !== '' ? name : customDigest,
-          comparedDigest: s.digest,
-          lengths: s.similarities.lengths,
-          name_length_pairs: s.similarities.name_length_pairs,
-          names: s.similarities.names,
-          sequences: s.similarities.sequences,
-          sorted_sequences: s.similarities.sorted_sequences,
-          custom: true,
-          raw: data,
-        }));
+        // const customDigest = 'query_seqcol' + (customCount > 1 ? customCount : '');
+        const customDigest = 'Input Seqcol';
+        //  console.log(result.similarities)
+        const flattenedSimilarities = result.similarities.flatMap((s) =>
+          s.human_readable_names.map((humanReadableName) => ({
+            selectedDigest: name !== '' ? name : customDigest,
+            comparedDigest: s.digest,
+            comparedAlias: humanReadableName || s.digest,
+            lengths: s.similarities.lengths,
+            name_length_pairs: s.similarities.name_length_pairs,
+            names: s.similarities.names,
+            sequences: s.similarities.sequences,
+            sorted_sequences: s.similarities.sorted_sequences,
+            custom: true,
+            raw: data,
+          }))
+        );
 
         if (relationship === 'oneToMany') {
           setCustomCollections([
@@ -204,7 +370,7 @@ const Similarities = () => {
           setSelectedCollectionsIndex((prev) => [...prev, true]);
         }
         setCustomCount((prev) => prev + 1);
-        toast.success('Collection added.');
+        toast.success('Input processed.');
       }
     } catch (e) {
       toast.error(
@@ -215,6 +381,7 @@ const Similarities = () => {
       );
       return;
     } finally {
+      setSortBy(null);
       setIsLoading(false);
     }
   };
@@ -226,32 +393,34 @@ const Similarities = () => {
       for (let i = 0; i < selectedCollectionsIndex.length; i++) {
         if (!selectedCollectionsIndex[i]) continue;
 
-        const collection = allCollections[i];
+        // const collection = allCollections[i];
+        
 
         if (i < collections.results.length && relationship === 'manyToMany') {
-          // server collection
-          try {
-            const result = await fetchSimilarities(collection);
-            if (result?.similarities) {
-              const flattenedSimilarities = result.similarities.map((s) => ({
-                selectedDigest: collection,
-                comparedDigest: s.digest,
-                lengths: s.similarities.lengths,
-                name_length_pairs: s.similarities.name_length_pairs,
-                names: s.similarities.names,
-                sequences: s.similarities.sequences,
-                sorted_sequences: s.similarities.sorted_sequences,
-                custom: false,
-                raw: null,
-              }));
-              allSimilarities.push(...flattenedSimilarities);
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching similarities for ${collection}:`,
-              error,
-            );
-          }
+          // // server collection
+          // try {
+          //   const result = await fetchSimilarities(collection);
+          //   if (result?.similarities) {
+          //     const flattenedSimilarities = result.similarities.map((s) => ({
+          //       selectedDigest: collection,
+          //       comparedDigest: s.digest,
+          //       comparedAlias: s.human_readable_name,
+          //       lengths: s.similarities.lengths,
+          //       name_length_pairs: s.similarities.name_length_pairs,
+          //       names: s.similarities.names,
+          //       sequences: s.similarities.sequences,
+          //       sorted_sequences: s.similarities.sorted_sequences,
+          //       custom: false,
+          //       raw: null,
+          //     }));
+          //     allSimilarities.push(...flattenedSimilarities);
+          //   }
+          // } catch (error) {
+          //   console.error(
+          //     `Error fetching similarities for ${collection}:`,
+          //     error,
+          //   );
+          // }
         } else {
           // custom collection
           const customIndex = i - collections.results.length;
@@ -268,12 +437,23 @@ const Similarities = () => {
     fetchAllSimilarities();
   }, [selectedCollectionsIndex, customCollections]);
 
+  const handleSortTable = (column) => {
+    if (sortBy === column) {
+      setSortAscending(!sortAscending)
+      sortSimilarities()
+    } else {
+      setSortBy(column)
+      setSortAscending(false)
+      sortSimilarities()
+    } 
+  };
+
   return (
     <div className='mb-5'>
       <div className='row'>
         <div className='col-12'>
           <div className='d-flex align-items-end justify-content-between'>
-            <h4 className='fw-light'>Seqcol Similarity Metrics</h4>
+            <h4 className='fw-light'>Seqcol Comparison Overview Module (SCOM)</h4>
             {/* <ul className='nav nav-pills border border-2 border-light-subtle rounded rounded-3 bg-body-secondary'>
               <li className='nav-item pointer-cursor'>
                 <span
@@ -295,7 +475,7 @@ const Similarities = () => {
           </div>
 
           <p className='mt-2 mb-0 text-muted'>
-            This tool provides similarity metrics for comparisons between all
+            This tool provides summary similarity metrics for comparisons between all
             sequence collections on the server and one of your choice.
           </p>
           {/* <p className='mb-2 text-muted'>
@@ -343,19 +523,28 @@ const Similarities = () => {
                   placeholder='Name or digest of custom collection (optional)'
                   className='form-control tiny border-0 rounded-0 border-bottom z-active'
                 />
+                <select
+                  id='comparison-species'
+                  value={species}
+                  onChange={(e) => setSpecies(e.target.value)}
+                  className='form-select tiny border-0 rounded-0 border-bottom z-active'
+                >
+                  <option value='human'>Compare with human sequence collections</option>
+                  <option value='mouse'>Compare with mouse sequence collections</option>
+                </select>
                 <textarea
                   id='custom-collection-json'
                   onChange={(e) => setCustomCollectionJSON(e.target.value)}
                   value={customCollectionJSON}
                   placeholder='If you have a custom sequence collection, enter the output of `refget digest-fasta "yourfasta.fa" -l 2` here.'
                   className='form-control tiny border-0 rounded-0 rounded-bottom z-active'
-                  style={{ maxHeight: 'calc(200px - 32.333333px)' }}
+                  // style={{ maxHeight: 'calc(200px - 32.333333px)' }}
                   rows='12'
                 />
               </div>
             </div>
 
-            {relationship === 'manyToMany' && (
+            {/* {relationship === 'manyToMany' && (
               <div className='col-6'>
                 <div className='card'>
                   <div className='card-header tiny d-flex justify-content-between'>
@@ -439,7 +628,7 @@ const Similarities = () => {
                   </ul>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
@@ -447,10 +636,21 @@ const Similarities = () => {
       {(similarities && !isLoading) ? (
         <div className='row'>
           <div className='col-12'>
-            <div className='d-flex align-items-end justify-content-between mt-4 mb-2'>
+            <div className='d-flex align-items-start justify-content-between mt-4 mb-2'>
               <h5 className='fw-light'>Strip Plot</h5>
               <select
-                className='form-select form-select-sm w-25'
+                className='form-select form-select-sm ms-auto tiny'
+                style={{width: '12%'}}
+                aria-label='strip-orientation'
+                value={stripOrientation}
+                onChange={(e) => setStripOrientation(e.target.value)}
+              >
+                <option value='horizontal'>Horizontal Plot</option>
+                <option value='vertical'>Vertical Plot</option>
+              </select>
+              <select
+                className='form-select form-select-sm ms-1 tiny'
+                style={{width: '12%'}}
                 aria-label='strip-jitter'
                 value={stripJitter}
                 onChange={(e) => setStripJitter(e.target.value)}
@@ -466,19 +666,21 @@ const Similarities = () => {
               </select>
             </div>
             <StripPlot
-              similarities={similarities}
+              similarities={similarities.map(({ raw, ...rest }) => rest)}
               jitter={stripJitter}
               pointSize={
                 relationship === 'oneToMany' || selectedCollections.length <= 1
                   ? 'big'
                   : 'normal'
               }
+              orientation={stripOrientation}
             />
 
             <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
               <h5 className='fw-light'>Heatmap</h5>
-              <select
-                className='form-select form-select-sm w-25'
+              {/* <select
+                className='form-select form-select-sm'
+                style={{width: '20%'}}
                 aria-label='heatmap-select'
                 value={heatmapMetric}
                 onChange={(e) => setHeatmapMetric(e.target.value)}
@@ -488,11 +690,11 @@ const Similarities = () => {
                 <option value='names'>Names</option>
                 <option value='sequences'>Sequences</option>
                 <option value='sorted_sequences'>Sorted Sequences</option>
-              </select>
+              </select> */}
             </div>
-            <HeatmapPlot similarities={similarities} metric={heatmapMetric} />
+            <MultiMetricHeatmapPlot similarities={similarities.map(({ raw, ...rest }) => rest)} />
 
-            {relationship === 'manyToMany' && (
+            {/* {relationship === 'manyToMany' && (
               <>
                 <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
                   <h5 className='fw-light'>Network Graph</h5>
@@ -537,15 +739,15 @@ const Similarities = () => {
                   </select>
                 </div>
                 <NetworkGraph
-                  similarities={similarities}
+                  similarities={similarities.map(({ raw, ...rest }) => rest)}
                   metric={networkMetric}
                   threshold={networkThreshold}
                 />
               </>
-            )}
+            )} */}
 
             <div className='d-flex align-items-end justify-content-between'>
-              <h5 className='fw-light mt-5'>Summary Table</h5>
+              <h5 className='fw-light mt-5'>Seqcol Comparison Summary Table</h5>
               <p className='mb-2 text-muted'>
                 Click on a row to view a detailed 1-1 comparison in SCIM.
               </p>
@@ -554,13 +756,14 @@ const Similarities = () => {
               <table className='table table-striped table-hover table-rounded'>
                 <thead>
                   <tr>
-                    <th>Selected Digest</th>
-                    <th>Compared Digest</th>
-                    <th>Lengths</th>
-                    <th>Name Length Pairs</th>
-                    <th>Names</th>
-                    <th>Sequences</th>
-                    <th>Sorted Sequences</th>
+                    {/* <th className='cursor-pointer' onClick={() => handleSortTable('selectedDigest')}>Seqcol A <i className={sortBy === 'selectedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th> */}
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('comparedAlias')}>Compared Seqcol <i className={sortBy === 'comparedAlias' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('comparedDigest')}>Compared Seqcol Digest <i className={sortBy === 'comparedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('lengths')}>Lengths <i className={sortBy === 'lengths' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('name_length_pairs')}>Name Length Pairs <i className={sortBy === 'name_length_pairs' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('names')}>Names <i className={sortBy === 'names' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('sequences')}>Sequences <i className={sortBy === 'sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('sorted_sequences')}>Sorted Sequences <i className={sortBy === 'sorted_sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -570,13 +773,14 @@ const Similarities = () => {
                       className='cursor-pointer'
                       onClick={() => handleNavigateSCIM(row)}
                     >
-                      <td>{row.selectedDigest}</td>
+                      {/* <td>{row.selectedDigest}</td> */}
+                      <td>{row.comparedAlias ? row.comparedAlias : row.comparedDigest}</td>
                       <td>{row.comparedDigest}</td>
-                      <td>{row.lengths}</td>
-                      <td>{row.name_length_pairs}</td>
-                      <td>{row.names}</td>
-                      <td>{row.sequences}</td>
-                      <td>{row.sorted_sequences}</td>
+                      <td>{Number.isInteger(row.lengths) ? row.lengths : row.lengths.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.name_length_pairs) ? row.name_length_pairs : row.name_length_pairs.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.names) ? row.names : row.names.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.sequences) ? row.sequences : row.sequences.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.sorted_sequences) ? row.sorted_sequences : row.sorted_sequences.toFixed(3)}</td>
                     </tr>
                   ))}
                 </tbody>

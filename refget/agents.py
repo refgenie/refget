@@ -6,10 +6,11 @@ import requests
 
 from sqlmodel import create_engine, select, Session, delete, func, SQLModel
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from sqlalchemy import URL
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from .models import *
 from .utilities import (
@@ -101,7 +102,6 @@ class SequenceAgent(object):
 
             results = session.exec(statement)
             response = results.first()
-            print(response)
 
             # Raise ValueError if not found or if the subsequence is empty
             if not response:
@@ -183,6 +183,51 @@ class SequenceCollectionAgent(object):
             else:
                 return seqcol
 
+    def get_many_level2_offset(
+        self, limit=50, offset=0, target_digests=None
+    ) -> ResultsSequenceCollections:
+
+        final_results = {}
+
+        with Session(self.engine) as session:
+            list_stmt = select(SequenceCollection).options(
+                selectinload(SequenceCollection.lengths),
+                selectinload(SequenceCollection.sequences),
+                selectinload(SequenceCollection.sorted_sequences),
+                selectinload(SequenceCollection.names),
+                selectinload(SequenceCollection.name_length_pairs),
+                selectinload(SequenceCollection.human_readable_names),
+            )
+
+            # Filter by target digests if provided
+            if target_digests:
+                list_stmt = list_stmt.where(SequenceCollection.digest.in_(target_digests))
+                cnt_stmt = select(func.count(SequenceCollection.digest)).where(
+                    SequenceCollection.digest.in_(target_digests)
+                )
+            else:
+                cnt_stmt = select(func.count(SequenceCollection.digest))
+
+            list_stmt = list_stmt.offset(offset).limit(limit)
+
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqcols = list_res.all()
+
+            for seq in seqcols:
+                final_results[seq.digest] = seq.level2()
+                final_results[seq.digest]["human_readable_names"] = [
+                    name.human_readable_name for name in seq.human_readable_names
+                ]
+
+            return ResultsSequenceCollections(
+                pagination=PaginationResult(
+                    page=int(offset / limit), page_size=limit, total=count
+                ),
+                results=final_results,
+            )
+
     def add(self, seqcol: SequenceCollection, update: bool = False) -> SequenceCollection:
         """
         Add a sequence collection to the database or update it if it exists
@@ -196,11 +241,9 @@ class SequenceCollectionAgent(object):
         """
         with Session(self.engine, expire_on_commit=False) as session:
             with session.no_autoflush:
-                # Check if collection exists
                 existing = session.get(SequenceCollection, seqcol.digest)
 
                 if existing and not update:
-                    # Return existing without modification if not updating
                     return existing
 
                 # Process attributes (create if needed)
@@ -224,6 +267,24 @@ class SequenceCollectionAgent(object):
 
                 if existing and update:
                     # Update existing collection
+
+                    existing_names = [
+                        name_model.human_readable_name
+                        for name_model in existing.human_readable_names
+                    ]
+
+                    for name_model in seqcol.human_readable_names:
+                        if name_model.human_readable_name not in existing_names:
+
+                            new_name = HumanReadableNames(
+                                human_readable_name=name_model.human_readable_name,
+                                digest=existing.digest,
+                            )
+
+                            session.add(new_name)
+
+                            existing.human_readable_names.append(new_name)
+
                     for attr_name, attr in processed_attrs.items():
                         # Update attribute reference
                         setattr(existing, f"{attr_name}_digest", attr.digest)
@@ -242,6 +303,7 @@ class SequenceCollectionAgent(object):
                     # Create new collection
                     new_collection = SequenceCollection(
                         digest=seqcol.digest,
+                        human_readable_names=seqcol.human_readable_names,
                         sorted_name_length_pairs_digest=seqcol.sorted_name_length_pairs_digest,
                     )
 
@@ -287,6 +349,29 @@ class SequenceCollectionAgent(object):
         seqcol = self.add_from_dict(CSC, update)
         return seqcol
 
+    def add_from_fasta_file_with_name(
+        self,
+        fasta_file_path: str,
+        human_readable_name: str,
+        update: bool = False,
+    ) -> SequenceCollection:
+        """
+        Given a path to a fasta file, and a human-readable name, load the sequences into the refget database.
+
+        Args:
+        - fasta_file_path (str): Path to the fasta file
+        - human_readable_name (str): human_readable_name
+        - update (bool): If True, update an existing collection if it exists
+
+        Returns:
+        - (SequenceCollection): The added or updated sequence collection
+        """
+
+        CSC = fasta_to_seqcol_dict(fasta_file_path)
+        CSC["human_readable_names"] = human_readable_name
+        seqcol = self.add_from_dict(CSC, update)
+        return seqcol
+
     def add_from_fasta_pep(self, pep: peppy.Project, fa_root: str, update: bool = False) -> dict:
         """
         Given a path to a PEP file and a root directory containing the fasta files,
@@ -309,7 +394,12 @@ class SequenceCollectionAgent(object):
             _LOGGER.info(f"Loading {fa_path} ({i} of {total_files})")
 
             start_time = time.time()  # Record start time
-            results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
+            if s.sample_name:
+                results[s.fasta] = self.add_from_fasta_file_with_name(
+                    fa_path, s.sample_name, update
+                ).digest
+            else:
+                results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
             elapsed_time = time.time() - start_time  # Calculate elapsed time
 
             _LOGGER.info(f"Loaded in {elapsed_time:.2f} seconds")
@@ -598,7 +688,7 @@ class RefgetDBAgent(object):
     #     B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
     #     return calc_jaccard_similarities(A,B)
 
-    def calc_similarities_seqcol_dict_and_digest(self, seqcolA, seqcolB_digest):
+    def calc_similarities_seqcol_dicts(self, seqcolA, seqcolB):
         """
         Calculates the Jaccard similarity between two sequence collections.
 
@@ -607,21 +697,23 @@ class RefgetDBAgent(object):
 
         Args:
             seqcolA (dict): the first sequence collection in dict format.
-            digestB (str): The digest (identifier) for the second sequence collection.
+            seqcolB (dict): the second sequence collection in dict format.
 
         Returns:
             dict: The Jaccard similarity score between the two sequence collections for all present and shared attributes.
 
         """
-        seqcolB = self.seqcol.get(seqcolB_digest, return_format="level2")
+
         return calc_jaccard_similarities(seqcolA, seqcolB)
 
     def compare_1_digest(self, digestA, seqcolB):
         A = self.seqcol.get(digestA, return_format="level2")
         B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
-        _LOGGER.info(f"Comparing...")
-        _LOGGER.info(f"B: {B}")
         return compare_seqcols(A, B)
+
+    def retrieve_level2_digest(self, seqcoldigest):
+        A = self.seqcol.get(seqcoldigest, return_format="level2")
+        return A
 
     @property
     def seq(self) -> SequenceAgent:

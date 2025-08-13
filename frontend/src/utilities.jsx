@@ -5,7 +5,7 @@ import copyToClipboardIcon from './assets/copy_to_clipboard.svg';
 import barcodeIcon from './assets/barcode.svg';
 
 const copyToClipboard = async (text) => {
-  toast.success('Copied to clipboard!');
+  toast.success('Digest copied!');
   return await navigator.clipboard.writeText(text);
 };
 

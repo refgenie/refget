@@ -69,6 +69,16 @@ class TestSequenceCollectionModel:
         print(sc)
         assert sc.digest == "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk"
 
+    def test_sequence_collection_with_human_name(self):
+        seqcol_dict = {
+            "names": ["seq1"],
+            "sequences": ["ABC"],
+            "lengths": [3],
+            "human_readable_names": "Test Collection",
+        }
+        sc = refget.SequenceCollection.from_dict(seqcol_dict)
+        assert sc.human_readable_names[0].human_readable_name == "Test Collection"
+
     @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
     def test_from_fasta_file(self, fa_file, fa_digest_bundle, fa_root):
         """Ensures the top-level digest of a SequenceCollection matches."""

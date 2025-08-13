@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { LinkedCollectionDigest } from '../components/ValuesAndDigests.jsx';
 import { useLoaderData } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+
 
 import { API_BASE } from '../utilities.jsx';
 
@@ -314,7 +316,13 @@ const ComparisonView = ({ paramComparison }) => {
         </div>
         <div className='d-inline'>
           <label className='fw-medium d-inline-block'>Digest B:</label>
-          <LinkedCollectionDigest digest={comparison.digests.b} />
+          {comparison.digests.b === 'POSTed seqcol' ? (
+            <>
+              <span className='font-monospace small ms-1'>
+                POSTed seqcol <Link to='/scom'>(Custom SCOM Input)</Link>
+              </span>
+            </>
+            ) : <LinkedCollectionDigest digest={comparison.digests.b}/>}
         </div>
       </div>
 
