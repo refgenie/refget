@@ -9,9 +9,11 @@ export const useSimilaritiesStore = create((set, get) => ({
   similarities: null,
   sortBy: null,
   sortAscending: false,
+  species: 'human',
 
   setSortBy: (value) => set({ sortBy: value }),
   setSortAscending: (value) => set({ sortAscending: value }),
+  setSpecies: (value) => set({ species: value }),
 
   sortSimilarities: () => {
     const { similarities, sortBy, sortAscending } = get();

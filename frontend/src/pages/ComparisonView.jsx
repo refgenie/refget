@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import { LinkedCollectionDigest } from '../components/ValuesAndDigests.jsx';
-import { useLoaderData } from 'react-router-dom';import {
-  barcodeIcon,
-  copyToClipboardIcon,
-  copyToClipboard,
-} from '../utilities';
+import { useLoaderData } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 
 
@@ -323,7 +319,7 @@ const ComparisonView = ({ paramComparison }) => {
           {comparison.digests.b === 'POSTed seqcol' ? (
             <>
               <span className='font-monospace small ms-1'>
-                SCOM Custom Input
+                POSTed seqcol <Link to='/scom'>(Custom SCOM Input)</Link>
               </span>
             </>
             ) : <LinkedCollectionDigest digest={comparison.digests.b}/>}

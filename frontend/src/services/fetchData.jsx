@@ -108,8 +108,8 @@ export const fetchSimilarities = async (digest) => {
   }).then((response) => response.json());
 };
 
-export const fetchSimilaritiesJSON = async (data) => {
-  const url = `${API_BASE}/similarities/?page_size=60`;
+export const fetchSimilaritiesJSON = async (data, species) => {
+  const url = `${API_BASE}/similarities/?species=${species}&page_size=60`;
   return fetch(url, {
     method: 'POST',
     headers: {

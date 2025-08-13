@@ -40,7 +40,9 @@ const Similarities = () => {
     setSortBy,
     sortAscending,
     setSortAscending,
-    sortSimilarities
+    sortSimilarities,
+    species,
+    setSpecies
   } = useSimilaritiesStore();
 
   const [stripJitter, setStripJitter] = useState('none');
@@ -52,7 +54,6 @@ const Similarities = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const allCollections = getAllCollections(collections);
-  console.log(allCollections)
 
   useEffect(() => {
     initializeSelectedCollections(collections);
@@ -160,35 +161,39 @@ const Similarities = () => {
       return;
     }
 
-    if (relationship === 'manyToMany' && allCollections.includes(name)) {
-      toast.error(
-        <span>
-          <strong>Error:</strong> Collection with name already exists. Please
-          try another name.
-        </span>,
-      );
-      return;
-    }
+    // if (relationship === 'manyToMany' && allCollections.includes(name)) {
+    //   toast.error(
+    //     <span>
+    //       <strong>Error:</strong> Collection with name already exists. Please
+    //       try another name.
+    //     </span>,
+    //   );
+    //   return;
+    // }
 
     try {
       setIsLoading(true);
-      const result = await fetchSimilaritiesJSON(data);
+      const result = await fetchSimilaritiesJSON(data, species);
       if (result?.similarities) {
         // const customDigest = 'query_seqcol' + (customCount > 1 ? customCount : '');
         const customDigest = 'query_seqcol';
+        //  console.log(result.similarities)
+        const flattenedSimilarities = result.similarities.flatMap((s) =>
+          s.human_readable_names.map((humanReadableName) => ({
+            selectedDigest: name !== '' ? name : customDigest,
+            comparedDigest: s.digest,
+            comparedAlias: humanReadableName || s.digest,
+            lengths: s.similarities.lengths,
+            name_length_pairs: s.similarities.name_length_pairs,
+            names: s.similarities.names,
+            sequences: s.similarities.sequences,
+            sorted_sequences: s.similarities.sorted_sequences,
+            custom: true,
+            raw: data,
+          }))
+        );
 
-        const flattenedSimilarities = result.similarities.map((s) => ({
-          selectedDigest: name !== '' ? name : customDigest,
-          comparedDigest: s.digest,
-          comparedAlias: s.human_readable_name,
-          lengths: s.similarities.lengths,
-          name_length_pairs: s.similarities.name_length_pairs,
-          names: s.similarities.names,
-          sequences: s.similarities.sequences,
-          sorted_sequences: s.similarities.sorted_sequences,
-          custom: true,
-          raw: data,
-        }));
+        console.log(flattenedSimilarities)
 
         if (relationship === 'oneToMany') {
           setCustomCollections([
@@ -235,33 +240,34 @@ const Similarities = () => {
       for (let i = 0; i < selectedCollectionsIndex.length; i++) {
         if (!selectedCollectionsIndex[i]) continue;
 
-        const collection = allCollections[i];
+        // const collection = allCollections[i];
+        
 
         if (i < collections.results.length && relationship === 'manyToMany') {
-          // server collection
-          try {
-            const result = await fetchSimilarities(collection);
-            if (result?.similarities) {
-              const flattenedSimilarities = result.similarities.map((s) => ({
-                selectedDigest: collection,
-                comparedDigest: s.digest,
-                comparedAlias: s.human_readable_name,
-                lengths: s.similarities.lengths,
-                name_length_pairs: s.similarities.name_length_pairs,
-                names: s.similarities.names,
-                sequences: s.similarities.sequences,
-                sorted_sequences: s.similarities.sorted_sequences,
-                custom: false,
-                raw: null,
-              }));
-              allSimilarities.push(...flattenedSimilarities);
-            }
-          } catch (error) {
-            console.error(
-              `Error fetching similarities for ${collection}:`,
-              error,
-            );
-          }
+          // // server collection
+          // try {
+          //   const result = await fetchSimilarities(collection);
+          //   if (result?.similarities) {
+          //     const flattenedSimilarities = result.similarities.map((s) => ({
+          //       selectedDigest: collection,
+          //       comparedDigest: s.digest,
+          //       comparedAlias: s.human_readable_name,
+          //       lengths: s.similarities.lengths,
+          //       name_length_pairs: s.similarities.name_length_pairs,
+          //       names: s.similarities.names,
+          //       sequences: s.similarities.sequences,
+          //       sorted_sequences: s.similarities.sorted_sequences,
+          //       custom: false,
+          //       raw: null,
+          //     }));
+          //     allSimilarities.push(...flattenedSimilarities);
+          //   }
+          // } catch (error) {
+          //   console.error(
+          //     `Error fetching similarities for ${collection}:`,
+          //     error,
+          //   );
+          // }
         } else {
           // custom collection
           const customIndex = i - collections.results.length;
@@ -364,6 +370,15 @@ const Similarities = () => {
                   placeholder='Name or digest of custom collection (optional)'
                   className='form-control tiny border-0 rounded-0 border-bottom z-active'
                 />
+                <select
+                  id='comparison-species'
+                  value={species}
+                  onChange={(e) => setSpecies(e.target.value)}
+                  className='form-select tiny border-0 rounded-0 border-bottom z-active'
+                >
+                  <option value='human'>Compare with human sequence collections</option>
+                  <option value='mouse'>Compare with mouse sequence collections</option>
+                </select>
                 <textarea
                   id='custom-collection-json'
                   onChange={(e) => setCustomCollectionJSON(e.target.value)}
@@ -588,13 +603,14 @@ const Similarities = () => {
               <table className='table table-striped table-hover table-rounded'>
                 <thead>
                   <tr>
-                    <th onClick={() => handleSortTable('selectedDigest')}>Seqcol A <i className={sortBy === 'selectedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th onClick={() => handleSortTable('comparedDigest')}>Seqcol B <i className={sortBy === 'comparedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th onClick={() => handleSortTable('lengths')}>Lengths <i className={sortBy === 'lengths' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th onClick={() => handleSortTable('name_length_pairs')}>Name Length Pairs <i className={sortBy === 'name_length_pairs' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th onClick={() => handleSortTable('names')}>Names <i className={sortBy === 'names' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th onClick={() => handleSortTable('sequences')}>Sequences <i className={sortBy === 'sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th onClick={() => handleSortTable('sorted_sequences')}>Sorted Sequences <i className={sortBy === 'sorted_sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    {/* <th className='cursor-pointer' onClick={() => handleSortTable('selectedDigest')}>Seqcol A <i className={sortBy === 'selectedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th> */}
+                    <th className='cursor-pointer' onClick={() => handleSortTable('comparedAlias')}>Compared Seqcol <i className={sortBy === 'comparedAlias' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer' onClick={() => handleSortTable('comparedDigest')}>Compared Seqcol Digest <i className={sortBy === 'comparedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer' onClick={() => handleSortTable('lengths')}>Lengths <i className={sortBy === 'lengths' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer' onClick={() => handleSortTable('name_length_pairs')}>Name Length Pairs <i className={sortBy === 'name_length_pairs' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer' onClick={() => handleSortTable('names')}>Names <i className={sortBy === 'names' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer' onClick={() => handleSortTable('sequences')}>Sequences <i className={sortBy === 'sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer' onClick={() => handleSortTable('sorted_sequences')}>Sorted Sequences <i className={sortBy === 'sorted_sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -604,8 +620,9 @@ const Similarities = () => {
                       className='cursor-pointer'
                       onClick={() => handleNavigateSCIM(row)}
                     >
-                      <td>{row.selectedDigest}</td>
+                      {/* <td>{row.selectedDigest}</td> */}
                       <td>{row.comparedAlias ? row.comparedAlias : row.comparedDigest}</td>
+                      <td>{row.comparedDigest}</td>
                       <td>{row.lengths}</td>
                       <td>{row.name_length_pairs}</td>
                       <td>{row.names}</td>

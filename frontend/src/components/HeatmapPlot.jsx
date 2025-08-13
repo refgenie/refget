@@ -24,7 +24,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
         x: {
           field: 'comparedDigest',
           type: 'nominal',
-          title: 'Server Seqcols',
+          title: 'Server Sequence Collections',
           sort: false,
           axis: {
             // labelAngle: -33,
@@ -37,7 +37,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
         y: {
           field: 'selectedDigest',
           type: 'nominal',
-          title: 'Input Seqcol',
+          title: 'Input',
           sort: false,
           axis: {
             // labelAngle: -33,

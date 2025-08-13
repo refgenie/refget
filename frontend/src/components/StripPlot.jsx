@@ -84,7 +84,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                 field: 'comparedSeqcol',
                 type: 'nominal',
                 sort: false,
-                title: 'Compared Digest',
+                title: 'Compared Sequence Collection',
                 axis: {
                   labelLimit: 333,
                   grid: false,
@@ -200,7 +200,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                   field: 'comparedSeqcol',
                   type: 'nominal',
                   sort: false,
-                  title: 'Compared Digest',
+                  title: 'Compared Sequence Collection',
                   axis: {
                     labelLimit: 333,
                     grid: true,
@@ -272,7 +272,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                   field: 'comparedSeqcol',
                   type: 'nominal',
                   sort: false,
-                  title: 'Compared Digest',
+                  title: 'Compared Sequence Collection',
                   axis: {
                     labelLimit: 333,
                     grid: true,
@@ -361,7 +361,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                 field: 'comparedSeqcol',
                 type: 'nominal',
                 sort: false,
-                title: 'Compared Digest',
+                title: 'Compared Sequence Collection',
                 axis: {
                   labelLimit: 333,
                   grid: false,
@@ -480,7 +480,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                   field: 'comparedSeqcol',
                   type: 'nominal',
                   sort: false,
-                  title: 'Compared Digest',
+                  title: 'Compared Sequence Collection',
                   axis: {
                     labelLimit: 333,
                     grid: true,
@@ -546,7 +546,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                   field: 'comparedSeqcol',
                   type: 'nominal',
                   sort: false,
-                  title: 'Compared Digest',
+                  title: 'Compared Sequence Collection',
                   axis: {
                     labelLimit: 333,
                     grid: true,
