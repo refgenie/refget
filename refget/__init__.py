@@ -15,6 +15,7 @@ try:
 except ImportError:
     print("Optional dependencies not installed. Refget router will not be available.")
     create_refget_router = None
+    get_dbagent = None
     pass
 
 logging.basicConfig(level=logging.INFO)
