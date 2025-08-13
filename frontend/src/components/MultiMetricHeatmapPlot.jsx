@@ -12,9 +12,9 @@ const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_leng
     similarities.forEach(row => {
       metrics.forEach(metric => {
         transformedData.push({
+          comparedSeqcol: row.comparedAlias ? row.comparedAlias : row.comparedDigest,
           comparedDigest: row.comparedDigest,
-          comparedAlias: row.comparedAlias,
-          selectedDigest: row.selectedDigest,
+          inputSeqcol: row.selectedDigest,
           metric: metric,
           metricTitle: snakeToTitle(metric),
           value: row[metric]
@@ -42,7 +42,7 @@ const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_leng
       },
       encoding: {
         x: {
-          field: 'comparedDigest',
+          field: 'comparedSeqcol',
           type: 'nominal',
           title: 'Compared Sequence Collection',
           sort: false,
@@ -76,8 +76,9 @@ const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_leng
           },
         },
         tooltip: [
-          { field: 'selectedDigest', title: 'Selected' },
-          { field: 'comparedDigest', title: 'Compared' },
+          // { field: 'inputSeqcol', title: 'Selected' },
+          { field: 'comparedSeqcol', title: 'Compared Seqcol' },
+          { field: 'comparedDigest', title: 'Compared Seqcol Digest' },
           { field: 'metricTitle', title: 'Metric' },
           { field: 'value', title: 'Similarity', format: '.3f' },
         ],

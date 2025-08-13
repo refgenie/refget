@@ -36,6 +36,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
         .map((metric) => ({
           inputSeqcol: item.selectedDigest,
           comparedSeqcol: item.comparedAlias ? item.comparedAlias : item.comparedDigest,
+          comparedDigest: item.comparedDigest,
           metric: snakeToTitle(metric),
           value: item[metric],
           zero_value: 0,
@@ -116,8 +117,9 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                 value: 0.1,
               },
               tooltip: [
-                { field: 'inputSeqcol', title: 'Selected' },
-                { field: 'comparedSeqcol', title: 'Compared' },
+                // { field: 'inputSeqcol', title: 'Selected' },
+                { field: 'comparedSeqcol', title: 'Compared Seqcol' },
+                { field: 'comparedDigest', title: 'Compared Seqcol Digest' },
                 { field: 'metric', title: 'Metric' },
                 { field: 'value', title: 'Value', format: '.3f' },
               ],
@@ -317,10 +319,11 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                     ? null
                     : { field: 'jitter', type: 'quantitative' },
                 tooltip: [
-                  { field: 'inputSeqcol', title: 'Selected' },
-                  { field: 'comparedSeqcol', title: 'Compared' },
+                  // { field: 'inputSeqcol', title: 'Selected' },
+                  { field: 'comparedSeqcol', title: 'Compared Seqcol' },
+                  { field: 'comparedDigest', title: 'Compared Seqcol Digest' },
                   { field: 'metric', title: 'Metric' },
-                  { field: 'value', title: 'Value' },
+                  { field: 'value', title: 'Value', format: '.3f' },
                 ],
               },
             },
@@ -390,8 +393,9 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                 value: 0.1,
               },
               tooltip: [
-                { field: 'inputSeqcol', title: 'Selected' },
-                { field: 'comparedSeqcol', title: 'Compared' },
+                // { field: 'inputSeqcol', title: 'Selected' },
+                { field: 'comparedSeqcol', title: 'Compared Seqcol' },
+                { field: 'comparedDigest', title: 'Compared Seqcol Digest' },
                 { field: 'metric', title: 'Metric' },
                 { field: 'value', title: 'Value', format: '.3f' },
               ],
@@ -585,10 +589,11 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                     ? null
                     : { field: 'jitter', type: 'quantitative' },
                 tooltip: [
-                  { field: 'inputSeqcol', title: 'Selected' },
-                  { field: 'comparedSeqcol', title: 'Compared' },
+                  // { field: 'inputSeqcol', title: 'Selected' },
+                  { field: 'comparedSeqcol', title: 'Compared Seqcol' },
+                  { field: 'comparedDigest', title: 'Compared Seqcol Digest' },
                   { field: 'metric', title: 'Metric' },
-                  { field: 'value', title: 'Value' },
+                  { field: 'value', title: 'Value', format: '.3f' },
                 ],
               },
             },
