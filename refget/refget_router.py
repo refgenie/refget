@@ -193,21 +193,43 @@ async def compare_2_digests(
 
 @seqcol_router.post(
     "/similarities/{collection_digest}",
-    summary="Calculate Jaccard similarities between a single sequence collection in the database and all other collections in the database",
+    summary="Calculate Jaccard similarities between a single sequence collection in the database and all other collections in the database (by species)",
     tags=["Comparing sequence collections"],
     response_model=Similarities,
 )
 async def calc_similarities(
     collection_digest: str,
+    species: str = "human",
     page_size: int = 50,
     page: int = 0,
     dbagent=Depends(get_dbagent),
 ) -> Similarities:
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
-        results = dbagent.seqcol.get_many_level2_offset(limit=page_size, offset=page * page_size)
-
         seqcolA = dbagent.seqcol.get(digest=collection_digest)
+
+        # Validate species parameter
+        if species.lower() not in _SAMPLE_DIGESTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid species '{species}'. Choose from: {list(_SAMPLE_DIGESTS.keys())}",
+            )
+
+        # Get pre-loaded digests for the species
+        target_digests = _SAMPLE_DIGESTS[species.lower()]
+
+        if not target_digests:
+            _LOGGER.warning(
+                f"No pre-loaded digests found for {species}, returning {page_size} comparisons"
+            )
+            target_digests = None
+        else:
+            _LOGGER.info(f"Using {len(target_digests)} pre-loaded digests for {species}")
+
+        # Use the modified get_many_level2_offset function with target_digests filter
+        results = dbagent.seqcol.get_many_level2_offset(
+            limit=page_size, offset=page * page_size, target_digests=target_digests
+        )
 
         similarities = []
         for key in results.results.keys():
@@ -222,17 +244,15 @@ async def calc_similarities(
             )
 
         result = Similarities(
-            similarities=similarities,
-            pagination=results.pagination,
-            reference_digest=collection_digest,
+            similarities=similarities, pagination=results.pagination, reference_digest=None
         )
 
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except Exception as e:
-        _LOGGER.debug(e)
-        raise HTTPException(
-            status_code=404,
-            detail=f"Error: collection not found. Check the digest and try again.",
-        )
+        _LOGGER.debug(f"Error in calc_similarities_from_json: {e}")
+        raise HTTPException(status_code=500, detail="Error calculating similarities")
 
     return result
 
