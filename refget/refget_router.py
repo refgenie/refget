@@ -23,6 +23,8 @@ from .models import Similarities, PaginationResult
 
 from .examples import *
 
+from henge import NotFoundException
+
 _LOGGER = logging.getLogger(__name__)
 
 # Import the global variable from the router
@@ -310,8 +312,8 @@ async def calc_similarities_from_json(
         # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        _LOGGER.error(f"Error in calc_similarities_from_json: {e}")
-        raise HTTPException(status_code=500, detail=f"Error calculating similarities: {str(e)}")
+        _LOGGER.debug(f"Error in calc_similarities_from_json: {e}")
+        raise HTTPException(status_code=500, detail="Error calculating similarities")
 
     return result
 
