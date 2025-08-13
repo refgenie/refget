@@ -6,6 +6,8 @@ from pathlib import Path
 
 from refget.models import SequenceCollection as pythonSequenceCollection
 
+from refget.refget_store import GlobalRefgetStore, StorageMode
+
 try:
     from gtars.refget import (
         SequenceCollection as gtarsSequenceCollection,
@@ -49,3 +51,11 @@ class TestRustPySequenceCollection:
             bridged_seq_col.sorted_name_length_pairs_digest
             == python_seq_col.sorted_name_length_pairs_digest
         )
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+class TestRustRefgetStore:
+    def test_store(self):
+        # just make sure this is callable if gtars is installed.
+        s = GlobalRefgetStore(mode=StorageMode.Raw)
+        s.import_fasta("test_fasta/base.fa")
