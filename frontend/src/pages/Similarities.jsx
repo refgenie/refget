@@ -9,7 +9,7 @@ import {
   fetchComparison,
   fetchComparisonJSON,
 } from '../services/fetchData.jsx';
-import { HeatmapPlot } from '../components/HeatmapPlot.jsx';
+import { MultiMetricHeatmapPlot } from '../components/MultiMetricHeatmapPlot.jsx';
 import { StripPlot } from '../components/StripPlot.jsx';
 // import { NetworkGraph } from '../components/NetworkGraph.jsx';
 
@@ -64,34 +64,188 @@ const Similarities = () => {
   );
 
   const sampleJSON = {
-    "lengths": [8, 4, 4],
+    "lengths": [249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663, 146364022, 141213431, 135534747, 135006516, 133851895, 115169878, 107349540, 102531392, 90354753, 81195210, 78077248, 59128983, 63025520, 48129895, 51304566, 155270560, 59373566, 16569],
     "names": [
-      "chrX",
-      "chr2",
-      "chr1"
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "X",
+      "Y",
+      "MT"
     ],
     "sequences": [
-      "SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw",
-      "SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj",
-      "SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6"
+      "SQ.S_KjnFVz-FE7M0W6yoaUDgYxLPc1jyWU",
+      "SQ.9KdcA9ZpY1Cpvxvg8bMSLYDUpsX6GDLO",
+      "SQ.VNBualIltAyi2AI_uXcKU7M9XUOuA7MS",
+      "SQ.iy7Zfceb5_VGtTQzJ-v5JpPbpeifHD_V",
+      "SQ.vbjOdMfHJvTjK_nqvFvpaSKhZillW0SX",
+      "SQ.KqaUhJMW3CDjhoVtBetdEKT1n6hM-7Ek",
+      "SQ.IW78mgV5Cqf6M24hy52hPjyyo5tCCd86",
+      "SQ.tTm7wmhz0G4lpt8wPspcNkAD_qiminj6",
+      "SQ.HBckYGQ4wYG9APHLpjoQ9UUe9v7NxExt",
+      "SQ.-BOZ8Esn8J88qDwNiSEwUr5425UXdiGX",
+      "SQ.XXi2_O1ly-CCOi3HP5TypAw7LtC6niFG",
+      "SQ.105bBysLoDFQHhajooTAUyUkNiZ8LJEH",
+      "SQ.Ewb9qlgTqN6e_XQiRVYpoUfZJHXeiUfH",
+      "SQ.5Ji6FGEKfejK1U6BMScqrdKJK8GqmIGf",
+      "SQ.zIMZb3Ft7RdWa5XYq0PxIlezLY2ccCgt",
+      "SQ.W6wLoIFOn4G7cjopxPxYNk2lcEqhLQFb",
+      "SQ.AjWXsI7AkTK35XW9pgd3UbjpC3MAevlz",
+      "SQ.BTj4BDaaHYoPhD3oY2GdwC_l0uqZ92UD",
+      "SQ.ItRDD47aMoioDCNW_occY5fWKZBKlxCX",
+      "SQ.iy_UbUrvECxFRX5LPTH_KPojdlT7BKsf",
+      "SQ.LpTaNW-hwuY_yARP0rtarCnpCQLkgVCg",
+      "SQ.XOgHwwR3Upfp5sZYk6ZKzvV25a4RBVu8",
+      "SQ.v7noePfnNpK8ghYXEqZ9NukMXW7YeNsm",
+      "SQ.fbS5kAwZUB5-1xVpa7xZ4s_lyDpLPVUo",
+      "SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct"
     ],
     "sorted_sequences": [
-      "SQ.AcLxtBuKEPk_7PGE_H4dGElwZHCujwH6",
-      "SQ.YBbVX0dLKG1ieEDCiMmkrTZFt_Z5Vdaj",
-      "SQ.iYtREV555dUFKg2_agSJW6suquUyPpMw"
+      "SQ.-BOZ8Esn8J88qDwNiSEwUr5425UXdiGX",
+      "SQ.105bBysLoDFQHhajooTAUyUkNiZ8LJEH",
+      "SQ.5Ji6FGEKfejK1U6BMScqrdKJK8GqmIGf",
+      "SQ.9KdcA9ZpY1Cpvxvg8bMSLYDUpsX6GDLO",
+      "SQ.AjWXsI7AkTK35XW9pgd3UbjpC3MAevlz",
+      "SQ.BTj4BDaaHYoPhD3oY2GdwC_l0uqZ92UD",
+      "SQ.Ewb9qlgTqN6e_XQiRVYpoUfZJHXeiUfH",
+      "SQ.HBckYGQ4wYG9APHLpjoQ9UUe9v7NxExt",
+      "SQ.IW78mgV5Cqf6M24hy52hPjyyo5tCCd86",
+      "SQ.ItRDD47aMoioDCNW_occY5fWKZBKlxCX",
+      "SQ.KqaUhJMW3CDjhoVtBetdEKT1n6hM-7Ek",
+      "SQ.LpTaNW-hwuY_yARP0rtarCnpCQLkgVCg",
+      "SQ.S_KjnFVz-FE7M0W6yoaUDgYxLPc1jyWU",
+      "SQ.VNBualIltAyi2AI_uXcKU7M9XUOuA7MS",
+      "SQ.W6wLoIFOn4G7cjopxPxYNk2lcEqhLQFb",
+      "SQ.XOgHwwR3Upfp5sZYk6ZKzvV25a4RBVu8",
+      "SQ.XXi2_O1ly-CCOi3HP5TypAw7LtC6niFG",
+      "SQ.fbS5kAwZUB5-1xVpa7xZ4s_lyDpLPVUo",
+      "SQ.iy7Zfceb5_VGtTQzJ-v5JpPbpeifHD_V",
+      "SQ.iy_UbUrvECxFRX5LPTH_KPojdlT7BKsf",
+      "SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct",
+      "SQ.tTm7wmhz0G4lpt8wPspcNkAD_qiminj6",
+      "SQ.v7noePfnNpK8ghYXEqZ9NukMXW7YeNsm",
+      "SQ.vbjOdMfHJvTjK_nqvFvpaSKhZillW0SX",
+      "SQ.zIMZb3Ft7RdWa5XYq0PxIlezLY2ccCgt"
     ],
     "name_length_pairs": [
       {
-        "length": 8,
-        "name": "chrX"
+        "length": 249250621,
+        "name": "1"
       },
       {
-        "length": 4,
-        "name": "chr2"
+        "length": 243199373,
+        "name": "2"
       },
       {
-        "length": 4,
-        "name": "chr1"
+        "length": 198022430,
+        "name": "3"
+      },
+      {
+        "length": 191154276,
+        "name": "4"
+      },
+      {
+        "length": 180915260,
+        "name": "5"
+      },
+      {
+        "length": 171115067,
+        "name": "6"
+      },
+      {
+        "length": 159138663,
+        "name": "7"
+      },
+      {
+        "length": 146364022,
+        "name": "8"
+      },
+      {
+        "length": 141213431,
+        "name": "9"
+      },
+      {
+        "length": 135534747,
+        "name": "10"
+      },
+      {
+        "length": 135006516,
+        "name": "11"
+      },
+      {
+        "length": 133851895,
+        "name": "12"
+      },
+      {
+        "length": 115169878,
+        "name": "13"
+      },
+      {
+        "length": 107349540,
+        "name": "14"
+      },
+      {
+        "length": 102531392,
+        "name": "15"
+      },
+      {
+        "length": 90354753,
+        "name": "16"
+      },
+      {
+        "length": 81195210,
+        "name": "17"
+      },
+      {
+        "length": 78077248,
+        "name": "18"
+      },
+      {
+        "length": 59128983,
+        "name": "19"
+      },
+      {
+        "length": 63025520,
+        "name": "20"
+      },
+      {
+        "length": 48129895,
+        "name": "21"
+      },
+      {
+        "length": 51304566,
+        "name": "22"
+      },
+      {
+        "length": 155270560,
+        "name": "X"
+      },
+      {
+        "length": 59373566,
+        "name": "Y"
+      },
+      {
+        "length": 16569,
+        "name": "MT"
       }
     ]
   }
@@ -176,7 +330,7 @@ const Similarities = () => {
       const result = await fetchSimilaritiesJSON(data, species);
       if (result?.similarities) {
         // const customDigest = 'query_seqcol' + (customCount > 1 ? customCount : '');
-        const customDigest = 'query_seqcol';
+        const customDigest = 'Input Seqcol';
         //  console.log(result.similarities)
         const flattenedSimilarities = result.similarities.flatMap((s) =>
           s.human_readable_names.map((humanReadableName) => ({
@@ -192,8 +346,6 @@ const Similarities = () => {
             raw: data,
           }))
         );
-
-        console.log(flattenedSimilarities)
 
         if (relationship === 'oneToMany') {
           setCustomCollections([
@@ -229,6 +381,7 @@ const Similarities = () => {
       );
       return;
     } finally {
+      setSortBy(null);
       setIsLoading(false);
     }
   };
@@ -483,11 +636,11 @@ const Similarities = () => {
       {(similarities && !isLoading) ? (
         <div className='row'>
           <div className='col-12'>
-            <div className='d-flex align-items-end justify-content-between mt-4 mb-2'>
+            <div className='d-flex align-items-start justify-content-between mt-4 mb-2'>
               <h5 className='fw-light'>Strip Plot</h5>
               <select
-                className='form-select form-select-sm ms-auto'
-                style={{width: '20%'}}
+                className='form-select form-select-sm ms-auto tiny'
+                style={{width: '12%'}}
                 aria-label='strip-orientation'
                 value={stripOrientation}
                 onChange={(e) => setStripOrientation(e.target.value)}
@@ -496,8 +649,8 @@ const Similarities = () => {
                 <option value='vertical'>Vertical Plot</option>
               </select>
               <select
-                className='form-select form-select-sm ms-2'
-                style={{width: '20%'}}
+                className='form-select form-select-sm ms-1 tiny'
+                style={{width: '12%'}}
                 aria-label='strip-jitter'
                 value={stripJitter}
                 onChange={(e) => setStripJitter(e.target.value)}
@@ -525,7 +678,7 @@ const Similarities = () => {
 
             <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
               <h5 className='fw-light'>Heatmap</h5>
-              <select
+              {/* <select
                 className='form-select form-select-sm'
                 style={{width: '20%'}}
                 aria-label='heatmap-select'
@@ -537,9 +690,9 @@ const Similarities = () => {
                 <option value='names'>Names</option>
                 <option value='sequences'>Sequences</option>
                 <option value='sorted_sequences'>Sorted Sequences</option>
-              </select>
+              </select> */}
             </div>
-            <HeatmapPlot similarities={similarities.map(({ raw, ...rest }) => rest)} metric={heatmapMetric} />
+            <MultiMetricHeatmapPlot similarities={similarities.map(({ raw, ...rest }) => rest)} />
 
             {/* {relationship === 'manyToMany' && (
               <>
@@ -604,13 +757,13 @@ const Similarities = () => {
                 <thead>
                   <tr>
                     {/* <th className='cursor-pointer' onClick={() => handleSortTable('selectedDigest')}>Seqcol A <i className={sortBy === 'selectedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th> */}
-                    <th className='cursor-pointer' onClick={() => handleSortTable('comparedAlias')}>Compared Seqcol <i className={sortBy === 'comparedAlias' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th className='cursor-pointer' onClick={() => handleSortTable('comparedDigest')}>Compared Seqcol Digest <i className={sortBy === 'comparedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th className='cursor-pointer' onClick={() => handleSortTable('lengths')}>Lengths <i className={sortBy === 'lengths' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th className='cursor-pointer' onClick={() => handleSortTable('name_length_pairs')}>Name Length Pairs <i className={sortBy === 'name_length_pairs' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th className='cursor-pointer' onClick={() => handleSortTable('names')}>Names <i className={sortBy === 'names' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th className='cursor-pointer' onClick={() => handleSortTable('sequences')}>Sequences <i className={sortBy === 'sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
-                    <th className='cursor-pointer' onClick={() => handleSortTable('sorted_sequences')}>Sorted Sequences <i className={sortBy === 'sorted_sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('comparedAlias')}>Compared Seqcol <i className={sortBy === 'comparedAlias' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('comparedDigest')}>Compared Seqcol Digest <i className={sortBy === 'comparedDigest' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('lengths')}>Lengths <i className={sortBy === 'lengths' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('name_length_pairs')}>Name Length Pairs <i className={sortBy === 'name_length_pairs' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('names')}>Names <i className={sortBy === 'names' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('sequences')}>Sequences <i className={sortBy === 'sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('sorted_sequences')}>Sorted Sequences <i className={sortBy === 'sorted_sequences' ? (sortAscending ? 'bi bi-sort-up' : 'bi bi-sort-down') : 'bi bi-filter'} /></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -623,11 +776,11 @@ const Similarities = () => {
                       {/* <td>{row.selectedDigest}</td> */}
                       <td>{row.comparedAlias ? row.comparedAlias : row.comparedDigest}</td>
                       <td>{row.comparedDigest}</td>
-                      <td>{row.lengths}</td>
-                      <td>{row.name_length_pairs}</td>
-                      <td>{row.names}</td>
-                      <td>{row.sequences}</td>
-                      <td>{row.sorted_sequences}</td>
+                      <td>{Number.isInteger(row.lengths) ? row.lengths : row.lengths.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.name_length_pairs) ? row.name_length_pairs : row.name_length_pairs.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.names) ? row.names : row.names.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.sequences) ? row.sequences : row.sequences.toFixed(3)}</td>
+                      <td>{Number.isInteger(row.sorted_sequences) ? row.sorted_sequences : row.sorted_sequences.toFixed(3)}</td>
                     </tr>
                   ))}
                 </tbody>

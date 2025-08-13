@@ -3,16 +3,37 @@ import embed from 'vega-embed';
 
 import { snakeToTitle } from '../utilities';
 
-const HeatmapPlot = ({ similarities, metric }) => {
+const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_length_pairs', 'names', 'sequences', 'sorted_sequences'] }) => {
   const plotRef = useRef(null);
 
-  const selectedCount = [...new Set(similarities.map((e) => e.selectedDigest))].length;
+  const transformData = (similarities, metrics) => {
+    const transformedData = [];
+    
+    similarities.forEach(row => {
+      metrics.forEach(metric => {
+        transformedData.push({
+          comparedDigest: row.comparedDigest,
+          comparedAlias: row.comparedAlias,
+          selectedDigest: row.selectedDigest,
+          metric: metric,
+          metricTitle: snakeToTitle(metric),
+          value: row[metric]
+        });
+      });
+    });
+    
+    return transformedData;
+  };
 
-  const heatmapSpec = (similarities, metric) => {
+  const metricCount = metrics.length;
+
+  const heatmapSpec = (similarities, metrics) => {
+    const transformedData = transformData(similarities, metrics);
+    
     return {
       $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
       data: {
-        values: similarities,
+        values: transformedData,
       },
       mark: {
         type: 'rect',
@@ -23,31 +44,26 @@ const HeatmapPlot = ({ similarities, metric }) => {
         x: {
           field: 'comparedDigest',
           type: 'nominal',
-          title: 'Server Sequence Collections',
+          title: 'Compared Sequence Collection',
           sort: false,
           axis: {
-            // labelAngle: -33,
-            // labelLimit: 111,
             domain: false,
             labels: false,
             ticks: false
           },
         },
         y: {
-          field: 'selectedDigest',
+          field: 'metricTitle',
           type: 'nominal',
-          title: 'Input',
-          sort: false,
+          title: 'Metrics',
+          sort: metrics.map(m => snakeToTitle(m)),
           axis: {
-            // labelAngle: -33,
-            // labelLimit: 111,
             domain: false,
-            labels: false,
-            ticks: false
+            labelLimit: 150,
           },
         },
         color: {
-          field: metric,
+          field: 'value',
           type: 'quantitative',
           title: 'Jaccard Similarity',
           scale: {
@@ -62,7 +78,8 @@ const HeatmapPlot = ({ similarities, metric }) => {
         tooltip: [
           { field: 'selectedDigest', title: 'Selected' },
           { field: 'comparedDigest', title: 'Compared' },
-          { field: metric, title: snakeToTitle(metric), format: '.3f' },
+          { field: 'metricTitle', title: 'Metric' },
+          { field: 'value', title: 'Similarity', format: '.3f' },
         ],
       },
       config: {
@@ -80,23 +97,17 @@ const HeatmapPlot = ({ similarities, metric }) => {
         },
       },
       width: 'container',
-      height:
-        selectedCount < 10
-          ? 40 * selectedCount
-          : selectedCount < 20
-            ? 22 * selectedCount
-            : 13 * selectedCount,
+      height: metricCount * 15,
     };
   };
 
   useEffect(() => {
-    if (plotRef.current && similarities && metric) {
-      const spec = heatmapSpec(similarities, metric);
+    if (plotRef.current && similarities && metrics.length > 0) {
+      const spec = heatmapSpec(similarities, metrics);
       try {
         embed(plotRef.current, spec, {
           actions: true,
           config: {
-            // Force Vega to use relative URLs for gradients
             baseURL: '',
           },
         }).catch((error) => {
@@ -112,9 +123,10 @@ const HeatmapPlot = ({ similarities, metric }) => {
         plotRef.current.innerHTML = '';
       }
     };
-  }, [similarities, metric]);
+  }, [similarities, metrics]);
 
   return <div className='w-100' ref={plotRef} />;
 };
 
-export { HeatmapPlot };
+export { MultiMetricHeatmapPlot };
+

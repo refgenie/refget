@@ -241,11 +241,11 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                   condition: [
                     {
                       test: "!length(data('metric_selection_store'))",
-                      value: pointSize === 'big' ? 88 : 44,
+                      value: pointSize === 'big' ? 44 : 33,
                     },
                     {
                       param: 'metric_selection',
-                      value: pointSize === 'big' ? 99 : 66,
+                      value: pointSize === 'big' ? 66 : 55,
                     },
                   ],
                   value: 44,
@@ -303,11 +303,11 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                   condition: [
                     {
                       test: "!length(data('metric_selection_store'))",
-                      value: pointSize === 'big' ? 88 : 44,
+                      value: pointSize === 'big' ? 44 : 33,
                     },
                     {
                       param: 'metric_selection',
-                      value: pointSize === 'big' ? 132 : 66,
+                      value: pointSize === 'big' ? 66 : 55,
                     },
                   ],
                   value: 0,
@@ -326,7 +326,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
             },
           ],
           width: 'container',
-          height: jitter === 'none' ? 12 * plottedRowCount : 36 * plottedRowCount,
+          height: jitter === 'none' ? 15 * plottedRowCount : 36 * plottedRowCount,
         };
 
       case 'horizontal':
@@ -402,7 +402,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
               },
             },
             width: 'container',
-            height: 300,
+            height: 200,
           };
         }
 
@@ -571,11 +571,11 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
                   condition: [
                     {
                       test: "!length(data('metric_selection_store'))",
-                      value: pointSize === 'big' ? 88 : 44,
+                      value: pointSize === 'big' ? 44 : 33,
                     },
                     {
                       param: 'metric_selection',
-                      value: pointSize === 'big' ? 132 : 66,
+                      value: pointSize === 'big' ? 66 : 55,
                     },
                   ],
                   value: 0,
@@ -599,7 +599,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
             },
           },
           width: 'container',
-          height: 300,
+          height: 200,
         };
 
     }
