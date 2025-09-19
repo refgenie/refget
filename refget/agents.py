@@ -157,13 +157,13 @@ class SequenceCollectionAgent(object):
         Get a sequence collection by digest
 
         Args:
-        - digest (str): The digest of the sequence collection
-        - return_format (str): The format in which to return the sequence collection
-        - attribute (str): Name of an attribute to return, if you just want an attribute
-        - itemwise_limit (int): Limit the number of items returned in itemwise format
+            digest (str): The digest of the sequence collection
+            return_format (str): The format in which to return the sequence collection
+            attribute (str): Name of an attribute to return, if you just want an attribute
+            itemwise_limit (int): Limit the number of items returned in itemwise format
 
         Returns:
-        - (SequenceCollection): The sequence collection (in requested format)
+            (SequenceCollection): The sequence collection (in requested format)
         """
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
@@ -257,11 +257,11 @@ class SequenceCollectionAgent(object):
         Add a sequence collection from a seqcol dictionary
 
         Args:
-        - seqcol_dict (dict): The sequence collection in dictionary form
-        - update (bool): If True, update an existing collection if it exists
+            seqcol_dict (dict): The sequence collection in dictionary form
+            update (bool): If True, update an existing collection if it exists
 
         Returns:
-        - (SequenceCollection): The added or updated sequence collection
+            (SequenceCollection): The added or updated sequence collection
         """
         seqcol = SequenceCollection.from_dict(seqcol_dict, self.inherent_attrs)
         _LOGGER.info(f"SeqCol: {seqcol}")
@@ -275,11 +275,11 @@ class SequenceCollectionAgent(object):
         Given a path to a fasta file, load the sequences into the refget database.
 
         Args:
-        - fasta_file_path (str): Path to the fasta file
-        - update (bool): If True, update an existing collection if it exists
+            fasta_file_path (str): Path to the fasta file
+            update (bool): If True, update an existing collection if it exists
 
         Returns:
-        - (SequenceCollection): The added or updated sequence collection
+           (SequenceCollection): The added or updated sequence collection
         """
 
         CSC = fasta_to_seqcol_dict(fasta_file_path)
@@ -292,11 +292,11 @@ class SequenceCollectionAgent(object):
         load the fasta files into the refget database.
 
         Args:
-        - pep_path (str): Path to the PEP file
-        - fa_root (str): Root directory containing the fasta files
+            pep_path (str): Path to the PEP file
+            fa_root (str): Root directory containing the fasta files
 
         Returns:
-        - (dict): A dictionary of the digests of the added sequence collections
+            (dict): A dictionary of the digests of the added sequence collections
         """
 
         total_files = len(pep.samples)
