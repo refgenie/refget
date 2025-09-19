@@ -82,3 +82,4 @@ refget.egg-info/
 coverage.xml
 
 .vscode/settings.json
+/test_fasta/base.farg

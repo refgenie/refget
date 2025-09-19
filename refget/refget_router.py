@@ -19,10 +19,16 @@ import logging
 
 from fastapi import APIRouter, Response, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
+from .models import Similarities, PaginationResult
 
 from .examples import *
 
+from henge import NotFoundException
+
 _LOGGER = logging.getLogger(__name__)
+
+# Import the global variable from the router
+_SAMPLE_DIGESTS = {}
 
 
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
@@ -186,6 +192,153 @@ async def compare_2_digests(
 
 
 @seqcol_router.post(
+    "/similarities/{collection_digest}",
+    summary="Calculate Jaccard similarities between a single sequence collection in the database and all other collections in the database (by species)",
+    tags=["Comparing sequence collections"],
+    response_model=Similarities,
+)
+async def calc_similarities(
+    collection_digest: str,
+    species: str = "human",
+    page_size: int = 50,
+    page: int = 0,
+    dbagent=Depends(get_dbagent),
+) -> Similarities:
+    _LOGGER.info("Calculating Jaccard similarities...")
+    try:
+        seqcolA = dbagent.seqcol.get(digest=collection_digest)
+
+        # Validate species parameter
+        if species.lower() not in _SAMPLE_DIGESTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid species '{species}'. Choose from: {list(_SAMPLE_DIGESTS.keys())}",
+            )
+
+        # Get pre-loaded digests for the species
+        target_digests = _SAMPLE_DIGESTS[species.lower()]
+
+        if not target_digests:
+            _LOGGER.warning(
+                f"No pre-loaded digests found for {species}, returning {page_size} comparisons"
+            )
+            target_digests = None
+        else:
+            _LOGGER.info(f"Using {len(target_digests)} pre-loaded digests for {species}")
+
+        # Use the modified get_many_level2_offset function with target_digests filter
+        results = dbagent.seqcol.get_many_level2_offset(
+            limit=page_size, offset=page * page_size, target_digests=target_digests
+        )
+
+        similarities = []
+        for key in results.results.keys():
+            human_readable_names = results.results[key]["human_readable_names"]
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
+            similarities.append(
+                {
+                    "digest": key,
+                    "human_readable_names": human_readable_names,
+                    "similarities": jaccard_sims,
+                }
+            )
+
+        result = Similarities(
+            similarities=similarities, pagination=results.pagination, reference_digest=None
+        )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        _LOGGER.debug(f"Error in calc_similarities_from_json: {e}")
+        raise HTTPException(status_code=500, detail="Error calculating similarities")
+
+    return result
+
+
+@seqcol_router.post(
+    "/similarities/",
+    summary="Calculate Jaccard similarities between input sequence collection and all collections in database",
+    tags=["Comparing sequence collections"],
+    response_model=Similarities,
+)
+async def calc_similarities_from_json(
+    seqcolA: dict,
+    species: str = "human",
+    page_size: int = 50,
+    page: int = 0,
+    dbagent=Depends(get_dbagent),
+) -> Similarities:
+    """
+    Calculate Jaccard similarities between input sequence collection and all collections in DB.
+    Takes a JSON sequence collection directly instead of a digest.
+    Take output from: refget digest-fasta "yourfasta.fa" -l 2 > myoutput.json
+
+    Args:
+        seqcolA: Input sequence collection dictionary
+        species: Species to filter by ("human" or "mouse"), defaults to "human"
+        page_size: Number of results per page
+        page: Page number
+        dbagent: Database agent dependency
+    """
+    _LOGGER.info(
+        f"Calculating Jaccard similarities from input sequence collection for {species}..."
+    )
+
+    try:
+        # Validate species parameter
+        if species.lower() not in _SAMPLE_DIGESTS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid species '{species}'. Choose from: {list(_SAMPLE_DIGESTS.keys())}",
+            )
+
+        # Get pre-loaded digests for the species
+        target_digests = _SAMPLE_DIGESTS[species.lower()]
+
+        if not target_digests:
+            _LOGGER.warning(f"No pre-loaded digests found for {species}")
+            return Similarities(
+                similarities=[],
+                pagination=PaginationResult(page=page, page_size=page_size, total=0),
+                reference_digest=None,
+            )
+
+        _LOGGER.info(f"Using {len(target_digests)} pre-loaded digests for {species}")
+
+        # Use the modified get_many_level2_offset function with target_digests filter
+        results = dbagent.seqcol.get_many_level2_offset(
+            limit=page_size, offset=page * page_size, target_digests=target_digests
+        )
+
+        similarities = []
+        for key in results.results.keys():
+            human_readable_names = results.results[key]["human_readable_names"]
+            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
+            similarities.append(
+                {
+                    "digest": key,
+                    "human_readable_names": human_readable_names,
+                    "similarities": jaccard_sims,
+                }
+            )
+
+        result = Similarities(
+            similarities=similarities, pagination=results.pagination, reference_digest=None
+        )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        _LOGGER.debug(f"Error in calc_similarities_from_json: {e}")
+        raise HTTPException(status_code=500, detail="Error calculating similarities")
+
+    return result
+
+
+@seqcol_router.post(
     "/comparison/{collection_digest1}",
     summary="Compare a local sequence collection to one on the server",
     tags=["Comparing sequence collections"],
@@ -223,19 +376,6 @@ async def list_collections_by_offset(
     res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
-
-
-# @seqcol_router.get(
-#     "/list-by-cursor",
-#     summary="List sequence collections on the server, paged by cursor",
-#     tags=["Discovering data"],
-# )
-# async def list_collections_by_token(
-#     dbagent=Depends(get_dbagent), page_size: int = 100, cursor: str = None
-# ):
-#     res = dbagent.seqcol.list(page_size=page_size, cursor=cursor)
-#     res["results"] = [x.digest for x in res["results"]]
-#     return JSONResponse(res)
 
 
 @seqcol_router.get(

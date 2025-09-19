@@ -3,7 +3,8 @@ import logging
 from copy import copy
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 
 
 from .digest_functions import sha512t24u_digest
@@ -15,7 +16,21 @@ from .utilities import (
     level1_dict_to_seqcol_digest,
 )
 
+
 _LOGGER = logging.getLogger(__name__)
+
+
+try:
+    from gtars.refget import (  # Adjust this import path to where your PyO3 module is
+        SequenceCollection as gtarsSequenceCollection,
+    )
+
+    _RUST_BINDINGS_AVAILABLE = True
+except ImportError as e:
+    _LOGGER.info(
+        f"Could not import gtars python bindings. `from_PySequenceCollection` will not be available."
+    )
+    _RUST_BINDINGS_AVAILABLE = False
 
 
 class Sequence(SQLModel, table=True):
@@ -85,6 +100,17 @@ class CollectionNamesAttr(SQLModel, table=True):
     # value: List[str] = Field(sa_column=Column(ARRAY(String)))
 
 
+class HumanReadableNames(SQLModel, table=True):
+    """
+    A SQLModel/pydantic model that represents a refget sequence collection.
+    """
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    human_readable_name: str = Field(unique=True)
+    digest: str = Field(foreign_key="sequencecollection.digest", nullable=False)
+    collection: "SequenceCollection" = Relationship(back_populates="human_readable_names")
+
+
 # For a transient attribute, like sorted_name_length_pairs, you just need the attr_digest value.
 # For attributes where you want to store the values in a table, you would also have the
 # Relationship attribute.
@@ -95,6 +121,9 @@ class SequenceCollection(SQLModel, table=True):
 
     digest: str = Field(primary_key=True)
     """ Top-level digest of the SequenceCollection. """
+
+    # human_readable_name: Optional[str] = Field(default=None)
+    human_readable_names: List["HumanReadableNames"] = Relationship(back_populates="collection")
 
     sequences_digest: str = Field(foreign_key="sequencesattr.digest")
     sequences: "SequencesAttr" = Relationship(back_populates="collection")
@@ -218,8 +247,26 @@ class SequenceCollection(SQLModel, table=True):
         _LOGGER.debug(f"sorted_sequences_digest: {sorted_sequences_digest}")
         _LOGGER.debug(f"sorted_sequences_attr: {sorted_sequences_attr}")
 
+        human_readable_names_list = []
+        if "human_readable_names" in seqcol_dict and seqcol_dict["human_readable_names"]:
+            # Assuming 'human_readable_name' is a list of strings in the input dictionary
+            if isinstance(seqcol_dict["human_readable_names"], list):
+                for name_str in seqcol_dict["human_readable_names"]:
+                    human_readable_names_list.append(
+                        HumanReadableNames(human_readable_name=name_str, digest=seqcol_digest)
+                    )
+            # Handle the case where a single string is provided for backward compatibility
+            elif isinstance(seqcol_dict["human_readable_names"], str):
+                human_readable_names_list.append(
+                    HumanReadableNames(
+                        human_readable_name=seqcol_dict["human_readable_names"],
+                        digest=seqcol_digest,
+                    )
+                )
+
         seqcol = SequenceCollection(
             digest=seqcol_digest,
+            human_readable_names=human_readable_names_list,
             sequences=sequences_attr,
             sorted_sequences=sorted_sequences_attr,
             names=names_attr,
@@ -235,6 +282,86 @@ class SequenceCollection(SQLModel, table=True):
     pangenomes: List[Pangenome] = Relationship(
         back_populates="collections", link_model=PangenomeCollectionLink
     )
+
+    @classmethod
+    def from_PySequenceCollection(
+        cls, gtars_seq_col: gtarsSequenceCollection
+    ) -> "SequenceCollection":
+        """
+        Given a PySequenceCollection object (from Rust bindings), create a SequenceCollection object.
+
+        Args:
+           gtars_seq_col (PySequenceCollection): PySequenceCollection object from Rust bindings.
+
+        Returns:
+            (SequenceCollection): The SequenceCollection object.
+        """
+        if not _RUST_BINDINGS_AVAILABLE:
+            raise RuntimeError(
+                "Rust sequence collection bindings are not available. Cannot use `from_PySequenceCollection`."
+            )
+
+        sequences_value = []
+        names_value = []
+        lengths_value = []
+
+        temp_seqcol_dict = {"names": [], "lengths": [], "sequences": []}
+
+        for record in gtars_seq_col.sequences:
+            sequences_value.append("SQ." + record.metadata.sha512t24u)
+            names_value.append(record.metadata.name)
+            lengths_value.append(record.metadata.length)
+
+            temp_seqcol_dict["names"].append(record.metadata.name)
+            temp_seqcol_dict["lengths"].append(record.metadata.length)
+            temp_seqcol_dict["sequences"].append(record.metadata.sha512t24u)
+
+        sequences_attr = SequencesAttr(
+            digest=gtars_seq_col.lvl1.sequences_digest, value=sequences_value
+        )
+        _LOGGER.debug(f"SequencesAttr: {sequences_attr}")
+
+        names_attr = NamesAttr(digest=gtars_seq_col.lvl1.names_digest, value=names_value)
+        _LOGGER.debug(f"NamesAttr: {names_attr}")
+
+        lengths_attr = LengthsAttr(
+            digest=gtars_seq_col.lvl1.lengths_digest,
+            value=lengths_value,
+        )
+        _LOGGER.debug(f"LengthsAttr: {lengths_attr}")
+
+        nlp = build_name_length_pairs(temp_seqcol_dict)
+        nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
+        _LOGGER.debug(f"NameLengthPairsAttr: {nlp_attr}")
+
+        sorted_sequences_value = copy(sequences_value)
+        sorted_sequences_value.sort()
+        sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
+        sorted_sequences_attr = SortedSequencesAttr(
+            digest=sorted_sequences_digest, value=sorted_sequences_value
+        )
+        _LOGGER.debug(f"SortedSequencesAttr: {sorted_sequences_attr}")
+
+        snlp_digests = []
+        for pair in nlp:
+            snlp_digests.append(sha512t24u_digest(canonical_str(pair)))
+        snlp_digests.sort()
+        sorted_name_length_pairs_digest = sha512t24u_digest(canonical_str(snlp_digests))
+        _LOGGER.debug(f"Sorted Name Length Pairs Digest: {sorted_name_length_pairs_digest}")
+
+        seqcol = SequenceCollection(
+            digest=gtars_seq_col.digest,
+            human_readable_names=[],
+            sequences=sequences_attr,
+            sorted_sequences=sorted_sequences_attr,
+            names=names_attr,
+            lengths=lengths_attr,
+            name_length_pairs=nlp_attr,
+            sorted_name_length_pairs_digest=sorted_name_length_pairs_digest,
+        )
+
+        _LOGGER.debug(f"Created SequenceCollection from PySequenceCollection: {seqcol}")
+        return seqcol
 
     def level1(self):
         """
@@ -311,6 +438,31 @@ class NameLengthPairsAttr(SQLModel, table=True):
     digest: str = Field(primary_key=True)
     value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="name_length_pairs")
+
+
+class PaginationResult(BaseModel):
+    page: int = 0
+    page_size: int = 10
+    total: int
+
+
+class ResultsSequenceCollections(BaseModel):
+    """
+    Sequence collection results with pagination
+    """
+
+    pagination: PaginationResult
+    results: Dict[str, dict]
+
+
+class Similarities(BaseModel):
+    """
+    Model to contain results from similarities calculations
+    """
+
+    similarities: List[Dict[str, Any]]
+    pagination: PaginationResult
+    reference_digest: Optional[str] = None
 
 
 # This is now a transient attribute, so we don't need to store it in the database.
