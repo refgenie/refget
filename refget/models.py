@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 
 from .digest_functions import sha512t24u_digest
-from .const import DEFAULT_INHERENT_ATTRS, DEFAULT_PASSTHRU_ATTRS
+from .const import DEFAULT_INHERENT_ATTRS, DEFAULT_PASSTHRU_ATTRS, SEQCOL_SCHEMA_PATH
 from .exceptions import InvalidSeqColError
 from .utilities import (
     canonical_str,
@@ -305,8 +305,7 @@ class SequenceCollection(SQLModel, table=True):
             InvalidSeqColError: If collated attributes have mismatched lengths
         """
         # Load schema to identify collated attributes
-        schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.json")
-        with open(schema_path, 'r') as f:
+        with open(SEQCOL_SCHEMA_PATH, 'r') as f:
             schema = json.load(f)
 
         # Find all collated attributes from schema
@@ -344,8 +343,8 @@ class SequenceCollection(SQLModel, table=True):
         Returns:
             (bool): True if the object is valid, False otherwise
         """
-        schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.yaml")
-        schema = load_yaml(schema_path)
+        with open(SEQCOL_SCHEMA_PATH, 'r') as f:
+            schema = json.load(f)
         validator = Draft7Validator(schema)
 
         if not validator.is_valid(seqcol_obj.level2()):

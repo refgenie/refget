@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 from yacman import load_yaml
 
-from .const import SeqColDict, DEFAULT_INHERENT_ATTRS, DEFAULT_TRANSIENT_ATTRS, DEFAULT_PASSTHRU_ATTRS
+from .const import SeqColDict, DEFAULT_INHERENT_ATTRS, DEFAULT_TRANSIENT_ATTRS, DEFAULT_PASSTHRU_ATTRS, SEQCOL_SCHEMA_PATH
 from .exceptions import *
 from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
 
@@ -32,8 +32,8 @@ def validate_seqcol_bool(seqcol_obj: SeqColDict, schema=None) -> bool:
 
     To enumerate the errors, use validate_seqcol instead.
     """
-    schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.yaml")
-    schema = load_yaml(schema_path)
+    with open(SEQCOL_SCHEMA_PATH, 'r') as f:
+        schema = json.load(f)
     validator = Draft7Validator(schema)
     return validator.is_valid(seqcol_obj)
 
@@ -43,8 +43,8 @@ def validate_seqcol(seqcol_obj: SeqColDict, schema=None) -> bool:
     Returns True if valid, raises InvalidSeqColError if not, which enumerates the errors.
     Retrieve individual errors with exception.errors
     """
-    schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.yaml")
-    schema = load_yaml(schema_path)
+    with open(SEQCOL_SCHEMA_PATH, 'r') as f:
+        schema = json.load(f)
     validator = Draft7Validator(schema)
 
     if not validator.is_valid(seqcol_obj):
