@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 from yacman import load_yaml
 
-from .const import SeqColDict, DEFAULT_INHERENT_ATTRS
+from .const import SeqColDict, DEFAULT_INHERENT_ATTRS, DEFAULT_TRANSIENT_ATTRS, DEFAULT_PASSTHRU_ATTRS
 from .exceptions import *
 from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
 
@@ -133,8 +133,7 @@ def fasta_to_seqcol_dict(
         seq_length = s.metadata.length
         seq_digest = "SQ." + s.metadata.sha512t24u
         nlp = {"length": seq_length, "name": seq_name}  # for name_length_pairs
-        # snlp_digest = digest_function(canonical_str(nlp)) # for sorted_name_length_pairs
-        snlp_digest = canonical_str(nlp)  # for sorted_name_length_pairs
+        snlp_digest = digest_function(canonical_str(nlp))  # for sorted_name_length_pairs
         seqcol_dict["lengths"].append(seq_length)
         seqcol_dict["names"].append(seq_name)
         # seqcol_dict["name_length_pairs"].append(nlp)
@@ -287,38 +286,49 @@ def _compare_elements(A: list, B: list) -> dict:
 
 
 def seqcol_dict_to_level1_dict(
-    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
+    seqcol_dict: SeqColDict,
+    passthru_attrs: Optional[list] = DEFAULT_PASSTHRU_ATTRS,
 ) -> dict:
     """
     Convert a sequence collection dictionary to a level 1 dictionary
-    """
-    # Step 1a: Remove any non-inherent attributes,
-    # so that only the inherent attributes contribute to the digest.
-    filt_canonical_strs = {}
-    if inherent_attrs:
-        for k in inherent_attrs:
-            # Step 2: Apply RFC-8785 to canonicalize the value
-            # associated with each attribute individually.
-            filt_canonical_strs[k] = canonical_str(seqcol_dict[k])
-    else:  # no schema provided, so assume all attributes are inherent
-        for k in seqcol_dict:
-            filt_canonical_strs[k] = canonical_str(seqcol_dict[k])
 
-    # Step 3: Digest each canonicalized attribute value
-    # using the GA4GH digest algorithm.
+    Args:
+        seqcol_dict: Level 2 sequence collection dictionary
+        passthru_attrs: Attributes that are NOT digested (same value in level1 and level2)
+    """
+    # Step 2: Apply RFC-8785 to canonicalize the value associated with each attribute individually.
+    # NOTE: We digest ALL attributes (not just inherent ones) for inclusion in level1.
+    # Non-inherent attributes are filtered out later (step 4) when computing the top-level digest.
+    canonical_strs = {}
     level1_dict = {}
-    for attribute in filt_canonical_strs:
-        level1_dict[attribute] = sha512t24u_digest(filt_canonical_strs[attribute])
+
+    for k, v in seqcol_dict.items():
+        if k in passthru_attrs:
+            # Passthru: don't digest, pass through unchanged
+            level1_dict[k] = v
+            continue
+        # Regular attribute (includes transient): canonicalize for digesting
+        canonical_strs[k] = canonical_str(v)
+
+    # Step 3: Digest each canonicalized attribute value using the GA4GH digest algorithm.
+    for attribute in canonical_strs:
+        level1_dict[attribute] = sha512t24u_digest(canonical_strs[attribute])
 
     return level1_dict
 
 
-def level1_dict_to_seqcol_digest(level1_dict: dict):
-    # Step 4: Apply RFC-8785 again to canonicalize the JSON
-    # of new seqcol object representation.
-    level1_can_str = canonical_str(level1_dict)
+def level1_dict_to_seqcol_digest(level1_dict: dict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS):
+    # Step 4: Filter to only inherent attributes before computing top-level digest.
+    # Non-inherent attributes are included in level1 but don't contribute to level0 digest.
+    if inherent_attrs:
+        filtered_level1 = {k: v for k, v in level1_dict.items() if k in inherent_attrs}
+    else:
+        filtered_level1 = level1_dict  # No filtering if no inherent attrs specified
 
-    # Step 5: Digest the final canonical representation again.
+    # Step 5: Apply RFC-8785 again to canonicalize the JSON of inherent attributes only.
+    level1_can_str = canonical_str(filtered_level1)
+
+    # Step 6: Digest the final canonical representation again.
     seqcol_digest = sha512t24u_digest(level1_can_str)
     return seqcol_digest
 
@@ -335,8 +345,8 @@ def seqcol_digest(
     """
 
     validate_seqcol(seqcol_dict)
-    level1_dict = seqcol_dict_to_level1_dict(seqcol_dict, inherent_attrs)
-    seqcol_digest = level1_dict_to_seqcol_digest(level1_dict)
+    level1_dict = seqcol_dict_to_level1_dict(seqcol_dict)
+    seqcol_digest = level1_dict_to_seqcol_digest(level1_dict, inherent_attrs)
     return seqcol_digest
 
 

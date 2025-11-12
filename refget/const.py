@@ -27,6 +27,14 @@ SeqColDict = dict
 # These attributes contribute to the top-level digest
 DEFAULT_INHERENT_ATTRS = ["names", "sequences"]
 
+# Default transient attributes per seqcol spec v1.0.0
+# These attributes have no level2 representation - only digest is stored
+DEFAULT_TRANSIENT_ATTRS = ["sorted_name_length_pairs"]
+
+# Default passthru attributes per seqcol spec v1.0.0
+# These attributes are NOT digested - they appear the same in level1 and level2
+DEFAULT_PASSTHRU_ATTRS = []
+
 
 GTARS_INSTALLED = False
 try:

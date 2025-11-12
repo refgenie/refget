@@ -84,7 +84,6 @@
       "sequences"
     ],
     "transient": [
-      "sorted_sequences",
       "sorted_name_length_pairs"
     ], 
     "passthru": []

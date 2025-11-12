@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 
 from .digest_functions import sha512t24u_digest
-from .const import DEFAULT_INHERENT_ATTRS
+from .const import DEFAULT_INHERENT_ATTRS, DEFAULT_PASSTHRU_ATTRS
 from .utilities import (
     canonical_str,
     build_name_length_pairs,
@@ -277,6 +277,9 @@ class SequenceCollection(SQLModel, table=True):
 
     sorted_name_length_pairs_digest: str = Field()
     """ Digest of the sorted name-length pairs, representing a unique digest of sort-invariant coordinate system. """
+    # Note: For transient attributes (per schema ga4gh.transient), we only store the digest, not the full value/relationship.
+    # This must be manually kept in sync with schemas/seqcol.json - SQLModel classes cannot be dynamically generated from schema
+    # because SQLAlchemy requires class definitions at import time for ORM mappings and database migrations.
     # sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
     # sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(
     #     back_populates="collection"
@@ -336,8 +339,8 @@ class SequenceCollection(SQLModel, table=True):
         """
 
         # validate_seqcol(seqcol_dict)
-        level1_dict = seqcol_dict_to_level1_dict(seqcol_dict, inherent_attrs)
-        seqcol_digest = level1_dict_to_seqcol_digest(level1_dict)
+        level1_dict = seqcol_dict_to_level1_dict(seqcol_dict)
+        seqcol_digest = level1_dict_to_seqcol_digest(level1_dict, inherent_attrs)
 
         # Now, build the actual pydantic models
         sequences_attr = SequencesAttr(
@@ -346,11 +349,8 @@ class SequenceCollection(SQLModel, table=True):
 
         names_attr = NamesAttr(digest=level1_dict["names"], value=seqcol_dict["names"])
 
-        # Any non-inherent attributes will have been filtered from the l1 dict
-        # So we need to compute the digests for them here
         lengths_attr = LengthsAttr(
-            digest=sha512t24u_digest(canonical_str(seqcol_dict["lengths"])),
-            value=seqcol_dict["lengths"],
+            digest=level1_dict["lengths"], value=seqcol_dict["lengths"]
         )
 
         nlp = build_name_length_pairs(seqcol_dict)
@@ -499,7 +499,11 @@ class SequenceCollection(SQLModel, table=True):
 
     def level1(self):
         """
-        Converts object into dict of level 2 representation of the SequenceCollection.
+        Converts object into dict of level 1 representation of the SequenceCollection.
+
+        Returns attribute digests for most attributes, but returns raw values for passthru attributes.
+        Note: Passthru handling for dict-based construction happens in seqcol_dict_to_level1_dict().
+        When passthru attributes are added to the database model, return .value instead of .digest here.
         """
         return {
             "lengths": self.lengths.digest,
@@ -520,7 +524,7 @@ class SequenceCollection(SQLModel, table=True):
             "sequences": self.sequences.value,
             "sorted_sequences": self.sorted_sequences.value,
             "name_length_pairs": self.name_length_pairs.value,
-            # "sorted_name_length_pairs": self.sorted_name_length_pairs.value,  # decided to remove transient attrs from level 2 repr
+            # sorted_name_length_pairs is transient - only digest stored, not value
         }
 
     def itemwise(self, limit=None):
