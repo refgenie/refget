@@ -20,6 +20,10 @@ SCHEMA_NAMES = [ASL_NAME + ".yaml"]
 SCHEMA_FILEPATH = os.path.join(os.path.dirname(__file__), "schemas")
 INTERNAL_SCHEMAS = [_schema_path(s) for s in SCHEMA_NAMES]
 
+# Canonical seqcol schema file (JSON format)
+SEQCOL_SCHEMA_FILE = "seqcol.json"
+SEQCOL_SCHEMA_PATH = _schema_path(SEQCOL_SCHEMA_FILE)
+
 # Alias dict to make typehinting clearer
 SeqColDict = dict
 

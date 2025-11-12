@@ -19,8 +19,7 @@ from .utilities import (
     build_pangenome_model,
     calc_jaccard_similarities,
 )
-from .const import _LOGGER
-from .const import SCHEMA_FILEPATH, DEFAULT_INHERENT_ATTRS
+from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
@@ -601,7 +600,7 @@ class RefgetDBAgent(object):
         self,
         engine: Optional[SqlalchemyDatabaseEngine] = None,
         postgres_str: Optional[str] = None,
-        schema=f"{SCHEMA_FILEPATH}/seqcol.json",
+        schema=SEQCOL_SCHEMA_PATH,
         inherent_attrs: List[str] = DEFAULT_INHERENT_ATTRS,
     ):  # = "sqlite:///foo.db"
         if engine is not None:
