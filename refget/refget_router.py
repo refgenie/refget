@@ -1,7 +1,10 @@
 """
-This module contains the FastAPI router for the sequence collection API.
+This module contains the FastAPI router for the refget sequence collection API.
 It is designed to be attached to a FastAPI app instance, and provides
 endpoints for retrieving and comparing sequence collections.
+
+This router does not supply the /service-info endpoint, which should be created
+by the main app.
 
 To use, first import it, then attach it to the app,
 then create a dbagent object to connect to the database,
