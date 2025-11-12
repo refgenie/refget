@@ -23,6 +23,10 @@ INTERNAL_SCHEMAS = [_schema_path(s) for s in SCHEMA_NAMES]
 # Alias dict to make typehinting clearer
 SeqColDict = dict
 
+# Default inherent attributes per seqcol spec v1.0.0
+# These attributes contribute to the top-level digest
+DEFAULT_INHERENT_ATTRS = ["names", "sequences"]
+
 
 GTARS_INSTALLED = False
 try:
