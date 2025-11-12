@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import hashlib
@@ -12,6 +13,7 @@ from pydantic import BaseModel
 
 from .digest_functions import sha512t24u_digest
 from .const import DEFAULT_INHERENT_ATTRS, DEFAULT_PASSTHRU_ATTRS
+from .exceptions import InvalidSeqColError
 from .utilities import (
     canonical_str,
     build_name_length_pairs,
@@ -289,6 +291,49 @@ class SequenceCollection(SQLModel, table=True):
     """ Array of name-length pairs, representing the coordinate system of the collection. """
 
     @classmethod
+    def _validate_collated_attributes(cls, seqcol_dict: dict) -> None:
+        """
+        Validate that all collated attributes have the same length.
+
+        Collated attributes are attributes whose values match 1-to-1 with the sequences
+        in the collection and are represented in the same order.
+
+        Args:
+            seqcol_dict (dict): Dictionary representation of a sequence collection
+
+        Raises:
+            InvalidSeqColError: If collated attributes have mismatched lengths
+        """
+        # Load schema to identify collated attributes
+        schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.json")
+        with open(schema_path, 'r') as f:
+            schema = json.load(f)
+
+        # Find all collated attributes from schema
+        collated_attrs = []
+        if "properties" in schema:
+            for attr_name, attr_spec in schema["properties"].items():
+                if isinstance(attr_spec, dict) and attr_spec.get("collated") is True:
+                    collated_attrs.append(attr_name)
+
+        # Check lengths of collated attributes that exist in the dict
+        lengths = {}
+        for attr in collated_attrs:
+            if attr in seqcol_dict:
+                if isinstance(seqcol_dict[attr], list):
+                    lengths[attr] = len(seqcol_dict[attr])
+
+        # Verify all collated attributes have the same length
+        if lengths:
+            expected_length = next(iter(lengths.values()))
+            mismatched = {attr: length for attr, length in lengths.items() if length != expected_length}
+
+            if mismatched:
+                all_lengths = ", ".join(f"{attr}={length}" for attr, length in lengths.items())
+                error_msg = f"Collated attributes must have the same length. Found mismatched lengths: {all_lengths}"
+                raise InvalidSeqColError(error_msg, errors=[mismatched])
+
+    @classmethod
     def input_validate(cls, seqcol_obj: dict) -> bool:
         """
         Given a dict representation of a sequence collection, validate it against the input schema.
@@ -337,6 +382,9 @@ class SequenceCollection(SQLModel, table=True):
         Returns:
             (SequenceCollection): The SequenceCollection object
         """
+
+        # Validate collated attributes have matching lengths
+        cls._validate_collated_attributes(seqcol_dict)
 
         # validate_seqcol(seqcol_dict)
         level1_dict = seqcol_dict_to_level1_dict(seqcol_dict)
