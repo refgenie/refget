@@ -1,9 +1,12 @@
 import logging
+import os
+import hashlib
 
 from copy import copy
+from datetime import datetime, timezone
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel
 
 
@@ -14,10 +17,140 @@ from .utilities import (
     seqcol_dict_to_level1_dict,
     fasta_to_seqcol_dict,
     level1_dict_to_seqcol_digest,
+    fasta_to_digest,
 )
 
 
 _LOGGER = logging.getLogger(__name__)
+
+class AccessURL(SQLModel):
+    """
+    A fully resolvable URL that can be used to fetch the actual object bytes.
+    Optionally includes headers (e.g., authorization tokens) required for access.
+    """
+    url: str
+    headers: Optional[List[str]] = None
+
+
+class AccessMethod(SQLModel):
+    """
+    Describes a method for accessing object bytes, including the protocol type
+    (e.g., https, s3, gs) and either a direct URL or an access_id for the /access endpoint.
+    At least one of access_url or access_id must be provided.
+    """
+    type: Literal["s3", "gs", "ftp", "gsiftp", "globus", "htsget", "https", "file"]
+    access_url: Optional[AccessURL] = None
+    region: Optional[str] = None
+    access_id: Optional[str] = None
+
+
+class Checksum(SQLModel, table=False):
+    """
+    A checksum for data integrity verification. The type field indicates the hash algorithm
+    (e.g., "sha-256", "md5") and the checksum field contains the hex-string encoded hash value.
+    """
+    type: str  # e.g., "md5", "sha-256"
+    checksum: str  # The hex-string encoded checksum value
+
+
+class DrsObject(SQLModel, table=False):
+    """
+    A data object representing a single blob of bytes with metadata, checksums, and access methods.
+    DRS objects are self-contained and provide all information needed for clients to retrieve the data.
+    Conforms to GA4GH Data Repository Service (DRS) specification v1.4.0.
+    """
+    id: str
+    self_uri: str
+    size: int
+    created_time: datetime
+    checksums: List[Checksum]
+    name: Optional[str] = None
+    updated_time: Optional[datetime] = None
+    version: Optional[str] = None
+    mime_type: Optional[str] = None
+    access_methods: List[AccessMethod] = []
+    description: Optional[str] = None
+    aliases: List[str] = []
+
+
+class FastaDrsObject(DrsObject, table=True):
+    """
+    A DRS object specialized for FASTA sequence files. Stores file metadata including
+    size, checksums (SHA-256, MD5, and refget sequence collection digest), and creation time.
+    The refget digest serves as the object ID, enabling content-addressable retrieval.
+    """
+    id: str = Field(primary_key=True)
+    self_uri: Optional[str] = None  # Override to make optional for storage
+
+    def to_response(self, base_uri: str = None) -> "FastaDrsObject":
+        """
+        Return a copy of this object with self_uri populated for API response.
+
+        Args:
+            base_uri: Base URI for the DRS service (e.g., "drs://seqcolapi.databio.org")
+                     If not provided, returns self unchanged.
+
+        Returns:
+            FastaDrsObject with self_uri populated
+        """
+        if base_uri is None:
+            return self
+
+        return self.model_copy(update={"self_uri": f"{base_uri}/{self.id}"})
+
+    @classmethod
+    def from_fasta_file(cls, fasta_file: str, digest: str = None) -> "FastaDrsObject":
+        """
+        Given a FASTA file, create a FastaDrsObject object,
+        return a populated FastaDrsObject with computed size and checksum.
+
+        Args:
+            fasta_file (str): Path to a FASTA file
+            digest (str): The refget digest of the sequence collection 
+                (optional). If not included, it wil be computed
+
+        Returns:
+            (FastaDrsObject): The FastaDrsObject object
+        """
+
+        file_size = os.path.getsize(fasta_file)
+
+        # Compute checksum (SHA-256)
+        sha256 = hashlib.sha256()
+        md5 = hashlib.md5()
+        with open(fasta_file, "rb") as f:
+            for block in iter(lambda: f.read(65536), b""):
+                sha256.update(block)
+                md5.update(block)
+        sha256_checksum_val = sha256.hexdigest()
+        md5_checksum_val = md5.hexdigest()
+
+        now = datetime.now(timezone.utc)
+
+        if digest is None:
+            # If no digest is provided, compute it from the file
+            digest = fasta_to_digest(fasta_file)
+
+        return FastaDrsObject(
+            id=digest,
+            name=os.path.basename(fasta_file),
+            self_uri=None,  # Will be populated by to_response() when serving via API
+            size=file_size,
+            created_time=now,
+            updated_time=now,
+            version="1.0",
+            mime_type="application/fasta",  # You could use `mimetypes` to guess if needed
+            checksums=[
+                Checksum(type="sha-256", checksum=sha256_checksum_val),
+                Checksum(type="refget.seqcol", checksum=digest),  # Refget digest
+                Checksum(type="md5", checksum=md5_checksum_val),
+            ],
+            access_methods=[],  # Populate this if you host the file somewhere
+            description=f"DRS object for {os.path.basename(fasta_file)}",
+            aliases=[os.path.basename(fasta_file).split(".")[0]]
+        )
+        
+
 
 
 try:

@@ -134,7 +134,7 @@ async def index(request: Request):
 
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
-async def service_info(dbagent=Depends(get_dbagent)):
+async def service_info():
     ret = {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",
