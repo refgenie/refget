@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 
 from .digest_functions import sha512t24u_digest
+from .const import DEFAULT_INHERENT_ATTRS
 from .utilities import (
     canonical_str,
     build_name_length_pairs,
@@ -29,7 +30,7 @@ class AccessURL(SQLModel):
     Optionally includes headers (e.g., authorization tokens) required for access.
     """
     url: str
-    headers: Optional[List[str]] = None
+    headers: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
 
 
 class AccessMethod(SQLModel):
@@ -63,14 +64,14 @@ class DrsObject(SQLModel, table=False):
     self_uri: str
     size: int
     created_time: datetime
-    checksums: List[Checksum]
+    checksums: List[Checksum] = Field(default_factory=list, sa_column=Column(JSON))
     name: Optional[str] = None
     updated_time: Optional[datetime] = None
     version: Optional[str] = None
     mime_type: Optional[str] = None
-    access_methods: List[AccessMethod] = []
+    access_methods: List[AccessMethod] = Field(default_factory=list, sa_column=Column(JSON))
     description: Optional[str] = None
-    aliases: List[str] = []
+    aliases: List[str] = Field(default_factory=list, sa_column=Column(JSON))
 
 
 class FastaDrsObject(DrsObject, table=True):
@@ -320,7 +321,7 @@ class SequenceCollection(SQLModel, table=True):
 
     @classmethod
     def from_dict(
-        cls, seqcol_dict: dict, inherent_attrs: Optional[list] = ["names", "sequences"]
+        cls, seqcol_dict: dict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
     ) -> "SequenceCollection":
         """
         Given a dict representation of a sequence collection, create a SequenceCollection object.

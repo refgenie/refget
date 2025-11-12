@@ -20,7 +20,7 @@ from .utilities import (
     calc_jaccard_similarities,
 )
 from .const import _LOGGER
-from .const import SCHEMA_FILEPATH
+from .const import SCHEMA_FILEPATH, DEFAULT_INHERENT_ATTRS
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
@@ -602,7 +602,7 @@ class RefgetDBAgent(object):
         engine: Optional[SqlalchemyDatabaseEngine] = None,
         postgres_str: Optional[str] = None,
         schema=f"{SCHEMA_FILEPATH}/seqcol.json",
-        inherent_attrs: List[str] = ["names", "lengths", "sequences"],
+        inherent_attrs: List[str] = DEFAULT_INHERENT_ATTRS,
     ):  # = "sqlite:///foo.db"
         if engine is not None:
             self.engine = engine

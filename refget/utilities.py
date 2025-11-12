@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 from yacman import load_yaml
 
-from .const import SeqColDict
+from .const import SeqColDict, DEFAULT_INHERENT_ATTRS
 from .exceptions import *
 from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
 
@@ -89,7 +89,7 @@ def seqcol_to_snlp_digest(seqcol_obj: SeqColDict) -> str:
 
 
 def fasta_to_digest(
-    fa_file_path: str | Path, inherent_attrs: Optional[list] = ["names", "sequences"]
+    fa_file_path: str | Path, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
 ) -> str:
     """
     Given a fasta file path, return a digest
@@ -287,7 +287,7 @@ def _compare_elements(A: list, B: list) -> dict:
 
 
 def seqcol_dict_to_level1_dict(
-    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = ["names", "sequences"]
+    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
 ) -> dict:
     """
     Convert a sequence collection dictionary to a level 1 dictionary
@@ -324,7 +324,7 @@ def level1_dict_to_seqcol_digest(level1_dict: dict):
 
 
 def seqcol_digest(
-    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = ["names", "sequences"]
+    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
 ) -> str:
     """
     Given a canonical sequence collection, compute its digest.
