@@ -198,9 +198,9 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     return_obj = {
         "attributes": {"a_only": [], "b_only": [], "a_and_b": []},
         "array_elements": {
-            "a": a_lengths,
-            "b": b_lengths,
-            "a_and_b": {},
+            "a_count": a_lengths,
+            "b_count": b_lengths,
+            "a_and_b_count": {},
             "a_and_b_same_order": {},
         },
     }
@@ -218,7 +218,7 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
             return_obj["attributes"]["a_and_b"].append(k)
             res = _compare_elements(A[k], B[k])
             # return_obj["array_elements"]["total"][k] = {"a": len(A[k]), "b": len(B[k])}
-            return_obj["array_elements"]["a_and_b"][k] = res["a_and_b"]
+            return_obj["array_elements"]["a_and_b_count"][k] = res["a_and_b"]
             return_obj["array_elements"]["a_and_b_same_order"][k] = res["a_and_b_same_order"]
     return return_obj
 
@@ -249,12 +249,12 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
 
     comparison_dict = compare_seqcols(A, B)
 
-    list_a_keys = list(comparison_dict["array_elements"]["a_and_b"].keys())
+    list_a_keys = list(comparison_dict["array_elements"]["a_and_b_count"].keys())
 
     for key in list_a_keys:
-        intersection_seqcol = comparison_dict["array_elements"]["a_and_b"].get(key)
-        a = comparison_dict["array_elements"]["a"].get(key)
-        b = comparison_dict["array_elements"]["b"].get(key)
+        intersection_seqcol = comparison_dict["array_elements"]["a_and_b_count"].get(key)
+        a = comparison_dict["array_elements"]["a_count"].get(key)
+        b = comparison_dict["array_elements"]["b_count"].get(key)
         union_seqcol = (
             a + b - intersection_seqcol
         )  # inclusion-exclusion principal for calculating union

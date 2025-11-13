@@ -147,17 +147,17 @@ async def collection(
 
 
 @seqcol_router.get(
-    "/attribute/collection/{attribute}/{attribute_digest}",
+    "/attribute/collection/{attribute_name}/{attribute_digest}",
     summary="Retrieve a single attribute of a sequence collection",
     tags=["Retrieving data"],
 )
 async def attribute(
     dbagent=Depends(get_dbagent),
-    attribute: str = "names",
+    attribute_name: str = "names",
     attribute_digest: str = example_attribute_digest,
 ):
     try:
-        return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
+        return JSONResponse(dbagent.attribute.get(attribute_name, attribute_digest))
     except KeyError as e:
         raise HTTPException(
             status_code=404,
@@ -368,35 +368,32 @@ async def compare_1_digest(
 
 
 @seqcol_router.get(
-    "/list/collections",
+    "/list/collection",
     summary="List sequence collections on the server",
     tags=["Discovering data"],
 )
 async def list_collections_by_offset(
-    dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
-):
-
-    res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
-    res["results"] = [x.digest for x in res["results"]]
-    return JSONResponse(res)
-
-
-@seqcol_router.get(
-    "/list/collections/{attribute}/{attribute_digest}",
-    summary="Filtered list of sequence collections that contain a given attribute",
-    tags=["Discovering data"],
-)
-async def attribute_search(
+    request: Request,
     dbagent=Depends(get_dbagent),
-    attribute: str = "names",
-    attribute_digest: str = example_attribute_digest,
     page_size: int = 100,
     page: int = 0,
 ):
-    # attr = dbagent.attribute.get(attribute, digest)
-    res = dbagent.attribute.search(
-        attribute, attribute_digest, limit=page_size, offset=page * page_size
-    )
+    # Extract all query params except pagination params
+    filters = {k: v for k, v in request.query_params.items() if k not in ['page', 'page_size']}
+
+    if filters:
+        try:
+            # Multi-attribute filtering with AND logic
+            res = dbagent.seqcol.search_by_attributes(
+                filters, limit=page_size, offset=page * page_size
+            )
+        except ValueError as e:
+            # Invalid attribute name
+            raise HTTPException(status_code=400, detail=str(e))
+    else:
+        # No filters, return all collections
+        res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
