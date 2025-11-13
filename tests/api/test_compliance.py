@@ -106,7 +106,7 @@ def check_list_collections_by_attribute(api_root, attribute_type, attribute, res
     with open(response_file) as fp:
         correct_answer = json.load(fp)
 
-    url = f"{api_root}/list/collections/{attribute_type}/{attribute}"
+    url = f"{api_root}/list/collection?{attribute_type}={attribute}"
     res = requests.get(url)
     try:
         server_answer = json.loads(res.content)

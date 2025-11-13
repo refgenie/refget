@@ -418,6 +418,48 @@ class SequenceCollectionAgent(object):
                 "results": seqcols,
             }
 
+    def search_by_attributes(self, filters: dict, offset=0, limit=50) -> dict:
+        """
+        Search sequence collections by multiple attribute filters (AND logic).
+
+        Args:
+            filters: Dict of {attribute_name: digest} pairs
+            offset: Pagination offset
+            limit: Max results to return
+
+        Returns:
+            Dict with pagination info and results
+        """
+        with Session(self.engine) as session:
+            # Start with base query
+            list_stmt = select(SequenceCollection)
+            cnt_stmt = select(func.count(SequenceCollection.digest))
+
+            # Chain .where() for each filter (creates AND logic)
+            for attr_name, attr_digest in filters.items():
+                # Validate attribute exists to prevent SQL injection
+                if attr_name not in ATTR_TYPE_MAP:
+                    raise ValueError(f"Unknown attribute: {attr_name}")
+
+                # Build WHERE condition dynamically
+                digest_column = getattr(SequenceCollection, f"{attr_name}_digest")
+                list_stmt = list_stmt.where(digest_column == attr_digest)
+                cnt_stmt = cnt_stmt.where(digest_column == attr_digest)
+
+            # Add pagination
+            list_stmt = list_stmt.offset(offset).limit(limit)
+
+            # Execute queries
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqcols = list_res.all()
+
+            return {
+                "pagination": {"page": offset // limit, "page_size": limit, "total": count},
+                "results": seqcols,
+            }
+
     def list(self, page_size=100, cursor=None) -> dict:
         with Session(self.engine) as session:
             if cursor:
