@@ -26,11 +26,13 @@ from .utilities import (
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class AccessURL(SQLModel):
     """
     A fully resolvable URL that can be used to fetch the actual object bytes.
     Optionally includes headers (e.g., authorization tokens) required for access.
     """
+
     url: str
     headers: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
 
@@ -41,6 +43,7 @@ class AccessMethod(SQLModel):
     (e.g., https, s3, gs) and either a direct URL or an access_id for the /access endpoint.
     At least one of access_url or access_id must be provided.
     """
+
     type: Literal["s3", "gs", "ftp", "gsiftp", "globus", "htsget", "https", "file"]
     access_url: Optional[AccessURL] = None
     region: Optional[str] = None
@@ -52,6 +55,7 @@ class Checksum(SQLModel, table=False):
     A checksum for data integrity verification. The type field indicates the hash algorithm
     (e.g., "sha-256", "md5") and the checksum field contains the hex-string encoded hash value.
     """
+
     type: str  # e.g., "md5", "sha-256"
     checksum: str  # The hex-string encoded checksum value
 
@@ -62,6 +66,7 @@ class DrsObject(SQLModel, table=False):
     DRS objects are self-contained and provide all information needed for clients to retrieve the data.
     Conforms to GA4GH Data Repository Service (DRS) specification v1.4.0.
     """
+
     id: str
     self_uri: str
     size: int
@@ -82,6 +87,7 @@ class FastaDrsObject(DrsObject, table=True):
     size, checksums (SHA-256, MD5, and refget sequence collection digest), and creation time.
     The refget digest serves as the object ID, enabling content-addressable retrieval.
     """
+
     id: str = Field(primary_key=True)
     self_uri: Optional[str] = None  # Override to make optional for storage
 
@@ -109,7 +115,7 @@ class FastaDrsObject(DrsObject, table=True):
 
         Args:
             fasta_file (str): Path to a FASTA file
-            digest (str): The refget digest of the sequence collection 
+            digest (str): The refget digest of the sequence collection
                 (optional). If not included, it wil be computed
 
         Returns:
@@ -150,10 +156,8 @@ class FastaDrsObject(DrsObject, table=True):
             ],
             access_methods=[],  # Populate this if you host the file somewhere
             description=f"DRS object for {os.path.basename(fasta_file)}",
-            aliases=[os.path.basename(fasta_file).split(".")[0]]
+            aliases=[os.path.basename(fasta_file).split(".")[0]],
         )
-        
-
 
 
 try:
@@ -305,7 +309,7 @@ class SequenceCollection(SQLModel, table=True):
             InvalidSeqColError: If collated attributes have mismatched lengths
         """
         # Load schema to identify collated attributes
-        with open(SEQCOL_SCHEMA_PATH, 'r') as f:
+        with open(SEQCOL_SCHEMA_PATH, "r") as f:
             schema = json.load(f)
 
         # Find all collated attributes from schema
@@ -325,7 +329,9 @@ class SequenceCollection(SQLModel, table=True):
         # Verify all collated attributes have the same length
         if lengths:
             expected_length = next(iter(lengths.values()))
-            mismatched = {attr: length for attr, length in lengths.items() if length != expected_length}
+            mismatched = {
+                attr: length for attr, length in lengths.items() if length != expected_length
+            }
 
             if mismatched:
                 all_lengths = ", ".join(f"{attr}={length}" for attr, length in lengths.items())
@@ -343,7 +349,7 @@ class SequenceCollection(SQLModel, table=True):
         Returns:
             (bool): True if the object is valid, False otherwise
         """
-        with open(SEQCOL_SCHEMA_PATH, 'r') as f:
+        with open(SEQCOL_SCHEMA_PATH, "r") as f:
             schema = json.load(f)
         validator = Draft7Validator(schema)
 
@@ -396,9 +402,7 @@ class SequenceCollection(SQLModel, table=True):
 
         names_attr = NamesAttr(digest=level1_dict["names"], value=seqcol_dict["names"])
 
-        lengths_attr = LengthsAttr(
-            digest=level1_dict["lengths"], value=seqcol_dict["lengths"]
-        )
+        lengths_attr = LengthsAttr(digest=level1_dict["lengths"], value=seqcol_dict["lengths"])
 
         nlp = build_name_length_pairs(seqcol_dict)
         nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
