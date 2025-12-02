@@ -2,6 +2,8 @@ import logging
 import re
 import requests
 
+from typing import Optional
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -11,7 +13,9 @@ class RefgetClient(object):
     A generic abstract class, for any features used by any subclass of refget client.
     """
 
-    def __repr__(self):
+    urls: list[str]
+
+    def __repr__(self) -> str:
         service_info = self.service_info()
         return (
             f"<{self.__class__.__name__}>\n"
@@ -20,7 +24,7 @@ class RefgetClient(object):
             f"  API URLs:    {', '.join(self.urls)}\n"
         )
 
-    def service_info(self):
+    def service_info(self) -> dict:
         """
         Retrieves information about the service.
 
@@ -39,7 +43,11 @@ class SequenceClient(RefgetClient):
     A client for interacting with a refget sequences API.
     """
 
-    def __init__(self, urls=["https://www.ebi.ac.uk/ena/cram"], raise_errors=None):
+    def __init__(
+        self,
+        urls: list[str] = ["https://www.ebi.ac.uk/ena/cram"],
+        raise_errors: Optional[bool] = None,
+    ) -> None:
         """
         Initializes the sequences client.
 
@@ -56,7 +64,9 @@ class SequenceClient(RefgetClient):
             raise_errors = __name__ == "__main__"
         self.raise_errors = raise_errors
 
-    def get_sequence(self, digest, start=None, end=None):
+    def get_sequence(
+        self, digest: str, start: Optional[int] = None, end: Optional[int] = None
+    ) -> Optional[str]:
         """
         Retrieves a sequence for a given digest.
 
@@ -75,7 +85,7 @@ class SequenceClient(RefgetClient):
         endpoint = f"/sequence/{digest}"
         return _try_urls(self.urls, endpoint, params=query_params, raise_errors=self.raise_errors)
 
-    def get_metadata(self, digest):
+    def get_metadata(self, digest: str) -> Optional[dict]:
         """
         Retrieves metadata for a given sequence digest.
 
@@ -94,7 +104,11 @@ class SequenceCollectionClient(RefgetClient):
     A client for interacting with a refget sequence collections API.
     """
 
-    def __init__(self, urls=["https://seqcolapi.databio.org"], raise_errors=None):
+    def __init__(
+        self,
+        urls: list[str] = ["https://seqcolapi.databio.org"],
+        raise_errors: Optional[bool] = None,
+    ) -> None:
         """
         Initializes the sequence collection client.
 
@@ -111,7 +125,7 @@ class SequenceCollectionClient(RefgetClient):
             raise_errors = __name__ == "__main__"
         self.raise_errors = raise_errors
 
-    def get_collection(self, digest, level=2):
+    def get_collection(self, digest: str, level: int = 2) -> Optional[dict]:
         """
         Retrieves a sequence collection for a given digest and detail level.
 
@@ -125,7 +139,7 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = f"/collection/{digest}?level={level}"
         return _try_urls(self.urls, endpoint)
 
-    def get_attribute(self, attribute, digest, level=2):
+    def get_attribute(self, attribute: str, digest: str, level: int = 2) -> Optional[dict]:
         """
         Retrieves a specific attribute for a given digest and detail level.
 
@@ -139,7 +153,7 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = f"/attribute/collection/{attribute}/{digest}"
         return _try_urls(self.urls, endpoint)
 
-    def compare(self, digest1, digest2):
+    def compare(self, digest1: str, digest2: str) -> Optional[dict]:
         """
         Compares two sequence collections.
 
@@ -153,7 +167,13 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = f"/comparison/{digest1}/{digest2}"
         return _try_urls(self.urls, endpoint)
 
-    def list_collections(self, page=None, page_size=None, attribute=None, attribute_digest=None):
+    def list_collections(
+        self,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
+        attribute: Optional[str] = None,
+        attribute_digest: Optional[str] = None,
+    ) -> Optional[dict]:
         """
         Lists all available sequence collections with optional paging and attribute filtering support.
 
@@ -179,7 +199,9 @@ class SequenceCollectionClient(RefgetClient):
 
         return _try_urls(self.urls, endpoint, params=params)
 
-    def list_attributes(self, attribute, page=None, page_size=None):
+    def list_attributes(
+        self, attribute: str, page: Optional[int] = None, page_size: Optional[int] = None
+    ) -> Optional[dict]:
         """
         Lists all available values for a given attribute with optional paging support.
 
@@ -200,7 +222,7 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = f"/list/attributes/{attribute}"
         return _try_urls(self.urls, endpoint, params=params)
 
-    def service_info(self):
+    def service_info(self) -> Optional[dict]:
         """
         Retrieves information about the service.
 
@@ -218,7 +240,7 @@ class PangenomeClient(RefgetClient):
 # Utilities
 
 
-def _wrap_response(response):
+def _wrap_response(response: requests.Response) -> dict | str:
     """
     Handles the response from a request, unwrapping the content as either
     text or json, depending on the content type.
@@ -240,7 +262,12 @@ def _wrap_response(response):
         raise e
 
 
-def _try_urls(urls, endpoint, params=None, raise_errors=True):
+def _try_urls(
+    urls: list[str],
+    endpoint: str,
+    params: Optional[dict] = None,
+    raise_errors: bool = True,
+) -> Optional[dict | str]:
     """
     Tries the list of URLs in succession until a successful response is received.
 

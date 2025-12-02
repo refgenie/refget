@@ -7,7 +7,13 @@ from pathlib import Path
 from typing import Optional
 from yacman import load_yaml
 
-from .const import SeqColDict, DEFAULT_INHERENT_ATTRS, DEFAULT_TRANSIENT_ATTRS, DEFAULT_PASSTHRU_ATTRS, SEQCOL_SCHEMA_PATH
+from .const import (
+    SeqColDict,
+    DEFAULT_INHERENT_ATTRS,
+    DEFAULT_TRANSIENT_ATTRS,
+    DEFAULT_PASSTHRU_ATTRS,
+    SEQCOL_SCHEMA_PATH,
+)
 from .exceptions import *
 from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
 
@@ -21,9 +27,9 @@ def canonical_str(item: dict) -> bytes:
     ).encode()
 
 
-def print_csc(csc: dict) -> str:
+def print_csc(csc: dict) -> None:
     """Convenience function to pretty-print a canonical sequence collection"""
-    return print(json.dumps(csc, indent=2))
+    print(json.dumps(csc, indent=2))
 
 
 def validate_seqcol_bool(seqcol_obj: SeqColDict, schema=None) -> bool:
@@ -32,7 +38,7 @@ def validate_seqcol_bool(seqcol_obj: SeqColDict, schema=None) -> bool:
 
     To enumerate the errors, use validate_seqcol instead.
     """
-    with open(SEQCOL_SCHEMA_PATH, 'r') as f:
+    with open(SEQCOL_SCHEMA_PATH, "r") as f:
         schema = json.load(f)
     validator = Draft7Validator(schema)
     return validator.is_valid(seqcol_obj)
@@ -43,7 +49,7 @@ def validate_seqcol(seqcol_obj: SeqColDict, schema=None) -> bool:
     Returns True if valid, raises InvalidSeqColError if not, which enumerates the errors.
     Retrieve individual errors with exception.errors
     """
-    with open(SEQCOL_SCHEMA_PATH, 'r') as f:
+    with open(SEQCOL_SCHEMA_PATH, "r") as f:
         schema = json.load(f)
     validator = Draft7Validator(schema)
 
@@ -147,7 +153,9 @@ def fasta_to_seqcol_dict(
     return seqcol_dict
 
 
-def build_sorted_name_length_pairs(obj: dict, digest_function: DigestFunction = sha512t24u_digest):
+def build_sorted_name_length_pairs(
+    obj: dict, digest_function: DigestFunction = sha512t24u_digest
+) -> list[str]:
     """Builds the sorted_name_length_pairs attribute, which corresponds to the coordinate system"""
     sorted_name_length_pairs = []
     for i in range(len(obj["names"])):
@@ -160,7 +168,9 @@ def build_sorted_name_length_pairs(obj: dict, digest_function: DigestFunction = 
     return snlp_digests
 
 
-def build_name_length_pairs(obj: dict, digest_function: DigestFunction = sha512t24u_digest):
+def build_name_length_pairs(
+    obj: dict, digest_function: DigestFunction = sha512t24u_digest
+) -> list[dict[str, int | str]]:
     """Builds the name_length_pairs attribute, which corresponds to the coordinate system"""
     name_length_pairs = []
     for i in range(len(obj["names"])):
@@ -223,7 +233,7 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     return return_obj
 
 
-def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
+def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict[str, float]:
     """
     Takes two sequence collections and calculates jaccard similarties for all attributes
 
@@ -232,7 +242,7 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
     @return dict jaccard similarities for all attributes
     """
 
-    def calc_jaccard_similarity(A_B_intersection, A_B_union):
+    def calc_jaccard_similarity(A_B_intersection: int, A_B_union: int) -> float:
         if A_B_union == 0:
             return 0.0
         jaccard_similarity = A_B_intersection / A_B_union
@@ -263,7 +273,7 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
     return jaccard_similarities
 
 
-def _compare_elements(A: list, B: list) -> dict:
+def _compare_elements(A: list, B: list) -> dict[str, int | bool | None]:
     """
     Compare elements between two arrays. Helper function for individual elements used by workhorse compare_seqcols function
     """
@@ -317,7 +327,9 @@ def seqcol_dict_to_level1_dict(
     return level1_dict
 
 
-def level1_dict_to_seqcol_digest(level1_dict: dict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS):
+def level1_dict_to_seqcol_digest(
+    level1_dict: dict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
+):
     # Step 4: Filter to only inherent attributes before computing top-level digest.
     # Non-inherent attributes are included in level1 but don't contribute to level0 digest.
     if inherent_attrs:

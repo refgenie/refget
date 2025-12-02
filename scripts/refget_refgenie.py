@@ -9,4 +9,3 @@ cols = seqcol_client.list_collections()
 example_digest = cols["results"][0]
 
 seqcol_client.get_collection(example_digest)
-

@@ -23,6 +23,7 @@ import logging
 from fastapi import APIRouter, Response, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from .models import Similarities, PaginationResult
+from .agents import RefgetDBAgent
 
 from .examples import *
 
@@ -31,17 +32,17 @@ from henge import NotFoundException
 _LOGGER = logging.getLogger(__name__)
 
 # Import the global variable from the router
-_SAMPLE_DIGESTS = {}
+_SAMPLE_DIGESTS: dict[str, list[str]] = {}
 
 
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
-async def get_dbagent(request: Request):
+async def get_dbagent(request: Request) -> RefgetDBAgent:
     return request.app.state.dbagent
 
 
 def create_refget_router(
     sequences: bool = False, collections: bool = True, pangenomes: bool = False
-):
+) -> APIRouter:
     """
     Create a FastAPI router for the sequence collection API.
     This router provides endpoints for retrieving and comparing sequence collections.
@@ -336,7 +337,7 @@ async def list_collections_by_offset(
     page: int = 0,
 ):
     # Extract all query params except pagination params
-    filters = {k: v for k, v in request.query_params.items() if k not in ['page', 'page_size']}
+    filters = {k: v for k, v in request.query_params.items() if k not in ["page", "page_size"]}
 
     if filters:
         try:

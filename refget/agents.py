@@ -30,12 +30,15 @@ ATTR_TYPE_MAP = {
 }
 
 
-def read_yaml_url(url):
+def read_yaml_url(url: str) -> dict:
     """
     Read a YAML file from a URL.
 
-    :param url: The URL to read the YAML file from.
-    :return: The loaded YAML file as a dictionary.
+    Args:
+        url (str): The URL to read the YAML file from.
+
+    Returns:
+        dict: The loaded YAML file as a dictionary.
     """
     import yaml
 
@@ -50,12 +53,15 @@ def read_yaml_url(url):
         raise e
 
 
-def load_json(source):
+def load_json(source: str) -> dict:
     """
     Load a JSON from a file or URL.
 
-    :param source: The file path or URL to the JSON.
-    :return: The loaded JSON as a dictionary.
+    Args:
+        source (str): The file path or URL to the JSON.
+
+    Returns:
+        dict: The loaded JSON as a dictionary.
     """
     if os.path.isfile(source):
         with open(source, "r", encoding="utf-8") as file:
@@ -75,7 +81,7 @@ class SequenceAgent(object):
     Agent for interacting with database of sequences
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine: SqlalchemyDatabaseEngine) -> None:
         self.engine = engine
 
     def _get_entire_seq(self, digest: str) -> str:
@@ -123,7 +129,7 @@ class SequenceAgent(object):
                 session.commit()
                 return sequence
 
-    def list(self, offset=0, limit=50):
+    def list(self, offset: int = 0, limit: int = 50) -> dict:
         with Session(self.engine) as session:
             list_stmt = select(Sequence).offset(offset).limit(limit)
             cnt_stmt = select(func.count(Sequence.digest))
@@ -142,7 +148,9 @@ class SequenceCollectionAgent(object):
     Agent for interacting with database of sequence collection
     """
 
-    def __init__(self, engine, inherent_attrs=None):
+    def __init__(
+        self, engine: SqlalchemyDatabaseEngine, inherent_attrs: Optional[List[str]] = None
+    ) -> None:
         self.engine = engine
         self.inherent_attrs = inherent_attrs
 
@@ -150,9 +158,9 @@ class SequenceCollectionAgent(object):
         self,
         digest: str,
         return_format: str = "level2",
-        attribute: str = None,
-        itemwise_limit: int = None,
-    ) -> SequenceCollection:
+        attribute: Optional[str] = None,
+        itemwise_limit: Optional[int] = None,
+    ) -> SequenceCollection | dict | list:
         """
         Get a sequence collection by digest
 
@@ -183,7 +191,7 @@ class SequenceCollectionAgent(object):
                 return seqcol
 
     def get_many_level2_offset(
-        self, limit=50, offset=0, target_digests=None
+        self, limit: int = 50, offset: int = 0, target_digests: Optional[List[str]] = None
     ) -> ResultsSequenceCollections:
 
         final_results = {}
@@ -405,7 +413,7 @@ class SequenceCollectionAgent(object):
 
         return results
 
-    def list_by_offset(self, limit=50, offset=0) -> dict:
+    def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
         with Session(self.engine) as session:
             list_stmt = select(SequenceCollection).offset(offset).limit(limit)
             cnt_stmt = select(func.count(SequenceCollection.digest))
@@ -418,7 +426,7 @@ class SequenceCollectionAgent(object):
                 "results": seqcols,
             }
 
-    def search_by_attributes(self, filters: dict, offset=0, limit=50) -> dict:
+    def search_by_attributes(self, filters: dict, offset: int = 0, limit: int = 50) -> dict:
         """
         Search sequence collections by multiple attribute filters (AND logic).
 
@@ -460,7 +468,7 @@ class SequenceCollectionAgent(object):
                 "results": seqcols,
             }
 
-    def list(self, page_size=100, cursor=None) -> dict:
+    def list(self, page_size: int = 100, cursor: Optional[str] = None) -> dict:
         with Session(self.engine) as session:
             if cursor:
                 list_stmt = (
@@ -491,11 +499,11 @@ class PangenomeAgent(object):
     Agent for interacting with database of pangenomes
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: "RefgetDBAgent") -> None:
         self.engine = parent.engine
         self.parent = parent
 
-    def get(self, digest: str, return_format: str = "level2") -> Pangenome:
+    def get(self, digest: str, return_format: str = "level2") -> Pangenome | dict:
         with Session(self.engine) as session:
             statement = select(Pangenome).where(Pangenome.digest == digest)
             result = session.exec(statement)
@@ -561,7 +569,7 @@ class PangenomeAgent(object):
         p = build_pangenome_model(pangenome_obj)
         return self.add(p)
 
-    def list_by_offset(self, limit=50, offset=0):
+    def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
         with Session(self.engine) as session:
             list_stmt = select(Pangenome).offset(offset).limit(limit)
             cnt_stmt = select(func.count(Pangenome.digest))
@@ -576,10 +584,10 @@ class PangenomeAgent(object):
 
 
 class AttributeAgent(object):
-    def __init__(self, engine):
+    def __init__(self, engine: SqlalchemyDatabaseEngine) -> None:
         self.engine = engine
 
-    def get(self, attribute_type: str, digest: str):
+    def get(self, attribute_type: str, digest: str) -> list:
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             statement = select(Attribute).where(Attribute.digest == digest)
@@ -591,7 +599,7 @@ class AttributeAgent(object):
 
             return response.value
 
-    def list(self, attribute_type, offset=0, limit=50):
+    def list(self, attribute_type: str, offset: int = 0, limit: int = 50) -> dict:
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             list_stmt = select(Attribute).offset(offset).limit(limit)
@@ -605,7 +613,7 @@ class AttributeAgent(object):
                 "results": seqcols,
             }
 
-    def search(self, attribute_type, digest, offset=0, limit=50):
+    def search(self, attribute_type: str, digest: str, offset: int = 0, limit: int = 50) -> dict:
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             list_stmt = (
@@ -700,12 +708,12 @@ class RefgetDBAgent(object):
         self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
 
-    def compare_digests(self, digestA, digestB):
+    def compare_digests(self, digestA: str, digestB: str) -> dict:
         A = self.seqcol.get(digestA, return_format="level2")
         B = self.seqcol.get(digestB, return_format="level2")
         return compare_seqcols(A, B)
 
-    def calc_similarities(self, digestA, digestB):
+    def calc_similarities(self, digestA: str, digestB: str) -> dict:
         """
         Calculates the Jaccard similarity between two sequence collections.
 
@@ -729,7 +737,7 @@ class RefgetDBAgent(object):
     #     B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
     #     return calc_jaccard_similarities(A,B)
 
-    def calc_similarities_seqcol_dicts(self, seqcolA, seqcolB):
+    def calc_similarities_seqcol_dicts(self, seqcolA: dict, seqcolB: dict) -> dict:
         """
         Calculates the Jaccard similarity between two sequence collections.
 
@@ -747,12 +755,12 @@ class RefgetDBAgent(object):
 
         return calc_jaccard_similarities(seqcolA, seqcolB)
 
-    def compare_1_digest(self, digestA, seqcolB):
+    def compare_1_digest(self, digestA: str, seqcolB: dict) -> dict:
         A = self.seqcol.get(digestA, return_format="level2")
         B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
         return compare_seqcols(A, B)
 
-    def retrieve_level2_digest(self, seqcoldigest):
+    def retrieve_level2_digest(self, seqcoldigest: str) -> dict:
         A = self.seqcol.get(seqcoldigest, return_format="level2")
         return A
 
@@ -772,10 +780,10 @@ class RefgetDBAgent(object):
     def attribute(self) -> AttributeAgent:
         return self.__attribute
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"RefgetDBAgent. Connection to database: '{self.engine}'"
 
-    def truncate(self):
+    def truncate(self) -> int:
         """Delete all records from the database"""
 
         with Session(self.engine) as session:
