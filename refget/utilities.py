@@ -5,7 +5,6 @@ import os
 from jsonschema import Draft7Validator
 from pathlib import Path
 from typing import Optional
-from yacman import load_yaml
 
 from .const import (
     SeqColDict,
