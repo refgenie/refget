@@ -12,6 +12,17 @@ This repository includes:
 4. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
 5. `/frontend`: a React seqcolapi front-end.
 
+
+## Deploy to AWS ECS
+
+To deploy the public demo instance, you can either:
+
+1. **Create a GitHub release** - This triggers the `deploy_release_software.yml` workflow, which builds and pushes the Docker image to DockerHub. After that completes, it automatically triggers `deploy_primary.yml` to deploy to AWS ECS.
+
+2. **Manual dispatch** - You can manually trigger either workflow from the GitHub Actions tab.
+
+This builds seqcolapi, pushes to DockerHub, and deploys to ECS.
+
 ## Testing
 
 ### Local unit tests of refget package
@@ -39,9 +50,7 @@ This will:
 
 Alternatively, if you want to run each step separately to see what's really going on, start here.
 
-
 #### Setting up a database connection
-
 
 First configure a database connection through environment variables. Choose one of these:
 
@@ -125,10 +134,6 @@ npm i
 VITE_API_BASE="https://seqcolapi.databio.org" npm run dev
 ```
 
-## Deploy to AWS ECS
-
-- Test locally first, using 1. native test; 2. local docker test.
-
 ### Deploying
 
 1. Ensure the [refget](https://github.com/refgenie/refget/) package master branch is as you want it.
@@ -143,9 +148,6 @@ The objects and attributes are represented as SQLModel objects in `refget/models
 
 1. create a new model. This will create a table for that model, etc.
 2. change the function that creates the objects, to populate the new attribute.
-
-
-
 
 ## Example of loading reference fasta datasets:
 
