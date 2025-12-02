@@ -182,9 +182,12 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     """
     Workhorse comparison function
 
-    @param A Sequence collection A
-    @param B Sequence collection B
-    @return dict Following formal seqcol specification comparison function return value
+    Args:
+        A: Sequence collection A
+        B: Sequence collection B
+
+    Returns:
+        dict: Following formal seqcol specification comparison function return value
     """
     # validate_seqcol(A)  # First ensure these are the right structure
     # validate_seqcol(B)
@@ -237,9 +240,12 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict[str, float]:
     """
     Takes two sequence collections and calculates jaccard similarties for all attributes
 
-    @param A Sequence collection A
-    @param B Sequence collection B
-    @return dict jaccard similarities for all attributes
+    Args:
+        A: Sequence collection A
+        B: Sequence collection B
+
+    Returns:
+        dict: Jaccard similarities for all attributes
     """
 
     def calc_jaccard_similarity(A_B_intersection: int, A_B_union: int) -> float:
@@ -351,9 +357,12 @@ def seqcol_digest(
     """
     Given a canonical sequence collection, compute its digest.
 
-    :param dict seqcol_dict: Dictionary representation of a canonical sequence collection object
-    :param dict schema: Schema defining the inherent attributes to digest
-    :return str: The sequence collection digest
+    Args:
+        seqcol_dict: Dictionary representation of a canonical sequence collection object
+        inherent_attrs: List of inherent attributes to include in the digest
+
+    Returns:
+        str: The sequence collection digest
     """
 
     validate_seqcol(seqcol_dict)
