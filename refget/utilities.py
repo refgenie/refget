@@ -14,7 +14,7 @@ from .const import (
     DEFAULT_PASSTHRU_ATTRS,
     SEQCOL_SCHEMA_PATH,
 )
-from .exceptions import *
+from .exceptions import InvalidSeqColError
 from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
 
 _LOGGER = logging.getLogger(__name__)
