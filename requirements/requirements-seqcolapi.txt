@@ -1,7 +1,4 @@
-aiofiles
 fastapi
-jinja2
-pipestat
 psycopg2-binary
 refget
 sqlmodel

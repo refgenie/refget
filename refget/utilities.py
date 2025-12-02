@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 
 from jsonschema import Draft7Validator
 from pathlib import Path
@@ -9,7 +8,6 @@ from typing import Optional
 from .const import (
     SeqColDict,
     DEFAULT_INHERENT_ATTRS,
-    DEFAULT_TRANSIENT_ATTRS,
     DEFAULT_PASSTHRU_ATTRS,
     SEQCOL_SCHEMA_PATH,
 )

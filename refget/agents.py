@@ -1,16 +1,13 @@
 import json
 import os
-import logging
 import peppy
 import requests
 
 from sqlmodel import create_engine, select, Session, delete, func, SQLModel
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy import URL
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
 from .models import *
 from .utilities import (
