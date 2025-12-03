@@ -449,7 +449,9 @@ class SequenceCollectionAgent(object):
                     fa_path, s.sample_name, update, create_fasta_drs
                 ).digest
             else:
-                results[s.fasta] = self.add_from_fasta_file(fa_path, update, create_fasta_drs).digest
+                results[s.fasta] = self.add_from_fasta_file(
+                    fa_path, update, create_fasta_drs
+                ).digest
             elapsed_time = time.time() - start_time  # Calculate elapsed time
 
             _LOGGER.info(f"Loaded in {elapsed_time:.2f} seconds")
@@ -683,9 +685,7 @@ class FastaDrsAgent:
     Agent for interacting with database of FASTA DRS objects
     """
 
-    def __init__(
-        self, engine: SqlalchemyDatabaseEngine, url_prefix: Optional[str] = None
-    ) -> None:
+    def __init__(self, engine: SqlalchemyDatabaseEngine, url_prefix: Optional[str] = None) -> None:
         self.engine = engine
         self.url_prefix = url_prefix
 

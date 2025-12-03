@@ -93,8 +93,12 @@ class FastaDrsObject(DrsObject, table=True):
 
     # FAI index fields
     line_bases: Optional[int] = None  # Bases per line (e.g., 60)
-    extra_line_bytes: Optional[int] = None  # Extra bytes per line for newline (1 for \n, 2 for \r\n)
-    offsets: Optional[List[int]] = Field(default=None, sa_column=Column(JSON))  # Byte offset per sequence
+    extra_line_bytes: Optional[int] = (
+        None  # Extra bytes per line for newline (1 for \n, 2 for \r\n)
+    )
+    offsets: Optional[List[int]] = Field(
+        default=None, sa_column=Column(JSON)
+    )  # Byte offset per sequence
 
     def to_response(self, base_uri: str = None) -> "FastaDrsObject":
         """
