@@ -6,8 +6,6 @@ import pytest
 import requests
 import sys
 
-import oyaml as yaml
-
 from refget.const import _schema_path
 
 REQ_SERVICE_MARK = "require_service"
@@ -35,17 +33,6 @@ for fa_name, fa_digest_bundle in TEST_FASTA_DIGESTS.items():
     DIGEST_TESTS.append((fa_name, fa_digest_bundle))
 
 
-def ly(n, data_path):
-    """Load YAML"""
-    with open(os.path.join(data_path, n), "r") as f:
-        return yaml.safe_load(f)
-
-
-@pytest.fixture
-def schema_path():
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "schemas")
-
-
 @pytest.fixture
 def fa_root():
     return os.path.join(
@@ -59,21 +46,6 @@ def fasta_path():
     return os.path.join(
         os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "test_fasta"
     )
-
-
-@pytest.fixture
-def schema_sequence(schema_path):
-    return ly("sequence.yaml", schema_path)
-
-
-@pytest.fixture
-def schema_asd(schema_path):
-    return ly("annotated_sequence_digest.yaml", schema_path)
-
-
-@pytest.fixture
-def schema_acd(schema_path):
-    return ly("annotated_collection_digest.yaml", schema_path)
 
 
 # Here add require_service marker, for testing clients
