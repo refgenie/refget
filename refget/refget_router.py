@@ -41,25 +41,29 @@ async def get_dbagent(request: Request) -> RefgetDBAgent:
 
 
 def create_refget_router(
-    sequences: bool = False, collections: bool = True, pangenomes: bool = False
+    sequences: bool = False,
+    collections: bool = True,
+    pangenomes: bool = False,
+    fasta_drs: bool = False,
 ) -> APIRouter:
     """
     Create a FastAPI router for the sequence collection API.
     This router provides endpoints for retrieving and comparing sequence collections.
     You can choose which endpoints to include by setting the sequences, collections,
-    or pangenomes flags.
+    pangenomes, or fasta_drs flags.
 
     Args:
         sequences (bool): Include sequence endpoints
         collections (bool): Include sequence collection endpoints
         pangenomes (bool): Include pangenome endpoints
+        fasta_drs (bool): Include FASTA DRS endpoints
 
     Returns:
         (APIRouter): A FastAPI router with the specified endpoints
 
     Examples:
         ```
-        app.include_router(create_refget_router(sequences=False, pangenomes=False))
+        app.include_router(create_refget_router(fasta_drs=True), prefix="/seqcol")
         ```
     """
 
@@ -73,6 +77,9 @@ def create_refget_router(
     if pangenomes:
         _LOGGER.info("Adding pangenome endpoints...")
         refget_router.include_router(pangenome_router)
+    if fasta_drs:
+        _LOGGER.info("Adding FASTA DRS endpoints...")
+        refget_router.include_router(fasta_drs_router, prefix="/fasta")
     return refget_router
 
 
@@ -431,3 +438,87 @@ async def pangenome(
             status_code=404,
             detail=str(e),
         )
+
+
+fasta_drs_router = APIRouter()
+
+
+@fasta_drs_router.get(
+    "/objects/{object_id}",
+    summary="Get DRS object by ID",
+    tags=["DRS"],
+)
+async def get_drs_object(
+    object_id: str,
+    dbagent=Depends(get_dbagent),
+):
+    """GA4GH DRS endpoint to retrieve object metadata"""
+    try:
+        drs_obj = dbagent.fasta_drs.get(object_id)
+        return drs_obj.to_response(base_uri="drs://seqcolapi.databio.org")
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Object not found")
+
+
+@fasta_drs_router.get(
+    "/objects/{object_id}/access/{access_id}",
+    summary="Get access URL for DRS object",
+    tags=["DRS"],
+)
+async def get_drs_access_url(
+    object_id: str,
+    access_id: str,
+    dbagent=Depends(get_dbagent),
+):
+    """GA4GH DRS endpoint to get access URL"""
+    try:
+        drs_obj = dbagent.fasta_drs.get(object_id)
+        for method in drs_obj.access_methods:
+            if method.access_id == access_id:
+                return method.access_url
+        raise HTTPException(status_code=404, detail="Access ID not found")
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Object not found")
+
+
+@fasta_drs_router.get(
+    "/service-info",
+    summary="DRS service info",
+    tags=["DRS"],
+)
+async def drs_service_info():
+    """GA4GH DRS service-info endpoint"""
+    return {
+        "id": "org.databio.seqcolapi.drs",
+        "name": "SeqCol API DRS Service",
+        "type": {"group": "org.ga4gh", "artifact": "drs", "version": "1.4.0"},
+        "description": "DRS service for FASTA files indexed by refget sequence collection digests",
+        "organization": {"name": "databio", "url": "https://databio.org"},
+        "version": "1.0.0",
+    }
+
+
+@fasta_drs_router.get(
+    "/objects/{object_id}/index",
+    summary="Get FAI index for FASTA file",
+    tags=["DRS"],
+)
+async def get_fasta_index(
+    object_id: str,
+    dbagent=Depends(get_dbagent),
+):
+    """
+    Get the FAI index data for a FASTA file.
+
+    Returns index data that can be combined with seqcol names/lengths
+    to reconstruct a complete .fai file.
+    """
+    try:
+        drs_obj = dbagent.fasta_drs.get(object_id)
+        return {
+            "line_bases": drs_obj.line_bases,
+            "extra_line_bytes": drs_obj.extra_line_bytes,
+            "offsets": drs_obj.offsets,
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Object not found")

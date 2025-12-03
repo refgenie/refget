@@ -9,7 +9,23 @@ from sqlalchemy import URL
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
 from typing import Optional, List
 
-from .models import *
+from .models import (
+    Sequence,
+    SequenceCollection,
+    Pangenome,
+    NamesAttr,
+    LengthsAttr,
+    SequencesAttr,
+    SortedSequencesAttr,
+    NameLengthPairsAttr,
+    CollectionNamesAttr,
+    HumanReadableNames,
+    PaginationResult,
+    ResultsSequenceCollections,
+    FastaDrsObject,
+    AccessMethod,
+    AccessURL,
+)
 from .utilities import (
     fasta_to_seqcol_dict,
     compare_seqcols,
@@ -146,10 +162,14 @@ class SequenceCollectionAgent(object):
     """
 
     def __init__(
-        self, engine: SqlalchemyDatabaseEngine, inherent_attrs: Optional[List[str]] = None
+        self,
+        engine: SqlalchemyDatabaseEngine,
+        inherent_attrs: Optional[List[str]] = None,
+        parent: Optional["RefgetDBAgent"] = None,
     ) -> None:
         self.engine = engine
         self.inherent_attrs = inherent_attrs
+        self.parent = parent
 
     def get(
         self,
@@ -336,7 +356,7 @@ class SequenceCollectionAgent(object):
         return self.add(seqcol, update)
 
     def add_from_fasta_file(
-        self, fasta_file_path: str, update: bool = False
+        self, fasta_file_path: str, update: bool = False, create_fasta_drs: bool = True
     ) -> SequenceCollection:
         """
         Given a path to a fasta file, load the sequences into the refget database.
@@ -344,6 +364,7 @@ class SequenceCollectionAgent(object):
         Args:
             fasta_file_path (str): Path to the fasta file
             update (bool): If True, update an existing collection if it exists
+            create_fasta_drs (bool): If True, create a FastaDrsObject for the FASTA file
 
         Returns:
            (SequenceCollection): The added or updated sequence collection
@@ -351,6 +372,16 @@ class SequenceCollectionAgent(object):
 
         CSC = fasta_to_seqcol_dict(fasta_file_path)
         seqcol = self.add_from_dict(CSC, update)
+
+        if create_fasta_drs and self.parent and self.parent.fasta_drs:
+            drs_obj = FastaDrsObject.from_fasta_file(fasta_file_path, digest=seqcol.digest)
+            if self.parent.fasta_drs.url_prefix:
+                url = self.parent.fasta_drs.url_prefix + os.path.basename(fasta_file_path)
+                drs_obj.access_methods = [
+                    AccessMethod(type="https", access_url=AccessURL(url=url))
+                ]
+            self.parent.fasta_drs.add(drs_obj)
+
         return seqcol
 
     def add_from_fasta_file_with_name(
@@ -358,6 +389,7 @@ class SequenceCollectionAgent(object):
         fasta_file_path: str,
         human_readable_name: str,
         update: bool = False,
+        create_fasta_drs: bool = True,
     ) -> SequenceCollection:
         """
         Given a path to a fasta file, and a human-readable name, load the sequences into the refget database.
@@ -366,6 +398,7 @@ class SequenceCollectionAgent(object):
         - fasta_file_path (str): Path to the fasta file
         - human_readable_name (str): human_readable_name
         - update (bool): If True, update an existing collection if it exists
+        - create_fasta_drs (bool): If True, create a FastaDrsObject for the FASTA file
 
         Returns:
         - (SequenceCollection): The added or updated sequence collection
@@ -374,9 +407,21 @@ class SequenceCollectionAgent(object):
         CSC = fasta_to_seqcol_dict(fasta_file_path)
         CSC["human_readable_names"] = human_readable_name
         seqcol = self.add_from_dict(CSC, update)
+
+        if create_fasta_drs and self.parent and self.parent.fasta_drs:
+            drs_obj = FastaDrsObject.from_fasta_file(fasta_file_path, digest=seqcol.digest)
+            if self.parent.fasta_drs.url_prefix:
+                url = self.parent.fasta_drs.url_prefix + os.path.basename(fasta_file_path)
+                drs_obj.access_methods = [
+                    AccessMethod(type="https", access_url=AccessURL(url=url))
+                ]
+            self.parent.fasta_drs.add(drs_obj)
+
         return seqcol
 
-    def add_from_fasta_pep(self, pep: peppy.Project, fa_root: str, update: bool = False) -> dict:
+    def add_from_fasta_pep(
+        self, pep: peppy.Project, fa_root: str, update: bool = False, create_fasta_drs: bool = True
+    ) -> dict:
         """
         Given a path to a PEP file and a root directory containing the fasta files,
         load the fasta files into the refget database.
@@ -384,6 +429,7 @@ class SequenceCollectionAgent(object):
         Args:
             pep_path (str): Path to the PEP file
             fa_root (str): Root directory containing the fasta files
+            create_fasta_drs (bool): If True, create FastaDrsObjects for the FASTA files
 
         Returns:
             (dict): A dictionary of the digests of the added sequence collections
@@ -400,10 +446,10 @@ class SequenceCollectionAgent(object):
             start_time = time.time()  # Record start time
             if s.sample_name:
                 results[s.fasta] = self.add_from_fasta_file_with_name(
-                    fa_path, s.sample_name, update
+                    fa_path, s.sample_name, update, create_fasta_drs
                 ).digest
             else:
-                results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
+                results[s.fasta] = self.add_from_fasta_file(fa_path, update, create_fasta_drs).digest
             elapsed_time = time.time() - start_time  # Calculate elapsed time
 
             _LOGGER.info(f"Loaded in {elapsed_time:.2f} seconds")
@@ -632,6 +678,76 @@ class AttributeAgent(object):
             }
 
 
+class FastaDrsAgent:
+    """
+    Agent for interacting with database of FASTA DRS objects
+    """
+
+    def __init__(
+        self, engine: SqlalchemyDatabaseEngine, url_prefix: Optional[str] = None
+    ) -> None:
+        self.engine = engine
+        self.url_prefix = url_prefix
+
+    def get(self, digest: str) -> FastaDrsObject:
+        """Get a FastaDrsObject by its digest (object_id)"""
+        with Session(self.engine) as session:
+            statement = select(FastaDrsObject).where(FastaDrsObject.id == digest)
+            results = session.exec(statement)
+            response = results.first()
+            if not response:
+                raise ValueError(f"FastaDrsObject with id '{digest}' not found")
+            return response
+
+    def add(self, fasta_drs: FastaDrsObject) -> FastaDrsObject:
+        """Add a FastaDrsObject to the database"""
+        with Session(self.engine, expire_on_commit=False) as session:
+            with session.no_autoflush:
+                existing = session.get(FastaDrsObject, fasta_drs.id)
+                if existing:
+                    return existing
+                session.add(fasta_drs)
+                session.commit()
+                return fasta_drs
+
+    def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
+        """List FastaDrsObjects with pagination"""
+        with Session(self.engine) as session:
+            list_stmt = select(FastaDrsObject).offset(offset).limit(limit)
+            cnt_stmt = select(func.count(FastaDrsObject.id))
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            drs_objs = list_res.all()
+            return {
+                "pagination": {"page": int(offset / limit), "page_size": limit, "total": count},
+                "results": drs_objs,
+            }
+
+    def add_access_method(self, digest: str, access_method: AccessMethod) -> FastaDrsObject:
+        """
+        Add an access method to an existing FastaDrsObject.
+
+        Args:
+            digest: The digest (object_id) of the DRS object
+            access_method: The AccessMethod to add
+
+        Returns:
+            The updated FastaDrsObject
+        """
+        with Session(self.engine, expire_on_commit=False) as session:
+            drs_obj = session.get(FastaDrsObject, digest)
+            if not drs_obj:
+                raise ValueError(f"FastaDrsObject with id '{digest}' not found")
+            # Append to existing access_methods
+            if drs_obj.access_methods is None:
+                drs_obj.access_methods = []
+            drs_obj.access_methods.append(access_method)
+            session.add(drs_obj)
+            session.commit()
+            return drs_obj
+
+
 class RefgetDBAgent(object):
     """
     Primary aggregator agent, interface to all other agents
@@ -649,6 +765,7 @@ class RefgetDBAgent(object):
         postgres_str: Optional[str] = None,
         schema=SEQCOL_SCHEMA_PATH,
         inherent_attrs: List[str] = DEFAULT_INHERENT_ATTRS,
+        fasta_drs_url_prefix: Optional[str] = None,
     ):  # = "sqlite:///foo.db"
         if engine is not None:
             self.engine = engine
@@ -701,9 +818,10 @@ class RefgetDBAgent(object):
             self.inherent_attrs = inherent_attrs
 
         self.__sequence = SequenceAgent(self.engine)
-        self.__seqcol = SequenceCollectionAgent(self.engine, self.inherent_attrs)
+        self.__seqcol = SequenceCollectionAgent(self.engine, self.inherent_attrs, self)
         self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
+        self.__fasta_drs = FastaDrsAgent(self.engine, fasta_drs_url_prefix)
 
     def compare_digests(self, digestA: str, digestB: str) -> dict:
         A = self.seqcol.get(digestA, return_format="level2")
@@ -776,6 +894,10 @@ class RefgetDBAgent(object):
     @property
     def attribute(self) -> AttributeAgent:
         return self.__attribute
+
+    @property
+    def fasta_drs(self) -> FastaDrsAgent:
+        return self.__fasta_drs
 
     def __str__(self) -> str:
         return f"RefgetDBAgent. Connection to database: '{self.engine}'"

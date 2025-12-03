@@ -91,6 +91,11 @@ class FastaDrsObject(DrsObject, table=True):
     id: str = Field(primary_key=True)
     self_uri: Optional[str] = None  # Override to make optional for storage
 
+    # FAI index fields
+    line_bases: Optional[int] = None  # Bases per line (e.g., 60)
+    extra_line_bytes: Optional[int] = None  # Extra bytes per line for newline (1 for \n, 2 for \r\n)
+    offsets: Optional[List[int]] = Field(default=None, sa_column=Column(JSON))  # Byte offset per sequence
+
     def to_response(self, base_uri: str = None) -> "FastaDrsObject":
         """
         Return a copy of this object with self_uri populated for API response.
@@ -106,6 +111,43 @@ class FastaDrsObject(DrsObject, table=True):
             return self
 
         return self.model_copy(update={"self_uri": f"{base_uri}/{self.id}"})
+
+    @classmethod
+    def _compute_fai_index(cls, fasta_file: str) -> dict:
+        """
+        Compute FAI index data for a FASTA file.
+
+        Returns:
+            dict with keys: line_bases, extra_line_bytes, offsets
+        """
+        offsets = []
+        line_bases = None
+        extra_line_bytes = None
+
+        with open(fasta_file, "rb") as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                if line.startswith(b">"):
+                    # Record offset to start of sequence data
+                    offset = f.tell()
+                    offsets.append(offset)
+
+                    # Read first sequence line to get line_bases/extra_line_bytes
+                    first_line = f.readline()
+                    if first_line and not first_line.startswith(b">"):
+                        line_bytes = len(first_line)
+                        bases = len(first_line.rstrip(b"\r\n"))
+                        if line_bases is None:
+                            line_bases = bases
+                            extra_line_bytes = line_bytes - bases
+
+        return {
+            "line_bases": line_bases,
+            "extra_line_bytes": extra_line_bytes,
+            "offsets": offsets,
+        }
 
     @classmethod
     def from_fasta_file(cls, fasta_file: str, digest: str = None) -> "FastaDrsObject":
@@ -134,6 +176,9 @@ class FastaDrsObject(DrsObject, table=True):
         sha256_checksum_val = sha256.hexdigest()
         md5_checksum_val = md5.hexdigest()
 
+        # Compute FAI index
+        fai_index = cls._compute_fai_index(fasta_file)
+
         now = datetime.now(timezone.utc)
 
         if digest is None:
@@ -157,6 +202,9 @@ class FastaDrsObject(DrsObject, table=True):
             access_methods=[],  # Populate this if you host the file somewhere
             description=f"DRS object for {os.path.basename(fasta_file)}",
             aliases=[os.path.basename(fasta_file).split(".")[0]],
+            line_bases=fai_index["line_bases"],
+            extra_line_bytes=fai_index["extra_line_bytes"],
+            offsets=fai_index["offsets"],
         )
 
 
