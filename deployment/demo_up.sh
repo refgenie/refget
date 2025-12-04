@@ -1,6 +1,9 @@
 #!/bin/bash
 # This script starts a local demo of the SeqCol API service and loads the demo data
 
+# Use local source instead of installed package
+export PYTHONPATH="$(pwd):$PYTHONPATH"
+
 # Function to handle cleanup on Ctrl+C
 cleanup() {
     echo "Stopping uvicorn (PID: $PID)..."

@@ -5,13 +5,39 @@ import hashlib
 
 from copy import copy
 from datetime import datetime, timezone
+from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
 from typing import List, Optional, Dict, Any, Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 from .digest_functions import sha512t24u_digest
+
+
+class PydanticJSON(TypeDecorator):
+    """
+    A JSON type that knows how to serialize Pydantic/SQLModel objects.
+    """
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        """Convert Python objects to JSON-serializable form before storing."""
+        if value is None:
+            return None
+        if isinstance(value, list):
+            return [self._serialize_item(item) for item in value]
+        return self._serialize_item(value)
+
+    def _serialize_item(self, item):
+        """Serialize a single item."""
+        if hasattr(item, "model_dump"):
+            return item.model_dump(exclude_none=True)
+        return item
+
+
 from .const import DEFAULT_INHERENT_ATTRS, DEFAULT_PASSTHRU_ATTRS, SEQCOL_SCHEMA_PATH
 from .exceptions import InvalidSeqColError
 from .utilities import (
@@ -42,12 +68,15 @@ class AccessMethod(SQLModel):
     Describes a method for accessing object bytes, including the protocol type
     (e.g., https, s3, gs) and either a direct URL or an access_id for the /access endpoint.
     At least one of access_url or access_id must be provided.
+
+    DRS 1.5.0 adds the 'cloud' field to explicitly specify the cloud provider.
     """
 
     type: Literal["s3", "gs", "ftp", "gsiftp", "globus", "htsget", "https", "file"]
     access_url: Optional[AccessURL] = None
     region: Optional[str] = None
     access_id: Optional[str] = None
+    cloud: Optional[str] = None  # e.g., "aws", "gcp", "azure", "backblaze"
 
 
 class Checksum(SQLModel, table=False):
@@ -71,14 +100,30 @@ class DrsObject(SQLModel, table=False):
     self_uri: str
     size: int
     created_time: datetime
-    checksums: List[Checksum] = Field(default_factory=list, sa_column=Column(JSON))
+    checksums: List[Checksum] = Field(default_factory=list, sa_column=Column(PydanticJSON))
     name: Optional[str] = None
     updated_time: Optional[datetime] = None
     version: Optional[str] = None
     mime_type: Optional[str] = None
-    access_methods: List[AccessMethod] = Field(default_factory=list, sa_column=Column(JSON))
+    access_methods: List[AccessMethod] = Field(default_factory=list, sa_column=Column(PydanticJSON))
     description: Optional[str] = None
     aliases: List[str] = Field(default_factory=list, sa_column=Column(JSON))
+
+    @field_validator("checksums", mode="before")
+    @classmethod
+    def coerce_checksums(cls, v):
+        """Coerce dicts to Checksum objects when loading from JSON."""
+        if v is None:
+            return []
+        return [Checksum.model_validate(item) if isinstance(item, dict) else item for item in v]
+
+    @field_validator("access_methods", mode="before")
+    @classmethod
+    def coerce_access_methods(cls, v):
+        """Coerce dicts to AccessMethod objects when loading from JSON."""
+        if v is None:
+            return []
+        return [AccessMethod.model_validate(item) if isinstance(item, dict) else item for item in v]
 
 
 class FastaDrsObject(DrsObject, table=True):
@@ -200,7 +245,7 @@ class FastaDrsObject(DrsObject, table=True):
             mime_type="application/fasta",  # You could use `mimetypes` to guess if needed
             checksums=[
                 Checksum(type="sha-256", checksum=sha256_checksum_val),
-                Checksum(type="refget.seqcol", checksum=digest),  # Refget digest
+                Checksum(type="refget.seqcol", checksum=digest),
                 Checksum(type="md5", checksum=md5_checksum_val),
             ],
             access_methods=[],  # Populate this if you host the file somewhere

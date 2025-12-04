@@ -1,25 +1,24 @@
 import json
 import os
 import pephubclient
-import time  # Add this import
 
+from refget import add_fasta_pep
 from refget.agents import RefgetDBAgent
 
 phc = pephubclient.PEPHubClient()
 p = phc.load_project("nsheff/pangenome_fasta")
 fa_root = os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_fasta/2023_hprc_draft")
 
-rga = RefgetDBAgent()
-total_files = len(p.samples)
-for i, s in enumerate(p.samples, 1):
-    fa_path = os.path.join(fa_root, s.fasta)
-    print(f"Loading {fa_path} ({i} of {total_files})")
+# Cloud storage configuration from environment (JSON array)
+storage = json.loads(os.environ.get("FASTA_STORAGE_LOCATIONS", "[]")) or None
 
-    start_time = time.time()  # Record start time
-    rga.seqcol.add_from_fasta_file(fa_path, update=True)
-    elapsed_time = time.time() - start_time  # Calculate elapsed time
+# Initialize database agent
+dbc = RefgetDBAgent()
+print(f"SQL Engine: {dbc.engine}")
 
-    print(f"Loaded in {elapsed_time:.2f} seconds")
+# Add FASTAs to database (and optionally upload to cloud storage)
+print("Adding FASTAs to database...")
+results = add_fasta_pep(p, fa_root, dbagent=dbc, storage=storage)
 
 
 # Write out the results to a file:

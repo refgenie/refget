@@ -386,7 +386,7 @@ pangenome_router = APIRouter()
 
 
 @pangenome_router.get(
-    "/list/pangenomes",
+    "/list/pangenome",
     summary="List pangenomes on the server, paged by offset",
     tags=["Discovering data"],
     include_in_schema=True,
@@ -446,7 +446,7 @@ fasta_drs_router = APIRouter()
 @fasta_drs_router.get(
     "/objects/{object_id}",
     summary="Get DRS object by ID",
-    tags=["DRS"],
+    tags=["FASTA DRS"],
 )
 async def get_drs_object(
     object_id: str,
@@ -463,19 +463,33 @@ async def get_drs_object(
 @fasta_drs_router.get(
     "/objects/{object_id}/access/{access_id}",
     summary="Get access URL for DRS object",
-    tags=["DRS"],
+    tags=["FASTA DRS"],
+    include_in_schema=False,  # Hidden: only needed when using access_id instead of access_url
 )
 async def get_drs_access_url(
     object_id: str,
     access_id: str,
     dbagent=Depends(get_dbagent),
 ):
-    """GA4GH DRS endpoint to get access URL"""
+    """
+    GA4GH DRS endpoint to get access URL.
+
+    This endpoint is used when access methods specify an access_id instead of
+    a direct access_url. It allows for dynamic URL generation (e.g., signed URLs)
+    or additional authorization checks.
+
+    Note: If access methods provide access_url directly, clients should use
+    those URLs and don't need to call this endpoint.
+    """
     try:
         drs_obj = dbagent.fasta_drs.get(object_id)
         for method in drs_obj.access_methods:
-            if method.access_id == access_id:
-                return method.access_url
+            # Handle both dict and object access
+            method_access_id = method.get("access_id") if isinstance(method, dict) else method.access_id
+            method_access_url = method.get("access_url") if isinstance(method, dict) else method.access_url
+
+            if method_access_id == access_id:
+                return method_access_url
         raise HTTPException(status_code=404, detail="Access ID not found")
     except ValueError:
         raise HTTPException(status_code=404, detail="Object not found")
@@ -483,8 +497,8 @@ async def get_drs_access_url(
 
 @fasta_drs_router.get(
     "/service-info",
-    summary="DRS service info",
-    tags=["DRS"],
+    summary="FASTA DRS service info",
+    tags=["FASTA DRS"],
 )
 async def drs_service_info():
     """GA4GH DRS service-info endpoint"""
@@ -501,7 +515,7 @@ async def drs_service_info():
 @fasta_drs_router.get(
     "/objects/{object_id}/index",
     summary="Get FAI index for FASTA file",
-    tags=["DRS"],
+    tags=["FASTA DRS"],
 )
 async def get_fasta_index(
     object_id: str,

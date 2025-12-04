@@ -739,10 +739,10 @@ class FastaDrsAgent:
             drs_obj = session.get(FastaDrsObject, digest)
             if not drs_obj:
                 raise ValueError(f"FastaDrsObject with id '{digest}' not found")
-            # Append to existing access_methods
-            if drs_obj.access_methods is None:
-                drs_obj.access_methods = []
-            drs_obj.access_methods.append(access_method)
+            # Create a new list to ensure SQLAlchemy detects the change
+            current_methods = list(drs_obj.access_methods) if drs_obj.access_methods else []
+            current_methods.append(access_method)
+            drs_obj.access_methods = current_methods
             session.add(drs_obj)
             session.commit()
             return drs_obj

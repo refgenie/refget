@@ -23,8 +23,8 @@ export const fetchPangenomeLevels = async (
 };
 
 export const fetchSeqColList = async () => {
-  const url = `${API_BASE}/list/collections?page_size=10&page=0`;
-  const url2 = `${API_BASE}/list/pangenomes?page_size=5`;
+  const url = `${API_BASE}/list/collection?page_size=10&page=0`;
+  const url2 = `${API_BASE}/list/pangenome?page_size=5`;
   const url3 = `${API_BASE}/list/attributes/name_length_pairs?page_size=5`;
   let resps = [
     fetch(url).then((response) => response.json()),
@@ -35,7 +35,7 @@ export const fetchSeqColList = async () => {
 };
 
 export const fetchAllSeqCols = async () => {
-  const url = `${API_BASE}/list/collections?page_size=1000&page=0`;
+  const url = `${API_BASE}/list/collection?page_size=1000&page=0`;
   let resps = [fetch(url).then((response) => response.json())];
   return Promise.all(resps);
 };
@@ -89,7 +89,7 @@ export const fetchComparisonJSON = async (data, digest) => {
 };
 
 export const fetchAttribute = async (attribute, digest) => {
-  const url = `${API_BASE}/list/collections/${attribute}/${digest}`;
+  const url = `${API_BASE}/list/collection?${attribute}=${digest}`;
   const url2 = `${API_BASE}/attribute/collection/${attribute}/${digest}`;
   let resps = [
     fetch(url).then((response) => response.json()),

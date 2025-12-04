@@ -11,6 +11,16 @@ from .models import SequenceCollection
 
 from .refget_store import *
 
+# Public API for adding FASTA files
+from .refget import (
+    add_fasta,
+    add_fasta_pep,
+    add_access_method,
+    # Aliases for backwards compatibility
+    load_fasta,
+    load_fasta_pep,
+)
+
 try:
     # Requires optional dependencies, so we catch the ImportError
     from .refget_router import create_refget_router, get_dbagent, fasta_drs_router
