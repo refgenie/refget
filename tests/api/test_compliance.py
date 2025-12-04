@@ -1,4 +1,18 @@
-# Compliance suite for the SeqCol API
+# Compliance suite for the GA4GH SeqCol API v1.0.0
+#
+# Endpoints tested:
+#   - GET /service-info
+#   - GET /collection/:digest (level 1 and level 2)
+#   - GET /comparison/:digest1/:digest2
+#   - POST /comparison/:digest
+#   - GET /attribute/collection/:attr/:digest
+#   - GET /list/collection (with pagination and filtering)
+#   - GET /list/attributes/:attr
+#
+# Also validates:
+#   - Level 1 returns digest strings, level 2 returns arrays
+#   - Transient attributes (sorted_name_length_pairs) in level 1 only
+#   - Pagination structure (results + pagination fields)
 #
 # Tests fall into two categories:
 # 1. Content tests (collection, comparison, attribute): compare full responses to known fixtures
@@ -148,6 +162,9 @@ def check_list_collections(api_root):
         server_answer = json.loads(res.content)
         assert "results" in server_answer, "list/collection missing 'results' field"
         assert isinstance(server_answer["results"], list), "list/collection 'results' should be a list"
+        assert "pagination" in server_answer, "list/collection missing 'pagination' field"
+        assert "page" in server_answer["pagination"], "pagination missing 'page'"
+        assert "page_size" in server_answer["pagination"], "pagination missing 'page_size'"
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
         assert False, f"List collections endpoint failed: {url}"
@@ -163,6 +180,24 @@ def check_list_attributes(api_root, attribute_name):
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
         assert False, f"List attributes endpoint failed: {url}"
+
+
+def check_collection_structure(api_root, digest):
+    # Level 1: inherent attributes should be digest strings
+    level1 = requests.get(f"{api_root}/collection/{digest}?level=1").json()
+    for attr in ["names", "lengths", "sequences"]:
+        assert isinstance(level1[attr], str), f"Level 1 {attr} should be digest string"
+
+    # Level 1 should include transient attribute
+    assert "sorted_name_length_pairs" in level1, "Level 1 missing sorted_name_length_pairs"
+
+    # Level 2: inherent attributes should be arrays
+    level2 = requests.get(f"{api_root}/collection/{digest}?level=2").json()
+    for attr in ["names", "lengths", "sequences"]:
+        assert isinstance(level2[attr], list), f"Level 2 {attr} should be array"
+
+    # Level 2 should NOT include transient attribute
+    assert "sorted_name_length_pairs" not in level2, "Level 2 should not have sorted_name_length_pairs"
 
 
 def check_comparison_post(api_root, response_file, test_data_root):
@@ -228,6 +263,11 @@ class TestAPI:
     @pytest.mark.parametrize("response_file", COMPARISON_TESTS)
     def test_comparison_post_endpoint(self, api_root, response_file, test_data_root):
         check_comparison_post(api_root, response_file, test_data_root)
+
+    @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
+    def test_collection_structure(self, api_root, fa_file, fa_digest_bundle):
+        digest = fa_digest_bundle["top_level_digest"]
+        check_collection_structure(api_root, digest)
 
     @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
     def test_collections(self, api_root, fa_file, fa_digest_bundle):
