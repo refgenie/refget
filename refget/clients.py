@@ -124,6 +124,124 @@ class SequenceCollectionClient(RefgetClient):
         if raise_errors is None:
             raise_errors = __name__ == "__main__"
         self.raise_errors = raise_errors
+        self._fasta_client = None
+
+    def _get_fasta_helper(self) -> "FastaDrsClient":
+        """Get or create the internal FASTA DRS helper."""
+        if self._fasta_client is None:
+            fasta_urls = [f"{url}/fasta" for url in self.urls]
+            self._fasta_client = FastaDrsClient(urls=fasta_urls, raise_errors=self.raise_errors)
+            self._fasta_client._seqcol_client = self
+        return self._fasta_client
+
+    def get_fasta(self, digest: str) -> Optional[dict]:
+        """
+        Get DRS object metadata for a FASTA file.
+
+        Args:
+            digest (str): The sequence collection digest (which is also the DRS object ID)
+
+        Returns:
+            (dict): DRS object with id, self_uri, size, checksums, access_methods, etc.
+        """
+        return self._get_fasta_helper().get_object(digest)
+
+    def get_fasta_index(self, digest: str) -> Optional[dict]:
+        """
+        Get FAI index data for a FASTA file.
+
+        Args:
+            digest (str): The sequence collection digest
+
+        Returns:
+            (dict): Dict with line_bases, extra_line_bytes, offsets
+        """
+        return self._get_fasta_helper().get_index(digest)
+
+    def download_fasta(self, digest: str, dest_path: str = None, access_id: str = None) -> str:
+        """
+        Download the FASTA file to a local path.
+
+        Args:
+            digest (str): The sequence collection digest
+            dest_path (str, optional): Destination file path. If None, uses object name.
+            access_id (str, optional): Specific access method to use. If None, tries all.
+
+        Returns:
+            (str): Path to downloaded file
+
+        Raises:
+            ValueError: If no access methods available or specified access_id not found
+        """
+        return self._get_fasta_helper().download(digest, dest_path, access_id)
+
+    def build_fai(self, digest: str) -> str:
+        """
+        Build a complete .fai index file content for a FASTA.
+
+        FAI format per line: NAME\\tLENGTH\\tOFFSET\\tLINEBASES\\tLINEWIDTH
+
+        Args:
+            digest (str): The sequence collection digest
+
+        Returns:
+            (str): String content of the .fai file
+        """
+        return self._get_fasta_helper().build_fai(digest, seqcol_client=self)
+
+    def write_fai(self, digest: str, dest_path: str) -> str:
+        """
+        Write a .fai index file for a FASTA.
+
+        Args:
+            digest (str): The sequence collection digest
+            dest_path (str): Path to write the .fai file
+
+        Returns:
+            (str): Path to the written file
+        """
+        return self._get_fasta_helper().write_fai(digest, dest_path, seqcol_client=self)
+
+    def build_chrom_sizes(self, digest: str) -> str:
+        """
+        Build a chrom.sizes file content for a sequence collection.
+
+        Format per line: NAME\\tLENGTH
+
+        Args:
+            digest (str): The sequence collection digest
+
+        Returns:
+            (str): String content of the chrom.sizes file
+        """
+        collection = self.get_collection(digest, level=2)
+        if not collection:
+            raise ValueError(f"No collection found for {digest}")
+
+        names = collection["names"]
+        lengths = collection["lengths"]
+
+        lines = []
+        for name, length in zip(names, lengths):
+            lines.append(f"{name}\t{length}")
+
+        return "\n".join(lines) + "\n"
+
+    def write_chrom_sizes(self, digest: str, dest_path: str) -> str:
+        """
+        Write a chrom.sizes file for a sequence collection.
+
+        Args:
+            digest (str): The sequence collection digest
+            dest_path (str): Path to write the chrom.sizes file
+
+        Returns:
+            (str): Path to the written file
+        """
+        content = self.build_chrom_sizes(digest)
+        with open(dest_path, "w") as f:
+            f.write(content)
+        return dest_path
 
     def get_collection(self, digest: str, level: int = 2) -> Optional[dict]:
         """
@@ -139,23 +257,23 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = f"/collection/{digest}?level={level}"
         return _try_urls(self.urls, endpoint)
 
-    def get_attribute(self, attribute: str, digest: str, level: int = 2) -> Optional[dict]:
+    def get_attribute(self, attribute: str, digest: str) -> Optional[dict]:
         """
-        Retrieves a specific attribute for a given digest and detail level.
+        Retrieves a specific attribute value by its digest.
 
         Args:
-            attribute (str): The attribute to retrieve.
-            digest (str): The digest of the attribute.
+            attribute (str): The attribute name (e.g., "names", "lengths", "sequences").
+            digest (str): The level 1 digest of the attribute.
 
         Returns:
-            (dict): The JSON response containing the attribute.
+            (dict): The JSON response containing the attribute value.
         """
         endpoint = f"/attribute/collection/{attribute}/{digest}"
         return _try_urls(self.urls, endpoint)
 
     def compare(self, digest1: str, digest2: str) -> Optional[dict]:
         """
-        Compares two sequence collections.
+        Compares two sequence collections hosted on the server.
 
         Args:
             digest1 (str): The digest of the first sequence collection.
@@ -167,12 +285,25 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = f"/comparison/{digest1}/{digest2}"
         return _try_urls(self.urls, endpoint)
 
+    def compare_local(self, digest: str, local_collection: dict) -> Optional[dict]:
+        """
+        Compares a server-hosted sequence collection with a local collection.
+
+        Args:
+            digest (str): The digest of the server-hosted sequence collection.
+            local_collection (dict): A level 2 sequence collection representation.
+
+        Returns:
+            (dict): The JSON response containing the comparison.
+        """
+        endpoint = f"/comparison/{digest}"
+        return _try_urls(self.urls, endpoint, method="POST", json=local_collection)
+
     def list_collections(
         self,
         page: Optional[int] = None,
         page_size: Optional[int] = None,
-        attribute: Optional[str] = None,
-        attribute_digest: Optional[str] = None,
+        **filters,
     ) -> Optional[dict]:
         """
         Lists all available sequence collections with optional paging and attribute filtering support.
@@ -180,8 +311,8 @@ class SequenceCollectionClient(RefgetClient):
         Args:
             page (int, optional): The page number to retrieve. Defaults to None.
             page_size (int, optional): The number of items per page. Defaults to None.
-            attribute (str, optional): The attribute to filter by. Defaults to None.
-            attribute_digest (str, optional): The attribute digest to filter by. Defaults to None.
+            **filters: Optional attribute filters (e.g., names="abc123", lengths="def456").
+                      Values should be level 1 digests of the attributes.
 
         Returns:
             (dict): The JSON response containing the list of available sequence collections.
@@ -191,12 +322,9 @@ class SequenceCollectionClient(RefgetClient):
             params["page"] = page
         if page_size is not None:
             params["page_size"] = page_size
+        params.update(filters)
 
-        if attribute and attribute_digest:
-            endpoint = f"/list/collections/{attribute}/{attribute_digest}"
-        else:
-            endpoint = "/list/collections"
-
+        endpoint = "/list/collection"
         return _try_urls(self.urls, endpoint, params=params)
 
     def list_attributes(
@@ -233,8 +361,202 @@ class SequenceCollectionClient(RefgetClient):
         return _try_urls(self.urls, endpoint)
 
 
+
 class PangenomeClient(RefgetClient):
     pass
+
+
+class FastaDrsClient(RefgetClient):
+    """
+    A client for interacting with FASTA files via GA4GH DRS endpoints.
+    """
+
+    def __init__(
+        self,
+        urls: list[str] = ["https://seqcolapi.databio.org/fasta"],
+        raise_errors: Optional[bool] = None,
+    ) -> None:
+        """
+        Initializes the FASTA DRS client.
+
+        Args:
+            urls (list, optional): A list of base URLs of the FASTA DRS API.
+                Defaults to ["https://seqcolapi.databio.org/fasta"].
+            raise_errors (bool, optional): Whether to raise errors or log them.
+                Defaults to None, which will guess.
+
+        Attributes:
+            urls (list): The list of base URLs of the FASTA DRS API.
+        """
+        self.urls = [url.rstrip("/") for url in urls]
+        if raise_errors is None:
+            raise_errors = __name__ == "__main__"
+        self.raise_errors = raise_errors
+
+    def get_object(self, digest: str) -> Optional[dict]:
+        """
+        Get DRS object metadata for a FASTA file.
+
+        Args:
+            digest (str): The sequence collection digest (which is also the DRS object ID)
+
+        Returns:
+            (dict): DRS object with id, self_uri, size, checksums, access_methods, etc.
+        """
+        endpoint = f"/objects/{digest}"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def get_index(self, digest: str) -> Optional[dict]:
+        """
+        Get FAI index data for a FASTA file.
+
+        Args:
+            digest (str): The sequence collection digest
+
+        Returns:
+            (dict): Dict with line_bases, extra_line_bytes, offsets
+        """
+        endpoint = f"/objects/{digest}/index"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def get_access_url(self, digest: str, access_id: str) -> Optional[dict]:
+        """
+        Get access URL for a specific access method.
+
+        Args:
+            digest (str): The sequence collection digest
+            access_id (str): The access ID from the access method
+
+        Returns:
+            (dict): Access URL object
+        """
+        endpoint = f"/objects/{digest}/access/{access_id}"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def service_info(self) -> Optional[dict]:
+        """
+        Get DRS service info.
+
+        Returns:
+            (dict): The service information.
+        """
+        endpoint = "/service-info"
+        return _try_urls(self.urls, endpoint)
+
+    def download(self, digest: str, dest_path: str = None, access_id: str = None) -> str:
+        """
+        Download the FASTA file to a local path.
+
+        Args:
+            digest (str): The sequence collection digest
+            dest_path (str, optional): Destination file path. If None, uses object name.
+            access_id (str, optional): Specific access method to use. If None, tries all.
+
+        Returns:
+            (str): Path to downloaded file
+
+        Raises:
+            ValueError: If no access methods available or specified access_id not found
+        """
+        drs_obj = self.get_object(digest)
+        if not drs_obj or not drs_obj.get("access_methods"):
+            raise ValueError(f"No access methods for {digest}")
+
+        # Filter to specific access method if requested
+        methods = drs_obj["access_methods"]
+        if access_id:
+            methods = [m for m in methods if m.get("access_id") == access_id]
+            if not methods:
+                raise ValueError(f"Access method '{access_id}' not found for {digest}")
+
+        # Find first accessible URL
+        for method in methods:
+            url = None
+            if method.get("access_url"):
+                access_url = method["access_url"]
+                url = access_url.get("url") if isinstance(access_url, dict) else access_url
+            elif method.get("access_id"):
+                access_info = self.get_access_url(digest, method["access_id"])
+                url = access_info.get("url") if access_info else None
+
+            if url:
+                if dest_path is None:
+                    dest_path = drs_obj.get("name", f"{digest}.fa")
+
+                response = requests.get(url, stream=True)
+                response.raise_for_status()
+                with open(dest_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                return dest_path
+
+        raise ValueError(f"No accessible URLs for {digest}")
+
+    def build_fai(self, digest: str, seqcol_client: "SequenceCollectionClient" = None) -> str:
+        """
+        Build a complete .fai index file content for a FASTA.
+
+        FAI format per line: NAME\tLENGTH\tOFFSET\tLINEBASES\tLINEWIDTH
+
+        Args:
+            digest (str): The sequence collection digest
+            seqcol_client (SequenceCollectionClient, optional): SequenceCollectionClient
+                to use. If None, uses parent client or creates one.
+
+        Returns:
+            (str): String content of the .fai file
+        """
+        # Get FAI index data
+        index = self.get_index(digest)
+        if not index:
+            raise ValueError(f"No FAI index for {digest}")
+
+        # Get sequence collection for names/lengths
+        if seqcol_client is None:
+            # Use parent client if we were created via SequenceCollectionClient.fasta
+            if hasattr(self, "_seqcol_client") and self._seqcol_client is not None:
+                seqcol_client = self._seqcol_client
+            else:
+                # Derive seqcol URL from fasta URL (strip /fasta suffix)
+                base_urls = [url.rsplit("/fasta", 1)[0] for url in self.urls]
+                seqcol_client = SequenceCollectionClient(urls=base_urls)
+
+        collection = seqcol_client.get_collection(digest, level=2)
+        if not collection:
+            raise ValueError(f"No collection found for {digest}")
+
+        names = collection["names"]
+        lengths = collection["lengths"]
+        offsets = index["offsets"]
+        line_bases = index["line_bases"]
+        line_width = line_bases + index["extra_line_bytes"]
+
+        # Build FAI lines
+        lines = []
+        for name, length, offset in zip(names, lengths, offsets):
+            # FAI format: NAME LENGTH OFFSET LINEBASES LINEWIDTH
+            lines.append(f"{name}\t{length}\t{offset}\t{line_bases}\t{line_width}")
+
+        return "\n".join(lines) + "\n"
+
+    def write_fai(
+        self, digest: str, dest_path: str, seqcol_client: "SequenceCollectionClient" = None
+    ) -> str:
+        """
+        Write a .fai index file for a FASTA.
+
+        Args:
+            digest (str): The sequence collection digest
+            dest_path (str): Path to write the .fai file
+            seqcol_client (SequenceCollectionClient, optional): SequenceCollectionClient to use
+
+        Returns:
+            (str): Path to the written file
+        """
+        fai_content = self.build_fai(digest, seqcol_client)
+        with open(dest_path, "w") as f:
+            f.write(fai_content)
+        return dest_path
 
 
 # Utilities
@@ -265,7 +587,9 @@ def _wrap_response(response: requests.Response) -> dict | str:
 def _try_urls(
     urls: list[str],
     endpoint: str,
+    method: str = "GET",
     params: Optional[dict] = None,
+    json: Optional[dict] = None,
     raise_errors: bool = True,
 ) -> Optional[dict | str]:
     """
@@ -274,7 +598,10 @@ def _try_urls(
     Args:
         urls (list): A list of base URLs to try.
         endpoint (str): The endpoint to append to the base URL.
-        params (dict, optional): The query parameters to include in the request.
+        method (str): HTTP method ("GET" or "POST"). Defaults to "GET".
+        params (dict, optional): Query parameters for GET requests.
+        json (dict, optional): JSON body for POST requests.
+        raise_errors (bool): Whether to raise errors or log them.
 
     Returns:
         (dict): The JSON response or None if all URLs fail.
@@ -283,9 +610,12 @@ def _try_urls(
     for base_url in urls:
         url = f"{base_url}{endpoint}"
         try:
-            response = requests.get(url, params=params)
+            if method.upper() == "POST":
+                response = requests.post(url, json=json)
+            else:
+                response = requests.get(url, params=params)
             result = _wrap_response(response)
-            _LOGGER.debug(f"Response recieved from {base_url}")
+            _LOGGER.debug(f"Response received from {base_url}")
             return result
         except (
             requests.exceptions.ConnectionError,

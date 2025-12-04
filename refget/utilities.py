@@ -362,7 +362,7 @@ def seqcol_digest(
         str: The sequence collection digest
     """
 
-    validate_seqcol(seqcol_dict)
+    # Validation removed - belongs at API boundaries, not internal utility functions
     level1_dict = seqcol_dict_to_level1_dict(seqcol_dict)
     seqcol_digest = level1_dict_to_seqcol_digest(level1_dict, inherent_attrs)
     return seqcol_digest

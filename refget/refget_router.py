@@ -27,7 +27,6 @@ from .agents import RefgetDBAgent
 
 from .examples import *
 
-from henge import NotFoundException
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -193,7 +192,7 @@ async def compare_2_digests(
     result["digests"] = {"a": collection_digest1, "b": collection_digest2}
     try:
         result.update(dbagent.compare_digests(collection_digest1, collection_digest2))
-    except NotFoundException as e:
+    except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
@@ -323,7 +322,7 @@ async def compare_1_digest(
     result["digests"] = {"a": collection_digest1, "b": "POSTed seqcol"}
     try:
         result.update(dbagent.compare_1_digest(collection_digest1, seqcolB))
-    except NotFoundException as e:
+    except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
@@ -505,7 +504,7 @@ async def drs_service_info():
     return {
         "id": "org.databio.seqcolapi.drs",
         "name": "SeqCol API DRS Service",
-        "type": {"group": "org.ga4gh", "artifact": "drs", "version": "1.4.0"},
+        "type": {"group": "org.ga4gh", "artifact": "drs", "version": "1.5.0"},
         "description": "DRS service for FASTA files indexed by refget sequence collection digests",
         "organization": {"name": "databio", "url": "https://databio.org"},
         "version": "1.0.0",

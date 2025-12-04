@@ -1,4 +1,3 @@
-import henge
 import json
 import os
 import logging
@@ -10,7 +9,6 @@ from .agents import RefgetDBAgent
 
 _LOGGER = logging.getLogger(__name__)
 
-henge.ITEM_TYPE = "_item_type"
 SCHEMA_FILEPATH = os.path.join(os.path.dirname(__file__), "schemas")
 
 sequence_schema = """description: "Schema for a single raw sequence"
@@ -273,7 +271,6 @@ def _upload_to_s3(fasta_path, bucket, prefix="", access_key=None, secret_key=Non
     if region:
         client_kwargs["region_name"] = region
 
-    print(f"DEBUG: endpoint_url={client_kwargs.get('endpoint_url')}, access_key={client_kwargs.get('aws_access_key_id', 'NOT SET')[:8] if client_kwargs.get('aws_access_key_id') else 'NOT SET'}...")
     s3 = boto3.client("s3", **client_kwargs)
     key = os.path.join(prefix, os.path.basename(fasta_path)) if prefix else os.path.basename(fasta_path)
 

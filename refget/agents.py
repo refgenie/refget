@@ -1,9 +1,14 @@
+from __future__ import annotations
+
 import json
 import os
-import peppy
 import requests
 
+from typing import TYPE_CHECKING
 from sqlmodel import create_engine, select, Session, delete, func, SQLModel
+
+if TYPE_CHECKING:
+    import peppy
 from sqlalchemy.orm import selectinload
 from sqlalchemy import URL
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
@@ -420,7 +425,7 @@ class SequenceCollectionAgent(object):
         return seqcol
 
     def add_from_fasta_pep(
-        self, pep: peppy.Project, fa_root: str, update: bool = False, create_fasta_drs: bool = True
+        self, pep: "peppy.Project", fa_root: str, update: bool = False, create_fasta_drs: bool = True
     ) -> dict:
         """
         Given a path to a PEP file and a root directory containing the fasta files,
@@ -602,7 +607,7 @@ class PangenomeAgent(object):
                 return pg_simplified
 
     def add_from_fasta_pep(
-        self, pep: peppy.Project, fa_root: str, update: bool = False
+        self, pep: "peppy.Project", fa_root: str, update: bool = False
     ) -> Pangenome:
         # First add in the FASTA files individually, and build a dictionary of the results
         pangenome_obj = {}
