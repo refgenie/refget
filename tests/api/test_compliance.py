@@ -161,7 +161,9 @@ def check_list_collections(api_root):
     try:
         server_answer = json.loads(res.content)
         assert "results" in server_answer, "list/collection missing 'results' field"
-        assert isinstance(server_answer["results"], list), "list/collection 'results' should be a list"
+        assert isinstance(
+            server_answer["results"], list
+        ), "list/collection 'results' should be a list"
         assert "pagination" in server_answer, "list/collection missing 'pagination' field"
         assert "page" in server_answer["pagination"], "pagination missing 'page'"
         assert "page_size" in server_answer["pagination"], "pagination missing 'page_size'"
@@ -175,8 +177,12 @@ def check_list_attributes(api_root, attribute_name):
     res = requests.get(url)
     try:
         server_answer = json.loads(res.content)
-        assert "results" in server_answer, f"list/attributes/{attribute_name} missing 'results' field"
-        assert isinstance(server_answer["results"], list), f"list/attributes/{attribute_name} 'results' should be a list"
+        assert (
+            "results" in server_answer
+        ), f"list/attributes/{attribute_name} missing 'results' field"
+        assert isinstance(
+            server_answer["results"], list
+        ), f"list/attributes/{attribute_name} 'results' should be a list"
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
         assert False, f"List attributes endpoint failed: {url}"
@@ -197,7 +203,9 @@ def check_collection_structure(api_root, digest):
         assert isinstance(level2[attr], list), f"Level 2 {attr} should be array"
 
     # Level 2 should NOT include transient attribute
-    assert "sorted_name_length_pairs" not in level2, "Level 2 should not have sorted_name_length_pairs"
+    assert (
+        "sorted_name_length_pairs" not in level2
+    ), "Level 2 should not have sorted_name_length_pairs"
 
 
 def check_comparison_post(api_root, response_file, test_data_root):
@@ -217,12 +225,15 @@ def check_comparison_post(api_root, response_file, test_data_root):
         server_answer = json.loads(res.content)
         # POST endpoint returns "POSTed seqcol" for digest b since it doesn't know the digest
         # So we compare everything except the digests.b field
-        assert server_answer["digests"]["a"] == correct_answer["digests"]["a"], \
-            f"Comparison POST: digest a mismatch"
-        assert server_answer["attributes"] == correct_answer["attributes"], \
-            f"Comparison POST: attributes mismatch"
-        assert server_answer["array_elements"] == correct_answer["array_elements"], \
-            f"Comparison POST: array_elements mismatch"
+        assert (
+            server_answer["digests"]["a"] == correct_answer["digests"]["a"]
+        ), f"Comparison POST: digest a mismatch"
+        assert (
+            server_answer["attributes"] == correct_answer["attributes"]
+        ), f"Comparison POST: attributes mismatch"
+        assert (
+            server_answer["array_elements"] == correct_answer["array_elements"]
+        ), f"Comparison POST: array_elements mismatch"
     except json.decoder.JSONDecodeError:
         print(f"Url: {url}")
         assert False, f"Comparison POST endpoint failed: {url}"

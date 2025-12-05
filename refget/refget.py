@@ -44,7 +44,9 @@ def build_argparser():
     load_parser.add_argument("--name", "-n", help="Human-readable name for the FASTA")
     load_parser.add_argument("--pep", "-p", help="Local PEP file for batch loading")
     load_parser.add_argument("--pephub", help="PEPhub project (e.g., nsheff/human_fasta_ref)")
-    load_parser.add_argument("--fa-root", "-r", help="Root directory for FASTA files (with --pep/--pephub)")
+    load_parser.add_argument(
+        "--fa-root", "-r", help="Root directory for FASTA files (with --pep/--pephub)"
+    )
 
     # --- register command ---
     register_parser = subparsers.add_parser(
@@ -59,8 +61,12 @@ def build_argparser():
     register_parser.add_argument("--fa-root", "-r", help="Root directory for FASTA files")
     register_parser.add_argument("--bucket", "-b", required=True, help="S3 bucket name")
     register_parser.add_argument("--prefix", default="", help="S3 key prefix/folder")
-    register_parser.add_argument("--cloud", "-c", default="aws", help="Cloud provider (default: aws)")
-    register_parser.add_argument("--region", default="us-east-1", help="Cloud region (default: us-east-1)")
+    register_parser.add_argument(
+        "--cloud", "-c", default="aws", help="Cloud provider (default: aws)"
+    )
+    register_parser.add_argument(
+        "--region", default="us-east-1", help="Cloud region (default: us-east-1)"
+    )
 
     # --- load-and-register command ---
     full_parser = subparsers.add_parser(
@@ -76,7 +82,9 @@ def build_argparser():
     full_parser.add_argument("--bucket", "-b", required=True, help="S3 bucket name")
     full_parser.add_argument("--prefix", default="", help="S3 key prefix/folder")
     full_parser.add_argument("--cloud", "-c", default="aws", help="Cloud provider (default: aws)")
-    full_parser.add_argument("--region", default="us-east-1", help="Cloud region (default: us-east-1)")
+    full_parser.add_argument(
+        "--region", default="us-east-1", help="Cloud region (default: us-east-1)"
+    )
 
     # --- digest-fasta command (local, no DB) ---
     digest_fasta = subparsers.add_parser(
@@ -110,15 +118,19 @@ def load_pep(pep_path=None, pephub=None):
     """Load a PEP from file or pephub."""
     if pep_path:
         import peppy
+
         return peppy.Project(pep_path)
     elif pephub:
         import pephubclient
+
         phc = pephubclient.PEPHubClient()
         return phc.load_project(pephub)
     return None
 
 
-def add_fasta(fasta_path, name=None, dbagent=None, storage=None, skip_upload=False, force_upload=False):
+def add_fasta(
+    fasta_path, name=None, dbagent=None, storage=None, skip_upload=False, force_upload=False
+):
     """
     Add a FASTA file to the refget database.
 
@@ -218,7 +230,14 @@ def add_fasta_pep(pep, fa_root, dbagent=None, storage=None, skip_upload=False, f
         fa_path = os.path.join(fa_root, s.fasta)
         name = getattr(s, "sample_name", None)
         print(f"[{i}/{total}] Adding {s.fasta}...")
-        digest = add_fasta(fa_path, name=name, dbagent=dbagent, storage=storage, skip_upload=skip_upload, force_upload=force_upload)
+        digest = add_fasta(
+            fa_path,
+            name=name,
+            dbagent=dbagent,
+            storage=storage,
+            skip_upload=skip_upload,
+            force_upload=force_upload,
+        )
         print(f"         -> {digest}")
         results[s.fasta] = digest
     return results
@@ -233,12 +252,23 @@ def _check_boto3():
     """Check if boto3 is available."""
     try:
         import boto3  # noqa: F401
+
         return True
     except ImportError:
         return False
 
 
-def _upload_to_s3(fasta_path, bucket, prefix="", access_key=None, secret_key=None, endpoint=None, region=None, url_base=None, force=False):
+def _upload_to_s3(
+    fasta_path,
+    bucket,
+    prefix="",
+    access_key=None,
+    secret_key=None,
+    endpoint=None,
+    region=None,
+    url_base=None,
+    force=False,
+):
     """
     Upload a file to S3-compatible storage and return the URL.
 
@@ -272,7 +302,11 @@ def _upload_to_s3(fasta_path, bucket, prefix="", access_key=None, secret_key=Non
         client_kwargs["region_name"] = region
 
     s3 = boto3.client("s3", **client_kwargs)
-    key = os.path.join(prefix, os.path.basename(fasta_path)) if prefix else os.path.basename(fasta_path)
+    key = (
+        os.path.join(prefix, os.path.basename(fasta_path))
+        if prefix
+        else os.path.basename(fasta_path)
+    )
 
     # Check if file already exists (unless force=True)
     if not force:
@@ -326,7 +360,9 @@ def add_access_method(digest, url, cloud, region, type_="https", dbagent=None):
     )
 
 
-def register_fasta(digest, fasta_path, bucket, prefix="", cloud="aws", region="us-east-1", dbagent=None):
+def register_fasta(
+    digest, fasta_path, bucket, prefix="", cloud="aws", region="us-east-1", dbagent=None
+):
     """
     Upload a FASTA file to cloud storage and register the access method.
 
@@ -363,7 +399,9 @@ def register_fasta(digest, fasta_path, bucket, prefix="", cloud="aws", region="u
     return url
 
 
-def register_fasta_pep(pep, fa_root, bucket, prefix="", cloud="aws", region="us-east-1", dbagent=None, digest_map=None):
+def register_fasta_pep(
+    pep, fa_root, bucket, prefix="", cloud="aws", region="us-east-1", dbagent=None, digest_map=None
+):
     """
     Upload FASTA files from a PEP to cloud storage and register access methods.
 
@@ -433,15 +471,13 @@ def main(injected_args=None):
         dbagent = RefgetDBAgent()
         if args.digest and args.fasta:
             url = register_fasta(
-                args.digest, args.fasta, args.bucket, args.prefix,
-                args.cloud, args.region, dbagent
+                args.digest, args.fasta, args.bucket, args.prefix, args.cloud, args.region, dbagent
             )
             print(f"Registered: {url}")
         elif args.pep or args.pephub:
             pep = load_pep(args.pep, args.pephub)
             results = register_fasta_pep(
-                pep, args.fa_root, args.bucket, args.prefix,
-                args.cloud, args.region, dbagent
+                pep, args.fa_root, args.bucket, args.prefix, args.cloud, args.region, dbagent
             )
             print("\nResults:")
             print(json.dumps(results, indent=2))
@@ -456,8 +492,7 @@ def main(injected_args=None):
         if args.fasta:
             digest = load_fasta(args.fasta, name=args.name, dbagent=dbagent)
             url = register_fasta(
-                digest, args.fasta, args.bucket, args.prefix,
-                args.cloud, args.region, dbagent
+                digest, args.fasta, args.bucket, args.prefix, args.cloud, args.region, dbagent
             )
             print(f"Digest: {digest}")
             print(f"URL: {url}")
@@ -468,8 +503,14 @@ def main(injected_args=None):
             # Then register
             print("\nRegistering with cloud storage...")
             url_map = register_fasta_pep(
-                pep, args.fa_root, args.bucket, args.prefix,
-                args.cloud, args.region, dbagent, digest_map
+                pep,
+                args.fa_root,
+                args.bucket,
+                args.prefix,
+                args.cloud,
+                args.region,
+                dbagent,
+                digest_map,
             )
             print("\nResults:")
             for fasta in digest_map:
@@ -485,6 +526,7 @@ def main(injected_args=None):
         if args.pep:
             _LOGGER.info(f"Adding fasta file from PEP: {args.pep}")
             import peppy
+
             p = peppy.Project(args.pep)
             agent = RefgetDBAgent()
             result = agent.seqcol.add_from_fasta_pep(p, args.fa_root)
@@ -499,15 +541,18 @@ def main(injected_args=None):
         _LOGGER.info(f"Digesting fasta file: {args.fasta_file}")
         if args.level == 0:
             from .utilities import fasta_to_digest
+
             digest = fasta_to_digest(args.fasta_file)
             print(digest)
         elif args.level == 1:
             from .utilities import fasta_to_seqcol_dict, seqcol_dict_to_level1_dict
+
             seqcol_dict = fasta_to_seqcol_dict(args.fasta_file)
             level1_dict = seqcol_dict_to_level1_dict(seqcol_dict)
             print(json.dumps(level1_dict, indent=2))
         elif args.level == 2:
             from .utilities import fasta_to_seqcol_dict
+
             seqcol_dict = fasta_to_seqcol_dict(args.fasta_file)
             print(json.dumps(seqcol_dict, indent=2, cls=BytesEncoder))
 

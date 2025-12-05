@@ -25,8 +25,20 @@ if ENV_STORAGE:
     SKIP_UPLOAD = False
 else:
     DEMO_STORAGE = [
-        {"bucket": "my-bucket", "prefix": "fasta/", "cloud": "aws", "region": "us-east-1", "type": "s3"},
-        {"bucket": "myaccount.blob.core.windows.net", "prefix": "fasta/", "cloud": "azure", "region": "eastus", "type": "https"},
+        {
+            "bucket": "my-bucket",
+            "prefix": "fasta/",
+            "cloud": "aws",
+            "region": "us-east-1",
+            "type": "s3",
+        },
+        {
+            "bucket": "myaccount.blob.core.windows.net",
+            "prefix": "fasta/",
+            "cloud": "azure",
+            "region": "eastus",
+            "type": "https",
+        },
     ]
     SKIP_UPLOAD = True
 

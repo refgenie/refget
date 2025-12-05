@@ -175,6 +175,40 @@ class SequenceCollectionClient(RefgetClient):
         """
         return self._get_fasta_helper().download(digest, dest_path, access_id)
 
+    def download_fasta_to_store(
+        self, digest: str, store: "GlobalRefgetStore", access_id: str = None, temp_dir: str = None
+    ) -> str:
+        """
+        Download the FASTA file and import it into a GlobalRefgetStore.
+
+        This method downloads the FASTA file from the DRS endpoint and immediately
+        imports it into the provided RefgetStore, enabling local sequence retrieval
+        by digest without re-downloading.
+
+        Args:
+            digest (str): The sequence collection digest
+            store (GlobalRefgetStore): The GlobalRefgetStore instance to import into
+            access_id (str, optional): Specific access method to use. If None, tries all.
+            temp_dir (str, optional): Directory for temporary download. If None, uses system temp.
+
+        Returns:
+            (str): The collection digest of the imported sequences
+
+        Raises:
+            ValueError: If no access methods available or specified access_id not found
+            ImportError: If gtars/GlobalRefgetStore is not available
+
+        Example:
+            >>> from refget.refget_store import GlobalRefgetStore, StorageMode
+            >>> from refget.clients import SequenceCollectionClient
+            >>> store = GlobalRefgetStore(StorageMode.Encoded)
+            >>> client = SequenceCollectionClient()
+            >>> collection_digest = client.download_fasta_to_store("abc123", store)
+            >>> # Now you can retrieve sequences by digest from the local store
+            >>> seq = store.get_substring(sequence_digest, 0, 100)
+        """
+        return self._get_fasta_helper().download_to_store(digest, store, access_id, temp_dir)
+
     def build_fai(self, digest: str) -> str:
         """
         Build a complete .fai index file content for a FASTA.
@@ -361,7 +395,6 @@ class SequenceCollectionClient(RefgetClient):
         return _try_urls(self.urls, endpoint)
 
 
-
 class PangenomeClient(RefgetClient):
     pass
 
@@ -491,6 +524,73 @@ class FastaDrsClient(RefgetClient):
                 return dest_path
 
         raise ValueError(f"No accessible URLs for {digest}")
+
+    def download_to_store(
+        self, digest: str, store: "GlobalRefgetStore", access_id: str = None, temp_dir: str = None
+    ) -> str:
+        """
+        Download the FASTA file and import it into a GlobalRefgetStore.
+
+        This method downloads the FASTA file from the DRS endpoint and immediately
+        imports it into the provided RefgetStore, enabling local sequence retrieval
+        by digest without re-downloading.
+
+        Args:
+            digest (str): The sequence collection digest
+            store (GlobalRefgetStore): The GlobalRefgetStore instance to import into
+            access_id (str, optional): Specific access method to use. If None, tries all.
+            temp_dir (str, optional): Directory for temporary download. If None, uses system temp.
+
+        Returns:
+            (str): The collection digest of the imported sequences
+
+        Raises:
+            ValueError: If no access methods available or specified access_id not found
+            ImportError: If gtars/GlobalRefgetStore is not available
+
+        Example:
+            >>> from refget.refget_store import GlobalRefgetStore, StorageMode
+            >>> store = GlobalRefgetStore(StorageMode.Encoded)
+            >>> client = FastaDrsClient()
+            >>> collection_digest = client.download_to_store("abc123", store)
+        """
+        import tempfile
+        import os
+
+        # Verify store is available
+        try:
+            from .refget_store import GlobalRefgetStore as RefgetStoreClass
+        except ImportError:
+            raise ImportError("gtars is required for download_to_store functionality")
+
+        # Download to temporary location
+        temp_file = None
+        try:
+            if temp_dir:
+                os.makedirs(temp_dir, exist_ok=True)
+                temp_file = os.path.join(temp_dir, f"{digest}.fa")
+            else:
+                # Create a named temporary file
+                fd, temp_file = tempfile.mkstemp(suffix=".fa", prefix=f"{digest}_")
+                os.close(fd)  # Close the file descriptor
+
+            # Download the FASTA
+            downloaded_path = self.download(digest, dest_path=temp_file, access_id=access_id)
+            _LOGGER.info(f"Downloaded FASTA to {downloaded_path}")
+
+            # Import into store
+            store.import_fasta(downloaded_path)
+            _LOGGER.info(f"Imported FASTA into RefgetStore: {digest}")
+
+            return digest
+
+        finally:
+            # Clean up temporary file if we created it in system temp
+            if temp_file and not temp_dir and os.path.exists(temp_file):
+                try:
+                    os.remove(temp_file)
+                except Exception as e:
+                    _LOGGER.warning(f"Could not remove temporary file {temp_file}: {e}")
 
     def build_fai(self, digest: str, seqcol_client: "SequenceCollectionClient" = None) -> str:
         """

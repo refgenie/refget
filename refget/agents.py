@@ -425,7 +425,11 @@ class SequenceCollectionAgent(object):
         return seqcol
 
     def add_from_fasta_pep(
-        self, pep: "peppy.Project", fa_root: str, update: bool = False, create_fasta_drs: bool = True
+        self,
+        pep: "peppy.Project",
+        fa_root: str,
+        update: bool = False,
+        create_fasta_drs: bool = True,
     ) -> dict:
         """
         Given a path to a PEP file and a root directory containing the fasta files,

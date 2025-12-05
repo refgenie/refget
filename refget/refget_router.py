@@ -484,8 +484,12 @@ async def get_drs_access_url(
         drs_obj = dbagent.fasta_drs.get(object_id)
         for method in drs_obj.access_methods:
             # Handle both dict and object access
-            method_access_id = method.get("access_id") if isinstance(method, dict) else method.access_id
-            method_access_url = method.get("access_url") if isinstance(method, dict) else method.access_url
+            method_access_id = (
+                method.get("access_id") if isinstance(method, dict) else method.access_id
+            )
+            method_access_url = (
+                method.get("access_url") if isinstance(method, dict) else method.access_url
+            )
 
             if method_access_id == access_id:
                 return method_access_url
