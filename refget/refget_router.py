@@ -1,7 +1,10 @@
 """
-This module contains the FastAPI router for the sequence collection API.
+This module contains the FastAPI router for the refget sequence collection API.
 It is designed to be attached to a FastAPI app instance, and provides
 endpoints for retrieving and comparing sequence collections.
+
+This router does not supply the /service-info endpoint, which should be created
+by the main app.
 
 To use, first import it, then attach it to the app,
 then create a dbagent object to connect to the database,
@@ -20,42 +23,46 @@ import logging
 from fastapi import APIRouter, Response, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from .models import Similarities, PaginationResult
+from .agents import RefgetDBAgent
 
 from .examples import *
 
-from henge import NotFoundException
 
 _LOGGER = logging.getLogger(__name__)
 
 # Import the global variable from the router
-_SAMPLE_DIGESTS = {}
+_SAMPLE_DIGESTS: dict[str, list[str]] = {}
 
 
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
-async def get_dbagent(request: Request):
+async def get_dbagent(request: Request) -> RefgetDBAgent:
     return request.app.state.dbagent
 
 
 def create_refget_router(
-    sequences: bool = False, collections: bool = True, pangenomes: bool = False
-):
+    sequences: bool = False,
+    collections: bool = True,
+    pangenomes: bool = False,
+    fasta_drs: bool = False,
+) -> APIRouter:
     """
     Create a FastAPI router for the sequence collection API.
     This router provides endpoints for retrieving and comparing sequence collections.
     You can choose which endpoints to include by setting the sequences, collections,
-    or pangenomes flags.
+    pangenomes, or fasta_drs flags.
 
     Args:
         sequences (bool): Include sequence endpoints
         collections (bool): Include sequence collection endpoints
         pangenomes (bool): Include pangenome endpoints
+        fasta_drs (bool): Include FASTA DRS endpoints
 
     Returns:
         (APIRouter): A FastAPI router with the specified endpoints
 
     Examples:
         ```
-        app.include_router(create_refget_router(sequences=False, pangenomes=False))
+        app.include_router(create_refget_router(fasta_drs=True), prefix="/seqcol")
         ```
     """
 
@@ -69,6 +76,9 @@ def create_refget_router(
     if pangenomes:
         _LOGGER.info("Adding pangenome endpoints...")
         refget_router.include_router(pangenome_router)
+    if fasta_drs:
+        _LOGGER.info("Adding FASTA DRS endpoints...")
+        refget_router.include_router(fasta_drs_router, prefix="/fasta")
     return refget_router
 
 
@@ -144,17 +154,17 @@ async def collection(
 
 
 @seqcol_router.get(
-    "/attribute/collection/{attribute}/{attribute_digest}",
+    "/attribute/collection/{attribute_name}/{attribute_digest}",
     summary="Retrieve a single attribute of a sequence collection",
     tags=["Retrieving data"],
 )
 async def attribute(
     dbagent=Depends(get_dbagent),
-    attribute: str = "names",
+    attribute_name: str = "names",
     attribute_digest: str = example_attribute_digest,
 ):
     try:
-        return JSONResponse(dbagent.attribute.get(attribute, attribute_digest))
+        return JSONResponse(dbagent.attribute.get(attribute_name, attribute_digest))
     except KeyError as e:
         raise HTTPException(
             status_code=404,
@@ -182,7 +192,7 @@ async def compare_2_digests(
     result["digests"] = {"a": collection_digest1, "b": collection_digest2}
     try:
         result.update(dbagent.compare_digests(collection_digest1, collection_digest2))
-    except NotFoundException as e:
+    except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
@@ -207,54 +217,11 @@ async def calc_similarities(
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
         seqcolA = dbagent.seqcol.get(digest=collection_digest)
-
-        # Validate species parameter
-        if species.lower() not in _SAMPLE_DIGESTS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid species '{species}'. Choose from: {list(_SAMPLE_DIGESTS.keys())}",
-            )
-
-        # Get pre-loaded digests for the species
-        target_digests = _SAMPLE_DIGESTS[species.lower()]
-
-        if not target_digests:
-            _LOGGER.warning(
-                f"No pre-loaded digests found for {species}, returning {page_size} comparisons"
-            )
-            target_digests = None
-        else:
-            _LOGGER.info(f"Using {len(target_digests)} pre-loaded digests for {species}")
-
-        # Use the modified get_many_level2_offset function with target_digests filter
-        results = dbagent.seqcol.get_many_level2_offset(
-            limit=page_size, offset=page * page_size, target_digests=target_digests
-        )
-
-        similarities = []
-        for key in results.results.keys():
-            human_readable_names = results.results[key]["human_readable_names"]
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
-            similarities.append(
-                {
-                    "digest": key,
-                    "human_readable_names": human_readable_names,
-                    "similarities": jaccard_sims,
-                }
-            )
-
-        result = Similarities(
-            similarities=similarities, pagination=results.pagination, reference_digest=None
-        )
-
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
     except Exception as e:
-        _LOGGER.debug(f"Error in calc_similarities_from_json: {e}")
-        raise HTTPException(status_code=500, detail="Error calculating similarities")
+        _LOGGER.debug(f"Error fetching collection: {e}")
+        raise HTTPException(status_code=404, detail="Collection not found")
 
-    return result
+    return await calc_similarities_from_json(seqcolA, species, page_size, page, dbagent)
 
 
 @seqcol_router.post(
@@ -355,7 +322,7 @@ async def compare_1_digest(
     result["digests"] = {"a": collection_digest1, "b": "POSTed seqcol"}
     try:
         result.update(dbagent.compare_1_digest(collection_digest1, seqcolB))
-    except NotFoundException as e:
+    except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
             status_code=404,
@@ -365,35 +332,32 @@ async def compare_1_digest(
 
 
 @seqcol_router.get(
-    "/list/collections",
+    "/list/collection",
     summary="List sequence collections on the server",
     tags=["Discovering data"],
 )
 async def list_collections_by_offset(
-    dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
-):
-
-    res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
-    res["results"] = [x.digest for x in res["results"]]
-    return JSONResponse(res)
-
-
-@seqcol_router.get(
-    "/list/collections/{attribute}/{attribute_digest}",
-    summary="Filtered list of sequence collections that contain a given attribute",
-    tags=["Discovering data"],
-)
-async def attribute_search(
+    request: Request,
     dbagent=Depends(get_dbagent),
-    attribute: str = "names",
-    attribute_digest: str = example_attribute_digest,
     page_size: int = 100,
     page: int = 0,
 ):
-    # attr = dbagent.attribute.get(attribute, digest)
-    res = dbagent.attribute.search(
-        attribute, attribute_digest, limit=page_size, offset=page * page_size
-    )
+    # Extract all query params except pagination params
+    filters = {k: v for k, v in request.query_params.items() if k not in ["page", "page_size"]}
+
+    if filters:
+        try:
+            # Multi-attribute filtering with AND logic
+            res = dbagent.seqcol.search_by_attributes(
+                filters, limit=page_size, offset=page * page_size
+            )
+        except ValueError as e:
+            # Invalid attribute name
+            raise HTTPException(status_code=400, detail=str(e))
+    else:
+        # No filters, return all collections
+        res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+
     res["results"] = [x.digest for x in res["results"]]
     return JSONResponse(res)
 
@@ -421,7 +385,7 @@ pangenome_router = APIRouter()
 
 
 @pangenome_router.get(
-    "/list/pangenomes",
+    "/list/pangenome",
     summary="List pangenomes on the server, paged by offset",
     tags=["Discovering data"],
     include_in_schema=True,
@@ -473,3 +437,105 @@ async def pangenome(
             status_code=404,
             detail=str(e),
         )
+
+
+fasta_drs_router = APIRouter()
+
+
+@fasta_drs_router.get(
+    "/objects/{object_id}",
+    summary="Get DRS object by ID",
+    tags=["FASTA DRS"],
+)
+async def get_drs_object(
+    object_id: str,
+    dbagent=Depends(get_dbagent),
+):
+    """GA4GH DRS endpoint to retrieve object metadata"""
+    try:
+        drs_obj = dbagent.fasta_drs.get(object_id)
+        return drs_obj.to_response(base_uri="drs://seqcolapi.databio.org")
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Object not found")
+
+
+@fasta_drs_router.get(
+    "/objects/{object_id}/access/{access_id}",
+    summary="Get access URL for DRS object",
+    tags=["FASTA DRS"],
+    include_in_schema=False,  # Hidden: only needed when using access_id instead of access_url
+)
+async def get_drs_access_url(
+    object_id: str,
+    access_id: str,
+    dbagent=Depends(get_dbagent),
+):
+    """
+    GA4GH DRS endpoint to get access URL.
+
+    This endpoint is used when access methods specify an access_id instead of
+    a direct access_url. It allows for dynamic URL generation (e.g., signed URLs)
+    or additional authorization checks.
+
+    Note: If access methods provide access_url directly, clients should use
+    those URLs and don't need to call this endpoint.
+    """
+    try:
+        drs_obj = dbagent.fasta_drs.get(object_id)
+        for method in drs_obj.access_methods:
+            # Handle both dict and object access
+            method_access_id = (
+                method.get("access_id") if isinstance(method, dict) else method.access_id
+            )
+            method_access_url = (
+                method.get("access_url") if isinstance(method, dict) else method.access_url
+            )
+
+            if method_access_id == access_id:
+                return method_access_url
+        raise HTTPException(status_code=404, detail="Access ID not found")
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Object not found")
+
+
+@fasta_drs_router.get(
+    "/service-info",
+    summary="FASTA DRS service info",
+    tags=["FASTA DRS"],
+)
+async def drs_service_info():
+    """GA4GH DRS service-info endpoint"""
+    return {
+        "id": "org.databio.seqcolapi.drs",
+        "name": "SeqCol API DRS Service",
+        "type": {"group": "org.ga4gh", "artifact": "drs", "version": "1.5.0"},
+        "description": "DRS service for FASTA files indexed by refget sequence collection digests",
+        "organization": {"name": "databio", "url": "https://databio.org"},
+        "version": "1.0.0",
+    }
+
+
+@fasta_drs_router.get(
+    "/objects/{object_id}/index",
+    summary="Get FAI index for FASTA file",
+    tags=["FASTA DRS"],
+)
+async def get_fasta_index(
+    object_id: str,
+    dbagent=Depends(get_dbagent),
+):
+    """
+    Get the FAI index data for a FASTA file.
+
+    Returns index data that can be combined with seqcol names/lengths
+    to reconstruct a complete .fai file.
+    """
+    try:
+        drs_obj = dbagent.fasta_drs.get(object_id)
+        return {
+            "line_bases": drs_obj.line_bases,
+            "extra_line_bytes": drs_obj.extra_line_bytes,
+            "offsets": drs_obj.offsets,
+        }
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Object not found")

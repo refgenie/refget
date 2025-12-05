@@ -1,14 +1,17 @@
 import json
 import logging
-import os
 
 from jsonschema import Draft7Validator
 from pathlib import Path
 from typing import Optional
-from yacman import load_yaml
 
-from .const import SeqColDict
-from .exceptions import *
+from .const import (
+    SeqColDict,
+    DEFAULT_INHERENT_ATTRS,
+    DEFAULT_PASSTHRU_ATTRS,
+    SEQCOL_SCHEMA_PATH,
+)
+from .exceptions import InvalidSeqColError
 from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
 
 _LOGGER = logging.getLogger(__name__)
@@ -21,9 +24,9 @@ def canonical_str(item: dict) -> bytes:
     ).encode()
 
 
-def print_csc(csc: dict) -> str:
+def print_csc(csc: dict) -> None:
     """Convenience function to pretty-print a canonical sequence collection"""
-    return print(json.dumps(csc, indent=2))
+    print(json.dumps(csc, indent=2))
 
 
 def validate_seqcol_bool(seqcol_obj: SeqColDict, schema=None) -> bool:
@@ -32,8 +35,8 @@ def validate_seqcol_bool(seqcol_obj: SeqColDict, schema=None) -> bool:
 
     To enumerate the errors, use validate_seqcol instead.
     """
-    schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.yaml")
-    schema = load_yaml(schema_path)
+    with open(SEQCOL_SCHEMA_PATH, "r") as f:
+        schema = json.load(f)
     validator = Draft7Validator(schema)
     return validator.is_valid(seqcol_obj)
 
@@ -43,8 +46,8 @@ def validate_seqcol(seqcol_obj: SeqColDict, schema=None) -> bool:
     Returns True if valid, raises InvalidSeqColError if not, which enumerates the errors.
     Retrieve individual errors with exception.errors
     """
-    schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.yaml")
-    schema = load_yaml(schema_path)
+    with open(SEQCOL_SCHEMA_PATH, "r") as f:
+        schema = json.load(f)
     validator = Draft7Validator(schema)
 
     if not validator.is_valid(seqcol_obj):
@@ -89,7 +92,7 @@ def seqcol_to_snlp_digest(seqcol_obj: SeqColDict) -> str:
 
 
 def fasta_to_digest(
-    fa_file_path: str | Path, inherent_attrs: Optional[list] = ["names", "sequences"]
+    fa_file_path: str | Path, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
 ) -> str:
     """
     Given a fasta file path, return a digest
@@ -133,8 +136,7 @@ def fasta_to_seqcol_dict(
         seq_length = s.metadata.length
         seq_digest = "SQ." + s.metadata.sha512t24u
         nlp = {"length": seq_length, "name": seq_name}  # for name_length_pairs
-        # snlp_digest = digest_function(canonical_str(nlp)) # for sorted_name_length_pairs
-        snlp_digest = canonical_str(nlp)  # for sorted_name_length_pairs
+        snlp_digest = digest_function(canonical_str(nlp))  # for sorted_name_length_pairs
         seqcol_dict["lengths"].append(seq_length)
         seqcol_dict["names"].append(seq_name)
         # seqcol_dict["name_length_pairs"].append(nlp)
@@ -148,7 +150,9 @@ def fasta_to_seqcol_dict(
     return seqcol_dict
 
 
-def build_sorted_name_length_pairs(obj: dict, digest_function: DigestFunction = sha512t24u_digest):
+def build_sorted_name_length_pairs(
+    obj: dict, digest_function: DigestFunction = sha512t24u_digest
+) -> list[str]:
     """Builds the sorted_name_length_pairs attribute, which corresponds to the coordinate system"""
     sorted_name_length_pairs = []
     for i in range(len(obj["names"])):
@@ -161,7 +165,9 @@ def build_sorted_name_length_pairs(obj: dict, digest_function: DigestFunction = 
     return snlp_digests
 
 
-def build_name_length_pairs(obj: dict, digest_function: DigestFunction = sha512t24u_digest):
+def build_name_length_pairs(
+    obj: dict, digest_function: DigestFunction = sha512t24u_digest
+) -> list[dict[str, int | str]]:
     """Builds the name_length_pairs attribute, which corresponds to the coordinate system"""
     name_length_pairs = []
     for i in range(len(obj["names"])):
@@ -173,9 +179,12 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     """
     Workhorse comparison function
 
-    @param A Sequence collection A
-    @param B Sequence collection B
-    @return dict Following formal seqcol specification comparison function return value
+    Args:
+        A: Sequence collection A
+        B: Sequence collection B
+
+    Returns:
+        dict: Following formal seqcol specification comparison function return value
     """
     # validate_seqcol(A)  # First ensure these are the right structure
     # validate_seqcol(B)
@@ -199,9 +208,9 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
     return_obj = {
         "attributes": {"a_only": [], "b_only": [], "a_and_b": []},
         "array_elements": {
-            "a": a_lengths,
-            "b": b_lengths,
-            "a_and_b": {},
+            "a_count": a_lengths,
+            "b_count": b_lengths,
+            "a_and_b_count": {},
             "a_and_b_same_order": {},
         },
     }
@@ -219,21 +228,24 @@ def compare_seqcols(A: SeqColDict, B: SeqColDict) -> dict:
             return_obj["attributes"]["a_and_b"].append(k)
             res = _compare_elements(A[k], B[k])
             # return_obj["array_elements"]["total"][k] = {"a": len(A[k]), "b": len(B[k])}
-            return_obj["array_elements"]["a_and_b"][k] = res["a_and_b"]
+            return_obj["array_elements"]["a_and_b_count"][k] = res["a_and_b"]
             return_obj["array_elements"]["a_and_b_same_order"][k] = res["a_and_b_same_order"]
     return return_obj
 
 
-def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
+def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict[str, float]:
     """
     Takes two sequence collections and calculates jaccard similarties for all attributes
 
-    @param A Sequence collection A
-    @param B Sequence collection B
-    @return dict jaccard similarities for all attributes
+    Args:
+        A: Sequence collection A
+        B: Sequence collection B
+
+    Returns:
+        dict: Jaccard similarities for all attributes
     """
 
-    def calc_jaccard_similarity(A_B_intersection, A_B_union):
+    def calc_jaccard_similarity(A_B_intersection: int, A_B_union: int) -> float:
         if A_B_union == 0:
             return 0.0
         jaccard_similarity = A_B_intersection / A_B_union
@@ -250,12 +262,12 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
 
     comparison_dict = compare_seqcols(A, B)
 
-    list_a_keys = list(comparison_dict["array_elements"]["a_and_b"].keys())
+    list_a_keys = list(comparison_dict["array_elements"]["a_and_b_count"].keys())
 
     for key in list_a_keys:
-        intersection_seqcol = comparison_dict["array_elements"]["a_and_b"].get(key)
-        a = comparison_dict["array_elements"]["a"].get(key)
-        b = comparison_dict["array_elements"]["b"].get(key)
+        intersection_seqcol = comparison_dict["array_elements"]["a_and_b_count"].get(key)
+        a = comparison_dict["array_elements"]["a_count"].get(key)
+        b = comparison_dict["array_elements"]["b_count"].get(key)
         union_seqcol = (
             a + b - intersection_seqcol
         )  # inclusion-exclusion principal for calculating union
@@ -264,7 +276,7 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict:
     return jaccard_similarities
 
 
-def _compare_elements(A: list, B: list) -> dict:
+def _compare_elements(A: list, B: list) -> dict[str, int | bool | None]:
     """
     Compare elements between two arrays. Helper function for individual elements used by workhorse compare_seqcols function
     """
@@ -287,56 +299,72 @@ def _compare_elements(A: list, B: list) -> dict:
 
 
 def seqcol_dict_to_level1_dict(
-    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = ["names", "sequences"]
+    seqcol_dict: SeqColDict,
+    passthru_attrs: Optional[list] = DEFAULT_PASSTHRU_ATTRS,
 ) -> dict:
     """
     Convert a sequence collection dictionary to a level 1 dictionary
-    """
-    # Step 1a: Remove any non-inherent attributes,
-    # so that only the inherent attributes contribute to the digest.
-    filt_canonical_strs = {}
-    if inherent_attrs:
-        for k in inherent_attrs:
-            # Step 2: Apply RFC-8785 to canonicalize the value
-            # associated with each attribute individually.
-            filt_canonical_strs[k] = canonical_str(seqcol_dict[k])
-    else:  # no schema provided, so assume all attributes are inherent
-        for k in seqcol_dict:
-            filt_canonical_strs[k] = canonical_str(seqcol_dict[k])
 
-    # Step 3: Digest each canonicalized attribute value
-    # using the GA4GH digest algorithm.
+    Args:
+        seqcol_dict: Level 2 sequence collection dictionary
+        passthru_attrs: Attributes that are NOT digested (same value in level1 and level2)
+    """
+    # Step 2: Apply RFC-8785 to canonicalize the value associated with each attribute individually.
+    # NOTE: We digest ALL attributes (not just inherent ones) for inclusion in level1.
+    # Non-inherent attributes are filtered out later (step 4) when computing the top-level digest.
+    canonical_strs = {}
     level1_dict = {}
-    for attribute in filt_canonical_strs:
-        level1_dict[attribute] = sha512t24u_digest(filt_canonical_strs[attribute])
+
+    for k, v in seqcol_dict.items():
+        if k in passthru_attrs:
+            # Passthru: don't digest, pass through unchanged
+            level1_dict[k] = v
+            continue
+        # Regular attribute (includes transient): canonicalize for digesting
+        canonical_strs[k] = canonical_str(v)
+
+    # Step 3: Digest each canonicalized attribute value using the GA4GH digest algorithm.
+    for attribute in canonical_strs:
+        level1_dict[attribute] = sha512t24u_digest(canonical_strs[attribute])
 
     return level1_dict
 
 
-def level1_dict_to_seqcol_digest(level1_dict: dict):
-    # Step 4: Apply RFC-8785 again to canonicalize the JSON
-    # of new seqcol object representation.
-    level1_can_str = canonical_str(level1_dict)
+def level1_dict_to_seqcol_digest(
+    level1_dict: dict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
+):
+    # Step 4: Filter to only inherent attributes before computing top-level digest.
+    # Non-inherent attributes are included in level1 but don't contribute to level0 digest.
+    if inherent_attrs:
+        filtered_level1 = {k: v for k, v in level1_dict.items() if k in inherent_attrs}
+    else:
+        filtered_level1 = level1_dict  # No filtering if no inherent attrs specified
 
-    # Step 5: Digest the final canonical representation again.
+    # Step 5: Apply RFC-8785 again to canonicalize the JSON of inherent attributes only.
+    level1_can_str = canonical_str(filtered_level1)
+
+    # Step 6: Digest the final canonical representation again.
     seqcol_digest = sha512t24u_digest(level1_can_str)
     return seqcol_digest
 
 
 def seqcol_digest(
-    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = ["names", "sequences"]
+    seqcol_dict: SeqColDict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
 ) -> str:
     """
     Given a canonical sequence collection, compute its digest.
 
-    :param dict seqcol_dict: Dictionary representation of a canonical sequence collection object
-    :param dict schema: Schema defining the inherent attributes to digest
-    :return str: The sequence collection digest
+    Args:
+        seqcol_dict: Dictionary representation of a canonical sequence collection object
+        inherent_attrs: List of inherent attributes to include in the digest
+
+    Returns:
+        str: The sequence collection digest
     """
 
-    validate_seqcol(seqcol_dict)
-    level1_dict = seqcol_dict_to_level1_dict(seqcol_dict, inherent_attrs)
-    seqcol_digest = level1_dict_to_seqcol_digest(level1_dict)
+    # Validation removed - belongs at API boundaries, not internal utility functions
+    level1_dict = seqcol_dict_to_level1_dict(seqcol_dict)
+    seqcol_digest = level1_dict_to_seqcol_digest(level1_dict, inherent_attrs)
     return seqcol_digest
 
 

@@ -136,3 +136,47 @@ class TestValidate:
     def test_failure(self, seqcol_obj):
         with pytest.raises(Exception):
             refget.validate_seqcol(seqcol_obj)
+
+
+class TestCollatedAttributeValidation:
+    """
+    Test validation of collated attributes
+    """
+
+    def test_valid_collated_attributes(self):
+        """Test that valid collated attributes pass validation"""
+        valid_dict = {
+            "names": ["chr1", "chr2", "chr3"],
+            "sequences": ["SQ.abc123", "SQ.def456", "SQ.ghi789"],
+            "lengths": [100, 200, 300],
+        }
+        # Should not raise an error
+        sc = refget.SequenceCollection.from_dict(valid_dict)
+        assert sc is not None
+
+    def test_mismatched_collated_attributes(self):
+        """Test that mismatched collated attribute lengths raise an error"""
+        invalid_dict = {
+            "names": ["chr1", "chr2", "chr3"],
+            "sequences": ["SQ.abc123", "SQ.def456"],  # Only 2 sequences
+            "lengths": [100, 200, 300],
+        }
+        # Should raise InvalidSeqColError
+        with pytest.raises(refget.InvalidSeqColError) as exc_info:
+            refget.SequenceCollection.from_dict(invalid_dict)
+
+        # Check error message contains helpful info
+        assert "Collated attributes must have the same length" in str(exc_info.value)
+        assert "names=3" in str(exc_info.value)
+        assert "sequences=2" in str(exc_info.value)
+
+    def test_single_collated_attribute_valid(self):
+        """Test that a single collated attribute doesn't cause issues"""
+        valid_dict = {
+            "names": ["chr1", "chr2"],
+            "sequences": ["SQ.abc123", "SQ.def456"],
+            "lengths": [100, 200],
+        }
+        # Should not raise an error
+        sc = refget.SequenceCollection.from_dict(valid_dict)
+        assert sc is not None

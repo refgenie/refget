@@ -86,7 +86,7 @@ app.add_middleware(  # This is a public API, so we allow all origins
 
 # This is where the magic happens
 # This will add the seqcol endpoints to the app
-refget_router = create_refget_router(sequences=False, pangenomes=False)
+refget_router = create_refget_router(sequences=False, pangenomes=False, fasta_drs=True)
 print(refget_router)
 app.include_router(refget_router)
 
@@ -134,7 +134,7 @@ async def index(request: Request):
 
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
-async def service_info(dbagent=Depends(get_dbagent)):
+async def service_info():
     ret = {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",

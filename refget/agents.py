@@ -1,26 +1,43 @@
+from __future__ import annotations
+
 import json
 import os
-import logging
-import peppy
 import requests
 
+from typing import TYPE_CHECKING
 from sqlmodel import create_engine, select, Session, delete, func, SQLModel
-from sqlalchemy.exc import IntegrityError
+
+if TYPE_CHECKING:
+    import peppy
 from sqlalchemy.orm import selectinload
 from sqlalchemy import URL
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
-from .models import *
+from .models import (
+    Sequence,
+    SequenceCollection,
+    Pangenome,
+    NamesAttr,
+    LengthsAttr,
+    SequencesAttr,
+    SortedSequencesAttr,
+    NameLengthPairsAttr,
+    CollectionNamesAttr,
+    HumanReadableNames,
+    PaginationResult,
+    ResultsSequenceCollections,
+    FastaDrsObject,
+    AccessMethod,
+    AccessURL,
+)
 from .utilities import (
     fasta_to_seqcol_dict,
     compare_seqcols,
     build_pangenome_model,
     calc_jaccard_similarities,
 )
-from .const import _LOGGER
-from .const import SCHEMA_FILEPATH
+from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
@@ -31,12 +48,15 @@ ATTR_TYPE_MAP = {
 }
 
 
-def read_yaml_url(url):
+def read_yaml_url(url: str) -> dict:
     """
     Read a YAML file from a URL.
 
-    :param url: The URL to read the YAML file from.
-    :return: The loaded YAML file as a dictionary.
+    Args:
+        url (str): The URL to read the YAML file from.
+
+    Returns:
+        dict: The loaded YAML file as a dictionary.
     """
     import yaml
 
@@ -51,12 +71,15 @@ def read_yaml_url(url):
         raise e
 
 
-def load_json(source):
+def load_json(source: str) -> dict:
     """
     Load a JSON from a file or URL.
 
-    :param source: The file path or URL to the JSON.
-    :return: The loaded JSON as a dictionary.
+    Args:
+        source (str): The file path or URL to the JSON.
+
+    Returns:
+        dict: The loaded JSON as a dictionary.
     """
     if os.path.isfile(source):
         with open(source, "r", encoding="utf-8") as file:
@@ -76,7 +99,7 @@ class SequenceAgent(object):
     Agent for interacting with database of sequences
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine: SqlalchemyDatabaseEngine) -> None:
         self.engine = engine
 
     def _get_entire_seq(self, digest: str) -> str:
@@ -124,7 +147,7 @@ class SequenceAgent(object):
                 session.commit()
                 return sequence
 
-    def list(self, offset=0, limit=50):
+    def list(self, offset: int = 0, limit: int = 50) -> dict:
         with Session(self.engine) as session:
             list_stmt = select(Sequence).offset(offset).limit(limit)
             cnt_stmt = select(func.count(Sequence.digest))
@@ -143,28 +166,34 @@ class SequenceCollectionAgent(object):
     Agent for interacting with database of sequence collection
     """
 
-    def __init__(self, engine, inherent_attrs=None):
+    def __init__(
+        self,
+        engine: SqlalchemyDatabaseEngine,
+        inherent_attrs: Optional[List[str]] = None,
+        parent: Optional["RefgetDBAgent"] = None,
+    ) -> None:
         self.engine = engine
         self.inherent_attrs = inherent_attrs
+        self.parent = parent
 
     def get(
         self,
         digest: str,
         return_format: str = "level2",
-        attribute: str = None,
-        itemwise_limit: int = None,
-    ) -> SequenceCollection:
+        attribute: Optional[str] = None,
+        itemwise_limit: Optional[int] = None,
+    ) -> SequenceCollection | dict | list:
         """
         Get a sequence collection by digest
 
         Args:
-        - digest (str): The digest of the sequence collection
-        - return_format (str): The format in which to return the sequence collection
-        - attribute (str): Name of an attribute to return, if you just want an attribute
-        - itemwise_limit (int): Limit the number of items returned in itemwise format
+            digest (str): The digest of the sequence collection
+            return_format (str): The format in which to return the sequence collection
+            attribute (str): Name of an attribute to return, if you just want an attribute
+            itemwise_limit (int): Limit the number of items returned in itemwise format
 
         Returns:
-        - (SequenceCollection): The sequence collection (in requested format)
+            (SequenceCollection): The sequence collection (in requested format)
         """
         with Session(self.engine) as session:
             statement = select(SequenceCollection).where(SequenceCollection.digest == digest)
@@ -184,7 +213,7 @@ class SequenceCollectionAgent(object):
                 return seqcol
 
     def get_many_level2_offset(
-        self, limit=50, offset=0, target_digests=None
+        self, limit: int = 50, offset: int = 0, target_digests: Optional[List[str]] = None
     ) -> ResultsSequenceCollections:
 
         final_results = {}
@@ -320,11 +349,11 @@ class SequenceCollectionAgent(object):
         Add a sequence collection from a seqcol dictionary
 
         Args:
-        - seqcol_dict (dict): The sequence collection in dictionary form
-        - update (bool): If True, update an existing collection if it exists
+            seqcol_dict (dict): The sequence collection in dictionary form
+            update (bool): If True, update an existing collection if it exists
 
         Returns:
-        - (SequenceCollection): The added or updated sequence collection
+            (SequenceCollection): The added or updated sequence collection
         """
         seqcol = SequenceCollection.from_dict(seqcol_dict, self.inherent_attrs)
         _LOGGER.info(f"SeqCol: {seqcol}")
@@ -332,21 +361,32 @@ class SequenceCollectionAgent(object):
         return self.add(seqcol, update)
 
     def add_from_fasta_file(
-        self, fasta_file_path: str, update: bool = False
+        self, fasta_file_path: str, update: bool = False, create_fasta_drs: bool = True
     ) -> SequenceCollection:
         """
         Given a path to a fasta file, load the sequences into the refget database.
 
         Args:
-        - fasta_file_path (str): Path to the fasta file
-        - update (bool): If True, update an existing collection if it exists
+            fasta_file_path (str): Path to the fasta file
+            update (bool): If True, update an existing collection if it exists
+            create_fasta_drs (bool): If True, create a FastaDrsObject for the FASTA file
 
         Returns:
-        - (SequenceCollection): The added or updated sequence collection
+           (SequenceCollection): The added or updated sequence collection
         """
 
         CSC = fasta_to_seqcol_dict(fasta_file_path)
         seqcol = self.add_from_dict(CSC, update)
+
+        if create_fasta_drs and self.parent and self.parent.fasta_drs:
+            drs_obj = FastaDrsObject.from_fasta_file(fasta_file_path, digest=seqcol.digest)
+            if self.parent.fasta_drs.url_prefix:
+                url = self.parent.fasta_drs.url_prefix + os.path.basename(fasta_file_path)
+                drs_obj.access_methods = [
+                    AccessMethod(type="https", access_url=AccessURL(url=url))
+                ]
+            self.parent.fasta_drs.add(drs_obj)
+
         return seqcol
 
     def add_from_fasta_file_with_name(
@@ -354,6 +394,7 @@ class SequenceCollectionAgent(object):
         fasta_file_path: str,
         human_readable_name: str,
         update: bool = False,
+        create_fasta_drs: bool = True,
     ) -> SequenceCollection:
         """
         Given a path to a fasta file, and a human-readable name, load the sequences into the refget database.
@@ -362,6 +403,7 @@ class SequenceCollectionAgent(object):
         - fasta_file_path (str): Path to the fasta file
         - human_readable_name (str): human_readable_name
         - update (bool): If True, update an existing collection if it exists
+        - create_fasta_drs (bool): If True, create a FastaDrsObject for the FASTA file
 
         Returns:
         - (SequenceCollection): The added or updated sequence collection
@@ -370,19 +412,36 @@ class SequenceCollectionAgent(object):
         CSC = fasta_to_seqcol_dict(fasta_file_path)
         CSC["human_readable_names"] = human_readable_name
         seqcol = self.add_from_dict(CSC, update)
+
+        if create_fasta_drs and self.parent and self.parent.fasta_drs:
+            drs_obj = FastaDrsObject.from_fasta_file(fasta_file_path, digest=seqcol.digest)
+            if self.parent.fasta_drs.url_prefix:
+                url = self.parent.fasta_drs.url_prefix + os.path.basename(fasta_file_path)
+                drs_obj.access_methods = [
+                    AccessMethod(type="https", access_url=AccessURL(url=url))
+                ]
+            self.parent.fasta_drs.add(drs_obj)
+
         return seqcol
 
-    def add_from_fasta_pep(self, pep: peppy.Project, fa_root: str, update: bool = False) -> dict:
+    def add_from_fasta_pep(
+        self,
+        pep: "peppy.Project",
+        fa_root: str,
+        update: bool = False,
+        create_fasta_drs: bool = True,
+    ) -> dict:
         """
         Given a path to a PEP file and a root directory containing the fasta files,
         load the fasta files into the refget database.
 
         Args:
-        - pep_path (str): Path to the PEP file
-        - fa_root (str): Root directory containing the fasta files
+            pep_path (str): Path to the PEP file
+            fa_root (str): Root directory containing the fasta files
+            create_fasta_drs (bool): If True, create FastaDrsObjects for the FASTA files
 
         Returns:
-        - (dict): A dictionary of the digests of the added sequence collections
+            (dict): A dictionary of the digests of the added sequence collections
         """
 
         total_files = len(pep.samples)
@@ -396,17 +455,19 @@ class SequenceCollectionAgent(object):
             start_time = time.time()  # Record start time
             if s.sample_name:
                 results[s.fasta] = self.add_from_fasta_file_with_name(
-                    fa_path, s.sample_name, update
+                    fa_path, s.sample_name, update, create_fasta_drs
                 ).digest
             else:
-                results[s.fasta] = self.add_from_fasta_file(fa_path, update).digest
+                results[s.fasta] = self.add_from_fasta_file(
+                    fa_path, update, create_fasta_drs
+                ).digest
             elapsed_time = time.time() - start_time  # Calculate elapsed time
 
             _LOGGER.info(f"Loaded in {elapsed_time:.2f} seconds")
 
         return results
 
-    def list_by_offset(self, limit=50, offset=0) -> dict:
+    def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
         with Session(self.engine) as session:
             list_stmt = select(SequenceCollection).offset(offset).limit(limit)
             cnt_stmt = select(func.count(SequenceCollection.digest))
@@ -419,7 +480,49 @@ class SequenceCollectionAgent(object):
                 "results": seqcols,
             }
 
-    def list(self, page_size=100, cursor=None) -> dict:
+    def search_by_attributes(self, filters: dict, offset: int = 0, limit: int = 50) -> dict:
+        """
+        Search sequence collections by multiple attribute filters (AND logic).
+
+        Args:
+            filters: Dict of {attribute_name: digest} pairs
+            offset: Pagination offset
+            limit: Max results to return
+
+        Returns:
+            Dict with pagination info and results
+        """
+        with Session(self.engine) as session:
+            # Start with base query
+            list_stmt = select(SequenceCollection)
+            cnt_stmt = select(func.count(SequenceCollection.digest))
+
+            # Chain .where() for each filter (creates AND logic)
+            for attr_name, attr_digest in filters.items():
+                # Validate attribute exists to prevent SQL injection
+                if attr_name not in ATTR_TYPE_MAP:
+                    raise ValueError(f"Unknown attribute: {attr_name}")
+
+                # Build WHERE condition dynamically
+                digest_column = getattr(SequenceCollection, f"{attr_name}_digest")
+                list_stmt = list_stmt.where(digest_column == attr_digest)
+                cnt_stmt = cnt_stmt.where(digest_column == attr_digest)
+
+            # Add pagination
+            list_stmt = list_stmt.offset(offset).limit(limit)
+
+            # Execute queries
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            seqcols = list_res.all()
+
+            return {
+                "pagination": {"page": offset // limit, "page_size": limit, "total": count},
+                "results": seqcols,
+            }
+
+    def list(self, page_size: int = 100, cursor: Optional[str] = None) -> dict:
         with Session(self.engine) as session:
             if cursor:
                 list_stmt = (
@@ -450,11 +553,11 @@ class PangenomeAgent(object):
     Agent for interacting with database of pangenomes
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: "RefgetDBAgent") -> None:
         self.engine = parent.engine
         self.parent = parent
 
-    def get(self, digest: str, return_format: str = "level2") -> Pangenome:
+    def get(self, digest: str, return_format: str = "level2") -> Pangenome | dict:
         with Session(self.engine) as session:
             statement = select(Pangenome).where(Pangenome.digest == digest)
             result = session.exec(statement)
@@ -508,7 +611,7 @@ class PangenomeAgent(object):
                 return pg_simplified
 
     def add_from_fasta_pep(
-        self, pep: peppy.Project, fa_root: str, update: bool = False
+        self, pep: "peppy.Project", fa_root: str, update: bool = False
     ) -> Pangenome:
         # First add in the FASTA files individually, and build a dictionary of the results
         pangenome_obj = {}
@@ -520,7 +623,7 @@ class PangenomeAgent(object):
         p = build_pangenome_model(pangenome_obj)
         return self.add(p)
 
-    def list_by_offset(self, limit=50, offset=0):
+    def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
         with Session(self.engine) as session:
             list_stmt = select(Pangenome).offset(offset).limit(limit)
             cnt_stmt = select(func.count(Pangenome.digest))
@@ -535,10 +638,10 @@ class PangenomeAgent(object):
 
 
 class AttributeAgent(object):
-    def __init__(self, engine):
+    def __init__(self, engine: SqlalchemyDatabaseEngine) -> None:
         self.engine = engine
 
-    def get(self, attribute_type: str, digest: str):
+    def get(self, attribute_type: str, digest: str) -> list:
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             statement = select(Attribute).where(Attribute.digest == digest)
@@ -550,7 +653,7 @@ class AttributeAgent(object):
 
             return response.value
 
-    def list(self, attribute_type, offset=0, limit=50):
+    def list(self, attribute_type: str, offset: int = 0, limit: int = 50) -> dict:
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             list_stmt = select(Attribute).offset(offset).limit(limit)
@@ -564,7 +667,7 @@ class AttributeAgent(object):
                 "results": seqcols,
             }
 
-    def search(self, attribute_type, digest, offset=0, limit=50):
+    def search(self, attribute_type: str, digest: str, offset: int = 0, limit: int = 50) -> dict:
         Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             list_stmt = (
@@ -586,6 +689,74 @@ class AttributeAgent(object):
             }
 
 
+class FastaDrsAgent:
+    """
+    Agent for interacting with database of FASTA DRS objects
+    """
+
+    def __init__(self, engine: SqlalchemyDatabaseEngine, url_prefix: Optional[str] = None) -> None:
+        self.engine = engine
+        self.url_prefix = url_prefix
+
+    def get(self, digest: str) -> FastaDrsObject:
+        """Get a FastaDrsObject by its digest (object_id)"""
+        with Session(self.engine) as session:
+            statement = select(FastaDrsObject).where(FastaDrsObject.id == digest)
+            results = session.exec(statement)
+            response = results.first()
+            if not response:
+                raise ValueError(f"FastaDrsObject with id '{digest}' not found")
+            return response
+
+    def add(self, fasta_drs: FastaDrsObject) -> FastaDrsObject:
+        """Add a FastaDrsObject to the database"""
+        with Session(self.engine, expire_on_commit=False) as session:
+            with session.no_autoflush:
+                existing = session.get(FastaDrsObject, fasta_drs.id)
+                if existing:
+                    return existing
+                session.add(fasta_drs)
+                session.commit()
+                return fasta_drs
+
+    def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
+        """List FastaDrsObjects with pagination"""
+        with Session(self.engine) as session:
+            list_stmt = select(FastaDrsObject).offset(offset).limit(limit)
+            cnt_stmt = select(func.count(FastaDrsObject.id))
+            cnt_res = session.exec(cnt_stmt)
+            list_res = session.exec(list_stmt)
+            count = cnt_res.one()
+            drs_objs = list_res.all()
+            return {
+                "pagination": {"page": int(offset / limit), "page_size": limit, "total": count},
+                "results": drs_objs,
+            }
+
+    def add_access_method(self, digest: str, access_method: AccessMethod) -> FastaDrsObject:
+        """
+        Add an access method to an existing FastaDrsObject.
+
+        Args:
+            digest: The digest (object_id) of the DRS object
+            access_method: The AccessMethod to add
+
+        Returns:
+            The updated FastaDrsObject
+        """
+        with Session(self.engine, expire_on_commit=False) as session:
+            drs_obj = session.get(FastaDrsObject, digest)
+            if not drs_obj:
+                raise ValueError(f"FastaDrsObject with id '{digest}' not found")
+            # Create a new list to ensure SQLAlchemy detects the change
+            current_methods = list(drs_obj.access_methods) if drs_obj.access_methods else []
+            current_methods.append(access_method)
+            drs_obj.access_methods = current_methods
+            session.add(drs_obj)
+            session.commit()
+            return drs_obj
+
+
 class RefgetDBAgent(object):
     """
     Primary aggregator agent, interface to all other agents
@@ -601,8 +772,9 @@ class RefgetDBAgent(object):
         self,
         engine: Optional[SqlalchemyDatabaseEngine] = None,
         postgres_str: Optional[str] = None,
-        schema=f"{SCHEMA_FILEPATH}/seqcol.json",
-        inherent_attrs: List[str] = ["names", "lengths", "sequences"],
+        schema=SEQCOL_SCHEMA_PATH,
+        inherent_attrs: List[str] = DEFAULT_INHERENT_ATTRS,
+        fasta_drs_url_prefix: Optional[str] = None,
     ):  # = "sqlite:///foo.db"
         if engine is not None:
             self.engine = engine
@@ -655,16 +827,17 @@ class RefgetDBAgent(object):
             self.inherent_attrs = inherent_attrs
 
         self.__sequence = SequenceAgent(self.engine)
-        self.__seqcol = SequenceCollectionAgent(self.engine, self.inherent_attrs)
+        self.__seqcol = SequenceCollectionAgent(self.engine, self.inherent_attrs, self)
         self.__pangenome = PangenomeAgent(self)
         self.__attribute = AttributeAgent(self.engine)
+        self.__fasta_drs = FastaDrsAgent(self.engine, fasta_drs_url_prefix)
 
-    def compare_digests(self, digestA, digestB):
+    def compare_digests(self, digestA: str, digestB: str) -> dict:
         A = self.seqcol.get(digestA, return_format="level2")
         B = self.seqcol.get(digestB, return_format="level2")
         return compare_seqcols(A, B)
 
-    def calc_similarities(self, digestA, digestB):
+    def calc_similarities(self, digestA: str, digestB: str) -> dict:
         """
         Calculates the Jaccard similarity between two sequence collections.
 
@@ -688,7 +861,7 @@ class RefgetDBAgent(object):
     #     B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
     #     return calc_jaccard_similarities(A,B)
 
-    def calc_similarities_seqcol_dicts(self, seqcolA, seqcolB):
+    def calc_similarities_seqcol_dicts(self, seqcolA: dict, seqcolB: dict) -> dict:
         """
         Calculates the Jaccard similarity between two sequence collections.
 
@@ -706,12 +879,12 @@ class RefgetDBAgent(object):
 
         return calc_jaccard_similarities(seqcolA, seqcolB)
 
-    def compare_1_digest(self, digestA, seqcolB):
+    def compare_1_digest(self, digestA: str, seqcolB: dict) -> dict:
         A = self.seqcol.get(digestA, return_format="level2")
         B = SequenceCollection.from_dict(seqcolB, self.inherent_attrs).level2()
         return compare_seqcols(A, B)
 
-    def retrieve_level2_digest(self, seqcoldigest):
+    def retrieve_level2_digest(self, seqcoldigest: str) -> dict:
         A = self.seqcol.get(seqcoldigest, return_format="level2")
         return A
 
@@ -731,10 +904,14 @@ class RefgetDBAgent(object):
     def attribute(self) -> AttributeAgent:
         return self.__attribute
 
-    def __str__(self):
+    @property
+    def fasta_drs(self) -> FastaDrsAgent:
+        return self.__fasta_drs
+
+    def __str__(self) -> str:
         return f"RefgetDBAgent. Connection to database: '{self.engine}'"
 
-    def truncate(self):
+    def truncate(self) -> int:
         """Delete all records from the database"""
 
         with Session(self.engine) as session:
