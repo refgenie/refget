@@ -6,7 +6,7 @@ from pathlib import Path
 
 from refget.models import SequenceCollection as pythonSequenceCollection
 
-from refget.refget_store import GlobalRefgetStore, StorageMode
+from refget.refget_store import RefgetStore, StorageMode
 
 try:
     from gtars.refget import (
@@ -57,5 +57,5 @@ class TestRustPySequenceCollection:
 class TestRustRefgetStore:
     def test_store(self):
         # just make sure this is callable if gtars is installed.
-        s = GlobalRefgetStore(mode=StorageMode.Raw)
+        s = RefgetStore(mode=StorageMode.Raw)
         s.import_fasta("test_fasta/base.fa")

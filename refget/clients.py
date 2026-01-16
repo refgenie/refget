@@ -176,10 +176,10 @@ class SequenceCollectionClient(RefgetClient):
         return self._get_fasta_helper().download(digest, dest_path, access_id)
 
     def download_fasta_to_store(
-        self, digest: str, store: "GlobalRefgetStore", access_id: str = None, temp_dir: str = None
+        self, digest: str, store: "RefgetStore", access_id: str = None, temp_dir: str = None
     ) -> str:
         """
-        Download the FASTA file and import it into a GlobalRefgetStore.
+        Download the FASTA file and import it into a RefgetStore.
 
         This method downloads the FASTA file from the DRS endpoint and immediately
         imports it into the provided RefgetStore, enabling local sequence retrieval
@@ -187,7 +187,7 @@ class SequenceCollectionClient(RefgetClient):
 
         Args:
             digest (str): The sequence collection digest
-            store (GlobalRefgetStore): The GlobalRefgetStore instance to import into
+            store (RefgetStore): The RefgetStore instance to import into
             access_id (str, optional): Specific access method to use. If None, tries all.
             temp_dir (str, optional): Directory for temporary download. If None, uses system temp.
 
@@ -196,12 +196,12 @@ class SequenceCollectionClient(RefgetClient):
 
         Raises:
             ValueError: If no access methods available or specified access_id not found
-            ImportError: If gtars/GlobalRefgetStore is not available
+            ImportError: If gtars/RefgetStore is not available
 
         Example:
-            >>> from refget.refget_store import GlobalRefgetStore, StorageMode
+            >>> from refget.refget_store import RefgetStore, StorageMode
             >>> from refget.clients import SequenceCollectionClient
-            >>> store = GlobalRefgetStore(StorageMode.Encoded)
+            >>> store = RefgetStore(StorageMode.Encoded)
             >>> client = SequenceCollectionClient()
             >>> collection_digest = client.download_fasta_to_store("abc123", store)
             >>> # Now you can retrieve sequences by digest from the local store
@@ -526,10 +526,10 @@ class FastaDrsClient(RefgetClient):
         raise ValueError(f"No accessible URLs for {digest}")
 
     def download_to_store(
-        self, digest: str, store: "GlobalRefgetStore", access_id: str = None, temp_dir: str = None
+        self, digest: str, store: "RefgetStore", access_id: str = None, temp_dir: str = None
     ) -> str:
         """
-        Download the FASTA file and import it into a GlobalRefgetStore.
+        Download the FASTA file and import it into a RefgetStore.
 
         This method downloads the FASTA file from the DRS endpoint and immediately
         imports it into the provided RefgetStore, enabling local sequence retrieval
@@ -537,7 +537,7 @@ class FastaDrsClient(RefgetClient):
 
         Args:
             digest (str): The sequence collection digest
-            store (GlobalRefgetStore): The GlobalRefgetStore instance to import into
+            store (RefgetStore): The RefgetStore instance to import into
             access_id (str, optional): Specific access method to use. If None, tries all.
             temp_dir (str, optional): Directory for temporary download. If None, uses system temp.
 
@@ -546,11 +546,11 @@ class FastaDrsClient(RefgetClient):
 
         Raises:
             ValueError: If no access methods available or specified access_id not found
-            ImportError: If gtars/GlobalRefgetStore is not available
+            ImportError: If gtars/RefgetStore is not available
 
         Example:
-            >>> from refget.refget_store import GlobalRefgetStore, StorageMode
-            >>> store = GlobalRefgetStore(StorageMode.Encoded)
+            >>> from refget.refget_store import RefgetStore, StorageMode
+            >>> store = RefgetStore(StorageMode.Encoded)
             >>> client = FastaDrsClient()
             >>> collection_digest = client.download_to_store("abc123", store)
         """
@@ -559,7 +559,7 @@ class FastaDrsClient(RefgetClient):
 
         # Verify store is available
         try:
-            from .refget_store import GlobalRefgetStore as RefgetStoreClass
+            from .refget_store import RefgetStore as RefgetStoreClass
         except ImportError:
             raise ImportError("gtars is required for download_to_store functionality")
 
