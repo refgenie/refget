@@ -33,6 +33,9 @@ _LOGGER = logging.getLogger(__name__)
 # Import the global variable from the router
 _SAMPLE_DIGESTS: dict[str, list[str]] = {}
 
+# Router configuration exposed for service-info endpoints
+_ROUTER_CONFIG: dict = {}
+
 
 # dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
 async def get_dbagent(request: Request) -> RefgetDBAgent:
@@ -44,6 +47,7 @@ def create_refget_router(
     collections: bool = True,
     pangenomes: bool = False,
     fasta_drs: bool = False,
+    refget_store_url: str = None,
 ) -> APIRouter:
     """
     Create a FastAPI router for the sequence collection API.
@@ -56,6 +60,7 @@ def create_refget_router(
         collections (bool): Include sequence collection endpoints
         pangenomes (bool): Include pangenome endpoints
         fasta_drs (bool): Include FASTA DRS endpoints
+        refget_store_url (str): URL of backing RefgetStore (e.g., s3://bucket/store/)
 
     Returns:
         (APIRouter): A FastAPI router with the specified endpoints
@@ -65,6 +70,9 @@ def create_refget_router(
         app.include_router(create_refget_router(fasta_drs=True), prefix="/seqcol")
         ```
     """
+    # Store config for service-info discovery
+    _ROUTER_CONFIG["fasta_drs"] = fasta_drs
+    _ROUTER_CONFIG["refget_store_url"] = refget_store_url
 
     refget_router = APIRouter()
     if sequences:

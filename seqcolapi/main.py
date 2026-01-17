@@ -15,7 +15,7 @@ from refget.const import HUMANS_SAMPLE_LIST, MOUSE_SAMPLES_LIST
 from refget.models import HumanReadableNames
 from .examples import *
 
-from refget.refget_router import _SAMPLE_DIGESTS
+from refget.refget_router import _SAMPLE_DIGESTS, _ROUTER_CONFIG
 
 global _LOGGER
 _LOGGER = logging.getLogger(__name__)
@@ -84,9 +84,18 @@ app.add_middleware(  # This is a public API, so we allow all origins
     allow_headers=["*"],
 )
 
+# Configuration
+# RefgetStore URL (set to None if not using a backing store)
+REFGET_STORE_URL = None  # e.g., "s3://my-bucket/store/"
+
 # This is where the magic happens
 # This will add the seqcol endpoints to the app
-refget_router = create_refget_router(sequences=False, pangenomes=False, fasta_drs=True)
+refget_router = create_refget_router(
+    sequences=False,
+    pangenomes=False,
+    fasta_drs=True,
+    refget_store_url=REFGET_STORE_URL,
+)
 print(refget_router)
 app.include_router(refget_router)
 
@@ -135,6 +144,27 @@ async def index(request: Request):
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
 async def service_info():
+    # Build seqcol capabilities object
+    seqcol_info = {
+        "schema": dbagent.schema_dict,
+        "sorted_name_length_pairs": True,
+        "fasta_drs": {
+            "enabled": _ROUTER_CONFIG.get("fasta_drs", False)
+        },
+    }
+
+    # Add refget_store info
+    store_url = _ROUTER_CONFIG.get("refget_store_url")
+    if store_url:
+        seqcol_info["refget_store"] = {
+            "enabled": True,
+            "url": store_url
+        }
+    else:
+        seqcol_info["refget_store"] = {
+            "enabled": False
+        }
+
     ret = {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",
@@ -150,7 +180,7 @@ async def service_info():
         "updatedAt": "2025-02-20T00:00:00Z",
         "environment": "dev",
         "version": ALL_VERSIONS,
-        "seqcol": {"schema": dbagent.schema_dict, "sorted_name_length_pairs": True},
+        "seqcol": seqcol_info,
     }
     return JSONResponse(content=ret)
 

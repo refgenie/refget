@@ -394,6 +394,54 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = "/service-info"
         return _try_urls(self.urls, endpoint)
 
+    def is_fasta_drs_enabled(self) -> bool:
+        """
+        Check if FastaDRS endpoints are available.
+
+        Returns:
+            (bool): True if FastaDRS is enabled, False otherwise.
+        """
+        info = self.service_info()
+        return info.get("seqcol", {}).get("fasta_drs", {}).get("enabled", False)
+
+    def get_refget_store_url(self) -> Optional[str]:
+        """
+        Discover RefgetStore URL from service-info if available.
+
+        Returns:
+            (str): The RefgetStore URL if configured, None otherwise.
+        """
+        info = self.service_info()
+        store_config = info.get("seqcol", {}).get("refget_store", {})
+        if store_config.get("enabled"):
+            return store_config.get("url")
+        return None
+
+    def get_refget_store(self, cache_dir: str) -> "RefgetStore":
+        """
+        Get a RefgetStore instance connected to the server's backing store.
+
+        Args:
+            cache_dir (str): Local directory for caching store data
+
+        Returns:
+            (RefgetStore): RefgetStore instance loaded from remote
+
+        Raises:
+            ValueError: If server doesn't have a RefgetStore configured
+            ImportError: If gtars is not installed
+        """
+        url = self.get_refget_store_url()
+        if not url:
+            raise ValueError("Server does not have a RefgetStore configured")
+
+        try:
+            from .processing import RefgetStore
+        except ImportError:
+            raise ImportError("gtars is required: pip install gtars")
+
+        return RefgetStore.load_remote(cache_dir, url)
+
 
 class PangenomeClient(RefgetClient):
     pass
