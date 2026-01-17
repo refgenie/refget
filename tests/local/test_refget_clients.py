@@ -1,55 +1,43 @@
-import pytest
-from refget import SequenceCollectionClient
+"""
+Unit tests for refget client classes.
 
-DEMO_FILES = ["demo.fa", "demo2.fa", "demo3.fa", "demo4.fa", "demo5.fa"]
+These tests verify client construction and basic functionality
+without requiring a running server.
 
-
-class TestEmptyConstructor:
-    def test_no_schemas_required(self, api_root):
-        assert isinstance(SequenceCollectionClient(urls=[api_root]), SequenceCollectionClient)
-
-
-@pytest.mark.require_service
-class TestSequenceCollectionClient:
-    def test_get_collection(self, api_root):
-        rgc = SequenceCollectionClient(urls=[api_root])
-        seqcol = rgc.get_collection("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk")
-        assert isinstance(seqcol, dict)
-
-    def test_list_collections(self, api_root):
-        rgc = SequenceCollectionClient(urls=[api_root])
-        l = rgc.list_collections()
-        assert isinstance(l, dict)
-        assert "results" in l
-        assert len(l["results"]) > 0
-
-    def test_list_attributes(self, api_root):
-        rgc = SequenceCollectionClient(urls=[api_root])
-        a = rgc.list_attributes("lengths")
-        assert isinstance(a, dict)
-        assert "results" in a
-        assert len(a["results"]) > 0
-
-    def test_compare(self, api_root):
-        rgc = SequenceCollectionClient(urls=[api_root])
-        c = rgc.compare("XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk", "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk")
-        assert isinstance(c, dict)
-        assert "digests" in c
+For integration tests that test against a real API,
+see tests/integration/test_seqcolapi_client.py
+"""
+from refget import SequenceCollectionClient, FastaDrsClient
 
 
-# _LOGGER = logging.getLogger(__name__)
-# _LOGGER.setLevel("DEBUG")
-# rgc = RefgetClient(seqcol_api_urls=["https://seqcolapi.databio.org", "https://localhost"])
-# rgc = RefgetClient(seqcol_api_urls=["https://localhost", "https://seqcolapi.databio.org"])
+class TestClientConstruction:
+    """Test client class construction"""
 
-# seqcol = rgc.get_collection("fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32")
-# seqcol = rgc.get_collection("MFxJDHkVdTBlPvUFRbYWDZYxmycvHSRp")
-# l = rgc.list_collections(page_size=5)
-# a = rgc.list_attributes("lengths", page_size=3)
+    def test_seqcol_client_default_urls(self):
+        """SequenceCollectionClient can be created with default URLs"""
+        client = SequenceCollectionClient()
+        assert isinstance(client, SequenceCollectionClient)
+        assert len(client.urls) > 0
 
-# l = rgc.list_collections(page=1, page_size=2, attribute="lengths", attribute_digest="cGRMZIb3AVgkcAfNv39RN7hnT5Chk7RX")
+    def test_seqcol_client_custom_urls(self):
+        """SequenceCollectionClient accepts custom URLs"""
+        client = SequenceCollectionClient(urls=["https://example.com"])
+        assert isinstance(client, SequenceCollectionClient)
+        assert client.urls == ["https://example.com"]
 
+    def test_seqcol_client_strips_trailing_slashes(self):
+        """SequenceCollectionClient strips trailing slashes from URLs"""
+        client = SequenceCollectionClient(urls=["https://example.com/"])
+        assert client.urls == ["https://example.com"]
 
-# rgc.get_sequence(seqcol["sequences"][0])
+    def test_fasta_drs_client_default_urls(self):
+        """FastaDrsClient can be created with default URLs"""
+        client = FastaDrsClient()
+        assert isinstance(client, FastaDrsClient)
+        assert len(client.urls) > 0
 
-# rgc.compare("fLf5M0BOIPIqcfbE6R8oYwxsy-PnoV32", "MFxJDHkVdTBlPvUFRbYWDZYxmycvHSRp")
+    def test_fasta_drs_client_custom_urls(self):
+        """FastaDrsClient accepts custom URLs"""
+        client = FastaDrsClient(urls=["https://example.com/fasta"])
+        assert isinstance(client, FastaDrsClient)
+        assert client.urls == ["https://example.com/fasta"]

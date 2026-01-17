@@ -3,7 +3,7 @@
 import logging
 
 from .const import *
-from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient
+from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient, FastaDrsClient
 from .digest_functions import *
 from .utilities import *
 from ._version import __version__

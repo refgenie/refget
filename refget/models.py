@@ -6,7 +6,7 @@ from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
 from typing import List, Optional, Dict, Any, Literal, TYPE_CHECKING
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, field_serializer
 
 
 from .digest_functions import sha512t24u_digest
@@ -117,6 +117,15 @@ class DrsObject(SQLModel, table=False):
             return []
         return [Checksum.model_validate(item) if isinstance(item, dict) else item for item in v]
 
+    @field_serializer("checksums")
+    def serialize_checksums(self, v):
+        """Serialize Checksum objects (or dicts) to dicts for JSON output."""
+        if v is None:
+            return []
+        return [
+            item.model_dump() if hasattr(item, "model_dump") else item for item in v
+        ]
+
     @field_validator("access_methods", mode="before")
     @classmethod
     def coerce_access_methods(cls, v):
@@ -125,6 +134,15 @@ class DrsObject(SQLModel, table=False):
             return []
         return [
             AccessMethod.model_validate(item) if isinstance(item, dict) else item for item in v
+        ]
+
+    @field_serializer("access_methods")
+    def serialize_access_methods(self, v):
+        """Serialize AccessMethod objects (or dicts) to dicts for JSON output."""
+        if v is None:
+            return []
+        return [
+            item.model_dump() if hasattr(item, "model_dump") else item for item in v
         ]
 
 

@@ -25,9 +25,21 @@ This builds seqcolapi, pushes to DockerHub, and deploys to ECS.
 
 ## Testing
 
-### Local unit tests of refget package
+### Unit tests
 
-- `pytest` to test `refget` package, local unit tests
+```bash
+pytest
+```
+
+### Integration tests (requires Docker)
+
+Integration tests run against an ephemeral PostgreSQL database in Docker:
+
+```bash
+./scripts/test-integration.sh
+```
+
+This starts the test database, runs tests, and cleans up automatically.
 
 ## Development and deployment: Backend
 

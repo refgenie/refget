@@ -782,6 +782,7 @@ class RefgetDBAgent(object):
             if not postgres_str:
                 # Configure via environment variables
                 POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+                POSTGRES_PORT = os.getenv("POSTGRES_PORT")
                 POSTGRES_DB = os.getenv("POSTGRES_DB")
                 POSTGRES_USER = os.getenv("POSTGRES_USER")
                 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
@@ -790,6 +791,7 @@ class RefgetDBAgent(object):
                     username=POSTGRES_USER,
                     password=POSTGRES_PASSWORD,
                     host=POSTGRES_HOST,
+                    port=int(POSTGRES_PORT) if POSTGRES_PORT else None,
                     database=POSTGRES_DB,
                 )
 
