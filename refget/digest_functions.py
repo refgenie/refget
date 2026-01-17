@@ -1,17 +1,14 @@
+"""Digest functions with Python fallbacks.
+
+When gtars is available, uses fast Rust implementations.
+When gtars is not available, falls back to pure Python implementations (slower).
+"""
 import hashlib
-import binascii
 import base64
 
 from typing import Callable, Union
 
 from .const import GTARS_INSTALLED
-
-
-def trunc512_digest(seq, offset=24) -> str:
-    """Deprecated GA4GH digest function"""
-    digest = hashlib.sha512(seq.encode()).digest()
-    hex_digest = binascii.hexlify(digest[:offset])
-    return hex_digest.decode()
 
 
 def ga4gh_digest(seq):
@@ -21,7 +18,7 @@ def ga4gh_digest(seq):
 
 
 def py_sha512t24u_digest(seq: str | bytes, offset: int = 24) -> str:
-    """GA4GH digest function in python"""
+    """GA4GH digest function in pure Python (slower fallback)."""
     if isinstance(seq, str):
         seq = seq.encode("utf-8")
     digest = hashlib.sha512(seq).digest()
@@ -30,31 +27,17 @@ def py_sha512t24u_digest(seq: str | bytes, offset: int = 24) -> str:
 
 
 def py_md5_digest(seq) -> str:
-    """MD5 digest function in Python"""
+    """MD5 digest function in pure Python."""
     return hashlib.md5(seq.encode()).hexdigest()
 
 
+# Default exports - use gtars if available, else Python fallback
 if GTARS_INSTALLED:
-
-    from gtars.refget import sha512t24u_digest as gtars_sha512t24u_digest
-    from gtars.refget import md5_digest as gtars_md5_digest
-    from gtars.refget import digest_fasta as fasta_to_seq_digests
-
-    sha512t24u_digest = gtars_sha512t24u_digest
-    md5_digest = gtars_md5_digest
+    from .processing.digest import sha512t24u_digest, md5_digest
 else:
-    # gtars package is not installed, so we will use the Python implementation,
-    # which will be much slower.
-
-    def gtars_sha512t24u_digest(seq):
-        raise Exception("gtars is not installed")
-
-    def fasta_to_seq_digests(*args, **kwargs):
-        raise ImportError("gtars is required for this function.")
-
     sha512t24u_digest = py_sha512t24u_digest
     md5_digest = py_md5_digest
 
 
 DigestFunction = Callable[[Union[str, bytes]], str]
-""" A type alias for a digest function that takes a sequence and returns a digest. """
+"""A type alias for a digest function that takes a sequence and returns a digest."""

@@ -9,16 +9,14 @@ from .utilities import *
 from ._version import __version__
 from .models import SequenceCollection
 
-from .refget_store import *
+# Processing submodule (requires gtars) - users import explicitly:
+# from refget.processing import RefgetStore, StorageMode
 
 # Public API for adding FASTA files
 from .refget import (
     add_fasta,
     add_fasta_pep,
     add_access_method,
-    # Aliases for backwards compatibility
-    load_fasta,
-    load_fasta_pep,
 )
 
 try:

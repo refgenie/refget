@@ -1,15 +1,15 @@
 import pytest
 
-from refget import (
-    gtars_sha512t24u_digest,
-    ga4gh_digest,
-    py_sha512t24u_digest,
-    gtars_md5_digest,
-    py_md5_digest,
-    fasta_to_seq_digests,
-)
+from refget import ga4gh_digest, py_sha512t24u_digest, py_md5_digest
 from refget.const import GTARS_INSTALLED
 from pathlib import Path
+
+if GTARS_INSTALLED:
+    from refget.processing.digest import (
+        sha512t24u_digest as gtars_sha512t24u_digest,
+        md5_digest as gtars_md5_digest,
+        digest_fasta,
+    )
 
 
 @pytest.mark.skipif(not GTARS_INSTALLED, reason="gtars is not installed")
@@ -38,8 +38,11 @@ class TestRustDigest:
     def test_fasta_digest(self):
         # Function should accept a string or a PosixPath
         p = Path("test_fasta/base.fa")
-        res_path = fasta_to_seq_digests(p)
-        res_str = fasta_to_seq_digests("test_fasta/base.fa")
+        res_path = digest_fasta(p)
+        res_str = digest_fasta("test_fasta/base.fa")
 
-        for i in range(len(res_path)):
-            assert res_path[i].metadata.sha512t24u == res_str[i].metadata.sha512t24u
+        for i in range(len(res_path.sequences)):
+            assert (
+                res_path.sequences[i].metadata.sha512t24u
+                == res_str.sequences[i].metadata.sha512t24u
+            )

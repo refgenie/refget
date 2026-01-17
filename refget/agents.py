@@ -32,11 +32,11 @@ from .models import (
     AccessURL,
 )
 from .utilities import (
-    fasta_to_seqcol_dict,
     compare_seqcols,
     build_pangenome_model,
     calc_jaccard_similarities,
 )
+from .processing.fasta import fasta_to_seqcol_dict
 from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH
 
 ATTR_TYPE_MAP = {

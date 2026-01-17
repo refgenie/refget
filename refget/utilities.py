@@ -12,7 +12,7 @@ from .const import (
     SEQCOL_SCHEMA_PATH,
 )
 from .exceptions import InvalidSeqColError
-from .digest_functions import sha512t24u_digest, fasta_to_seq_digests, DigestFunction
+from .digest_functions import sha512t24u_digest, DigestFunction
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,65 +89,6 @@ def seqcol_to_snlp_digest(seqcol_obj: SeqColDict) -> str:
     nlp_strings.sort()
     snlp_digest = sha512t24u_digest(canonical_str(nlp_strings))
     return snlp_digest
-
-
-def fasta_to_digest(
-    fa_file_path: str | Path, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
-) -> str:
-    """
-    Given a fasta file path, return a digest
-
-    Args:
-        fa_file_path (str | Path): Path to the fasta file
-        inherent_attrs (Optional[list], optional): Attributes to include in the digest.
-
-    Returns:
-        (str): The top-level digest for this sequence collection
-    """
-    seqcol_obj = fasta_to_seqcol_dict(fa_file_path)
-    return seqcol_digest(seqcol_obj, inherent_attrs)
-
-
-def fasta_to_seqcol_dict(
-    fasta_file_path: str,
-    digest_function: DigestFunction = sha512t24u_digest,
-) -> SeqColDict:
-    """
-    Convert a FASTA file into a Sequence Collection object.
-
-    Args:
-        fasta_file_path (str): Path to the FASTA file
-        digest_function (DigestFunction, optional): Digest function to use. Defaults to sha512t24u_digest.
-
-    Returns:
-        (dict): A canonical sequence collection object
-    """
-
-    fasta_seq_digests = fasta_to_seq_digests(fasta_file_path)
-    seqcol_dict = {
-        "lengths": [],
-        "names": [],
-        "sequences": [],
-        "sorted_name_length_pairs": [],
-        "sorted_sequences": [],
-    }
-    for s in fasta_seq_digests:
-        seq_name = s.metadata.name
-        seq_length = s.metadata.length
-        seq_digest = "SQ." + s.metadata.sha512t24u
-        nlp = {"length": seq_length, "name": seq_name}  # for name_length_pairs
-        snlp_digest = digest_function(canonical_str(nlp))  # for sorted_name_length_pairs
-        seqcol_dict["lengths"].append(seq_length)
-        seqcol_dict["names"].append(seq_name)
-        # seqcol_dict["name_length_pairs"].append(nlp)
-        seqcol_dict["sorted_name_length_pairs"].append(snlp_digest)
-        seqcol_dict["sequences"].append(seq_digest)
-        seqcol_dict["sorted_sequences"].append(seq_digest)
-    seqcol_dict["sorted_name_length_pairs"].sort()
-    # seqcol_dict_digest = seqcol_digest(seqcol_dict)
-    # dsc = DigestedSequenceCollection(**seqcol_dict)
-    # dsc.digest = seqcol_digest(seqcol_dict)
-    return seqcol_dict
 
 
 def build_sorted_name_length_pairs(

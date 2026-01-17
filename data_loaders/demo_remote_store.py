@@ -15,9 +15,9 @@ import os
 import tempfile
 from pathlib import Path
 
-# Import from refget wrapper (consistent with other tutorials)
+# Import from refget processing submodule (requires gtars)
 # Can also use: from gtars.refget import RefgetStore
-from refget.refget_store import RefgetStore
+from refget.processing import RefgetStore
 
 # Remote store URL (2023 Human Pangenome Reference - 47 haplotype-resolved assemblies)
 REMOTE_URL = "https://refgenie.s3.us-east-1.amazonaws.com/pangenome_refget_store"

@@ -42,10 +42,12 @@ DEFAULT_PASSTHRU_ATTRS = []
 
 GTARS_INSTALLED = False
 try:
+    import gtars.refget  # noqa: F401
+
     GTARS_INSTALLED = True
 except ImportError:
     GTARS_INSTALLED = False
-    _LOGGER.error("gtars not installed. Some functions will be slower or unavailable.")
+    _LOGGER.info("gtars not installed. Some functions will be slower or unavailable.")
 
 
 # HUMANS_SAMPLE_LIST = [

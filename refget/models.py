@@ -1,18 +1,18 @@
 import json
 import logging
-import os
-import hashlib
-
 from copy import copy
 from datetime import datetime, timezone
 from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
-from typing import List, Optional, Dict, Any, Literal
+from typing import List, Optional, Dict, Any, Literal, TYPE_CHECKING
 from pydantic import BaseModel, field_validator
 
 
 from .digest_functions import sha512t24u_digest
+
+if TYPE_CHECKING:
+    from gtars.refget import SequenceCollection as gtarsSequenceCollection
 
 
 class PydanticJSON(TypeDecorator):
@@ -44,9 +44,7 @@ from .utilities import (
     canonical_str,
     build_name_length_pairs,
     seqcol_dict_to_level1_dict,
-    fasta_to_seqcol_dict,
     level1_dict_to_seqcol_digest,
-    fasta_to_digest,
 )
 
 
@@ -166,43 +164,6 @@ class FastaDrsObject(DrsObject, table=True):
         return self.model_copy(update={"self_uri": f"{base_uri}/{self.id}"})
 
     @classmethod
-    def _compute_fai_index(cls, fasta_file: str) -> dict:
-        """
-        Compute FAI index data for a FASTA file.
-
-        Returns:
-            dict with keys: line_bases, extra_line_bytes, offsets
-        """
-        offsets = []
-        line_bases = None
-        extra_line_bytes = None
-
-        with open(fasta_file, "rb") as f:
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                if line.startswith(b">"):
-                    # Record offset to start of sequence data
-                    offset = f.tell()
-                    offsets.append(offset)
-
-                    # Read first sequence line to get line_bases/extra_line_bytes
-                    first_line = f.readline()
-                    if first_line and not first_line.startswith(b">"):
-                        line_bytes = len(first_line)
-                        bases = len(first_line.rstrip(b"\r\n"))
-                        if line_bases is None:
-                            line_bases = bases
-                            extra_line_bytes = line_bytes - bases
-
-        return {
-            "line_bases": line_bases,
-            "extra_line_bytes": extra_line_bytes,
-            "offsets": offsets,
-        }
-
-    @classmethod
     def from_fasta_file(cls, fasta_file: str, digest: str = None) -> "FastaDrsObject":
         """
         Given a FASTA file, create a FastaDrsObject object,
@@ -211,67 +172,17 @@ class FastaDrsObject(DrsObject, table=True):
         Args:
             fasta_file (str): Path to a FASTA file
             digest (str): The refget digest of the sequence collection
-                (optional). If not included, it wil be computed
+                (optional). If not included, it will be computed
 
         Returns:
             (FastaDrsObject): The FastaDrsObject object
+
+        Raises:
+            ImportError: If gtars is not installed (required for FASTA processing)
         """
+        from .processing.fasta import create_fasta_drs_object
 
-        file_size = os.path.getsize(fasta_file)
-
-        # Compute checksum (SHA-256)
-        sha256 = hashlib.sha256()
-        md5 = hashlib.md5()
-        with open(fasta_file, "rb") as f:
-            for block in iter(lambda: f.read(65536), b""):
-                sha256.update(block)
-                md5.update(block)
-        sha256_checksum_val = sha256.hexdigest()
-        md5_checksum_val = md5.hexdigest()
-
-        # Compute FAI index
-        fai_index = cls._compute_fai_index(fasta_file)
-
-        now = datetime.now(timezone.utc)
-
-        if digest is None:
-            # If no digest is provided, compute it from the file
-            digest = fasta_to_digest(fasta_file)
-
-        return FastaDrsObject(
-            id=digest,
-            name=os.path.basename(fasta_file),
-            self_uri=None,  # Will be populated by to_response() when serving via API
-            size=file_size,
-            created_time=now,
-            updated_time=now,
-            version="1.0",
-            mime_type="application/fasta",  # You could use `mimetypes` to guess if needed
-            checksums=[
-                Checksum(type="sha-256", checksum=sha256_checksum_val),
-                Checksum(type="refget.seqcol", checksum=digest),
-                Checksum(type="md5", checksum=md5_checksum_val),
-            ],
-            access_methods=[],  # Populate this if you host the file somewhere
-            description=f"DRS object for {os.path.basename(fasta_file)}",
-            aliases=[os.path.basename(fasta_file).split(".")[0]],
-            line_bases=fai_index["line_bases"],
-            extra_line_bytes=fai_index["extra_line_bytes"],
-            offsets=fai_index["offsets"],
-        )
-
-
-try:
-    from gtars.refget import (  # Adjust this import path to where your PyO3 module is
-        SequenceCollection as gtarsSequenceCollection,
-    )
-
-    _RUST_BINDINGS_AVAILABLE = True
-except ImportError as e:
-    _LOGGER.info(
-        f"Could not import gtars python bindings. `from_PySequenceCollection` will not be available."
-    )
-    _RUST_BINDINGS_AVAILABLE = False
+        return create_fasta_drs_object(fasta_file, digest)
 
 
 class Sequence(SQLModel, table=True):
@@ -469,7 +380,12 @@ class SequenceCollection(SQLModel, table=True):
 
         Returns:
             (SequenceCollection): The SequenceCollection object
+
+        Raises:
+            ImportError: If gtars is not installed (required for FASTA processing)
         """
+        from .processing.fasta import fasta_to_seqcol_dict
+
         seqcol = fasta_to_seqcol_dict(fasta_file)
         return cls.from_dict(seqcol)
 
@@ -541,7 +457,7 @@ class SequenceCollection(SQLModel, table=True):
                     human_readable_names_list.append(
                         HumanReadableNames(human_readable_name=name_str, digest=seqcol_digest)
                     )
-            # Handle the case where a single string is provided for backward compatibility
+            # Handle single string input (convert to list)
             elif isinstance(seqcol_dict["human_readable_names"], str):
                 human_readable_names_list.append(
                     HumanReadableNames(
@@ -571,7 +487,7 @@ class SequenceCollection(SQLModel, table=True):
 
     @classmethod
     def from_PySequenceCollection(
-        cls, gtars_seq_col: gtarsSequenceCollection
+        cls, gtars_seq_col: "gtarsSequenceCollection"
     ) -> "SequenceCollection":
         """
         Given a PySequenceCollection object (from Rust bindings), create a SequenceCollection object.
@@ -581,73 +497,13 @@ class SequenceCollection(SQLModel, table=True):
 
         Returns:
             (SequenceCollection): The SequenceCollection object.
+
+        Raises:
+            ImportError: If gtars is not installed (required for this conversion)
         """
-        if not _RUST_BINDINGS_AVAILABLE:
-            raise RuntimeError(
-                "Rust sequence collection bindings are not available. Cannot use `from_PySequenceCollection`."
-            )
+        from .processing.bridge import seqcol_from_gtars
 
-        sequences_value = []
-        names_value = []
-        lengths_value = []
-
-        temp_seqcol_dict = {"names": [], "lengths": [], "sequences": []}
-
-        for record in gtars_seq_col.sequences:
-            sequences_value.append("SQ." + record.metadata.sha512t24u)
-            names_value.append(record.metadata.name)
-            lengths_value.append(record.metadata.length)
-
-            temp_seqcol_dict["names"].append(record.metadata.name)
-            temp_seqcol_dict["lengths"].append(record.metadata.length)
-            temp_seqcol_dict["sequences"].append(record.metadata.sha512t24u)
-
-        sequences_attr = SequencesAttr(
-            digest=gtars_seq_col.lvl1.sequences_digest, value=sequences_value
-        )
-        _LOGGER.debug(f"SequencesAttr: {sequences_attr}")
-
-        names_attr = NamesAttr(digest=gtars_seq_col.lvl1.names_digest, value=names_value)
-        _LOGGER.debug(f"NamesAttr: {names_attr}")
-
-        lengths_attr = LengthsAttr(
-            digest=gtars_seq_col.lvl1.lengths_digest,
-            value=lengths_value,
-        )
-        _LOGGER.debug(f"LengthsAttr: {lengths_attr}")
-
-        nlp = build_name_length_pairs(temp_seqcol_dict)
-        nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
-        _LOGGER.debug(f"NameLengthPairsAttr: {nlp_attr}")
-
-        sorted_sequences_value = copy(sequences_value)
-        sorted_sequences_value.sort()
-        sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
-        sorted_sequences_attr = SortedSequencesAttr(
-            digest=sorted_sequences_digest, value=sorted_sequences_value
-        )
-        _LOGGER.debug(f"SortedSequencesAttr: {sorted_sequences_attr}")
-
-        snlp_digests = []
-        for pair in nlp:
-            snlp_digests.append(sha512t24u_digest(canonical_str(pair)))
-        snlp_digests.sort()
-        sorted_name_length_pairs_digest = sha512t24u_digest(canonical_str(snlp_digests))
-        _LOGGER.debug(f"Sorted Name Length Pairs Digest: {sorted_name_length_pairs_digest}")
-
-        seqcol = SequenceCollection(
-            digest=gtars_seq_col.digest,
-            human_readable_names=[],
-            sequences=sequences_attr,
-            sorted_sequences=sorted_sequences_attr,
-            names=names_attr,
-            lengths=lengths_attr,
-            name_length_pairs=nlp_attr,
-            sorted_name_length_pairs_digest=sorted_name_length_pairs_digest,
-        )
-
-        _LOGGER.debug(f"Created SequenceCollection from PySequenceCollection: {seqcol}")
-        return seqcol
+        return seqcol_from_gtars(gtars_seq_col)
 
     def level1(self):
         """
