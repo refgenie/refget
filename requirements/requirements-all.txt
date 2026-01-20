@@ -3,3 +3,5 @@ gtars>=0.3.0
 pyyaml
 requests
 sqlmodel
+tomli_w
+typer>=0.9.0

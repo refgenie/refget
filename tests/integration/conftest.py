@@ -8,6 +8,9 @@ Prerequisites:
 """
 import os
 import pytest
+import socket
+import threading
+import time
 from pathlib import Path
 
 # Set environment variables BEFORE any app imports
@@ -35,6 +38,13 @@ KNOWN_DIGESTS = {
     "different_names.fa": "QvT5tAQ0B8Vkxd-qFftlzEk2QyfPtgOv",
     "different_order.fa": "Tpdsg75D4GKCGEHtIiDSL9Zx-DSuX5V8",
 }
+
+
+def find_free_port() -> int:
+    """Find a free port on localhost."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        return s.getsockname()[1]
 
 
 @pytest.fixture(scope="session")
@@ -98,3 +108,64 @@ def different_names_digest():
 def different_order_digest():
     """Digest for different_order.fa"""
     return KNOWN_DIGESTS["different_order.fa"]
+
+
+@pytest.fixture(scope="session")
+def test_server(loaded_dbagent):
+    """
+    Run the seqcolapi server on a free port for CLI integration tests.
+
+    Yields the base URL (e.g., "http://localhost:12345") for the server.
+    """
+    import uvicorn
+    from seqcolapi.main import app
+    from refget.refget_router import get_dbagent
+
+    def override_get_dbagent():
+        return loaded_dbagent
+
+    app.dependency_overrides[get_dbagent] = override_get_dbagent
+    app.state.dbagent = loaded_dbagent
+
+    port = find_free_port()
+    server_url = f"http://localhost:{port}"
+
+    # Run server in a background thread
+    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
+    server = uvicorn.Server(config)
+
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+
+    # Wait for server to start
+    max_wait = 5.0
+    start_time = time.time()
+    while time.time() - start_time < max_wait:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.1):
+                break
+        except (ConnectionRefusedError, OSError):
+            time.sleep(0.1)
+    else:
+        raise RuntimeError(f"Test server failed to start on port {port}")
+
+    yield server_url
+
+    # Shutdown
+    server.should_exit = True
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def cli_runner():
+    """CLI runner for integration tests."""
+    from typer.testing import CliRunner
+    from refget.cli.main import app
+
+    runner = CliRunner()
+
+    def run(*args, env=None):
+        """Run CLI command with optional environment variables."""
+        return runner.invoke(app, list(args), env=env)
+
+    return run
