@@ -3,10 +3,7 @@
 """
 Integration tests for refget seqcol CLI commands that require a server.
 
-These tests use a real HTTP server backed by the test database.
-Prerequisites:
-1. Start test database: ./tests/integration/scripts/test-db.sh start
-2. Run tests: RUN_INTEGRATION_TESTS=true pytest tests/integration/
+Run with: ./scripts/test-integration.sh
 """
 
 import pytest

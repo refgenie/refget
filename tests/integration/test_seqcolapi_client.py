@@ -3,18 +3,8 @@ SeqCol API Integration Tests
 
 Tests API endpoints using FastAPI TestClient with ephemeral Docker PostgreSQL.
 
-Prerequisites:
-1. Start test database: ./tests/integration/scripts/test-db.sh start
-2. Run tests: RUN_INTEGRATION_TESTS=true pytest tests/integration/
+Run with: ./scripts/test-integration.sh
 """
-import os
-import pytest
-
-# Skip all tests in this module unless RUN_INTEGRATION_TESTS=true
-pytestmark = pytest.mark.skipif(
-    os.getenv("RUN_INTEGRATION_TESTS") != "true",
-    reason="Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to run.",
-)
 
 
 class TestServiceAvailability:

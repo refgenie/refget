@@ -28,16 +28,13 @@ from refget.cli.output import (
     print_json,
     suppress_stdout,
 )
-from refget.clients import SequenceCollectionClient
-from refget.utilities import (
-    build_sorted_name_length_pairs,
-    canonical_str,
-    compare_seqcols,
-    sha512t24u_digest,
-)
+
+# Heavy imports moved inside functions to speed up CLI startup:
+# - refget.clients (requests ~51ms)
+# - refget.utilities (jsonschema ~60ms)
 
 
-def _get_client(server_override: Optional[str] = None) -> SequenceCollectionClient:
+def _get_client(server_override: Optional[str] = None):
     """
     Get a SequenceCollectionClient configured with the appropriate server URL.
 
@@ -47,6 +44,8 @@ def _get_client(server_override: Optional[str] = None) -> SequenceCollectionClie
     Returns:
         Configured SequenceCollectionClient
     """
+    from refget.clients import SequenceCollectionClient
+
     if server_override:
         urls = [server_override]
     else:
@@ -65,6 +64,8 @@ def _compute_snlp_digest(seqcol_dict: dict) -> str:
     Returns:
         The snlp digest (coordinate system identifier)
     """
+    from refget.utilities import build_sorted_name_length_pairs, canonical_str, sha512t24u_digest
+
     snlp_digests = build_sorted_name_length_pairs(seqcol_dict)
     return sha512t24u_digest(canonical_str(snlp_digests))
 
@@ -93,7 +94,7 @@ def _detect_input_type(input_str: str) -> str:
 
 
 def _load_seqcol(
-    input_str: str, client: SequenceCollectionClient, level: int = 2
+    input_str: str, client, level: int = 2
 ) -> Optional[dict]:
     """
     Load a seqcol from various input types.
@@ -228,6 +229,8 @@ def compare(
         0 = compatible
         1 = incompatible
     """
+    from refget.utilities import compare_seqcols
+
     client = _get_client(server)
 
     # Load both seqcols

@@ -2,9 +2,8 @@
 Integration test fixtures for refget client testing.
 
 Uses FastAPI TestClient with ephemeral Docker PostgreSQL.
-Prerequisites:
-1. Start test database: ./tests/integration/scripts/test-db.sh start
-2. Run tests: RUN_INTEGRATION_TESTS=true pytest tests/integration/
+
+Run with: ./scripts/test-integration.sh
 """
 import os
 import pytest
@@ -22,12 +21,6 @@ os.environ["POSTGRES_PASSWORD"] = "testpass"
 os.environ["POSTGRES_DB"] = "refget_test"
 
 from fastapi.testclient import TestClient
-
-# Skip all integration tests unless explicitly enabled
-pytestmark = pytest.mark.skipif(
-    os.getenv("RUN_INTEGRATION_TESTS") != "true",
-    reason="Integration tests disabled. Set RUN_INTEGRATION_TESTS=true to run.",
-)
 
 # Test database configuration - must match test-db.sh
 TEST_DB_URL = "postgresql://testuser:testpass@localhost:5433/refget_test"

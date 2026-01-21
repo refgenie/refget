@@ -3,30 +3,67 @@
 import logging
 
 from .const import *
-from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient, FastaDrsClient
 from .digest_functions import *
-from .utilities import *
+from .exceptions import InvalidSeqColError
 from ._version import __version__
-from .models import SequenceCollection
 
-# Processing submodule (requires gtars) - users import explicitly:
-# from refget.processing import RefgetStore, StorageMode
+# utilities imports jsonschema (~60ms) - made lazy
 
-# Public API for adding FASTA files
-from .refget import (
-    add_fasta,
-    add_fasta_pep,
-    add_access_method,
-)
+# Heavy imports moved to lazy loading via __getattr__:
+# - clients (requests ~51ms)
+# - models (sqlmodel ~245ms)
+# - refget functions (agents -> sqlmodel)
 
-try:
-    # Requires optional dependencies, so we catch the ImportError
-    from .refget_router import create_refget_router, get_dbagent, fasta_drs_router
-except ImportError as e:
-    print(f"Optional dependencies not installed. Refget router will not be available. Error: {e}")
-    create_refget_router = None
-    get_dbagent = None
-    fasta_drs_router = None
-    pass
 
-logging.basicConfig(level=logging.INFO)
+def __getattr__(name):
+    """Lazy import for heavy modules to speed up CLI startup."""
+    if name in ("SequenceClient", "SequenceCollectionClient", "PangenomeClient", "FastaDrsClient"):
+        from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient, FastaDrsClient
+        globals().update({
+            "SequenceClient": SequenceClient,
+            "SequenceCollectionClient": SequenceCollectionClient,
+            "PangenomeClient": PangenomeClient,
+            "FastaDrsClient": FastaDrsClient,
+        })
+        return globals()[name]
+
+    if name == "SequenceCollection":
+        from .models import SequenceCollection
+        globals()["SequenceCollection"] = SequenceCollection
+        return SequenceCollection
+
+    if name in ("add_fasta", "add_fasta_pep", "add_access_method"):
+        from .refget import add_fasta, add_fasta_pep, add_access_method
+        globals().update({
+            "add_fasta": add_fasta,
+            "add_fasta_pep": add_fasta_pep,
+            "add_access_method": add_access_method,
+        })
+        return globals()[name]
+
+    if name in ("create_refget_router", "get_dbagent", "fasta_drs_router"):
+        try:
+            from .refget_router import create_refget_router, get_dbagent, fasta_drs_router
+            globals().update({
+                "create_refget_router": create_refget_router,
+                "get_dbagent": get_dbagent,
+                "fasta_drs_router": fasta_drs_router,
+            })
+            return globals()[name]
+        except ImportError:
+            return None
+
+    # Utilities functions (imports jsonschema ~60ms)
+    utilities_exports = (
+        "validate_seqcol", "validate_seqcol_bool", "compare_seqcols",
+        "canonical_str", "seqcol_digest", "build_sorted_name_length_pairs",
+        "build_name_length_pairs", "seqcol_dict_to_level1_dict",
+        "level1_dict_to_seqcol_digest", "chrom_sizes_to_snlp_digest",
+        "seqcol_to_snlp_digest", "calc_jaccard_similarities", "print_csc",
+        "build_pangenome_model",
+    )
+    if name in utilities_exports:
+        from . import utilities
+        return getattr(utilities, name)
+
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
