@@ -369,26 +369,6 @@ class SequenceCollection(SQLModel, table=True):
                 raise InvalidSeqColError(error_msg, errors=[mismatched])
 
     @classmethod
-    def input_validate(cls, seqcol_obj: dict) -> bool:
-        """
-        Given a dict representation of a sequence collection, validate it against the input schema.
-
-        Args:
-            seqcol_obj (dict): Dictionary representation of a canonical sequence collection object
-
-        Returns:
-            (bool): True if the object is valid, False otherwise
-        """
-        with open(SEQCOL_SCHEMA_PATH, "r") as f:
-            schema = json.load(f)
-        validator = Draft7Validator(schema)
-
-        if not validator.is_valid(seqcol_obj.level2()):
-            errors = sorted(validator.iter_errors(seqcol_obj), key=lambda e: e.path)
-            raise InvalidSeqColError("Validation failed", errors)
-        return True
-
-    @classmethod
     def from_fasta_file(cls, fasta_file: str) -> "SequenceCollection":
         """
         Given a FASTA file, create a SequenceCollection object.
