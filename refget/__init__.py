@@ -32,6 +32,15 @@ def __getattr__(name):
         globals()["SequenceCollection"] = SequenceCollection
         return SequenceCollection
 
+    # Re-export from gtars.refget for convenience
+    if name in ("RefgetStore", "digest_fasta"):
+        from gtars.refget import RefgetStore, digest_fasta
+        globals().update({
+            "RefgetStore": RefgetStore,
+            "digest_fasta": digest_fasta,
+        })
+        return globals()[name]
+
     if name in ("add_fasta", "add_fasta_pep", "add_access_method"):
         from .refget import add_fasta, add_fasta_pep, add_access_method
         globals().update({

@@ -5,10 +5,10 @@
 ```python
 import os
 from pathlib import Path
-from refget import RefgetStore
+from refget.processing import RefgetStore
 
 fa_root = Path(os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_fasta/2023_hprc_draft"))
-output_dir = Path(os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_fasta/refget_store"))
+output_dir = Path(os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_fasta/refget_store2"))
 
 store = RefgetStore.on_disk(str(output_dir))
 
@@ -39,3 +39,23 @@ store = RefgetStore.load_remote(
     "https://refgenie.s3.us-east-1.amazonaws.com/pangenome_refget_store"
 )
 ```
+
+## Alternative: building from the CLI:
+
+On rivanna, this is *waaaay slower* than doing it from python.
+
+cd $BRICKYARD/datasets_downloaded/pangenome_fasta/
+```
+for f in 2023_hprc_draft/*.fa.gz; do
+ refget store add "$f" -p refget_store2; done
+```
+
+refget store init -p refget_store2
+
+```
+for f in /media/nsheff/t5/pangeome_fasta//*.fa.gz; do
+ refget store add "$f" -p refget_store2; done
+```
+
+
+

@@ -432,12 +432,13 @@ class SequenceCollectionAgent(object):
         create_fasta_drs: bool = True,
     ) -> dict:
         """
-        Given a path to a PEP file and a root directory containing the fasta files,
+        Given a PEP project and a root directory containing the fasta files,
         load the fasta files into the refget database.
 
         Args:
-            pep_path (str): Path to the PEP file
+            pep (peppy.Project): PEP project object containing sample metadata
             fa_root (str): Root directory containing the fasta files
+            update (bool): If True, update existing sequence collections
             create_fasta_drs (bool): If True, create FastaDrsObjects for the FASTA files
 
         Returns:

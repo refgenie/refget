@@ -188,6 +188,12 @@ def add(
         "-m",
         help="Storage mode override: encoded (compressed) or raw",
     ),
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Suppress progress output",
+    ),
 ) -> None:
     """
     Import a FASTA file to the local store.
@@ -205,6 +211,9 @@ def add(
     """
     store = _load_store(path, must_exist=True)
 
+    # Set quiet mode if requested
+    store.set_quiet(quiet)
+
     # Override storage mode if specified
     if mode is not None:
         from refget.processing import StorageMode
@@ -213,29 +222,14 @@ def add(
         else:
             store.set_encoding_mode(StorageMode.Encoded)
 
-    # Compute the digest for this FASTA file upfront
-    # This way we always know the digest even if the collection already exists
-    from refget.processing import fasta_to_digest
-    digest = fasta_to_digest(str(fasta.resolve()))
-
-    # Add the FASTA file (idempotent - skips if already exists)
-    store.add_sequence_collection_from_fasta(str(fasta.resolve()))
-
-    # Get sequence count for the specific collection that was added
-    seq_count = 0
-    try:
-        _ensure_collection_loaded(store, digest)
-        for coll in store.collections():
-            if coll.digest == digest:
-                seq_count = len(coll.sequences)
-                break
-    except (KeyError, AttributeError):
-        pass
+    # Add the FASTA file - returns (metadata, was_new) with all info we need
+    metadata, was_new = store.add_sequence_collection_from_fasta(str(fasta.resolve()))
 
     print_json({
-        "digest": digest,
+        "digest": metadata.digest,
         "fasta": str(fasta.resolve()),
-        "sequences": seq_count,
+        "sequences": metadata.n_sequences,
+        "was_new": was_new,
     })
     raise typer.Exit(EXIT_SUCCESS)
 

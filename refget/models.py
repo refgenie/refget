@@ -417,7 +417,7 @@ class SequenceCollection(SQLModel, table=True):
 
         Args:
             seqcol_dict (dict): Dictionary representation of a canonical sequence collection object
-            schema (dict): Schema defining the inherent attributes to digest
+            inherent_attrs (list, optional): List of inherent attributes to digest
 
         Returns:
             (SequenceCollection): The SequenceCollection object

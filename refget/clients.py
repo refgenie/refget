@@ -345,7 +345,7 @@ class SequenceCollectionClient(RefgetClient):
         Args:
             page (int, optional): The page number to retrieve. Defaults to None.
             page_size (int, optional): The number of items per page. Defaults to None.
-            **filters: Optional attribute filters (e.g., names="abc123", lengths="def456").
+            **filters (Any): Optional attribute filters (e.g., names="abc123", lengths="def456").
                       Values should be level 1 digests of the attributes.
 
         Returns:
