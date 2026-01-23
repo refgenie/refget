@@ -9,20 +9,24 @@ from typing import Optional
 
 from refget._version import __version__
 
+from refget.cli.config import app as config_app
+from refget.cli.fasta import app as fasta_app
+from refget.cli.store import app as store_app
+from refget.cli.seqcol import app as seqcol_app
+from refget.cli.admin import app as admin_app
+
 app = typer.Typer(
     name="refget",
     help="GA4GH refget CLI - reference sequence access and management",
     no_args_is_help=True,
 )
 
-# Import and register command groups
-from refget.cli import config, fasta, store, seqcol, admin
-
-app.add_typer(config.app, name="config", help="Configuration management")
-app.add_typer(fasta.app, name="fasta", help="FASTA file utilities")
-app.add_typer(store.app, name="store", help="RefgetStore operations")
-app.add_typer(seqcol.app, name="seqcol", help="Sequence collection API")
-app.add_typer(admin.app, name="admin", help="Admin/database operations")
+# Register command groups
+app.add_typer(config_app, name="config", help="Configuration management")
+app.add_typer(fasta_app, name="fasta", help="FASTA file utilities")
+app.add_typer(store_app, name="store", help="RefgetStore operations")
+app.add_typer(seqcol_app, name="seqcol", help="Sequence collection API")
+app.add_typer(admin_app, name="admin", help="Admin/database operations")
 
 
 def version_callback(value: bool):

@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
-from refget import create_refget_router, get_dbagent
+from refget.router import create_refget_router, get_dbagent
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from sqlmodel import Session, select
@@ -15,7 +15,8 @@ from refget.const import HUMANS_SAMPLE_LIST, MOUSE_SAMPLES_LIST
 from refget.models import HumanReadableNames
 from .examples import *
 
-from refget.refget_router import _SAMPLE_DIGESTS, _ROUTER_CONFIG
+from refget.router import _SAMPLE_DIGESTS, _ROUTER_CONFIG
+from refget.agents import RefgetDBAgent
 
 global _LOGGER
 _LOGGER = logging.getLogger(__name__)
@@ -32,8 +33,6 @@ async def lifespan_loader(app):
     _LOGGER.info("Starting lifespan: Loading sample data...")
 
     # Initialize database agent and store in app state
-    from refget.agents import RefgetDBAgent
-
     dbagent = RefgetDBAgent()
     app.state.dbagent = dbagent
 
@@ -193,8 +192,6 @@ def create_global_dbagent():
     """
     Create a global database agent for use in the app.
     """
-    from refget.agents import RefgetDBAgent
-
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent

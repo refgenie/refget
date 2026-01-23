@@ -5,7 +5,7 @@
 ```python
 import os
 from pathlib import Path
-from refget.processing import RefgetStore
+from refget.store import RefgetStore
 
 fa_root = Path(os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_fasta/2023_hprc_draft"))
 output_dir = Path(os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_fasta/refget_store2"))

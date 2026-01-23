@@ -10,7 +10,7 @@ import glob
 import os
 import sys
 
-from refget.processing import RefgetStore
+from refget.store import RefgetStore
 
 
 def find_fasta_files(folder: str) -> list[str]:

@@ -6,7 +6,7 @@ from pathlib import Path
 
 from refget.models import SequenceCollection as pythonSequenceCollection
 
-from refget.processing import RefgetStore, StorageMode
+from refget.store import RefgetStore, StorageMode
 
 try:
     from gtars.refget import (

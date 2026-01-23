@@ -71,7 +71,7 @@ def loaded_dbagent(test_dbagent, test_fasta_path):
 def client(loaded_dbagent):
     """Create TestClient with test database"""
     from seqcolapi.main import app
-    from refget.refget_router import get_dbagent
+    from refget.router import get_dbagent
 
     def override_get_dbagent():
         return loaded_dbagent
@@ -112,7 +112,7 @@ def test_server(loaded_dbagent):
     """
     import uvicorn
     from seqcolapi.main import app
-    from refget.refget_router import get_dbagent
+    from refget.router import get_dbagent
 
     def override_get_dbagent():
         return loaded_dbagent

@@ -11,7 +11,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from refget.processing import RefgetStore
+from refget.store import RefgetStore
 
 # Remote store URL (2023 Human Pangenome Reference - 47 haplotype-resolved assemblies)
 REMOTE_URL = "https://refgenie.s3.us-east-1.amazonaws.com/pangenome_refget_store"

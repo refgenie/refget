@@ -82,7 +82,7 @@ def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[
         RefgetStore instance
     """
     check_dependency("gtars", "store", "store")
-    from refget.processing import RefgetStore
+    from refget.store import RefgetStore
 
     # Remote store takes precedence
     if server:
@@ -151,7 +151,7 @@ def init(
     Creates the store directory structure if it doesn't exist.
     """
     check_dependency("gtars", "store", "store")
-    from refget.processing import RefgetStore
+    from refget.store import RefgetStore
 
     store_path = _get_store_path(path)
 
@@ -216,7 +216,7 @@ def add(
 
     # Override storage mode if specified
     if mode is not None:
-        from refget.processing import StorageMode
+        from refget.store import StorageMode
         if mode == StorageModeChoice.raw:
             store.set_encoding_mode(StorageMode.Raw)
         else:
