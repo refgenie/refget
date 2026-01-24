@@ -120,7 +120,7 @@ def _ensure_collection_loaded(store, digest: str) -> None:
     """
     if not store.is_collection_loaded(digest):
         try:
-            store.load_collection(digest)
+            store.get_collection(digest)
         except Exception as e:
             print_error(f"Collection not found: {digest} ({e})", EXIT_FAILURE)
 
