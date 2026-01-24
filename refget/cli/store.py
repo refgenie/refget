@@ -119,21 +119,10 @@ def _ensure_collection_loaded(store, digest: str) -> None:
         digest: Collection digest to ensure is loaded
     """
     if not store.is_collection_loaded(digest):
-        # Get collection metadata to find a sequence name
-        meta = store.get_collection_metadata(digest)
-        if meta is None:
-            print_error(f"Collection not found: {digest}", EXIT_FAILURE)
-        # Force load by accessing a sequence (any sequence will do)
-        # We use sequence_records to get the first sequence name
         try:
-            for rec in store.sequence_records():
-                # Get just one to force load
-                _ = store.get_sequence_by_collection_and_name(digest, rec.metadata.name)
-                break
-        except (KeyError, AttributeError, StopIteration):
-            # Collection may not have sequences yet, or wasn't properly saved.
-            # This is acceptable - the caller will handle missing data downstream.
-            pass
+            store.load_collection(digest)
+        except Exception as e:
+            print_error(f"Collection not found: {digest} ({e})", EXIT_FAILURE)
 
 
 @app.command()
@@ -501,7 +490,7 @@ def seq(
 
     if name is not None:
         # Get sequence by collection + name
-        record = store.get_sequence_by_collection_and_name(digest, name)
+        record = store.get_sequence_by_name(digest, name)
         if record is None:
             print_error(f"Sequence '{name}' not found in collection {digest}", EXIT_FAILURE)
         if start is not None and end is not None:
@@ -519,7 +508,7 @@ def seq(
         elif start is not None or end is not None:
             print_error("Both --start and --end must be provided for substring", EXIT_FAILURE)
         else:
-            record = store.get_sequence_by_id(digest)
+            record = store.get_sequence(digest)
             if record is None:
                 print_error(f"Sequence not found: {digest}", EXIT_FAILURE)
             # Use decode() to get the sequence string (handles encoded mode)
