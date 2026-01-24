@@ -88,7 +88,7 @@ def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[
     if server:
         cache_path = _get_store_path(path) / ".remote_cache"
         cache_path.mkdir(parents=True, exist_ok=True)
-        return RefgetStore.load_remote(str(cache_path), server)
+        return RefgetStore.open_remote(str(cache_path), server)
 
     store_path = _get_store_path(path)
 
@@ -101,7 +101,7 @@ def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[
         if not rgstore_path.exists():
             # Empty store - use on_disk which handles initialization
             return RefgetStore.on_disk(str(store_path))
-        return RefgetStore.load_local(str(store_path))
+        return RefgetStore.open_local(str(store_path))
     else:
         # Create or load
         return RefgetStore.on_disk(str(store_path))
