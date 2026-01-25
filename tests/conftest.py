@@ -156,11 +156,9 @@ def populated_store(temp_store, cli):
 def temp_config(tmp_path):
     """Create temporary config file."""
     config_path = tmp_path / "config.toml"
-    config_path.write_text(
-        f"""[store]
+    config_path.write_text(f"""[store]
 path = "{tmp_path}/store"
-"""
-    )
+""")
     return config_path
 
 

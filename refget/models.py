@@ -53,7 +53,6 @@ from .utils import (
     fasta_to_seqcol_dict,
 )
 
-
 _LOGGER = logging.getLogger(__name__)
 
 

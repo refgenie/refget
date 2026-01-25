@@ -27,7 +27,6 @@ from .agents import RefgetDBAgent
 
 from .examples import *
 
-
 _LOGGER = logging.getLogger(__name__)
 
 # Import the global variable from the router
