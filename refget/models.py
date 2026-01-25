@@ -38,7 +38,12 @@ class PydanticJSON(TypeDecorator):
         return item
 
 
-from .const import DEFAULT_INHERENT_ATTRS, DEFAULT_PASSTHRU_ATTRS, SEQCOL_SCHEMA_PATH, GTARS_INSTALLED
+from .const import (
+    DEFAULT_INHERENT_ATTRS,
+    DEFAULT_PASSTHRU_ATTRS,
+    SEQCOL_SCHEMA_PATH,
+    GTARS_INSTALLED,
+)
 from .exceptions import InvalidSeqColError
 from .utils import (
     canonical_str,
@@ -149,9 +154,7 @@ def seqcol_from_gtars(gtars_seq_col: "gtarsSequenceCollection") -> "SequenceColl
         ImportError: If gtars is not installed (required for this conversion)
     """
     if not GTARS_INSTALLED:
-        raise ImportError(
-            "seqcol_from_gtars requires gtars. Install with: pip install gtars"
-        )
+        raise ImportError("seqcol_from_gtars requires gtars. Install with: pip install gtars")
 
     sequences_value = []
     names_value = []
@@ -280,9 +283,7 @@ class DrsObject(SQLModel, table=False):
         """Serialize Checksum objects (or dicts) to dicts for JSON output."""
         if v is None:
             return []
-        return [
-            item.model_dump() if hasattr(item, "model_dump") else item for item in v
-        ]
+        return [item.model_dump() if hasattr(item, "model_dump") else item for item in v]
 
     @field_validator("access_methods", mode="before")
     @classmethod
@@ -299,9 +300,7 @@ class DrsObject(SQLModel, table=False):
         """Serialize AccessMethod objects (or dicts) to dicts for JSON output."""
         if v is None:
             return []
-        return [
-            item.model_dump() if hasattr(item, "model_dump") else item for item in v
-        ]
+        return [item.model_dump() if hasattr(item, "model_dump") else item for item in v]
 
 
 class FastaDrsObject(DrsObject, table=True):

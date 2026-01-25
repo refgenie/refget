@@ -29,10 +29,7 @@ EXAMPLE_SEQ_NAME = "JAGYVX010000006.1 unmasked:primary_assembly HG03540.pri.mat.
 # The store metadata (~1.5 MB) is fetched; sequences are loaded on-demand.
 
 # %%
-store = RefgetStore.load_remote(
-    cache_path=str(CACHE_DIR),
-    remote_url=REMOTE_URL
-)
+store = RefgetStore.load_remote(cache_path=str(CACHE_DIR), remote_url=REMOTE_URL)
 
 print(f"Loaded {len(store)} sequences from {REMOTE_URL}")
 

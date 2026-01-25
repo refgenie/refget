@@ -108,13 +108,25 @@ def index(
 
         # Write files
         fai_path = out_dir / f"{base_name}.fai"
-        seqcol_path = out_dir / f"{base_name.replace('.fa', '.seqcol.json').replace('.fasta', '.seqcol.json')}"
-        chrom_sizes_path = out_dir / f"{base_name.replace('.fa', '.chrom.sizes').replace('.fasta', '.chrom.sizes')}"
+        seqcol_path = (
+            out_dir
+            / f"{base_name.replace('.fa', '.seqcol.json').replace('.fasta', '.seqcol.json')}"
+        )
+        chrom_sizes_path = (
+            out_dir
+            / f"{base_name.replace('.fa', '.chrom.sizes').replace('.fasta', '.chrom.sizes')}"
+        )
 
         # Handle .gz suffix
         if base_name.endswith(".gz"):
-            seqcol_path = out_dir / f"{base_name[:-3].replace('.fa', '.seqcol.json').replace('.fasta', '.seqcol.json')}"
-            chrom_sizes_path = out_dir / f"{base_name[:-3].replace('.fa', '.chrom.sizes').replace('.fasta', '.chrom.sizes')}"
+            seqcol_path = (
+                out_dir
+                / f"{base_name[:-3].replace('.fa', '.seqcol.json').replace('.fasta', '.seqcol.json')}"
+            )
+            chrom_sizes_path = (
+                out_dir
+                / f"{base_name[:-3].replace('.fa', '.chrom.sizes').replace('.fasta', '.chrom.sizes')}"
+            )
 
         with open(fai_path, "w") as f:
             f.write(fai_content)

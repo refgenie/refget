@@ -44,9 +44,7 @@ class TestAdminLoad:
     def test_load_fasta_with_name(self, test_fasta_files):
         """Loads FASTA with a human-readable name."""
         result = cli(
-            "admin", "load",
-            str(test_fasta_files["different_names"]),
-            "--name", "Test Genome"
+            "admin", "load", str(test_fasta_files["different_names"]), "--name", "Test Genome"
         )
 
         assert result.exit_code == 0
@@ -97,16 +95,20 @@ class TestAdminLoadFromPEP:
         """Loads from PEP project file."""
         # Create a minimal PEP file
         pep_file = tmp_path / "project.yaml"
-        pep_file.write_text("""
+        pep_file.write_text(
+            """
 pep_version: 2.0.0
 sample_table: samples.csv
-""")
+"""
+        )
 
         samples_file = tmp_path / "samples.csv"
-        samples_file.write_text(f"""sample_name,fasta
+        samples_file.write_text(
+            f"""sample_name,fasta
 base,{test_fasta_files["base"]}
 different,{test_fasta_files["different_names"]}
-""")
+"""
+        )
 
         result = cli("admin", "load", "--pep", str(pep_file))
 

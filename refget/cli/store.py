@@ -55,6 +55,7 @@ def _temp_file_path(suffix: str = ".fa") -> Iterator[str]:
         if os.path.exists(path):
             os.unlink(path)
 
+
 app = typer.Typer(
     name="store",
     help="RefgetStore operations",
@@ -150,10 +151,12 @@ def init(
     # Initialize the store (creates index files)
     store = RefgetStore.on_disk(str(store_path))
 
-    print_json({
-        "path": str(store_path),
-        "status": "initialized",
-    })
+    print_json(
+        {
+            "path": str(store_path),
+            "status": "initialized",
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -206,6 +209,7 @@ def add(
     # Override storage mode if specified
     if mode is not None:
         from refget.store import StorageMode
+
         if mode == StorageModeChoice.raw:
             store.set_encoding_mode(StorageMode.Raw)
         else:
@@ -214,12 +218,14 @@ def add(
     # Add the FASTA file - returns (metadata, was_new) with all info we need
     metadata, was_new = store.add_sequence_collection_from_fasta(str(fasta.resolve()))
 
-    print_json({
-        "digest": metadata.digest,
-        "fasta": str(fasta.resolve()),
-        "sequences": metadata.n_sequences,
-        "was_new": was_new,
-    })
+    print_json(
+        {
+            "digest": metadata.digest,
+            "fasta": str(fasta.resolve()),
+            "sequences": metadata.n_sequences,
+            "was_new": was_new,
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -247,13 +253,17 @@ def list_collections(
 
     collections = []
     for digest in store.list_collections():
-        collections.append({
-            "digest": digest,
-        })
+        collections.append(
+            {
+                "digest": digest,
+            }
+        )
 
-    print_json({
-        "collections": collections,
-    })
+    print_json(
+        {
+            "collections": collections,
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -311,11 +321,13 @@ def get(
         print_error(f"Collection not found: {digest}", EXIT_FAILURE)
         return  # Unreachable, but clarifies control flow
 
-    print_json({
-        "names": names,
-        "lengths": lengths,
-        "sequences": sequences,
-    })
+    print_json(
+        {
+            "names": names,
+            "lengths": lengths,
+            "sequences": sequences,
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -430,11 +442,13 @@ def export(
         # Export directly to output file
         output_path = str(output.resolve())
         _do_export(output_path)
-        print_json({
-            "digest": digest,
-            "output": output_path,
-            "status": "exported",
-        })
+        print_json(
+            {
+                "digest": digest,
+                "output": output_path,
+                "status": "exported",
+            }
+        )
 
     raise typer.Exit(EXIT_SUCCESS)
 
@@ -772,8 +786,10 @@ def remove(
     # Remove the collection by manipulating store files
     _remove_collection_from_store(store_path, digest)
 
-    print_json({
-        "digest": digest,
-        "status": "removed",
-    })
+    print_json(
+        {
+            "digest": digest,
+            "status": "removed",
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)

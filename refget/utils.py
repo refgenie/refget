@@ -328,9 +328,7 @@ def fasta_to_seqcol_dict(fasta_file_path: Union[str, Path]) -> dict:
         ImportError: If gtars is not installed (required for FASTA processing)
     """
     if not GTARS_INSTALLED:
-        raise ImportError(
-            "fasta_to_seqcol_dict requires gtars. Install with: pip install gtars"
-        )
+        raise ImportError("fasta_to_seqcol_dict requires gtars. Install with: pip install gtars")
 
     from gtars.refget import digest_fasta
 

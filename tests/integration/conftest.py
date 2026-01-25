@@ -5,6 +5,7 @@ Uses FastAPI TestClient with ephemeral Docker PostgreSQL.
 
 Run with: ./scripts/test-integration.sh
 """
+
 import os
 import pytest
 import socket

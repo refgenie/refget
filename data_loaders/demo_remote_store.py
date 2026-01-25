@@ -39,10 +39,7 @@ def main():
     print(f"\n1. Loading remote store from:\n   {REMOTE_URL}")
     print(f"   Cache directory: {CACHE_DIR}\n")
 
-    store = RefgetStore.load_remote(
-        cache_path=str(CACHE_DIR),
-        remote_url=REMOTE_URL
-    )
+    store = RefgetStore.load_remote(cache_path=str(CACHE_DIR), remote_url=REMOTE_URL)
 
     print(f"   Loaded! {len(store)} sequences available (metadata only)")
 

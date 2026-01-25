@@ -12,6 +12,7 @@ from pathlib import Path
 
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from conftest import (
     BASE_FASTA,
@@ -332,7 +333,9 @@ class TestFastaErrorHandling:
 
         assert result.exit_code != 0
         # Should have informative error message
-        assert len(result.stdout) > 0 or len(result.stderr if hasattr(result, 'stderr') else '') > 0
+        assert (
+            len(result.stdout) > 0 or len(result.stderr if hasattr(result, "stderr") else "") > 0
+        )
 
     def test_empty_fasta(self, cli, tmp_path):
         """Handle empty FASTA file."""
@@ -354,6 +357,7 @@ class TestFastaErrorHandling:
 
         import os
         import stat
+
         try:
             os.chmod(protected, 0o000)
             result = cli("fasta", "digest", str(protected))

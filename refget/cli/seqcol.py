@@ -94,9 +94,7 @@ def _detect_input_type(input_str: str) -> str:
     return "digest"
 
 
-def _load_seqcol(
-    input_str: str, client, level: int = 2
-) -> Optional[dict]:
+def _load_seqcol(input_str: str, client, level: int = 2) -> Optional[dict]:
     """
     Load a seqcol from various input types.
 
@@ -140,6 +138,7 @@ def _load_seqcol(
         if result is None:
             print_error(f"Could not fetch seqcol for digest: {input_str}", EXIT_FAILURE)
         return result
+
 
 app = typer.Typer(
     name="seqcol",
@@ -564,9 +563,7 @@ def validate(
     if lengths:
         unique_lengths = set(lengths.values())
         if len(unique_lengths) > 1:
-            errors.append(
-                f"Array length mismatch: {dict(lengths)}"
-            )
+            errors.append(f"Array length mismatch: {dict(lengths)}")
 
     if errors:
         for error in errors:
@@ -668,5 +665,3 @@ def servers() -> None:
     servers_list = get_seqcol_servers()
     print_json({"servers": servers_list})
     raise typer.Exit(EXIT_SUCCESS)
-
-

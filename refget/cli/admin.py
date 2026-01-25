@@ -60,6 +60,7 @@ def _check_boto3():
     """Check if boto3 is available."""
     try:
         import boto3  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -69,9 +70,11 @@ def _load_pep(pep_path: Optional[Path] = None, pephub: Optional[str] = None):
     """Load a PEP from file or pephub."""
     if pep_path:
         import peppy
+
         return peppy.Project(str(pep_path))
     elif pephub:
         import pephubclient
+
         phc = pephubclient.PEPHubClient()
         return phc.load_project(pephub)
     return None
@@ -246,8 +249,12 @@ def _add_fasta_pep_to_db(
                 else:
                     # Actually upload
                     cloud_name = loc.get("cloud", "").upper()
-                    access_key = loc.get("access_key") or os.environ.get(f"{cloud_name}_ACCESS_KEY")
-                    secret_key = loc.get("secret_key") or os.environ.get(f"{cloud_name}_SECRET_KEY")
+                    access_key = loc.get("access_key") or os.environ.get(
+                        f"{cloud_name}_ACCESS_KEY"
+                    )
+                    secret_key = loc.get("secret_key") or os.environ.get(
+                        f"{cloud_name}_SECRET_KEY"
+                    )
                     url = _upload_to_s3(
                         fa_path,
                         loc["bucket"],
@@ -265,7 +272,9 @@ def _add_fasta_pep_to_db(
                     url=url,
                     cloud=loc["cloud"],
                     region=loc["region"],
-                    type_=loc.get("type", "s3" if loc["cloud"] in ("aws", "backblaze") else "https"),
+                    type_=loc.get(
+                        "type", "s3" if loc["cloud"] in ("aws", "backblaze") else "https"
+                    ),
                     dbagent=dbagent,
                 )
 
@@ -472,6 +481,7 @@ def register(
     if not digest:
         print_info("Computing digest from FASTA...")
         from refget.store import digest_fasta
+
         digest = digest_fasta(str(fasta)).digest
         print_info(f"Computed digest: {digest}")
 
@@ -591,12 +601,14 @@ def ingest(
         return
 
     # Build storage configuration
-    storage = [{
-        "bucket": bucket,
-        "prefix": prefix,
-        "cloud": cloud,
-        "region": region,
-    }]
+    storage = [
+        {
+            "bucket": bucket,
+            "prefix": prefix,
+            "cloud": cloud,
+            "region": region,
+        }
+    ]
 
     # Single file ingestion
     if fasta:
@@ -678,6 +690,7 @@ def status() -> None:
     # Test connection
     try:
         from refget.agents import RefgetDBAgent
+
         dbagent = RefgetDBAgent()
         print_success("Database connection: OK")
 
@@ -718,6 +731,7 @@ def info() -> None:
     # gtars
     try:
         from gtars import __version__ as gtars_version
+
         print(f"  gtars: {gtars_version}")
     except ImportError:
         print("  gtars: not installed")
@@ -727,6 +741,7 @@ def info() -> None:
     # boto3
     try:
         import boto3
+
         print(f"  boto3: {boto3.__version__}")
     except ImportError:
         print("  boto3: not installed (required for cloud uploads)")
@@ -734,6 +749,7 @@ def info() -> None:
     # peppy
     try:
         import peppy
+
         print(f"  peppy: {peppy.__version__}")
     except ImportError:
         print("  peppy: not installed (required for PEP batch operations)")
@@ -743,6 +759,7 @@ def info() -> None:
     # sqlmodel
     try:
         import sqlmodel
+
         print(f"  sqlmodel: {sqlmodel.__version__}")
     except ImportError:
         print("  sqlmodel: not installed")

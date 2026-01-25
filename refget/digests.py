@@ -3,6 +3,7 @@
 When gtars is available, uses fast Rust implementations.
 When gtars is not available, falls back to pure Python implementations (slower).
 """
+
 import hashlib
 import base64
 

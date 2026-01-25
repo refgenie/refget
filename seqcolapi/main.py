@@ -147,22 +147,15 @@ async def service_info():
     seqcol_info = {
         "schema": dbagent.schema_dict,
         "sorted_name_length_pairs": True,
-        "fasta_drs": {
-            "enabled": _ROUTER_CONFIG.get("fasta_drs", False)
-        },
+        "fasta_drs": {"enabled": _ROUTER_CONFIG.get("fasta_drs", False)},
     }
 
     # Add refget_store info
     store_url = _ROUTER_CONFIG.get("refget_store_url")
     if store_url:
-        seqcol_info["refget_store"] = {
-            "enabled": True,
-            "url": store_url
-        }
+        seqcol_info["refget_store"] = {"enabled": True, "url": store_url}
     else:
-        seqcol_info["refget_store"] = {
-            "enabled": False
-        }
+        seqcol_info["refget_store"] = {"enabled": False}
 
     ret = {
         "id": "org.databio.seqcolapi",

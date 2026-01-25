@@ -12,8 +12,9 @@ output_dir = Path(os.path.expandvars("$BRICKYARD/datasets_downloaded/pangenome_f
 
 store = RefgetStore.on_disk(str(output_dir))
 
-for fasta in sorted(fa_root.glob("**/*.fa.gz")):
-    print(f"Loading {fasta.name}...")
+fastas = sorted(fa_root.glob("**/*.fa.gz"))
+for i, fasta in enumerate(fastas, 1):
+    print(f"Loading {i} of {len(fastas)}: {fasta.name}...")
     store.add_sequence_collection_from_fasta(str(fasta))
 
 print(store.stats())
