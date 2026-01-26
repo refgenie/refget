@@ -358,7 +358,7 @@ class SequenceCollectionClient(RefgetClient):
             params["page_size"] = page_size
         params.update(filters)
 
-        endpoint = "/list/collections"
+        endpoint = "/list/collection"
         return _try_urls(self.urls, endpoint, params=params)
 
     def list_attributes(
