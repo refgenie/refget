@@ -61,8 +61,15 @@ def test_dbagent():
 @pytest.fixture(scope="session")
 def loaded_dbagent(test_dbagent, test_fasta_path):
     """DBAgent pre-loaded with test FASTA files"""
-    # Load test FASTA files
-    for fa_file in ["base.fa", "different_names.fa", "different_order.fa"]:
+    # Load all test FASTA files needed for compliance tests
+    for fa_file in [
+        "base.fa",
+        "different_names.fa",
+        "different_order.fa",
+        "pair_swap.fa",
+        "subset.fa",
+        "swap_wo_coords.fa",
+    ]:
         fa_path = test_fasta_path / fa_file
         test_dbagent.seqcol.add_from_fasta_file(str(fa_path))
     return test_dbagent

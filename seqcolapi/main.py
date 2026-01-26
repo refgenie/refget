@@ -156,7 +156,7 @@ async def service_info():
     else:
         seqcol_info["refget_store"] = {"enabled": False}
 
-    ret = {
+    return {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",
         "type": {
@@ -173,7 +173,6 @@ async def service_info():
         "version": ALL_VERSIONS,
         "seqcol": seqcol_info,
     }
-    return JSONResponse(content=ret)
 
 
 # Mount statics after other routes for lower precedence

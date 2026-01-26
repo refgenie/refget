@@ -21,8 +21,7 @@ app.state.dbagent = RefgetDBAgent()
 import logging
 
 from fastapi import APIRouter, Response, HTTPException, Request, Depends
-from fastapi.responses import JSONResponse
-from .models import Similarities, PaginationResult
+from .models import Similarities, PaginationResult, PaginatedDigestList
 from .agents import RefgetDBAgent
 
 from .examples import *
@@ -140,18 +139,16 @@ async def collection(
         )
     try:
         if not collated:
-            return JSONResponse(
-                dbagent.seqcol.get(
-                    collection_digest, return_format="itemwise", itemwise_limit=10000
-                )
+            return dbagent.seqcol.get(
+                collection_digest, return_format="itemwise", itemwise_limit=10000
             )
         if attribute:
-            return JSONResponse(dbagent.seqcol.get(collection_digest, attribute=attribute))
+            return dbagent.seqcol.get(collection_digest, attribute=attribute)
         if level == 1:
-            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level1"))
+            return dbagent.seqcol.get(collection_digest, return_format="level1")
         if level == 2:
-            return JSONResponse(dbagent.seqcol.get(collection_digest, return_format="level2"))
-        return JSONResponse({"error": "Invalid level specified."})
+            return dbagent.seqcol.get(collection_digest, return_format="level2")
+        return {"error": "Invalid level specified."}
     except ValueError as e:
         raise HTTPException(
             status_code=404,
@@ -170,7 +167,7 @@ async def attribute(
     attribute_digest: str = example_attribute_digest,
 ):
     try:
-        return JSONResponse(dbagent.attribute.get(attribute_name, attribute_digest))
+        return dbagent.attribute.get(attribute_name, attribute_digest)
     except KeyError as e:
         raise HTTPException(
             status_code=404,
@@ -204,7 +201,7 @@ async def compare_2_digests(
             status_code=404,
             detail="Error: collection not found. Check the digest and try again.",
         )
-    return JSONResponse(result)
+    return result
 
 
 @seqcol_router.post(
@@ -334,13 +331,14 @@ async def compare_1_digest(
             status_code=404,
             detail="Error: collection not found. Check the digest and try again.",
         )
-    return JSONResponse(result)
+    return result
 
 
 @seqcol_router.get(
     "/list/collection",
     summary="List sequence collections on the server",
     tags=["Discovering data"],
+    response_model=PaginatedDigestList,
 )
 async def list_collections_by_offset(
     request: Request,
@@ -365,13 +363,14 @@ async def list_collections_by_offset(
         res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
 
     res["results"] = [x.digest for x in res["results"]]
-    return JSONResponse(res)
+    return res
 
 
 @seqcol_router.get(
     "/list/attributes/{attribute}",
     summary="List values of attributes held on the server",
     tags=["Discovering data"],
+    response_model=PaginatedDigestList,
 )
 async def list_attributes(
     dbagent=Depends(get_dbagent), attribute: str = "names", page_size: int = 100, page: int = 0
@@ -379,7 +378,7 @@ async def list_attributes(
     try:
         res = dbagent.attribute.list(attribute, limit=page_size, offset=page * page_size)
         res["results"] = [x.digest for x in res["results"]]
-        return JSONResponse(res)
+        return res
     except KeyError as e:
         raise HTTPException(
             status_code=404,
@@ -395,13 +394,14 @@ pangenome_router = APIRouter()
     summary="List pangenomes on the server, paged by offset",
     tags=["Discovering data"],
     include_in_schema=True,
+    response_model=PaginatedDigestList,
 )
 async def list_cpangenomes_by_offset(
     dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
 ):
     res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
-    return JSONResponse(res)
+    return res
 
 
 @pangenome_router.get(
@@ -420,15 +420,15 @@ async def pangenome(
         level = 2
     try:
         if not collated:
-            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="itemwise"))
+            return dbagent.pangenome.get(pangenome_digest, return_format="itemwise")
         if level == 1:
-            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level1"))
+            return dbagent.pangenome.get(pangenome_digest, return_format="level1")
         if level == 2:
-            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level2"))
+            return dbagent.pangenome.get(pangenome_digest, return_format="level2")
         if level == 3:
-            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level3"))
+            return dbagent.pangenome.get(pangenome_digest, return_format="level3")
         if level == 4:
-            return JSONResponse(dbagent.pangenome.get(pangenome_digest, return_format="level4"))
+            return dbagent.pangenome.get(pangenome_digest, return_format="level4")
         if level > 4:
             raise HTTPException(
                 status_code=400,

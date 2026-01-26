@@ -14,9 +14,11 @@ Import from submodules:
 from ._version import __version__
 from .exceptions import InvalidSeqColError
 from .const import GTARS_INSTALLED
+from .utils import canonical_str
 
 __all__ = [
     "__version__",
     "InvalidSeqColError",
     "GTARS_INSTALLED",
+    "canonical_str",
 ]

@@ -759,6 +759,13 @@ class Similarities(BaseModel):
     reference_digest: Optional[str] = None
 
 
+class PaginatedDigestList(BaseModel):
+    """Paginated list of digests, used by list endpoints"""
+
+    pagination: PaginationResult
+    results: List[str]
+
+
 # This is now a transient attribute, so we don't need to store it in the database.
 # class SortedNameLengthPairsAttr(SQLModel, table=True):
 #     digest: str = Field(primary_key=True)
