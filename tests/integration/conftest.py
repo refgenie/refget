@@ -112,12 +112,24 @@ def different_order_digest():
 
 
 @pytest.fixture(scope="session")
-def test_server(loaded_dbagent):
+def test_server(request):
     """
-    Run the seqcolapi server on a free port for CLI integration tests.
+    Provide a seqcol server URL for integration tests.
 
-    Yields the base URL (e.g., "http://localhost:12345") for the server.
+    If --api-root option is provided, uses that external server.
+    Otherwise, spins up a local test server with loaded test data.
+
+    Usage: pytest tests/integration/ --api-root=https://seqcolapi.databio.org
     """
+    external_url = request.config.getoption("--api-root")
+    if external_url:
+        # Use external server - no setup/teardown needed
+        yield external_url.rstrip("/")
+        return
+
+    # Local server setup - needs loaded_dbagent
+    loaded_dbagent = request.getfixturevalue("loaded_dbagent")
+
     import uvicorn
     from seqcolapi.main import app
     from refget.router import get_dbagent

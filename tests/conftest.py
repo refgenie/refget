@@ -225,6 +225,19 @@ def pytest_addoption(parser):
         default=False,
         help="Skip tests that require database access",
     )
+    parser.addoption(
+        "--api-root",
+        action="store",
+        default=None,
+        help="External seqcol server URL for tests (e.g., https://seqcolapi.databio.org)",
+    )
+
+
+@pytest.fixture(scope="session")
+def api_root(request):
+    """API root URL for compliance/integration tests."""
+    url = request.config.getoption("--api-root")
+    return url.rstrip("/") if url else None
 
 
 def pytest_configure(config):
