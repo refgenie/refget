@@ -124,8 +124,8 @@ def test_server(loaded_dbagent):
     port = find_free_port()
     server_url = f"http://localhost:{port}"
 
-    # Run server in a background thread
-    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
+    # Run server in a background thread (ws="none" disables websockets to avoid deprecation warnings)
+    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error", ws="none")
     server = uvicorn.Server(config)
 
     thread = threading.Thread(target=server.run, daemon=True)

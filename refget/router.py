@@ -113,8 +113,7 @@ async def sequence(
     tags=["Retrieving data"],
 )
 async def seq_metadata(dbagent=Depends(get_dbagent), sequence_digest: str = example_sequence):
-    return NotImplementedError("Metadata retrieval not yet implemented.")
-    return JSONResponse(dbagent.seq.get_metadata(sequence_digest))
+    raise HTTPException(status_code=501, detail="Metadata retrieval not yet implemented.")
 
 
 seqcol_router = APIRouter()

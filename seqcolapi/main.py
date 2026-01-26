@@ -95,7 +95,6 @@ refget_router = create_refget_router(
     fasta_drs=True,
     refget_store_url=REFGET_STORE_URL,
 )
-print(refget_router)
 app.include_router(refget_router)
 
 
