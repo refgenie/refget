@@ -349,19 +349,167 @@ def pull(
         "-p",
         help="Store path (default: from config)",
     ),
+    server: Optional[str] = typer.Option(
+        None,
+        "--server",
+        "-s",
+        help="Remote store URL (default: try configured remote_stores)",
+    ),
+    eager: bool = typer.Option(
+        False,
+        "--eager",
+        "-e",
+        help="Pre-fetch all sequences immediately (default: lazy/on-demand)",
+    ),
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Suppress progress output",
+    ),
 ) -> None:
     """
-    Pull a collection from a remote store.
+    Pull a collection from a remote store to local cache.
 
-    Resolution order:
+    By default, only metadata is fetched immediately. Sequence data is
+    downloaded on-demand when accessed (lazy loading). Use --eager to
+    pre-fetch all sequences.
+
+    Resolution order (if --server not specified):
         1. Check local store (already cached?)
         2. Try configured remote_stores in priority order
-        3. Try configured seqcol_servers (query service-info for RefgetStore URL)
-        4. Fail with helpful message
 
     Use --file for batch operations with multiple digests.
+
+    Examples:
+        refget store pull ABC123 --server https://example.com/store
+        refget store pull ABC123 --eager  # Pre-fetch all sequences
+        refget store pull --file digests.txt --server https://example.com/store
     """
-    not_implemented("store pull")
+    check_dependency("gtars", "store", "store")
+    from refget.store import RefgetStore
+    from refget.cli.config_manager import get_remote_stores
+
+    # Validate arguments
+    if digest is None and file is None:
+        print_error("Must provide either a digest or --file", EXIT_FAILURE)
+    if digest is not None and file is not None:
+        print_error("Cannot specify both digest and --file", EXIT_FAILURE)
+
+    # Collect digests to pull
+    digests: List[str] = []
+    if digest:
+        digests.append(digest)
+    elif file:
+        if not file.exists():
+            print_error(f"File not found: {file}", EXIT_FILE_NOT_FOUND)
+        digests = [line.strip() for line in file.read_text().splitlines() if line.strip()]
+
+    if not digests:
+        print_error("No digests to pull", EXIT_FAILURE)
+
+    # Determine remote URLs to try
+    remote_urls: List[str] = []
+    if server:
+        remote_urls.append(server)
+    else:
+        # Use configured remote_stores
+        for store_config in get_remote_stores():
+            if "url" in store_config:
+                remote_urls.append(store_config["url"])
+
+    if not remote_urls:
+        print_error(
+            "No remote store specified. Use --server or configure remote_stores:\n"
+            "  refget config add remote_store https://example.com/store",
+            EXIT_FAILURE,
+        )
+
+    # Get local store path for caching
+    store_path = _get_store_path(path)
+    cache_path = store_path / ".remote_cache"
+    cache_path.mkdir(parents=True, exist_ok=True)
+
+    # Check local store first
+    local_store = None
+    local_collections: set = set()
+    if store_path.exists() and (store_path / "rgstore.json").exists():
+        try:
+            local_store = RefgetStore.open_local(str(store_path))
+            local_collections = set(local_store.list_collections())
+        except Exception:
+            pass  # Local store not available, continue with remote
+
+    results = []
+    for dig in digests:
+        # Check if already in local store
+        if dig in local_collections:
+            results.append({"digest": dig, "status": "already_local", "source": "local"})
+            continue
+
+        # Try remote stores in order
+        pulled = False
+        for remote_url in remote_urls:
+            try:
+                # Connect to remote with local caching
+                remote_store = RefgetStore.open_remote(str(cache_path), remote_url)
+                remote_store.set_quiet(quiet)
+
+                # Check if collection exists on remote
+                remote_collections = remote_store.list_collections()
+                if dig not in remote_collections:
+                    continue  # Try next remote
+
+                # Collection found - metadata is now cached
+                result = {
+                    "digest": dig,
+                    "status": "pulled",
+                    "source": remote_url,
+                    "eager": eager,
+                }
+
+                if eager:
+                    # Pre-fetch all sequences
+                    coll = remote_store.get_collection(dig)
+                    seq_count = 0
+                    for seq in coll.sequences:
+                        # Accessing the sequence triggers download and caching
+                        _ = seq.decode()
+                        seq_count += 1
+                    result["sequences_fetched"] = seq_count
+
+                results.append(result)
+                pulled = True
+                break  # Success, don't try other remotes
+
+            except Exception as e:
+                # Try next remote
+                if not quiet:
+                    import sys
+
+                    print(f"Failed to pull from {remote_url}: {e}", file=sys.stderr)
+                continue
+
+        if not pulled:
+            results.append(
+                {
+                    "digest": dig,
+                    "status": "not_found",
+                    "tried": remote_urls,
+                }
+            )
+
+    # Output results
+    if len(results) == 1:
+        print_json(results[0])
+    else:
+        print_json({"results": results})
+
+    # Exit with error if any failed
+    failed = [r for r in results if r["status"] == "not_found"]
+    if failed:
+        raise typer.Exit(EXIT_FAILURE)
+    raise typer.Exit(EXIT_SUCCESS)
 
 
 @app.command()
