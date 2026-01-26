@@ -47,7 +47,11 @@ try:
     GTARS_INSTALLED = True
 except ImportError:
     GTARS_INSTALLED = False
-    _LOGGER.info("gtars not installed. Some functions will be slower or unavailable.")
+    _LOGGER.warning(
+        "Optional dependency 'gtars' not installed. "
+        "Some functions will be slower or unavailable. "
+        "Install with: pip install gtars"
+    )
 
 
 # HUMANS_SAMPLE_LIST = [
