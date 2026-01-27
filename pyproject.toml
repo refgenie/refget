@@ -2,3 +2,7 @@
 line-length = 99
 target-version = ['py38', 'py311']
 include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+testpaths = ["tests/local"]
+addopts = "-p no:asyncio"

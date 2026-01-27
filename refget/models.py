@@ -1,36 +1,360 @@
+import json
 import logging
-
 from copy import copy
+from datetime import datetime, timezone
+from sqlalchemy.types import TypeDecorator
 from sqlmodel import Field, SQLModel, Column, Relationship
 from sqlmodel import JSON
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+from typing import List, Optional, Dict, Any, Literal, TYPE_CHECKING
+from pydantic import BaseModel, field_validator, field_serializer
 
 
-from .digest_functions import sha512t24u_digest
-from .utilities import (
+from .digests import sha512t24u_digest
+
+if TYPE_CHECKING:
+    from gtars.refget import SequenceCollection as gtarsSequenceCollection
+
+
+class PydanticJSON(TypeDecorator):
+    """
+    A JSON type that knows how to serialize Pydantic/SQLModel objects.
+    """
+
+    impl = JSON
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        """Convert Python objects to JSON-serializable form before storing."""
+        if value is None:
+            return None
+        if isinstance(value, list):
+            return [self._serialize_item(item) for item in value]
+        return self._serialize_item(value)
+
+    def _serialize_item(self, item):
+        """Serialize a single item."""
+        if hasattr(item, "model_dump"):
+            return item.model_dump(exclude_none=True)
+        return item
+
+
+from .const import (
+    DEFAULT_INHERENT_ATTRS,
+    DEFAULT_PASSTHRU_ATTRS,
+    SEQCOL_SCHEMA_PATH,
+    GTARS_INSTALLED,
+)
+from .exceptions import InvalidSeqColError
+from .utils import (
     canonical_str,
     build_name_length_pairs,
     seqcol_dict_to_level1_dict,
-    fasta_to_seqcol_dict,
     level1_dict_to_seqcol_digest,
+    fasta_to_seqcol_dict,
 )
-
 
 _LOGGER = logging.getLogger(__name__)
 
 
-try:
-    from gtars.refget import (  # Adjust this import path to where your PyO3 module is
-        SequenceCollection as gtarsSequenceCollection,
+def create_fasta_drs_object(fasta_file: str, digest: str = None) -> "FastaDrsObject":
+    """
+    Create a FastaDrsObject from a FASTA file.
+
+    Args:
+        fasta_file: Path to a FASTA file
+        digest: The refget digest of the sequence collection (optional).
+                If not included, it will be computed.
+
+    Returns:
+        FastaDrsObject: The FastaDrsObject object
+
+    Raises:
+        ImportError: If gtars is not installed (required for FASTA processing)
+    """
+    import os
+    import hashlib
+    from datetime import datetime, timezone
+
+    if not GTARS_INSTALLED:
+        raise ImportError(
+            "create_fasta_drs_object requires gtars. Install with: pip install gtars"
+        )
+
+    from gtars.refget import digest_fasta
+
+    file_size = os.path.getsize(fasta_file)
+
+    # Compute file checksums (SHA-256, MD5)
+    sha256 = hashlib.sha256()
+    md5 = hashlib.md5()
+    with open(fasta_file, "rb") as f:
+        for block in iter(lambda: f.read(65536), b""):
+            sha256.update(block)
+            md5.update(block)
+    sha256_checksum_val = sha256.hexdigest()
+    md5_checksum_val = md5.hexdigest()
+
+    # Use digest_fasta to get both seqcol digest and FAI data in a single pass
+    seqcol = digest_fasta(fasta_file)
+
+    offsets = []
+    line_bases = None
+    extra_line_bytes = None
+
+    for seq_record in seqcol.sequences:
+        fai = seq_record.metadata.fai
+        if fai:  # None for gzipped files
+            offsets.append(fai.offset)
+            # Use values from first sequence (assumes consistent wrapping)
+            if line_bases is None:
+                line_bases = fai.line_bases
+                extra_line_bytes = fai.line_bytes - fai.line_bases
+
+    now = datetime.now(timezone.utc)
+
+    # Use provided digest or the one computed by digest_fasta
+    if digest is None:
+        digest = seqcol.digest
+
+    return FastaDrsObject(
+        id=digest,
+        name=os.path.basename(fasta_file),
+        self_uri=None,  # Will be populated by to_response() when serving via API
+        size=file_size,
+        created_time=now,
+        updated_time=now,
+        version="1.0",
+        mime_type="application/fasta",
+        checksums=[
+            Checksum(type="sha-256", checksum=sha256_checksum_val),
+            Checksum(type="refget.seqcol", checksum=digest),
+            Checksum(type="md5", checksum=md5_checksum_val),
+        ],
+        access_methods=[],
+        description=f"DRS object for {os.path.basename(fasta_file)}",
+        aliases=[os.path.basename(fasta_file).split(".")[0]],
+        line_bases=line_bases,
+        extra_line_bytes=extra_line_bytes,
+        offsets=offsets if offsets else None,
     )
 
-    _RUST_BINDINGS_AVAILABLE = True
-except ImportError as e:
-    _LOGGER.info(
-        f"Could not import gtars python bindings. `from_PySequenceCollection` will not be available."
+
+def seqcol_from_gtars(gtars_seq_col: "gtarsSequenceCollection") -> "SequenceCollection":
+    """
+    Convert a gtars SequenceCollection to a refget Python SequenceCollection.
+
+    Args:
+        gtars_seq_col: PySequenceCollection object from gtars Rust bindings.
+
+    Returns:
+        SequenceCollection: The refget Python SequenceCollection object.
+
+    Raises:
+        ImportError: If gtars is not installed (required for this conversion)
+    """
+    if not GTARS_INSTALLED:
+        raise ImportError("seqcol_from_gtars requires gtars. Install with: pip install gtars")
+
+    sequences_value = []
+    names_value = []
+    lengths_value = []
+
+    temp_seqcol_dict = {"names": [], "lengths": [], "sequences": []}
+
+    for record in gtars_seq_col.sequences:
+        sequences_value.append("SQ." + record.metadata.sha512t24u)
+        names_value.append(record.metadata.name)
+        lengths_value.append(record.metadata.length)
+
+        temp_seqcol_dict["names"].append(record.metadata.name)
+        temp_seqcol_dict["lengths"].append(record.metadata.length)
+        temp_seqcol_dict["sequences"].append(record.metadata.sha512t24u)
+
+    sequences_attr = SequencesAttr(
+        digest=gtars_seq_col.lvl1.sequences_digest, value=sequences_value
     )
-    _RUST_BINDINGS_AVAILABLE = False
+
+    names_attr = NamesAttr(digest=gtars_seq_col.lvl1.names_digest, value=names_value)
+
+    lengths_attr = LengthsAttr(
+        digest=gtars_seq_col.lvl1.lengths_digest,
+        value=lengths_value,
+    )
+
+    nlp = build_name_length_pairs(temp_seqcol_dict)
+    nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
+
+    sorted_sequences_value = copy(sequences_value)
+    sorted_sequences_value.sort()
+    sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
+    sorted_sequences_attr = SortedSequencesAttr(
+        digest=sorted_sequences_digest, value=sorted_sequences_value
+    )
+
+    snlp_digests = []
+    for pair in nlp:
+        snlp_digests.append(sha512t24u_digest(canonical_str(pair)))
+    snlp_digests.sort()
+    sorted_name_length_pairs_digest = sha512t24u_digest(canonical_str(snlp_digests))
+
+    seqcol = SequenceCollection(
+        digest=gtars_seq_col.digest,
+        human_readable_names=[],
+        sequences=sequences_attr,
+        sorted_sequences=sorted_sequences_attr,
+        names=names_attr,
+        lengths=lengths_attr,
+        name_length_pairs=nlp_attr,
+        sorted_name_length_pairs_digest=sorted_name_length_pairs_digest,
+    )
+
+    return seqcol
+
+
+class AccessURL(SQLModel):
+    """
+    A fully resolvable URL that can be used to fetch the actual object bytes.
+    Optionally includes headers (e.g., authorization tokens) required for access.
+    """
+
+    url: str
+    headers: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
+
+
+class AccessMethod(SQLModel):
+    """
+    Describes a method for accessing object bytes, including the protocol type
+    (e.g., https, s3, gs) and either a direct URL or an access_id for the /access endpoint.
+    At least one of access_url or access_id must be provided.
+
+    DRS 1.5.0 adds the 'cloud' field to explicitly specify the cloud provider.
+    """
+
+    type: Literal["s3", "gs", "ftp", "gsiftp", "globus", "htsget", "https", "file"]
+    access_url: Optional[AccessURL] = None
+    region: Optional[str] = None
+    access_id: Optional[str] = None
+    cloud: Optional[str] = None  # e.g., "aws", "gcp", "azure", "backblaze"
+
+
+class Checksum(SQLModel, table=False):
+    """
+    A checksum for data integrity verification. The type field indicates the hash algorithm
+    (e.g., "sha-256", "md5") and the checksum field contains the hex-string encoded hash value.
+    """
+
+    type: str  # e.g., "md5", "sha-256"
+    checksum: str  # The hex-string encoded checksum value
+
+
+class DrsObject(SQLModel, table=False):
+    """
+    A data object representing a single blob of bytes with metadata, checksums, and access methods.
+    DRS objects are self-contained and provide all information needed for clients to retrieve the data.
+    Conforms to GA4GH Data Repository Service (DRS) specification v1.4.0.
+    """
+
+    id: str
+    self_uri: str
+    size: int
+    created_time: datetime
+    checksums: List[Checksum] = Field(default_factory=list, sa_column=Column(PydanticJSON))
+    name: Optional[str] = None
+    updated_time: Optional[datetime] = None
+    version: Optional[str] = None
+    mime_type: Optional[str] = None
+    access_methods: List[AccessMethod] = Field(
+        default_factory=list, sa_column=Column(PydanticJSON)
+    )
+    description: Optional[str] = None
+    aliases: List[str] = Field(default_factory=list, sa_column=Column(JSON))
+
+    @field_validator("checksums", mode="before")
+    @classmethod
+    def coerce_checksums(cls, v):
+        """Coerce dicts to Checksum objects when loading from JSON."""
+        if v is None:
+            return []
+        return [Checksum.model_validate(item) if isinstance(item, dict) else item for item in v]
+
+    @field_serializer("checksums")
+    def serialize_checksums(self, v):
+        """Serialize Checksum objects (or dicts) to dicts for JSON output."""
+        if v is None:
+            return []
+        return [item.model_dump() if hasattr(item, "model_dump") else item for item in v]
+
+    @field_validator("access_methods", mode="before")
+    @classmethod
+    def coerce_access_methods(cls, v):
+        """Coerce dicts to AccessMethod objects when loading from JSON."""
+        if v is None:
+            return []
+        return [
+            AccessMethod.model_validate(item) if isinstance(item, dict) else item for item in v
+        ]
+
+    @field_serializer("access_methods")
+    def serialize_access_methods(self, v):
+        """Serialize AccessMethod objects (or dicts) to dicts for JSON output."""
+        if v is None:
+            return []
+        return [item.model_dump() if hasattr(item, "model_dump") else item for item in v]
+
+
+class FastaDrsObject(DrsObject, table=True):
+    """
+    A DRS object specialized for FASTA sequence files. Stores file metadata including
+    size, checksums (SHA-256, MD5, and refget sequence collection digest), and creation time.
+    The refget digest serves as the object ID, enabling content-addressable retrieval.
+    """
+
+    id: str = Field(primary_key=True)
+    self_uri: Optional[str] = None  # Override to make optional for storage
+
+    # FAI index fields
+    line_bases: Optional[int] = None  # Bases per line (e.g., 60)
+    extra_line_bytes: Optional[int] = (
+        None  # Extra bytes per line for newline (1 for \n, 2 for \r\n)
+    )
+    offsets: Optional[List[int]] = Field(
+        default=None, sa_column=Column(JSON)
+    )  # Byte offset per sequence
+
+    def to_response(self, base_uri: str = None) -> "FastaDrsObject":
+        """
+        Return a copy of this object with self_uri populated for API response.
+
+        Args:
+            base_uri: Base URI for the DRS service (e.g., "drs://seqcolapi.databio.org")
+                     If not provided, returns self unchanged.
+
+        Returns:
+            FastaDrsObject with self_uri populated
+        """
+        if base_uri is None:
+            return self
+
+        return self.model_copy(update={"self_uri": f"{base_uri}/{self.id}"})
+
+    @classmethod
+    def from_fasta_file(cls, fasta_file: str, digest: str = None) -> "FastaDrsObject":
+        """
+        Given a FASTA file, create a FastaDrsObject object,
+        return a populated FastaDrsObject with computed size and checksum.
+
+        Args:
+            fasta_file (str): Path to a FASTA file
+            digest (str): The refget digest of the sequence collection
+                (optional). If not included, it will be computed
+
+        Returns:
+            (FastaDrsObject): The FastaDrsObject object
+
+        Raises:
+            ImportError: If gtars is not installed (required for FASTA processing)
+        """
+        return create_fasta_drs_object(fasta_file, digest)
 
 
 class Sequence(SQLModel, table=True):
@@ -143,6 +467,9 @@ class SequenceCollection(SQLModel, table=True):
 
     sorted_name_length_pairs_digest: str = Field()
     """ Digest of the sorted name-length pairs, representing a unique digest of sort-invariant coordinate system. """
+    # Note: For transient attributes (per schema ga4gh.transient), we only store the digest, not the full value/relationship.
+    # This must be manually kept in sync with schemas/seqcol.json - SQLModel classes cannot be dynamically generated from schema
+    # because SQLAlchemy requires class definitions at import time for ORM mappings and database migrations.
     # sorted_name_length_pairs_digest: str = Field(foreign_key="sortednamelengthpairsattr.digest")
     # sorted_name_length_pairs: "SortedNameLengthPairsAttr" = Relationship(
     #     back_populates="collection"
@@ -152,24 +479,48 @@ class SequenceCollection(SQLModel, table=True):
     """ Array of name-length pairs, representing the coordinate system of the collection. """
 
     @classmethod
-    def input_validate(cls, seqcol_obj: dict) -> bool:
+    def _validate_collated_attributes(cls, seqcol_dict: dict) -> None:
         """
-        Given a dict representation of a sequence collection, validate it against the input schema.
+        Validate that all collated attributes have the same length.
+
+        Collated attributes are attributes whose values match 1-to-1 with the sequences
+        in the collection and are represented in the same order.
 
         Args:
-            seqcol_obj (dict): Dictionary representation of a canonical sequence collection object
+            seqcol_dict (dict): Dictionary representation of a sequence collection
 
-        Returns:
-            (bool): True if the object is valid, False otherwise
+        Raises:
+            InvalidSeqColError: If collated attributes have mismatched lengths
         """
-        schema_path = os.path.join(os.path.dirname(__file__), "schemas", "seqcol.yaml")
-        schema = load_yaml(schema_path)
-        validator = Draft7Validator(schema)
+        # Load schema to identify collated attributes
+        with open(SEQCOL_SCHEMA_PATH, "r") as f:
+            schema = json.load(f)
 
-        if not validator.is_valid(seqcol_obj.level2()):
-            errors = sorted(validator.iter_errors(seqcol_obj), key=lambda e: e.path)
-            raise InvalidSeqColError("Validation failed", errors)
-        return True
+        # Find all collated attributes from schema
+        collated_attrs = []
+        if "properties" in schema:
+            for attr_name, attr_spec in schema["properties"].items():
+                if isinstance(attr_spec, dict) and attr_spec.get("collated") is True:
+                    collated_attrs.append(attr_name)
+
+        # Check lengths of collated attributes that exist in the dict
+        lengths = {}
+        for attr in collated_attrs:
+            if attr in seqcol_dict:
+                if isinstance(seqcol_dict[attr], list):
+                    lengths[attr] = len(seqcol_dict[attr])
+
+        # Verify all collated attributes have the same length
+        if lengths:
+            expected_length = next(iter(lengths.values()))
+            mismatched = {
+                attr: length for attr, length in lengths.items() if length != expected_length
+            }
+
+            if mismatched:
+                all_lengths = ", ".join(f"{attr}={length}" for attr, length in lengths.items())
+                error_msg = f"Collated attributes must have the same length. Found mismatched lengths: {all_lengths}"
+                raise InvalidSeqColError(error_msg, errors=[mismatched])
 
     @classmethod
     def from_fasta_file(cls, fasta_file: str) -> "SequenceCollection":
@@ -181,13 +532,16 @@ class SequenceCollection(SQLModel, table=True):
 
         Returns:
             (SequenceCollection): The SequenceCollection object
+
+        Raises:
+            ImportError: If gtars is not installed (required for FASTA processing)
         """
         seqcol = fasta_to_seqcol_dict(fasta_file)
         return cls.from_dict(seqcol)
 
     @classmethod
     def from_dict(
-        cls, seqcol_dict: dict, inherent_attrs: Optional[list] = ["names", "sequences"]
+        cls, seqcol_dict: dict, inherent_attrs: Optional[list] = DEFAULT_INHERENT_ATTRS
     ) -> "SequenceCollection":
         """
         Given a dict representation of a sequence collection, create a SequenceCollection object.
@@ -195,15 +549,18 @@ class SequenceCollection(SQLModel, table=True):
 
         Args:
             seqcol_dict (dict): Dictionary representation of a canonical sequence collection object
-            schema (dict): Schema defining the inherent attributes to digest
+            inherent_attrs (list, optional): List of inherent attributes to digest
 
         Returns:
             (SequenceCollection): The SequenceCollection object
         """
 
+        # Validate collated attributes have matching lengths
+        cls._validate_collated_attributes(seqcol_dict)
+
         # validate_seqcol(seqcol_dict)
-        level1_dict = seqcol_dict_to_level1_dict(seqcol_dict, inherent_attrs)
-        seqcol_digest = level1_dict_to_seqcol_digest(level1_dict)
+        level1_dict = seqcol_dict_to_level1_dict(seqcol_dict)
+        seqcol_digest = level1_dict_to_seqcol_digest(level1_dict, inherent_attrs)
 
         # Now, build the actual pydantic models
         sequences_attr = SequencesAttr(
@@ -212,12 +569,7 @@ class SequenceCollection(SQLModel, table=True):
 
         names_attr = NamesAttr(digest=level1_dict["names"], value=seqcol_dict["names"])
 
-        # Any non-inherent attributes will have been filtered from the l1 dict
-        # So we need to compute the digests for them here
-        lengths_attr = LengthsAttr(
-            digest=sha512t24u_digest(canonical_str(seqcol_dict["lengths"])),
-            value=seqcol_dict["lengths"],
-        )
+        lengths_attr = LengthsAttr(digest=level1_dict["lengths"], value=seqcol_dict["lengths"])
 
         nlp = build_name_length_pairs(seqcol_dict)
         nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
@@ -255,7 +607,7 @@ class SequenceCollection(SQLModel, table=True):
                     human_readable_names_list.append(
                         HumanReadableNames(human_readable_name=name_str, digest=seqcol_digest)
                     )
-            # Handle the case where a single string is provided for backward compatibility
+            # Handle single string input (convert to list)
             elif isinstance(seqcol_dict["human_readable_names"], str):
                 human_readable_names_list.append(
                     HumanReadableNames(
@@ -285,7 +637,7 @@ class SequenceCollection(SQLModel, table=True):
 
     @classmethod
     def from_PySequenceCollection(
-        cls, gtars_seq_col: gtarsSequenceCollection
+        cls, gtars_seq_col: "gtarsSequenceCollection"
     ) -> "SequenceCollection":
         """
         Given a PySequenceCollection object (from Rust bindings), create a SequenceCollection object.
@@ -295,77 +647,19 @@ class SequenceCollection(SQLModel, table=True):
 
         Returns:
             (SequenceCollection): The SequenceCollection object.
+
+        Raises:
+            ImportError: If gtars is not installed (required for this conversion)
         """
-        if not _RUST_BINDINGS_AVAILABLE:
-            raise RuntimeError(
-                "Rust sequence collection bindings are not available. Cannot use `from_PySequenceCollection`."
-            )
-
-        sequences_value = []
-        names_value = []
-        lengths_value = []
-
-        temp_seqcol_dict = {"names": [], "lengths": [], "sequences": []}
-
-        for record in gtars_seq_col.sequences:
-            sequences_value.append("SQ." + record.metadata.sha512t24u)
-            names_value.append(record.metadata.name)
-            lengths_value.append(record.metadata.length)
-
-            temp_seqcol_dict["names"].append(record.metadata.name)
-            temp_seqcol_dict["lengths"].append(record.metadata.length)
-            temp_seqcol_dict["sequences"].append(record.metadata.sha512t24u)
-
-        sequences_attr = SequencesAttr(
-            digest=gtars_seq_col.lvl1.sequences_digest, value=sequences_value
-        )
-        _LOGGER.debug(f"SequencesAttr: {sequences_attr}")
-
-        names_attr = NamesAttr(digest=gtars_seq_col.lvl1.names_digest, value=names_value)
-        _LOGGER.debug(f"NamesAttr: {names_attr}")
-
-        lengths_attr = LengthsAttr(
-            digest=gtars_seq_col.lvl1.lengths_digest,
-            value=lengths_value,
-        )
-        _LOGGER.debug(f"LengthsAttr: {lengths_attr}")
-
-        nlp = build_name_length_pairs(temp_seqcol_dict)
-        nlp_attr = NameLengthPairsAttr(digest=sha512t24u_digest(canonical_str(nlp)), value=nlp)
-        _LOGGER.debug(f"NameLengthPairsAttr: {nlp_attr}")
-
-        sorted_sequences_value = copy(sequences_value)
-        sorted_sequences_value.sort()
-        sorted_sequences_digest = sha512t24u_digest(canonical_str(sorted_sequences_value))
-        sorted_sequences_attr = SortedSequencesAttr(
-            digest=sorted_sequences_digest, value=sorted_sequences_value
-        )
-        _LOGGER.debug(f"SortedSequencesAttr: {sorted_sequences_attr}")
-
-        snlp_digests = []
-        for pair in nlp:
-            snlp_digests.append(sha512t24u_digest(canonical_str(pair)))
-        snlp_digests.sort()
-        sorted_name_length_pairs_digest = sha512t24u_digest(canonical_str(snlp_digests))
-        _LOGGER.debug(f"Sorted Name Length Pairs Digest: {sorted_name_length_pairs_digest}")
-
-        seqcol = SequenceCollection(
-            digest=gtars_seq_col.digest,
-            human_readable_names=[],
-            sequences=sequences_attr,
-            sorted_sequences=sorted_sequences_attr,
-            names=names_attr,
-            lengths=lengths_attr,
-            name_length_pairs=nlp_attr,
-            sorted_name_length_pairs_digest=sorted_name_length_pairs_digest,
-        )
-
-        _LOGGER.debug(f"Created SequenceCollection from PySequenceCollection: {seqcol}")
-        return seqcol
+        return seqcol_from_gtars(gtars_seq_col)
 
     def level1(self):
         """
-        Converts object into dict of level 2 representation of the SequenceCollection.
+        Converts object into dict of level 1 representation of the SequenceCollection.
+
+        Returns attribute digests for most attributes, but returns raw values for passthru attributes.
+        Note: Passthru handling for dict-based construction happens in seqcol_dict_to_level1_dict().
+        When passthru attributes are added to the database model, return .value instead of .digest here.
         """
         return {
             "lengths": self.lengths.digest,
@@ -386,7 +680,7 @@ class SequenceCollection(SQLModel, table=True):
             "sequences": self.sequences.value,
             "sorted_sequences": self.sorted_sequences.value,
             "name_length_pairs": self.name_length_pairs.value,
-            # "sorted_name_length_pairs": self.sorted_name_length_pairs.value,  # decided to remove transient attrs from level 2 repr
+            # sorted_name_length_pairs is transient - only digest stored, not value
         }
 
     def itemwise(self, limit=None):
@@ -463,6 +757,13 @@ class Similarities(BaseModel):
     similarities: List[Dict[str, Any]]
     pagination: PaginationResult
     reference_digest: Optional[str] = None
+
+
+class PaginatedDigestList(BaseModel):
+    """Paginated list of digests, used by list endpoints"""
+
+    pagination: PaginationResult
+    results: List[str]
 
 
 # This is now a transient attribute, so we don't need to store it in the database.

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { encodeComparison } from '../utilities.jsx';
-import { useLoaderData, useNavigate } from 'react-router-dom';
+import { useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import {
@@ -16,13 +16,14 @@ import { StripPlot } from '../components/StripPlot.jsx';
 import { useSimilaritiesStore } from '../stores/similarities';
 
 
-const Similarities = () => {
+const SCOM = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const loaderData = useLoaderData();
   const collections = loaderData[0];
 
-  const { 
-    selectedCollectionsIndex, 
+  const {
+    selectedCollectionsIndex,
     setSelectedCollectionsIndex,
     customCollections,
     setCustomCollections,
@@ -35,7 +36,7 @@ const Similarities = () => {
     similarities,
     setSimilarities,
     getAllCollections,
-    initializeSelectedCollections, 
+    initializeSelectedCollections,
     sortBy,
     setSortBy,
     sortAscending,
@@ -52,12 +53,31 @@ const Similarities = () => {
   // const [networkThreshold, setNetworkThreshold] = useState(0.8);
   const [relationship, setRelationship] = useState('oneToMany');
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingPrefill, setPendingPrefill] = useState(null);
 
   const allCollections = getAllCollections(collections);
 
   useEffect(() => {
     initializeSelectedCollections(collections);
   }, [collections, initializeSelectedCollections]);
+
+  // Handle prefill from digest page - load data
+  useEffect(() => {
+    if (searchParams.get('prefill') === 'true' && !pendingPrefill) {
+      const prefillData = localStorage.getItem('scom-prefill');
+      if (prefillData) {
+        try {
+          const { json, name } = JSON.parse(prefillData);
+          setCustomCollectionJSON(JSON.stringify(json, null, 2));
+          setCustomCollectionName(name || '');
+          localStorage.removeItem('scom-prefill');
+          setPendingPrefill({ json, name });
+        } catch (e) {
+          console.error('Failed to load prefill data:', e);
+        }
+      }
+    }
+  }, [searchParams]);
 
   const selectedCollections = allCollections.filter(
     (_, index) => selectedCollectionsIndex[index],
@@ -354,8 +374,9 @@ const Similarities = () => {
               similarities: flattenedSimilarities,
             },
           ]);
+          const serverCollectionCount = collections?.results?.length || 0;
           setSelectedCollectionsIndex((prev) => [
-            ...prev.slice(0, collections.results.length),
+            ...prev.slice(0, serverCollectionCount),
             true,
           ]);
         } else {
@@ -373,6 +394,8 @@ const Similarities = () => {
         toast.success('Input processed.');
       }
     } catch (e) {
+      console.error('SCOM submission error:', e);
+      console.log('Data that was submitted:', data);
       toast.error(
         <span>
           <strong>Error:</strong> Collection is invalid. Please check your
@@ -385,6 +408,14 @@ const Similarities = () => {
       setIsLoading(false);
     }
   };
+
+  // Auto-submit prefilled data (wait for collections to be ready)
+  useEffect(() => {
+    if (pendingPrefill && !isLoading && collections?.results) {
+      handleAddCustomCollection(JSON.stringify(pendingPrefill.json), pendingPrefill.name || '');
+      setPendingPrefill(null);
+    }
+  }, [pendingPrefill, isLoading, collections]);
 
   useEffect(() => {
     const fetchAllSimilarities = async () => {
@@ -474,10 +505,26 @@ const Similarities = () => {
             </ul> */}
           </div>
 
-          <p className='mt-2 mb-0 text-muted'>
-            This tool provides summary similarity metrics for comparisons between all
-            sequence collections on the server and one of your choice.
-          </p>
+          <div className='mt-2 mb-0 text-muted'>
+            <p className='mb-2'>
+              This tool provides summary similarity metrics for comparisons between
+              all sequence collections on the server and one of your choice.
+            </p>
+
+            <p className='mb-2'>Two easy ways to use this tool:</p>
+
+            <ol className='mb-0'>
+              <li>
+                If you have a FASTA file, compare it against assemblies on the
+                server using the in-browser <a href='/fasta'>FASTADigest</a> tool.
+              </li>
+              <li>
+                If you already have the refget sequence collection JSON output
+                (e.g. from <code>refget fasta seqcol yourfasta.fa</code>), paste it
+                in the text box below.
+              </li>
+            </ol>
+          </div>
           {/* <p className='mb-2 text-muted'>
             If you would like to view metrics for multiple sequence collections
             at once, use the "Many-to-Many" tab.
@@ -523,20 +570,30 @@ const Similarities = () => {
                   placeholder='Name or digest of custom collection (optional)'
                   className='form-control tiny border-0 rounded-0 border-bottom z-active'
                 />
-                <select
-                  id='comparison-species'
-                  value={species}
-                  onChange={(e) => setSpecies(e.target.value)}
-                  className='form-select tiny border-0 rounded-0 border-bottom z-active'
-                >
-                  <option value='human'>Compare with human sequence collections</option>
-                  <option value='mouse'>Compare with mouse sequence collections</option>
-                </select>
+                <div className='d-flex align-items-center border-bottom px-2 py-1 tiny'>
+                  <span className='text-muted me-2'>Compare with:</span>
+                  <div className='btn-group btn-group-sm'>
+                    <button
+                      type='button'
+                      className={`btn ${species === 'human' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      onClick={() => setSpecies('human')}
+                    >
+                      Human
+                    </button>
+                    <button
+                      type='button'
+                      className={`btn ${species === 'mouse' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      onClick={() => setSpecies('mouse')}
+                    >
+                      Mouse
+                    </button>
+                  </div>
+                </div>
                 <textarea
                   id='custom-collection-json'
                   onChange={(e) => setCustomCollectionJSON(e.target.value)}
                   value={customCollectionJSON}
-                  placeholder='If you have a custom sequence collection, enter the output of `refget digest-fasta "yourfasta.fa" -l 2` here.'
+                  placeholder='Paste output from `refget fasta seqcol yourfasta.fa` here.'
                   className='form-control tiny border-0 rounded-0 rounded-bottom z-active'
                   // style={{ maxHeight: 'calc(200px - 32.333333px)' }}
                   rows='12'
@@ -795,4 +852,4 @@ const Similarities = () => {
   );
 };
 
-export { Similarities };
+export { SCOM };

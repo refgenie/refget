@@ -1,7 +1,9 @@
 import json
 import os
 import pytest
-import refget
+from refget import InvalidSeqColError
+from refget.models import SequenceCollection
+from refget.utils import compare_seqcols, validate_seqcol
 
 from tests.conftest import DEMO_FILES, DIGEST_TESTS, API_TEST_DIR
 
@@ -32,14 +34,14 @@ def check_comparison(fasta1, fasta2, expected_comparison):
     Check that the comparison of two sequence collections is as expected.
     """
     print(f"Comparison: Fasta1: {fasta1} vs Fasta2: {fasta2}. Expected: {expected_comparison}")
-    d = refget.SequenceCollection.from_fasta_file(fasta1)
-    d2 = refget.SequenceCollection.from_fasta_file(fasta2)
+    d = SequenceCollection.from_fasta_file(fasta1)
+    d2 = SequenceCollection.from_fasta_file(fasta2)
     with open(expected_comparison) as fp:
         correct_compare_response = json.load(fp)
         # Remove the 'digests' from the comparison dict, which is used in the API but
         # not provided by the function itself.
         correct_compare_response.pop("digests", None)
-        proposed_compare_response = refget.compare_seqcols(d.level2(), d2.level2())
+        proposed_compare_response = compare_seqcols(d.level2(), d2.level2())
         assert proposed_compare_response == correct_compare_response
 
 
@@ -65,7 +67,7 @@ class TestSequenceCollectionModel:
                 {"length": 4, "name": "chr2"},
             ],
         }
-        sc = refget.SequenceCollection.from_dict(dict)
+        sc = SequenceCollection.from_dict(dict)
         print(sc)
         assert sc.digest == "XZlrcEGi6mlopZ2uD8ObHkQB1d0oDwKk"
 
@@ -76,13 +78,13 @@ class TestSequenceCollectionModel:
             "lengths": [3],
             "human_readable_names": "Test Collection",
         }
-        sc = refget.SequenceCollection.from_dict(seqcol_dict)
+        sc = SequenceCollection.from_dict(seqcol_dict)
         assert sc.human_readable_names[0].human_readable_name == "Test Collection"
 
     @pytest.mark.parametrize("fa_file, fa_digest_bundle", DIGEST_TESTS)
     def test_from_fasta_file(self, fa_file, fa_digest_bundle, fa_root):
         """Ensures the top-level digest of a SequenceCollection matches."""
-        d = refget.SequenceCollection.from_fasta_file(os.path.join(fa_root, fa_file))
+        d = SequenceCollection.from_fasta_file(os.path.join(fa_root, fa_file))
         assert d.digest == fa_digest_bundle["top_level_digest"]
         assert (
             d.sorted_name_length_pairs_digest
@@ -129,10 +131,54 @@ class TestValidate:
 
     @pytest.mark.parametrize(["seqcol_obj"], [[seqcol_obj]])
     def test_validate(self, seqcol_obj):
-        is_valid = refget.validate_seqcol(seqcol_obj)
+        is_valid = validate_seqcol(seqcol_obj)
         assert is_valid
 
     @pytest.mark.parametrize(["seqcol_obj"], [[bad_seqcol]])
     def test_failure(self, seqcol_obj):
         with pytest.raises(Exception):
-            refget.validate_seqcol(seqcol_obj)
+            validate_seqcol(seqcol_obj)
+
+
+class TestCollatedAttributeValidation:
+    """
+    Test validation of collated attributes
+    """
+
+    def test_valid_collated_attributes(self):
+        """Test that valid collated attributes pass validation"""
+        valid_dict = {
+            "names": ["chr1", "chr2", "chr3"],
+            "sequences": ["SQ.abc123", "SQ.def456", "SQ.ghi789"],
+            "lengths": [100, 200, 300],
+        }
+        # Should not raise an error
+        sc = SequenceCollection.from_dict(valid_dict)
+        assert sc is not None
+
+    def test_mismatched_collated_attributes(self):
+        """Test that mismatched collated attribute lengths raise an error"""
+        invalid_dict = {
+            "names": ["chr1", "chr2", "chr3"],
+            "sequences": ["SQ.abc123", "SQ.def456"],  # Only 2 sequences
+            "lengths": [100, 200, 300],
+        }
+        # Should raise InvalidSeqColError
+        with pytest.raises(InvalidSeqColError) as exc_info:
+            SequenceCollection.from_dict(invalid_dict)
+
+        # Check error message contains helpful info
+        assert "Collated attributes must have the same length" in str(exc_info.value)
+        assert "names=3" in str(exc_info.value)
+        assert "sequences=2" in str(exc_info.value)
+
+    def test_single_collated_attribute_valid(self):
+        """Test that a single collated attribute doesn't cause issues"""
+        valid_dict = {
+            "names": ["chr1", "chr2"],
+            "sequences": ["SQ.abc123", "SQ.def456"],
+            "lengths": [100, 200],
+        }
+        # Should not raise an error
+        sc = SequenceCollection.from_dict(valid_dict)
+        assert sc is not None

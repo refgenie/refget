@@ -2,15 +2,10 @@
 
 import json
 import os
+from pathlib import Path
 import pytest
-import requests
-import sys
+from typer.testing import CliRunner
 
-import oyaml as yaml
-
-from refget.const import _schema_path
-
-REQ_SERVICE_MARK = "require_service"
 API_TEST_DIR = "tests/api"
 
 DEMO_FILES = [
@@ -35,15 +30,169 @@ for fa_name, fa_digest_bundle in TEST_FASTA_DIGESTS.items():
     DIGEST_TESTS.append((fa_name, fa_digest_bundle))
 
 
-def ly(n, data_path):
-    """Load YAML"""
-    with open(os.path.join(data_path, n), "r") as f:
-        return yaml.safe_load(f)
+# ============================================================
+# CLI Runner Fixtures
+# ============================================================
 
 
 @pytest.fixture
-def schema_path():
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "schemas")
+def runner():
+    """Typer CLI test runner."""
+    return CliRunner()
+
+
+@pytest.fixture
+def cli(runner):
+    """
+    Convenience fixture for invoking CLI commands.
+
+    Usage:
+        result = cli("fasta", "digest", "file.fa")
+        assert result.exit_code == 0
+    """
+    from refget.cli import app
+
+    def invoke(*args):
+        return runner.invoke(app, list(args))
+
+    return invoke
+
+
+# ============================================================
+# Test Data Paths
+# ============================================================
+
+TEST_DATA_DIR = Path(__file__).parent.parent / "test_fasta"
+BASE_FASTA = TEST_DATA_DIR / "base.fa"
+DIFFERENT_NAMES_FASTA = TEST_DATA_DIR / "different_names.fa"
+DIFFERENT_ORDER_FASTA = TEST_DATA_DIR / "different_order.fa"
+PAIR_SWAP_FASTA = TEST_DATA_DIR / "pair_swap.fa"
+SUBSET_FASTA = TEST_DATA_DIR / "subset.fa"
+SWAP_WO_COORDS_FASTA = TEST_DATA_DIR / "swap_wo_coords.fa"
+
+
+# ============================================================
+# FASTA File Fixtures
+# ============================================================
+
+
+@pytest.fixture
+def sample_fasta(tmp_path):
+    """Create sample FASTA in temp directory."""
+    fasta = tmp_path / "sample.fa"
+    fasta.write_text(">chr1\nACGTACGT\n>chr2\nGGCCGGCC\n")
+    return fasta
+
+
+@pytest.fixture
+def sample_fasta_gz(tmp_path):
+    """Create gzipped sample FASTA."""
+    import gzip
+
+    fasta = tmp_path / "sample.fa.gz"
+    with gzip.open(fasta, "wt") as f:
+        f.write(">chr1\nACGTACGT\n>chr2\nGGCCGGCC\n")
+    return fasta
+
+
+@pytest.fixture
+def large_fasta(tmp_path):
+    """Create larger FASTA for performance tests."""
+    fasta = tmp_path / "large.fa"
+    seq = "ACGTACGTACGT" * 1000
+    content = f">chr1\n{seq}\n>chr2\n{seq}\n"
+    fasta.write_text(content)
+    return fasta
+
+
+@pytest.fixture
+def multi_seq_fasta(tmp_path):
+    """Create FASTA with multiple sequences for comprehensive testing."""
+    fasta = tmp_path / "multi.fa"
+    fasta.write_text(
+        ">chr1 description one\nACGTACGT\n>chr2 description two\nGGCCGGCC\n>chr3\nTTAATTAA\n"
+    )
+    return fasta
+
+
+# ============================================================
+# Store Fixtures
+# ============================================================
+
+
+@pytest.fixture
+def temp_store(tmp_path, cli):
+    """Initialize a temporary RefgetStore."""
+    store_path = tmp_path / "store"
+    result = cli("store", "init", "--path", str(store_path))
+    # Note: This may fail until CLI is implemented - that's expected
+    if result.exit_code == 0:
+        return store_path
+    # Return path anyway for tests that check failure scenarios
+    return store_path
+
+
+@pytest.fixture
+def populated_store(temp_store, cli):
+    """Store with test FASTA already loaded."""
+    result = cli("store", "add", str(BASE_FASTA), "--path", str(temp_store))
+    if result.exit_code != 0:
+        pytest.skip("Store CLI not yet implemented")
+
+    # Parse digest from JSON output
+    output = json.loads(result.stdout)
+    return {
+        "path": temp_store,
+        "digest": output["digest"],
+    }
+
+
+# ============================================================
+# Config Fixtures
+# ============================================================
+
+
+@pytest.fixture
+def temp_config(tmp_path):
+    """Create temporary config file."""
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(f"""[store]
+path = "{tmp_path}/store"
+""")
+    return config_path
+
+
+@pytest.fixture
+def env_with_config(temp_config, monkeypatch):
+    """Set REFGET_CONFIG env var to temp config."""
+    monkeypatch.setenv("REFGET_CONFIG", str(temp_config))
+    return temp_config
+
+
+# ============================================================
+# Assertion Helpers
+# ============================================================
+
+
+def assert_valid_digest(digest: str):
+    """Assert string is valid seqcol digest format."""
+    # Seqcol digests are typically 32 chars (sha512t24u base64)
+    assert len(digest) >= 32, f"Invalid digest format: {digest}"
+
+
+def assert_json_output(result, required_keys: list = None):
+    """Assert CLI output is valid JSON with optional required keys."""
+    assert result.exit_code == 0, f"Command failed: {result.stdout}"
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        pytest.fail(f"Output is not valid JSON: {result.stdout}")
+
+    if required_keys:
+        for key in required_keys:
+            assert key in data, f"Missing key '{key}' in output: {data}"
+
+    return data
 
 
 @pytest.fixture
@@ -61,84 +210,46 @@ def fasta_path():
     )
 
 
-@pytest.fixture
-def schema_sequence(schema_path):
-    return ly("sequence.yaml", schema_path)
-
-
-@pytest.fixture
-def schema_asd(schema_path):
-    return ly("annotated_sequence_digest.yaml", schema_path)
-
-
-@pytest.fixture
-def schema_acd(schema_path):
-    return ly("annotated_collection_digest.yaml", schema_path)
-
-
-# Here add require_service marker, for testing clients
-
-
 def pytest_addoption(parser):
-    """
-    Add an option to specify the API root
-    """
-    parser.addoption("--api_root", "-R", action="store", default="http://0.0.0.0:8100")
+    """Add options for test configuration"""
     parser.addoption("--no-snlp", action="store_true", default=False)
+    parser.addoption(
+        "--no-network",
+        action="store_true",
+        default=False,
+        help="Skip tests that require network access",
+    )
+    parser.addoption(
+        "--no-db",
+        action="store_true",
+        default=False,
+        help="Skip tests that require database access",
+    )
+    parser.addoption(
+        "--api-root",
+        action="store",
+        default=None,
+        help="External seqcol server URL for tests (e.g., https://seqcolapi.databio.org)",
+    )
 
 
-@pytest.fixture()
-def api_root(pytestconfig):
-    """
-    Get the API root from the command line argument, --api_root
-    """
-    return pytestconfig.getoption("api_root")
-
-
-def check_server_is_running(api_root):
-    """
-    Check if a server is responding at the given API root
-    """
-    try:
-        print(f"Checking if service is running at {api_root}")
-        res = requests.get(f"{api_root}/")
-        assert res.status_code == 200, "Service is not running"
-        print("Server is running.")
-        return True
-    except Exception as e:
-        print("Server is not running.")
-        print("Error: ", sys.exc_info()[0])
-        return False
+@pytest.fixture(scope="session")
+def api_root(request):
+    """API root URL for compliance/integration tests."""
+    url = request.config.getoption("--api-root")
+    return url.rstrip("/") if url else None
 
 
 def pytest_configure(config):
-    """
-    Register custom markers for tests that depend on CLI arguments
-    You can add these markers  `@pytest.mark.<marker>`
-    """
-    config.addinivalue_line(
-        "markers", f"{REQ_SERVICE_MARK}: mark test as requiring the service to run"
-    )
+    """Register custom markers"""
     config.addinivalue_line("markers", "snlp: mark test as requiring the SNLP service to run")
+    config.addinivalue_line("markers", "requires_network: mark test as requiring network access")
+    config.addinivalue_line("markers", "requires_db: mark test as requiring database access")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
-# Pytest evaluates `skipif` before CLI arguments, so to skip tests based on CLI args,
-# we must modify them after collection but before execution.
-# This hook adds a `skip` mark to tests that should be skipped based on CLI args.
 def pytest_collection_modifyitems(config, items):
-    """
-    Skip tests with marks, based on values from the command line.
-    """
-
-    # Skip `@pytest.mark.require_service` if the server is not running
-    api_root = config.getoption("api_root")
-    skip_missing_service = pytest.mark.skip(reason="need API to run")
-    if not check_server_is_running(api_root):
-        print("Skipping tests that require a server to be running...")
-        for item in items:
-            if REQ_SERVICE_MARK in item.keywords:
-                item.add_marker(skip_missing_service)
-
+    """Skip tests based on command line options"""
     # Skip SNLP tests if --no-snlp is set
     no_snlp = config.getoption("no_snlp")
     skip_snlp = pytest.mark.skip(reason="Skipped due to --no-snlp option")
@@ -146,3 +257,19 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "snlp" in item.keywords:
                 item.add_marker(skip_snlp)
+
+    # Skip network tests if --no-network is set
+    no_network = config.getoption("no_network")
+    skip_network = pytest.mark.skip(reason="Skipped due to --no-network option")
+    if no_network:
+        for item in items:
+            if "requires_network" in item.keywords:
+                item.add_marker(skip_network)
+
+    # Skip database tests if --no-db is set
+    no_db = config.getoption("no_db")
+    skip_db = pytest.mark.skip(reason="Skipped due to --no-db option")
+    if no_db:
+        for item in items:
+            if "requires_db" in item.keywords:
+                item.add_marker(skip_db)

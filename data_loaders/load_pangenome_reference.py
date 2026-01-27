@@ -1,11 +1,8 @@
 import peppy
 import argparse
-import refget
 import os
 
-from sqlmodel import create_engine, SQLModel, Field, Session
-from refget.models import *
-from refget.agents import *
+from refget.agents import RefgetDBAgent
 
 # A simple argparser to get the PEP and the fa_root
 parser = argparse.ArgumentParser(description="Load a pangenome reference into the database")

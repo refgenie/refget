@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
-from refget import create_refget_router, get_dbagent
+from refget.router import create_refget_router, get_dbagent
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from sqlmodel import Session, select
@@ -15,7 +15,8 @@ from refget.const import HUMANS_SAMPLE_LIST, MOUSE_SAMPLES_LIST
 from refget.models import HumanReadableNames
 from .examples import *
 
-from refget.refget_router import _SAMPLE_DIGESTS
+from refget.router import _SAMPLE_DIGESTS, _ROUTER_CONFIG
+from refget.agents import RefgetDBAgent
 
 global _LOGGER
 _LOGGER = logging.getLogger(__name__)
@@ -32,8 +33,6 @@ async def lifespan_loader(app):
     _LOGGER.info("Starting lifespan: Loading sample data...")
 
     # Initialize database agent and store in app state
-    from refget.agents import RefgetDBAgent
-
     dbagent = RefgetDBAgent()
     app.state.dbagent = dbagent
 
@@ -84,10 +83,18 @@ app.add_middleware(  # This is a public API, so we allow all origins
     allow_headers=["*"],
 )
 
+# Configuration
+# RefgetStore URL (set to None if not using a backing store)
+REFGET_STORE_URL = None  # e.g., "s3://my-bucket/store/"
+
 # This is where the magic happens
 # This will add the seqcol endpoints to the app
-refget_router = create_refget_router(sequences=False, pangenomes=False)
-print(refget_router)
+refget_router = create_refget_router(
+    sequences=False,
+    pangenomes=False,
+    fasta_drs=True,
+    refget_store_url=REFGET_STORE_URL,
+)
 app.include_router(refget_router)
 
 
@@ -134,8 +141,22 @@ async def index(request: Request):
 
 
 @app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
-async def service_info(dbagent=Depends(get_dbagent)):
-    ret = {
+async def service_info():
+    # Build seqcol capabilities object
+    seqcol_info = {
+        "schema": dbagent.schema_dict,
+        "sorted_name_length_pairs": True,
+        "fasta_drs": {"enabled": _ROUTER_CONFIG.get("fasta_drs", False)},
+    }
+
+    # Add refget_store info
+    store_url = _ROUTER_CONFIG.get("refget_store_url")
+    if store_url:
+        seqcol_info["refget_store"] = {"enabled": True, "url": store_url}
+    else:
+        seqcol_info["refget_store"] = {"enabled": False}
+
+    return {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",
         "type": {
@@ -150,9 +171,8 @@ async def service_info(dbagent=Depends(get_dbagent)):
         "updatedAt": "2025-02-20T00:00:00Z",
         "environment": "dev",
         "version": ALL_VERSIONS,
-        "seqcol": {"schema": dbagent.schema_dict, "sorted_name_length_pairs": True},
+        "seqcol": seqcol_info,
     }
-    return JSONResponse(content=ret)
 
 
 # Mount statics after other routes for lower precedence
@@ -163,8 +183,6 @@ def create_global_dbagent():
     """
     Create a global database agent for use in the app.
     """
-    from refget.agents import RefgetDBAgent
-
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent

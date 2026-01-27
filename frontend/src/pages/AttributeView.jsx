@@ -10,7 +10,7 @@ const AttributeView = () => {
   const content = useLoaderData();
   const { attribute, digest } = useParams();
   const api_url = `${API_BASE}/attribute/collection/${attribute}/${digest}`;
-  const api_url_list = `${API_BASE}/list/collections/${attribute}/${digest}`;
+  const api_url_list = `${API_BASE}/list/collection?${attribute}=${digest}`;
   let results = content[0];
   let attribute_value = content[1];
 
@@ -39,7 +39,7 @@ const AttributeView = () => {
       <h5 className='mt-4'>Containing collections:</h5>
       <p className='mt-3 text-muted'>
         This uses the{' '}
-        <span className='font-monospace text-success'>/list/collections</span>{' '}
+        <span className='font-monospace text-success'>/list/collection</span>{' '}
         endpoint, passing the attribute name and digest to discover all
         collections with the attribute{' '}
         <span className='font-monospace text-success'>{attribute}</span> that

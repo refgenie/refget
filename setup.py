@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 import sys
 
 PACKAGE = "refget"
@@ -26,7 +26,7 @@ long_description = open("README.md").read()
 
 setup(
     name=PACKAGE,
-    packages=[PACKAGE],
+    packages=find_packages(include=[PACKAGE, f"{PACKAGE}.*"]),
     version=version,
     description="Python client for refget",
     long_description=long_description,
@@ -45,7 +45,7 @@ setup(
     author_email="nathan@code.databio.org",
     license="BSD2",
     entry_points={
-        "console_scripts": ["refget = refget.refget:main"],
+        "console_scripts": ["refget = refget.cli:main"],
     },
     # package_data={"refget": [os.path.join("refget", "*")]},
     include_package_data=True,

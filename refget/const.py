@@ -20,16 +20,38 @@ SCHEMA_NAMES = [ASL_NAME + ".yaml"]
 SCHEMA_FILEPATH = os.path.join(os.path.dirname(__file__), "schemas")
 INTERNAL_SCHEMAS = [_schema_path(s) for s in SCHEMA_NAMES]
 
+# Canonical seqcol schema file (JSON format)
+SEQCOL_SCHEMA_FILE = "seqcol.json"
+SEQCOL_SCHEMA_PATH = _schema_path(SEQCOL_SCHEMA_FILE)
+
 # Alias dict to make typehinting clearer
 SeqColDict = dict
+
+# Default inherent attributes per seqcol spec v1.0.0
+# These attributes contribute to the top-level digest
+DEFAULT_INHERENT_ATTRS = ["names", "sequences"]
+
+# Default transient attributes per seqcol spec v1.0.0
+# These attributes have no level2 representation - only digest is stored
+DEFAULT_TRANSIENT_ATTRS = ["sorted_name_length_pairs"]
+
+# Default passthru attributes per seqcol spec v1.0.0
+# These attributes are NOT digested - they appear the same in level1 and level2
+DEFAULT_PASSTHRU_ATTRS = []
 
 
 GTARS_INSTALLED = False
 try:
+    import gtars.refget  # noqa: F401
+
     GTARS_INSTALLED = True
 except ImportError:
     GTARS_INSTALLED = False
-    _LOGGER.error("gtars not installed. Some functions will be slower or unavailable.")
+    _LOGGER.warning(
+        "Optional dependency 'gtars' not installed. "
+        "Some functions will be slower or unavailable. "
+        "Install with: pip install gtars"
+    )
 
 
 # HUMANS_SAMPLE_LIST = [

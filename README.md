@@ -12,11 +12,34 @@ This repository includes:
 4. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
 5. `/frontend`: a React seqcolapi front-end.
 
+
+## Deploy to AWS ECS
+
+To deploy the public demo instance, you can either:
+
+1. **Create a GitHub release** - This triggers the `deploy_release_software.yml` workflow, which builds and pushes the Docker image to DockerHub. After that completes, it automatically triggers `deploy_primary.yml` to deploy to AWS ECS.
+
+2. **Manual dispatch** - You can manually trigger either workflow from the GitHub Actions tab.
+
+This builds seqcolapi, pushes to DockerHub, and deploys to ECS.
+
 ## Testing
 
-### Local unit tests of refget package
+### Unit tests
 
-- `pytest` to test `refget` package, local unit tests
+```bash
+pytest
+```
+
+### Integration tests (requires Docker)
+
+Integration tests run against an ephemeral PostgreSQL database in Docker:
+
+```bash
+./scripts/test-integration.sh
+```
+
+This starts the test database, runs tests, and cleans up automatically.
 
 ## Development and deployment: Backend
 
@@ -39,9 +62,7 @@ This will:
 
 Alternatively, if you want to run each step separately to see what's really going on, start here.
 
-
 #### Setting up a database connection
-
 
 First configure a database connection through environment variables. Choose one of these:
 
@@ -64,7 +85,7 @@ docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
 If you need to load test data into your server, then you have to install [gtars](https://docs.bedbase.org/gtars/) (with `pip install gtars`), a Python package for computing GA4GH digests. You can then load test data like this:
 
 ```
-python data_loaders/load_demo_seqcols.py
+PYTHONPATH=. python data_loaders/load_demo_seqcols.py
 ```
 
 or:
@@ -125,9 +146,51 @@ npm i
 VITE_API_BASE="https://seqcolapi.databio.org" npm run dev
 ```
 
-## Deploy to AWS ECS
+### Development with local WASM
 
-- Test locally first, using 1. native test; 2. local docker test.
+The `/digest` feature uses [@databio/gtars](https://www.npmjs.com/package/@databio/gtars) for WASM-based FASTA processing. To use a local gtars-wasm build instead of the npm package:
+
+```
+LOCAL_GTARS=../../gtars/gtars-wasm/pkg npm run dev
+```
+
+The `LOCAL_GTARS` env var should point to the `pkg/` directory of a built gtars-wasm package (run `wasm-pack build --target web` in gtars-wasm to build it).
+
+### gtars WASM API Reference
+
+The streaming API handles files of any size:
+
+```javascript
+import * as gtars from '@databio/gtars';
+await gtars.default();  // Initialize WASM
+
+// Streaming API (for large files)
+const handle = gtars.fastaHasherNew();
+gtars.fastaHasherUpdate(handle, chunk);  // Feed Uint8Array chunks
+const result = gtars.fastaHasherFinish(handle);  // Get SeqColResult
+
+// Batch API (for small files)
+const result = gtars.digestSeqcol(fastaBytes);
+```
+
+Result object:
+```typescript
+interface SeqColResult {
+  digest: string;           // Collection digest (SHA512t24u)
+  names_digest: string;
+  sequences_digest: string;
+  lengths_digest: string;
+  n_sequences: number;
+  sequences: Array<{
+    name: string;
+    length: number;
+    alphabet: string;       // dna2bit, dna3bit, etc.
+    sha512t24u: string;
+    md5: string;
+    description?: string;
+  }>;
+}
+```
 
 ### Deploying
 
@@ -143,9 +206,6 @@ The objects and attributes are represented as SQLModel objects in `refget/models
 
 1. create a new model. This will create a table for that model, etc.
 2. change the function that creates the objects, to populate the new attribute.
-
-
-
 
 ## Example of loading reference fasta datasets:
 

@@ -57,7 +57,7 @@ const HomePage = () => {
       <h5 className='mt-4'>2. Example Sequence Collections on this server:</h5>
       <p className='text-muted fs-6'>
         This uses the{' '}
-        <span className='font-monospace text-success'>/list/collections</span>{' '}
+        <span className='font-monospace text-success'>/list/collection</span>{' '}
         endpoint, which provides a paged list of all collections hosted by this
         server.
       </p>

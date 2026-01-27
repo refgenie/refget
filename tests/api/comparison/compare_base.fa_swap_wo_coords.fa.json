@@ -15,21 +15,21 @@
     ]
   },
   "array_elements": {
-    "a": {
+    "a_count": {
       "lengths": 3,
       "name_length_pairs": 3,
       "names": 3,
       "sequences": 3,
       "sorted_sequences": 3
     },
-    "b": {
+    "b_count": {
       "lengths": 3,
       "name_length_pairs": 3,
       "names": 3,
       "sequences": 3,
       "sorted_sequences": 3
     },
-    "a_and_b": {
+    "a_and_b_count": {
       "lengths": 3,
       "name_length_pairs": 3,
       "names": 3,

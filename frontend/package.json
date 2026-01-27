@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@databio/gtars": "^0.6.0",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",
     "d3": "^7.9.0",
@@ -22,6 +23,7 @@
     "zustand": "^5.0.7"
   },
   "devDependencies": {
+    "@rollup/plugin-alias": "^6.0.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.4",
@@ -29,6 +31,6 @@
     "eslint-plugin-react": "^7.34.2",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-refresh": "^0.4.7",
-    "vite": "^6.2.3"
+    "vite": "^6.4.1"
   }
 }

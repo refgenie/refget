@@ -1,23 +1,24 @@
-# Project configuration, particularly for logging.
+"""
+refget - GA4GH reference sequence and sequence collection tools.
 
-import logging
+Import from submodules:
+    from refget.store import RefgetStore, digest_fasta, StorageMode
+    from refget.digests import sha512t24u_digest, md5_digest, ga4gh_digest
+    from refget.utils import compare_seqcols, validate_seqcol, seqcol_digest
+    from refget.clients import SequenceCollectionClient, FastaDrsClient
+    from refget.models import SequenceCollection
+    from refget.router import create_refget_router
+    from refget.agents import RefgetDBAgent
+"""
 
-from .const import *
-from .clients import SequenceClient, SequenceCollectionClient, PangenomeClient
-from .digest_functions import *
-from .utilities import *
 from ._version import __version__
-from .models import SequenceCollection
+from .exceptions import InvalidSeqColError
+from .const import GTARS_INSTALLED
+from .utils import canonical_str
 
-from .refget_store import *
-
-try:
-    # Requires optional dependencies, so we catch the ImportError
-    from .refget_router import create_refget_router, get_dbagent
-except ImportError:
-    print("Optional dependencies not installed. Refget router will not be available.")
-    create_refget_router = None
-    get_dbagent = None
-    pass
-
-logging.basicConfig(level=logging.INFO)
+__all__ = [
+    "__version__",
+    "InvalidSeqColError",
+    "GTARS_INSTALLED",
+    "canonical_str",
+]
