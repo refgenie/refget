@@ -16,10 +16,11 @@ import { PangenomeView } from './pages/PangenomeView.jsx';
 import { AttributeView } from './pages/AttributeView.jsx';
 import { DemoPage } from './pages/DemoPage.jsx';
 import { SCIM } from './pages/SCIM.jsx';
-import { Similarities } from './pages/Similarities.jsx';
+import { SCOM } from './pages/SCOM.jsx';
 import { HomePage } from './pages/HomePage.jsx';
 import { HPRCGenomes } from './pages/HPRCGenomes.jsx';
 import { HumanReferencesView } from './pages/HumanReferences.jsx';
+import { DigestPage } from './features/digest';
 
 import {
   fetchServiceInfo,
@@ -133,6 +134,14 @@ const Nav = () => {
                 className={`nav-link cursor-pointer ${location === '' ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 Home
+              </span>
+            </li>
+            <li className='nav-item mx-2 my-0 h6'>
+              <span
+                onClick={() => navigate('/fasta')}
+                className={`nav-link cursor-pointer ${location === 'fasta' ? 'fw-medium text-black' : 'fw-light'}`}
+              >
+                FASTADigest
               </span>
             </li>
             <li className='nav-item mx-2 my-0 h6'>
@@ -319,6 +328,10 @@ const router = createBrowserRouter([
         element: <DemoPage />,
       },
       {
+        path: '/fasta',
+        element: <DigestPage />,
+      },
+      {
         path: '/human',
         element: <HumanReferencesView />,
       },
@@ -332,7 +345,7 @@ const router = createBrowserRouter([
       },
       {
         path: '/scom',
-        element: <Similarities />,
+        element: <SCOM />,
         loader: fetchAllSeqCols,
       },
       {

@@ -146,6 +146,52 @@ npm i
 VITE_API_BASE="https://seqcolapi.databio.org" npm run dev
 ```
 
+### Development with local WASM
+
+The `/digest` feature uses [@databio/gtars](https://www.npmjs.com/package/@databio/gtars) for WASM-based FASTA processing. To use a local gtars-wasm build instead of the npm package:
+
+```
+LOCAL_GTARS=../../gtars/gtars-wasm/pkg npm run dev
+```
+
+The `LOCAL_GTARS` env var should point to the `pkg/` directory of a built gtars-wasm package (run `wasm-pack build --target web` in gtars-wasm to build it).
+
+### gtars WASM API Reference
+
+The streaming API handles files of any size:
+
+```javascript
+import * as gtars from '@databio/gtars';
+await gtars.default();  // Initialize WASM
+
+// Streaming API (for large files)
+const handle = gtars.fastaHasherNew();
+gtars.fastaHasherUpdate(handle, chunk);  // Feed Uint8Array chunks
+const result = gtars.fastaHasherFinish(handle);  // Get SeqColResult
+
+// Batch API (for small files)
+const result = gtars.digestSeqcol(fastaBytes);
+```
+
+Result object:
+```typescript
+interface SeqColResult {
+  digest: string;           // Collection digest (SHA512t24u)
+  names_digest: string;
+  sequences_digest: string;
+  lengths_digest: string;
+  n_sequences: number;
+  sequences: Array<{
+    name: string;
+    length: number;
+    alphabet: string;       // dna2bit, dna3bit, etc.
+    sha512t24u: string;
+    md5: string;
+    description?: string;
+  }>;
+}
+```
+
 ### Deploying
 
 1. Ensure the [refget](https://github.com/refgenie/refget/) package master branch is as you want it.
