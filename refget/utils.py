@@ -3,16 +3,17 @@ import logging
 
 from jsonschema import Draft7Validator
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from .const import (
     SeqColDict,
     DEFAULT_INHERENT_ATTRS,
     DEFAULT_PASSTHRU_ATTRS,
     SEQCOL_SCHEMA_PATH,
+    GTARS_INSTALLED,
 )
 from .exceptions import InvalidSeqColError
-from .digest_functions import sha512t24u_digest, DigestFunction
+from .digests import sha512t24u_digest, DigestFunction
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -311,6 +312,47 @@ def seqcol_digest(
 
 def build_pangenome_model():
     raise NotImplementedError
+
+
+def fasta_to_seqcol_dict(fasta_file_path: Union[str, Path]) -> dict:
+    """
+    Convert a FASTA file into a Sequence Collection dict.
+
+    Args:
+        fasta_file_path: Path to the FASTA file
+
+    Returns:
+        dict: A canonical sequence collection dictionary
+
+    Raises:
+        ImportError: If gtars is not installed (required for FASTA processing)
+    """
+    if not GTARS_INSTALLED:
+        raise ImportError("fasta_to_seqcol_dict requires gtars. Install with: pip install gtars")
+
+    from gtars.refget import digest_fasta
+
+    fasta_seq_digests = digest_fasta(fasta_file_path)
+    seqcol_dict = {
+        "lengths": [],
+        "names": [],
+        "sequences": [],
+        "sorted_name_length_pairs": [],
+        "sorted_sequences": [],
+    }
+    for s in fasta_seq_digests.sequences:
+        seq_name = s.metadata.name
+        seq_length = s.metadata.length
+        seq_digest = "SQ." + s.metadata.sha512t24u
+        nlp = {"length": seq_length, "name": seq_name}
+        snlp_digest = sha512t24u_digest(canonical_str(nlp))
+        seqcol_dict["lengths"].append(seq_length)
+        seqcol_dict["names"].append(seq_name)
+        seqcol_dict["sorted_name_length_pairs"].append(snlp_digest)
+        seqcol_dict["sequences"].append(seq_digest)
+        seqcol_dict["sorted_sequences"].append(seq_digest)
+    seqcol_dict["sorted_name_length_pairs"].sort()
+    return seqcol_dict
 
 
 # def build_pangenome_model(pangenome_obj: dict) -> Pangenome:

@@ -31,12 +31,12 @@ from .models import (
     AccessMethod,
     AccessURL,
 )
-from .utilities import (
+from .utils import (
     compare_seqcols,
     build_pangenome_model,
     calc_jaccard_similarities,
+    fasta_to_seqcol_dict,
 )
-from .processing.fasta import fasta_to_seqcol_dict
 from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH
 
 ATTR_TYPE_MAP = {
@@ -156,7 +156,7 @@ class SequenceAgent(object):
             count = cnt_res.one()
             seqs = list_res.all()
             return {
-                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "pagination": {"page": offset // limit, "page_size": limit, "total": count},
                 "results": seqs,
             }
 
@@ -361,7 +361,11 @@ class SequenceCollectionAgent(object):
         return self.add(seqcol, update)
 
     def add_from_fasta_file(
-        self, fasta_file_path: str, update: bool = False, create_fasta_drs: bool = True
+        self,
+        fasta_file_path: str,
+        update: bool = False,
+        create_fasta_drs: bool = True,
+        human_readable_name: str = None,
     ) -> SequenceCollection:
         """
         Given a path to a fasta file, load the sequences into the refget database.
@@ -370,12 +374,14 @@ class SequenceCollectionAgent(object):
             fasta_file_path (str): Path to the fasta file
             update (bool): If True, update an existing collection if it exists
             create_fasta_drs (bool): If True, create a FastaDrsObject for the FASTA file
+            human_readable_name (str): Optional human-readable name for the collection
 
         Returns:
            (SequenceCollection): The added or updated sequence collection
         """
-
         CSC = fasta_to_seqcol_dict(fasta_file_path)
+        if human_readable_name:
+            CSC["human_readable_names"] = human_readable_name
         seqcol = self.add_from_dict(CSC, update)
 
         if create_fasta_drs and self.parent and self.parent.fasta_drs:
@@ -399,30 +405,14 @@ class SequenceCollectionAgent(object):
         """
         Given a path to a fasta file, and a human-readable name, load the sequences into the refget database.
 
-        Args:
-        - fasta_file_path (str): Path to the fasta file
-        - human_readable_name (str): human_readable_name
-        - update (bool): If True, update an existing collection if it exists
-        - create_fasta_drs (bool): If True, create a FastaDrsObject for the FASTA file
-
-        Returns:
-        - (SequenceCollection): The added or updated sequence collection
+        Deprecated: Use add_from_fasta_file(fasta_file_path, human_readable_name=name) instead.
         """
-
-        CSC = fasta_to_seqcol_dict(fasta_file_path)
-        CSC["human_readable_names"] = human_readable_name
-        seqcol = self.add_from_dict(CSC, update)
-
-        if create_fasta_drs and self.parent and self.parent.fasta_drs:
-            drs_obj = FastaDrsObject.from_fasta_file(fasta_file_path, digest=seqcol.digest)
-            if self.parent.fasta_drs.url_prefix:
-                url = self.parent.fasta_drs.url_prefix + os.path.basename(fasta_file_path)
-                drs_obj.access_methods = [
-                    AccessMethod(type="https", access_url=AccessURL(url=url))
-                ]
-            self.parent.fasta_drs.add(drs_obj)
-
-        return seqcol
+        return self.add_from_fasta_file(
+            fasta_file_path,
+            update=update,
+            create_fasta_drs=create_fasta_drs,
+            human_readable_name=human_readable_name,
+        )
 
     def add_from_fasta_pep(
         self,
@@ -618,7 +608,7 @@ class PangenomeAgent(object):
         pangenome_obj = {}
         for s in pep.samples:
             file_path = os.path.join(fa_root, s.fasta)
-            print(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
+            _LOGGER.info(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
             pangenome_obj[s.sample_name] = self.parent.seqcol.add_from_fasta_file(file_path)
 
         p = build_pangenome_model(pangenome_obj)
@@ -664,7 +654,7 @@ class AttributeAgent(object):
             count = cnt_res.one()
             seqcols = list_res.all()
             return {
-                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "pagination": {"page": offset // limit, "page_size": limit, "total": count},
                 "results": seqcols,
             }
 
@@ -685,7 +675,7 @@ class AttributeAgent(object):
             count = cnt_res.one()
             seqcols = list_res.all()
             return {
-                "pagination": {"page": offset * limit, "page_size": limit, "total": count},
+                "pagination": {"page": offset // limit, "page_size": limit, "total": count},
                 "results": seqcols,
             }
 

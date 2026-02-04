@@ -296,7 +296,7 @@ class TestComparisonWorkflows:
         fastas = [BASE_FASTA, DIFFERENT_NAMES_FASTA, DIFFERENT_ORDER_FASTA]
 
         for i, fa1 in enumerate(fastas):
-            for fa2 in fastas[i+1:]:
+            for fa2 in fastas[i + 1 :]:
                 result = cli("seqcol", "compare", str(fa1), str(fa2))
                 # Exit code: 0=compatible, 1=incompatible (both are valid results)
                 assert result.exit_code in [0, 1]

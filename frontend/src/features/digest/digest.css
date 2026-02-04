@@ -1,0 +1,42 @@
+/* FASTA Dropzone */
+.fasta-dropzone {
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fasta-dropzone:hover,
+.fasta-dropzone.dragging {
+  border-color: #0d6efd;
+  background: #f8f9fa;
+}
+
+.fasta-dropzone.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fasta-dropzone input {
+  display: none;
+}
+
+.fasta-dropzone label {
+  cursor: pointer;
+  display: block;
+}
+
+.fasta-dropzone i {
+  font-size: 3rem;
+  color: #6c757d;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.fasta-dropzone small {
+  display: block;
+  margin-top: 0.5rem;
+  color: #6c757d;
+}

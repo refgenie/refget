@@ -15,10 +15,7 @@ class TestSeqcolShow:
 
     def test_show_known_digest(self, cli_runner, test_server, base_digest):
         """Shows seqcol for known digest from test server."""
-        result = cli_runner(
-            "seqcol", "show", base_digest,
-            "--server", test_server
-        )
+        result = cli_runner("seqcol", "show", base_digest, "--server", test_server)
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -28,11 +25,7 @@ class TestSeqcolShow:
 
     def test_show_level_1(self, cli_runner, test_server, base_digest):
         """Shows digest at level 1 (digests only)."""
-        result = cli_runner(
-            "seqcol", "show", base_digest,
-            "--server", test_server,
-            "--level", "1"
-        )
+        result = cli_runner("seqcol", "show", base_digest, "--server", test_server, "--level", "1")
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -43,8 +36,7 @@ class TestSeqcolShow:
     def test_show_nonexistent_digest(self, cli_runner, test_server):
         """Show of nonexistent digest returns error."""
         result = cli_runner(
-            "seqcol", "show", "nonexistent_digest_that_does_not_exist",
-            "--server", test_server
+            "seqcol", "show", "nonexistent_digest_that_does_not_exist", "--server", test_server
         )
 
         assert result.exit_code != 0
@@ -55,10 +47,7 @@ class TestSeqcolList:
 
     def test_list_collections(self, cli_runner, test_server):
         """Lists collections from server."""
-        result = cli_runner(
-            "seqcol", "list",
-            "--server", test_server
-        )
+        result = cli_runner("seqcol", "list", "--server", test_server)
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -67,11 +56,7 @@ class TestSeqcolList:
 
     def test_list_with_limit(self, cli_runner, test_server):
         """Lists collections with limit."""
-        result = cli_runner(
-            "seqcol", "list",
-            "--server", test_server,
-            "--limit", "2"
-        )
+        result = cli_runner("seqcol", "list", "--server", test_server, "--limit", "2")
 
         assert result.exit_code == 0
 
@@ -89,9 +74,7 @@ class TestSeqcolSearch:
 
         if names_digest:
             result = cli_runner(
-                "seqcol", "search",
-                "--names", names_digest,
-                "--server", test_server
+                "seqcol", "search", "--names", names_digest, "--server", test_server
             )
 
             assert result.exit_code == 0
@@ -110,9 +93,13 @@ class TestSeqcolAttribute:
 
         if names_digest:
             result = cli_runner(
-                "seqcol", "attribute", names_digest,
-                "--attribute", "names",
-                "--server", test_server
+                "seqcol",
+                "attribute",
+                names_digest,
+                "--attribute",
+                "names",
+                "--server",
+                test_server,
             )
 
             assert result.exit_code == 0
@@ -125,10 +112,7 @@ class TestSeqcolInfo:
 
     def test_get_server_info(self, cli_runner, test_server):
         """Gets server info/capabilities."""
-        result = cli_runner(
-            "seqcol", "info",
-            "--server", test_server
-        )
+        result = cli_runner("seqcol", "info", "--server", test_server)
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -144,10 +128,7 @@ class TestSeqcolCompareRemote:
         fasta_path = test_fasta_path / "base.fa"
 
         result = cli_runner(
-            "seqcol", "compare",
-            str(fasta_path),
-            base_digest,
-            "--server", test_server
+            "seqcol", "compare", str(fasta_path), base_digest, "--server", test_server
         )
 
         assert result.exit_code == 0
@@ -160,10 +141,7 @@ class TestSeqcolCompareRemote:
     ):
         """Compare two remote digests."""
         result = cli_runner(
-            "seqcol", "compare",
-            base_digest,
-            different_order_digest,
-            "--server", test_server
+            "seqcol", "compare", base_digest, different_order_digest, "--server", test_server
         )
 
         # The command should complete (stdout has JSON)

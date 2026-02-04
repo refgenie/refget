@@ -56,9 +56,7 @@ def init(
 
     # Check if config already exists
     if config_path.exists() and not force:
-        overwrite = typer.confirm(
-            f"Configuration already exists at {config_path}. Overwrite?"
-        )
+        overwrite = typer.confirm(f"Configuration already exists at {config_path}. Overwrite?")
         if not overwrite:
             typer.echo("Aborted.")
             raise typer.Exit(EXIT_FAILURE)
@@ -222,8 +220,7 @@ def add(
     if resource_type not in RESOURCE_TYPE_MAP:
         valid_types = ", ".join(RESOURCE_TYPE_MAP.keys())
         print_error(
-            f"Invalid resource type '{resource_type}'.\n"
-            f"Valid types: {valid_types}",
+            f"Invalid resource type '{resource_type}'.\n" f"Valid types: {valid_types}",
             EXIT_CONFIG_ERROR,
         )
         return  # Unreachable, but clarifies control flow
@@ -317,8 +314,7 @@ def remove(
     if resource_type not in RESOURCE_TYPE_MAP:
         valid_types = ", ".join(RESOURCE_TYPE_MAP.keys())
         print_error(
-            f"Invalid resource type '{resource_type}'.\n"
-            f"Valid types: {valid_types}",
+            f"Invalid resource type '{resource_type}'.\n" f"Valid types: {valid_types}",
             EXIT_CONFIG_ERROR,
         )
         return  # Unreachable, but clarifies control flow

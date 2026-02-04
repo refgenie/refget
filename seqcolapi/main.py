@@ -4,7 +4,7 @@ from fastapi import FastAPI, Depends
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
-from refget import create_refget_router, get_dbagent
+from refget.router import create_refget_router, get_dbagent
 from starlette.requests import Request
 from starlette.staticfiles import StaticFiles
 from sqlmodel import Session, select
@@ -15,7 +15,8 @@ from refget.const import HUMANS_SAMPLE_LIST, MOUSE_SAMPLES_LIST
 from refget.models import HumanReadableNames
 from .examples import *
 
-from refget.refget_router import _SAMPLE_DIGESTS, _ROUTER_CONFIG
+from refget.router import _SAMPLE_DIGESTS, _ROUTER_CONFIG
+from refget.agents import RefgetDBAgent
 
 global _LOGGER
 _LOGGER = logging.getLogger(__name__)
@@ -32,8 +33,6 @@ async def lifespan_loader(app):
     _LOGGER.info("Starting lifespan: Loading sample data...")
 
     # Initialize database agent and store in app state
-    from refget.agents import RefgetDBAgent
-
     dbagent = RefgetDBAgent()
     app.state.dbagent = dbagent
 
@@ -96,7 +95,6 @@ refget_router = create_refget_router(
     fasta_drs=True,
     refget_store_url=REFGET_STORE_URL,
 )
-print(refget_router)
 app.include_router(refget_router)
 
 
@@ -148,24 +146,17 @@ async def service_info():
     seqcol_info = {
         "schema": dbagent.schema_dict,
         "sorted_name_length_pairs": True,
-        "fasta_drs": {
-            "enabled": _ROUTER_CONFIG.get("fasta_drs", False)
-        },
+        "fasta_drs": {"enabled": _ROUTER_CONFIG.get("fasta_drs", False)},
     }
 
     # Add refget_store info
     store_url = _ROUTER_CONFIG.get("refget_store_url")
     if store_url:
-        seqcol_info["refget_store"] = {
-            "enabled": True,
-            "url": store_url
-        }
+        seqcol_info["refget_store"] = {"enabled": True, "url": store_url}
     else:
-        seqcol_info["refget_store"] = {
-            "enabled": False
-        }
+        seqcol_info["refget_store"] = {"enabled": False}
 
-    ret = {
+    return {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",
         "type": {
@@ -182,7 +173,6 @@ async def service_info():
         "version": ALL_VERSIONS,
         "seqcol": seqcol_info,
     }
-    return JSONResponse(content=ret)
 
 
 # Mount statics after other routes for lower precedence
@@ -193,8 +183,6 @@ def create_global_dbagent():
     """
     Create a global database agent for use in the app.
     """
-    from refget.agents import RefgetDBAgent
-
     global dbagent
     dbagent = RefgetDBAgent()  # Configured via env vars
     return dbagent

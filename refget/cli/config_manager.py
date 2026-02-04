@@ -105,8 +105,7 @@ def save_config(config: Dict[str, Any]) -> None:
     """
     if tomli_w is None:
         raise ImportError(
-            "tomli_w is required to save configuration.\n"
-            "Install with: pip install tomli-w"
+            "tomli_w is required to save configuration.\n" "Install with: pip install tomli-w"
         )
 
     config_path = get_config_path()
@@ -256,7 +255,9 @@ def _deep_copy_dict(d: Dict[str, Any]) -> Dict[str, Any]:
             result[key] = _deep_copy_dict(value)
         elif isinstance(value, list):
             # Deep copy list contents (handles lists of dicts like server configs)
-            result[key] = [_deep_copy_dict(item) if isinstance(item, dict) else item for item in value]
+            result[key] = [
+                _deep_copy_dict(item) if isinstance(item, dict) else item for item in value
+            ]
         else:
             result[key] = value
     return result

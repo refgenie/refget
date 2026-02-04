@@ -11,7 +11,7 @@ import os
 import tempfile
 from pathlib import Path
 
-from refget.processing import RefgetStore
+from refget.store import RefgetStore
 
 # Remote store URL (2023 Human Pangenome Reference - 47 haplotype-resolved assemblies)
 REMOTE_URL = "https://refgenie.s3.us-east-1.amazonaws.com/pangenome_refget_store"
@@ -29,10 +29,7 @@ EXAMPLE_SEQ_NAME = "JAGYVX010000006.1 unmasked:primary_assembly HG03540.pri.mat.
 # The store metadata (~1.5 MB) is fetched; sequences are loaded on-demand.
 
 # %%
-store = RefgetStore.load_remote(
-    cache_path=str(CACHE_DIR),
-    remote_url=REMOTE_URL
-)
+store = RefgetStore.load_remote(cache_path=str(CACHE_DIR), remote_url=REMOTE_URL)
 
 print(f"Loaded {len(store)} sequences from {REMOTE_URL}")
 

@@ -15,7 +15,7 @@ Commands:
 import json
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 import typer
 
@@ -30,6 +30,8 @@ from refget.cli.output import (
     print_success,
     print_warning,
 )
+
+# Heavy imports (sqlmodel) are done lazily inside functions that need them
 
 app = typer.Typer(
     name="admin",
@@ -58,6 +60,7 @@ def _check_boto3():
     """Check if boto3 is available."""
     try:
         import boto3  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -67,12 +70,217 @@ def _load_pep(pep_path: Optional[Path] = None, pephub: Optional[str] = None):
     """Load a PEP from file or pephub."""
     if pep_path:
         import peppy
+
         return peppy.Project(str(pep_path))
     elif pephub:
         import pephubclient
+
         phc = pephubclient.PEPHubClient()
         return phc.load_project(pephub)
     return None
+
+
+def _upload_to_s3(
+    fasta_path: str,
+    bucket: str,
+    prefix: str = "",
+    access_key: Optional[str] = None,
+    secret_key: Optional[str] = None,
+    endpoint: Optional[str] = None,
+    region: Optional[str] = None,
+    url_base: Optional[str] = None,
+    force: bool = False,
+) -> str:
+    """
+    Upload a file to S3-compatible storage and return the URL.
+
+    Args:
+        fasta_path: Path to the file to upload
+        bucket: Bucket name
+        prefix: Key prefix (folder path)
+        access_key: AWS access key ID (optional, uses default credentials if not provided)
+        secret_key: AWS secret access key (optional)
+        endpoint: Custom endpoint URL for S3-compatible services (e.g., Backblaze, MinIO)
+        region: AWS region (optional)
+        url_base: Base URL for constructing public access URLs (optional, defaults to endpoint-based URL)
+        force: If True, upload even if file already exists (default: False)
+
+    Returns:
+        URL to the uploaded file
+    """
+    import boto3
+
+    # Build client kwargs
+    client_kwargs = {}
+    if access_key and secret_key:
+        client_kwargs["aws_access_key_id"] = access_key
+        client_kwargs["aws_secret_access_key"] = secret_key
+    if endpoint:
+        # Ensure endpoint has https:// prefix
+        if not endpoint.startswith("http"):
+            endpoint = f"https://{endpoint}"
+        client_kwargs["endpoint_url"] = endpoint
+    if region:
+        client_kwargs["region_name"] = region
+
+    s3 = boto3.client("s3", **client_kwargs)
+    key = (
+        os.path.join(prefix, os.path.basename(fasta_path))
+        if prefix
+        else os.path.basename(fasta_path)
+    )
+
+    # Check if file already exists (unless force=True)
+    if not force:
+        try:
+            s3.head_object(Bucket=bucket, Key=key)
+            print(f"  Skipping upload, already exists: {key}")
+        except s3.exceptions.ClientError:
+            s3.upload_file(fasta_path, bucket, key)
+    else:
+        s3.upload_file(fasta_path, bucket, key)
+
+    # Build URL: use url_base if provided, otherwise fall back to endpoint or default S3
+    if url_base:
+        # url_base is the full public URL prefix (e.g., https://cloud2.databio.org/)
+        url_base = url_base.rstrip("/")
+        return f"{url_base}/{key}"
+    elif endpoint:
+        return f"{endpoint}/{bucket}/{key}"
+    else:
+        return f"https://{bucket}.s3.amazonaws.com/{key}"
+
+
+def _add_fasta_to_db(
+    fasta_path: str,
+    dbagent,
+    name: Optional[str] = None,
+) -> str:
+    """
+    Add a FASTA file's seqcol metadata to the database.
+
+    Args:
+        fasta_path: Path to the FASTA file
+        dbagent: RefgetDBAgent instance
+        name: Human-readable name (optional)
+
+    Returns:
+        The seqcol digest
+    """
+    if name:
+        seqcol = dbagent.seqcol.add_from_fasta_file_with_name(fasta_path, name, update=True)
+    else:
+        seqcol = dbagent.seqcol.add_from_fasta_file(fasta_path, update=True)
+    return seqcol.digest
+
+
+def _register_access_method(
+    digest: str,
+    url: str,
+    cloud: str,
+    region: str,
+    type_: str,
+    dbagent,
+) -> None:
+    """
+    Register an access method for a FASTA file.
+
+    Args:
+        digest: The seqcol digest
+        url: The URL where the file is accessible
+        cloud: Cloud provider ("aws", "gcp", "azure", "backblaze", etc.)
+        region: Cloud region (e.g., "us-east-1", "eastus")
+        type_: Access type ("s3", "https", "gs", etc.)
+        dbagent: RefgetDBAgent instance
+    """
+    from refget.models import AccessMethod, AccessURL
+
+    dbagent.fasta_drs.add_access_method(
+        digest=digest,
+        access_method=AccessMethod(
+            type=type_,
+            cloud=cloud,
+            region=region,
+            access_url=AccessURL(url=url),
+        ),
+    )
+
+
+def _add_fasta_pep_to_db(
+    pep,
+    fa_root: str,
+    dbagent,
+    storage: Optional[List[Dict[str, Any]]] = None,
+    skip_upload: bool = False,
+    force_upload: bool = False,
+) -> Dict[str, str]:
+    """
+    Add FASTA files from a PEP to the database.
+
+    Args:
+        pep: peppy.Project object
+        fa_root: Root directory containing the FASTA files
+        dbagent: RefgetDBAgent instance
+        storage: Optional list of storage locations for upload/registration
+        skip_upload: If True, don't upload files - just register URLs
+        force_upload: If True, re-upload files even if they already exist
+
+    Returns:
+        dict: Mapping of FASTA filenames to seqcol digests
+    """
+    results = {}
+    total = len(pep.samples)
+    for i, s in enumerate(pep.samples, 1):
+        fa_path = os.path.join(fa_root, s.fasta)
+        name = getattr(s, "sample_name", None)
+        print(f"[{i}/{total}] Adding {s.fasta}...")
+        digest = _add_fasta_to_db(fa_path, dbagent, name=name)
+
+        if storage:
+            filename = os.path.basename(fa_path)
+            for loc in storage:
+                if skip_upload:
+                    # Use provided URL or construct from bucket/prefix
+                    if "url" in loc:
+                        url = loc["url"]
+                    else:
+                        prefix = loc.get("prefix", "")
+                        url = f"https://{loc['bucket']}.s3.amazonaws.com/{prefix}{filename}"
+                else:
+                    # Actually upload
+                    cloud_name = loc.get("cloud", "").upper()
+                    access_key = loc.get("access_key") or os.environ.get(
+                        f"{cloud_name}_ACCESS_KEY"
+                    )
+                    secret_key = loc.get("secret_key") or os.environ.get(
+                        f"{cloud_name}_SECRET_KEY"
+                    )
+                    url = _upload_to_s3(
+                        fa_path,
+                        loc["bucket"],
+                        prefix=loc.get("prefix", ""),
+                        access_key=access_key,
+                        secret_key=secret_key,
+                        endpoint=loc.get("endpoint"),
+                        region=loc.get("region"),
+                        url_base=loc.get("url_base"),
+                        force=force_upload,
+                    )
+
+                _register_access_method(
+                    digest=digest,
+                    url=url,
+                    cloud=loc["cloud"],
+                    region=loc["region"],
+                    type_=loc.get(
+                        "type", "s3" if loc["cloud"] in ("aws", "backblaze") else "https"
+                    ),
+                    dbagent=dbagent,
+                )
+
+        print(f"         -> {digest}")
+        results[s.fasta] = digest
+    return results
 
 
 def _load_seqcol_from_json(json_path: Path, dbagent) -> str:
@@ -177,8 +385,7 @@ def load(
             # Assume FASTA
             print_info(f"Loading seqcol from FASTA: {input_file}")
             try:
-                from refget.refget import add_fasta
-                digest = add_fasta(str(input_file), name=name, dbagent=dbagent)
+                digest = _add_fasta_to_db(str(input_file), dbagent, name=name)
                 print_success(f"Loaded seqcol: {digest}")
                 print_json({"digest": digest})
             except Exception as e:
@@ -194,8 +401,7 @@ def load(
                 print_error("Failed to load PEP project", EXIT_FAILURE)
                 return
 
-            from refget.refget import add_fasta_pep
-            results = add_fasta_pep(project, str(fa_root), dbagent=dbagent)
+            results = _add_fasta_pep_to_db(project, str(fa_root), dbagent)
             print_success(f"Loaded {len(results)} sequence collections")
             print_json(results)
         except ImportError as e:
@@ -274,21 +480,24 @@ def register(
     # Get or compute digest
     if not digest:
         print_info("Computing digest from FASTA...")
-        from refget.processing.fasta import fasta_to_digest
-        digest = fasta_to_digest(str(fasta))
+        from refget.store import digest_fasta
+
+        digest = digest_fasta(str(fasta)).digest
         print_info(f"Computed digest: {digest}")
 
     print_info(f"Uploading {fasta} to s3://{bucket}/{prefix}...")
 
     try:
-        from refget.refget import register_fasta
-        url = register_fasta(
+        # Upload to S3
+        url = _upload_to_s3(str(fasta), bucket, prefix, region=region)
+
+        # Register access method
+        _register_access_method(
             digest=digest,
-            fasta_path=str(fasta),
-            bucket=bucket,
-            prefix=prefix,
+            url=url,
             cloud=cloud,
             region=region,
+            type_="s3" if cloud in ("aws", "backblaze") else "https",
             dbagent=dbagent,
         )
         print_success(f"Registered: {url}")
@@ -392,12 +601,14 @@ def ingest(
         return
 
     # Build storage configuration
-    storage = [{
-        "bucket": bucket,
-        "prefix": prefix,
-        "cloud": cloud,
-        "region": region,
-    }]
+    storage = [
+        {
+            "bucket": bucket,
+            "prefix": prefix,
+            "cloud": cloud,
+            "region": region,
+        }
+    ]
 
     # Single file ingestion
     if fasta:
@@ -407,12 +618,18 @@ def ingest(
 
         print_info(f"Loading and registering: {fasta}")
         try:
-            from refget.refget import add_fasta
-            digest = add_fasta(
-                str(fasta),
-                name=name,
+            # Load metadata
+            digest = _add_fasta_to_db(str(fasta), dbagent, name=name)
+
+            # Upload and register
+            url = _upload_to_s3(str(fasta), bucket, prefix, region=region)
+            _register_access_method(
+                digest=digest,
+                url=url,
+                cloud=cloud,
+                region=region,
+                type_="s3" if cloud in ("aws", "backblaze") else "https",
                 dbagent=dbagent,
-                storage=storage,
             )
             print_success(f"Ingested: {digest}")
             print_json({"digest": digest, "bucket": bucket, "prefix": prefix})
@@ -429,11 +646,10 @@ def ingest(
                 print_error("Failed to load PEP project", EXIT_FAILURE)
                 return
 
-            from refget.refget import add_fasta_pep
-            results = add_fasta_pep(
+            results = _add_fasta_pep_to_db(
                 project,
                 str(fa_root),
-                dbagent=dbagent,
+                dbagent,
                 storage=storage,
             )
             print_success(f"Ingested {len(results)} sequence collections")
@@ -474,6 +690,7 @@ def status() -> None:
     # Test connection
     try:
         from refget.agents import RefgetDBAgent
+
         dbagent = RefgetDBAgent()
         print_success("Database connection: OK")
 
@@ -514,6 +731,7 @@ def info() -> None:
     # gtars
     try:
         from gtars import __version__ as gtars_version
+
         print(f"  gtars: {gtars_version}")
     except ImportError:
         print("  gtars: not installed")
@@ -523,6 +741,7 @@ def info() -> None:
     # boto3
     try:
         import boto3
+
         print(f"  boto3: {boto3.__version__}")
     except ImportError:
         print("  boto3: not installed (required for cloud uploads)")
@@ -530,6 +749,7 @@ def info() -> None:
     # peppy
     try:
         import peppy
+
         print(f"  peppy: {peppy.__version__}")
     except ImportError:
         print("  peppy: not installed (required for PEP batch operations)")
@@ -539,6 +759,7 @@ def info() -> None:
     # sqlmodel
     try:
         import sqlmodel
+
         print(f"  sqlmodel: {sqlmodel.__version__}")
     except ImportError:
         print("  sqlmodel: not installed")

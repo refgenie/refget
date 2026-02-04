@@ -7,7 +7,8 @@ without requiring a running server.
 For integration tests that test against a real API,
 see tests/integration/test_seqcolapi_client.py
 """
-from refget import SequenceCollectionClient, FastaDrsClient
+
+from refget.clients import SequenceCollectionClient, FastaDrsClient
 
 
 class TestClientConstruction:

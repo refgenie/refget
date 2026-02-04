@@ -34,6 +34,7 @@ for fa_name, fa_digest_bundle in TEST_FASTA_DIGESTS.items():
 # CLI Runner Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def runner():
     """Typer CLI test runner."""
@@ -53,6 +54,7 @@ def cli(runner):
 
     def invoke(*args):
         return runner.invoke(app, list(args))
+
     return invoke
 
 
@@ -73,6 +75,7 @@ SWAP_WO_COORDS_FASTA = TEST_DATA_DIR / "swap_wo_coords.fa"
 # FASTA File Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def sample_fasta(tmp_path):
     """Create sample FASTA in temp directory."""
@@ -85,8 +88,9 @@ def sample_fasta(tmp_path):
 def sample_fasta_gz(tmp_path):
     """Create gzipped sample FASTA."""
     import gzip
+
     fasta = tmp_path / "sample.fa.gz"
-    with gzip.open(fasta, 'wt') as f:
+    with gzip.open(fasta, "wt") as f:
         f.write(">chr1\nACGTACGT\n>chr2\nGGCCGGCC\n")
     return fasta
 
@@ -105,13 +109,16 @@ def large_fasta(tmp_path):
 def multi_seq_fasta(tmp_path):
     """Create FASTA with multiple sequences for comprehensive testing."""
     fasta = tmp_path / "multi.fa"
-    fasta.write_text(">chr1 description one\nACGTACGT\n>chr2 description two\nGGCCGGCC\n>chr3\nTTAATTAA\n")
+    fasta.write_text(
+        ">chr1 description one\nACGTACGT\n>chr2 description two\nGGCCGGCC\n>chr3\nTTAATTAA\n"
+    )
     return fasta
 
 
 # ============================================================
 # Store Fixtures
 # ============================================================
+
 
 @pytest.fixture
 def temp_store(tmp_path, cli):
@@ -144,13 +151,14 @@ def populated_store(temp_store, cli):
 # Config Fixtures
 # ============================================================
 
+
 @pytest.fixture
 def temp_config(tmp_path):
     """Create temporary config file."""
     config_path = tmp_path / "config.toml"
-    config_path.write_text(f'''[store]
+    config_path.write_text(f"""[store]
 path = "{tmp_path}/store"
-''')
+""")
     return config_path
 
 
@@ -164,6 +172,7 @@ def env_with_config(temp_config, monkeypatch):
 # ============================================================
 # Assertion Helpers
 # ============================================================
+
 
 def assert_valid_digest(digest: str):
     """Assert string is valid seqcol digest format."""
@@ -204,10 +213,31 @@ def fasta_path():
 def pytest_addoption(parser):
     """Add options for test configuration"""
     parser.addoption("--no-snlp", action="store_true", default=False)
-    parser.addoption("--no-network", action="store_true", default=False,
-                     help="Skip tests that require network access")
-    parser.addoption("--no-db", action="store_true", default=False,
-                     help="Skip tests that require database access")
+    parser.addoption(
+        "--no-network",
+        action="store_true",
+        default=False,
+        help="Skip tests that require network access",
+    )
+    parser.addoption(
+        "--no-db",
+        action="store_true",
+        default=False,
+        help="Skip tests that require database access",
+    )
+    parser.addoption(
+        "--api-root",
+        action="store",
+        default=None,
+        help="External seqcol server URL for tests (e.g., https://seqcolapi.databio.org)",
+    )
+
+
+@pytest.fixture(scope="session")
+def api_root(request):
+    """API root URL for compliance/integration tests."""
+    url = request.config.getoption("--api-root")
+    return url.rstrip("/") if url else None
 
 
 def pytest_configure(config):

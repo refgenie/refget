@@ -31,7 +31,7 @@ from refget.cli.output import (
 
 # Heavy imports moved inside functions to speed up CLI startup:
 # - refget.clients (requests ~51ms)
-# - refget.utilities (jsonschema ~60ms)
+# - refget.utils (jsonschema ~60ms)
 
 
 def _get_client(server_override: Optional[str] = None):
@@ -64,7 +64,8 @@ def _compute_snlp_digest(seqcol_dict: dict) -> str:
     Returns:
         The snlp digest (coordinate system identifier)
     """
-    from refget.utilities import build_sorted_name_length_pairs, canonical_str, sha512t24u_digest
+    from refget.utils import build_sorted_name_length_pairs, canonical_str
+    from refget.digests import sha512t24u_digest
 
     snlp_digests = build_sorted_name_length_pairs(seqcol_dict)
     return sha512t24u_digest(canonical_str(snlp_digests))
@@ -93,9 +94,7 @@ def _detect_input_type(input_str: str) -> str:
     return "digest"
 
 
-def _load_seqcol(
-    input_str: str, client, level: int = 2
-) -> Optional[dict]:
+def _load_seqcol(input_str: str, client, level: int = 2) -> Optional[dict]:
     """
     Load a seqcol from various input types.
 
@@ -111,7 +110,7 @@ def _load_seqcol(
 
     if input_type == "fasta":
         try:
-            from refget.processing import fasta_to_seqcol_dict
+            from refget.utils import fasta_to_seqcol_dict
 
             # Suppress stdout to hide verbose gtars output
             with suppress_stdout():
@@ -139,6 +138,7 @@ def _load_seqcol(
         if result is None:
             print_error(f"Could not fetch seqcol for digest: {input_str}", EXIT_FAILURE)
         return result
+
 
 app = typer.Typer(
     name="seqcol",
@@ -229,7 +229,7 @@ def compare(
         0 = compatible
         1 = incompatible
     """
-    from refget.utilities import compare_seqcols
+    from refget.utils import compare_seqcols
 
     client = _get_client(server)
 
@@ -464,7 +464,7 @@ def digest(
     Accepts either a FASTA file or a .seqcol.json file.
     Outputs JSON: {"digest": "abc123...", "file": "name"}
     """
-    from refget.utilities import seqcol_digest as compute_seqcol_digest
+    from refget.utils import seqcol_digest as compute_seqcol_digest
 
     path = Path(file)
     if not path.exists():
@@ -477,7 +477,7 @@ def digest(
     if lower_name.endswith((".fa", ".fasta", ".fa.gz", ".fasta.gz")):
         # FASTA file - compute seqcol from FASTA
         try:
-            from refget.processing import fasta_to_seqcol_dict
+            from refget.utils import fasta_to_seqcol_dict
 
             # Suppress stdout to hide verbose gtars output
             with suppress_stdout():
@@ -563,9 +563,7 @@ def validate(
     if lengths:
         unique_lengths = set(lengths.values())
         if len(unique_lengths) > 1:
-            errors.append(
-                f"Array length mismatch: {dict(lengths)}"
-            )
+            errors.append(f"Array length mismatch: {dict(lengths)}")
 
     if errors:
         for error in errors:
@@ -667,5 +665,3 @@ def servers() -> None:
     servers_list = get_seqcol_servers()
     print_json({"servers": servers_list})
     raise typer.Exit(EXIT_SUCCESS)
-
-

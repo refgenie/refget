@@ -129,11 +129,7 @@ class TestStoreAdd:
         cli("store", "init", "--path", str(store_path))
 
         # Add with raw mode
-        result = cli(
-            "store", "add", str(BASE_FASTA),
-            "--path", str(store_path),
-            "--mode", "raw"
-        )
+        result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path), "--mode", "raw")
 
         assert result.exit_code == 0
         data = json.loads(result.stdout)
@@ -149,11 +145,7 @@ class TestStoreAdd:
         store_path = tmp_path / "store"
         cli("store", "init", "--path", str(store_path))
 
-        result = cli(
-            "store", "add", str(BASE_FASTA),
-            "--path", str(store_path),
-            "-m", "raw"
-        )
+        result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path), "-m", "raw")
 
         assert result.exit_code == 0
 
@@ -231,11 +223,7 @@ class TestStoreExport:
         add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
         digest = json.loads(add_result.stdout)["digest"]
 
-        result = cli(
-            "store", "export", digest,
-            "-o", str(output),
-            "--path", str(store_path)
-        )
+        result = cli("store", "export", digest, "-o", str(output), "--path", str(store_path))
 
         assert result.exit_code == 0
         assert output.exists()
@@ -263,9 +251,13 @@ class TestStoreExport:
         cli("store", "init", "--path", str(store_path))
 
         result = cli(
-            "store", "export", "nonexistent_digest_123",
-            "-o", str(output),
-            "--path", str(store_path)
+            "store",
+            "export",
+            "nonexistent_digest_123",
+            "-o",
+            str(output),
+            "--path",
+            str(store_path),
         )
 
         assert result.exit_code != 0
@@ -282,11 +274,7 @@ class TestStoreSeq:
         add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
         digest = json.loads(add_result.stdout)["digest"]
 
-        result = cli(
-            "store", "seq", digest,
-            "--name", "chr1",
-            "--path", str(store_path)
-        )
+        result = cli("store", "seq", digest, "--name", "chr1", "--path", str(store_path))
 
         assert result.exit_code == 0
         # Output should be sequence (GGAA for chr1 in base.fa)
@@ -301,11 +289,17 @@ class TestStoreSeq:
         digest = json.loads(add_result.stdout)["digest"]
 
         result = cli(
-            "store", "seq", digest,
-            "--name", "chrX",
-            "--start", "0",
-            "--end", "4",
-            "--path", str(store_path)
+            "store",
+            "seq",
+            digest,
+            "--name",
+            "chrX",
+            "--start",
+            "0",
+            "--end",
+            "4",
+            "--path",
+            str(store_path),
         )
 
         assert result.exit_code == 0
@@ -321,9 +315,7 @@ class TestStoreSeq:
         digest = json.loads(add_result.stdout)["digest"]
 
         result = cli(
-            "store", "seq", digest,
-            "--name", "nonexistent_chr",
-            "--path", str(store_path)
+            "store", "seq", digest, "--name", "nonexistent_chr", "--path", str(store_path)
         )
 
         assert result.exit_code != 0

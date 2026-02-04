@@ -54,6 +54,7 @@ def _temp_file_path(suffix: str = ".fa") -> Iterator[str]:
         if os.path.exists(path):
             os.unlink(path)
 
+
 app = typer.Typer(
     name="store",
     help="RefgetStore operations",
@@ -81,13 +82,13 @@ def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[
         RefgetStore instance
     """
     check_dependency("gtars", "store", "store")
-    from refget.processing import RefgetStore
+    from refget.store import RefgetStore
 
     # Remote store takes precedence
     if server:
         cache_path = _get_store_path(path) / ".remote_cache"
         cache_path.mkdir(parents=True, exist_ok=True)
-        return RefgetStore.load_remote(str(cache_path), server)
+        return RefgetStore.open_remote(str(cache_path), server)
 
     store_path = _get_store_path(path)
 
@@ -100,7 +101,7 @@ def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[
         if not rgstore_path.exists():
             # Empty store - use on_disk which handles initialization
             return RefgetStore.on_disk(str(store_path))
-        return RefgetStore.load_local(str(store_path))
+        return RefgetStore.open_local(str(store_path))
     else:
         # Create or load
         return RefgetStore.on_disk(str(store_path))
@@ -118,21 +119,10 @@ def _ensure_collection_loaded(store, digest: str) -> None:
         digest: Collection digest to ensure is loaded
     """
     if not store.is_collection_loaded(digest):
-        # Get collection metadata to find a sequence name
-        meta = store.get_collection_metadata(digest)
-        if meta is None:
-            print_error(f"Collection not found: {digest}", EXIT_FAILURE)
-        # Force load by accessing a sequence (any sequence will do)
-        # We use sequence_records to get the first sequence name
         try:
-            for rec in store.sequence_records():
-                # Get just one to force load
-                _ = store.get_sequence_by_collection_and_name(digest, rec.metadata.name)
-                break
-        except (KeyError, AttributeError, StopIteration):
-            # Collection may not have sequences yet, or wasn't properly saved.
-            # This is acceptable - the caller will handle missing data downstream.
-            pass
+            store.get_collection(digest)
+        except Exception as e:
+            print_error(f"Collection not found: {digest} ({e})", EXIT_FAILURE)
 
 
 @app.command()
@@ -150,7 +140,7 @@ def init(
     Creates the store directory structure if it doesn't exist.
     """
     check_dependency("gtars", "store", "store")
-    from refget.processing import RefgetStore
+    from refget.store import RefgetStore
 
     store_path = _get_store_path(path)
 
@@ -160,10 +150,12 @@ def init(
     # Initialize the store (creates index files)
     store = RefgetStore.on_disk(str(store_path))
 
-    print_json({
-        "path": str(store_path),
-        "status": "initialized",
-    })
+    print_json(
+        {
+            "path": str(store_path),
+            "status": "initialized",
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -215,7 +207,8 @@ def add(
 
     # Override storage mode if specified
     if mode is not None:
-        from refget.processing import StorageMode
+        from refget.store import StorageMode
+
         if mode == StorageModeChoice.raw:
             store.set_encoding_mode(StorageMode.Raw)
         else:
@@ -224,12 +217,14 @@ def add(
     # Add the FASTA file - returns (metadata, was_new) with all info we need
     metadata, was_new = store.add_sequence_collection_from_fasta(str(fasta.resolve()))
 
-    print_json({
-        "digest": metadata.digest,
-        "fasta": str(fasta.resolve()),
-        "sequences": metadata.n_sequences,
-        "was_new": was_new,
-    })
+    print_json(
+        {
+            "digest": metadata.digest,
+            "fasta": str(fasta.resolve()),
+            "sequences": metadata.n_sequences,
+            "was_new": was_new,
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -257,13 +252,17 @@ def list_collections(
 
     collections = []
     for digest in store.list_collections():
-        collections.append({
-            "digest": digest,
-        })
+        collections.append(
+            {
+                "digest": digest,
+            }
+        )
 
-    print_json({
-        "collections": collections,
-    })
+    print_json(
+        {
+            "collections": collections,
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -321,17 +320,19 @@ def get(
         print_error(f"Collection not found: {digest}", EXIT_FAILURE)
         return  # Unreachable, but clarifies control flow
 
-    print_json({
-        "names": names,
-        "lengths": lengths,
-        "sequences": sequences,
-    })
+    print_json(
+        {
+            "names": names,
+            "lengths": lengths,
+            "sequences": sequences,
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
-def _find_remote_store(server_override: Optional[str] = None):
+def _find_remote_urls(server_override: Optional[str] = None) -> List[str]:
     """
-    Find a remote RefgetStore URL.
+    Find remote RefgetStore URLs to try.
 
     Resolution order:
         1. --server flag (direct RefgetStore URL)
@@ -339,15 +340,17 @@ def _find_remote_store(server_override: Optional[str] = None):
         3. Configured seqcol_servers (discover RefgetStore via service-info)
 
     Returns:
-        Remote store URL string, or None if no remote found.
+        List of remote store URLs to try, in priority order.
     """
     if server_override:
-        return server_override
+        return [server_override]
+
+    urls: List[str] = []
 
     # Try configured remote stores
-    remote_stores = get_remote_stores()
-    if remote_stores:
-        return remote_stores[0]["url"]
+    for store_config in get_remote_stores():
+        if "url" in store_config:
+            urls.append(store_config["url"])
 
     # Try discovering from seqcol servers' service-info
     from refget.clients import SequenceCollectionClient
@@ -356,12 +359,12 @@ def _find_remote_store(server_override: Optional[str] = None):
         try:
             client = SequenceCollectionClient(urls=[srv["url"]], raise_errors=False)
             url = client.get_refget_store_url()
-            if url:
-                return url
+            if url and url not in urls:
+                urls.append(url)
         except Exception:
             continue
 
-    return None
+    return urls
 
 
 @app.command()
@@ -386,88 +389,154 @@ def pull(
         None,
         "--server",
         "-s",
-        help="Remote RefgetStore URL (overrides configured remotes)",
+        help="Remote store URL (default: try configured remote_stores)",
+    ),
+    eager: bool = typer.Option(
+        False,
+        "--eager",
+        "-e",
+        help="Pre-fetch all sequences immediately (default: lazy/on-demand)",
+    ),
+    quiet: bool = typer.Option(
+        False,
+        "--quiet",
+        "-q",
+        help="Suppress progress output",
     ),
 ) -> None:
     """
-    Pull a collection from a remote RefgetStore into the local store.
+    Pull a collection from a remote store to local cache.
 
-    Connects to a remote RefgetStore, exports the collection as FASTA,
-    and imports it into the local store.
+    By default, only metadata is fetched immediately. Sequence data is
+    downloaded on-demand when accessed (lazy loading). Use --eager to
+    pre-fetch all sequences.
 
-    Resolution order for remote store:
-        1. --server flag (direct RefgetStore URL)
-        2. Configured remote_stores
-        3. Configured seqcol_servers (discover RefgetStore via service-info)
+    Resolution order (if --server not specified):
+        1. Check local store (already cached?)
+        2. Try configured remote_stores in priority order
+        3. Try seqcol_servers (discover RefgetStore via service-info)
 
     Use --file for batch operations with multiple digests.
+
+    Examples:
+        refget store pull ABC123 --server https://example.com/store
+        refget store pull ABC123 --eager  # Pre-fetch all sequences
+        refget store pull --file digests.txt --server https://example.com/store
     """
     check_dependency("gtars", "store", "store")
-    from refget.processing import RefgetStore
+    from refget.store import RefgetStore
 
-    # Validate: need exactly one of digest or file
+    # Validate arguments
     if digest is None and file is None:
-        print_error("Provide a digest argument or --file with a list of digests", EXIT_FAILURE)
+        print_error("Must provide either a digest or --file", EXIT_FAILURE)
     if digest is not None and file is not None:
-        print_error("Provide either a digest argument or --file, not both", EXIT_FAILURE)
+        print_error("Cannot specify both digest and --file", EXIT_FAILURE)
 
-    # Collect digests into a list
-    if file is not None:
+    # Collect digests to pull
+    digests: List[str] = []
+    if digest:
+        digests.append(digest)
+    elif file:
         if not file.exists():
             print_error(f"File not found: {file}", EXIT_FILE_NOT_FOUND)
-        digests = []
-        for line in file.read_text().splitlines():
-            line = line.strip()
-            if line and not line.startswith("#"):
-                digests.append(line)
-        if not digests:
-            print_error("No digests found in file", EXIT_FAILURE)
-    else:
-        digests = [digest]
+        digests = [line.strip() for line in file.read_text().splitlines() if line.strip()]
 
-    # Find remote store
-    remote_url = _find_remote_store(server)
-    if not remote_url:
+    if not digests:
+        print_error("No digests to pull", EXIT_FAILURE)
+
+    # Determine remote URLs to try
+    remote_urls = _find_remote_urls(server)
+
+    if not remote_urls:
         print_error(
-            "No remote RefgetStore found. Configure one with:\n"
-            "  refget config set remote_stores '[{url = \"https://...\"}]'\n"
-            "  or use --server <url>",
+            "No remote store found. Use --server or configure remote_stores:\n"
+            "  refget config add remote_store https://example.com/store",
             EXIT_FAILURE,
         )
 
-    # Open (or create) local store
-    local_store = _load_store(path, must_exist=False)
-
-    # Load remote store
-    cache_path = _get_store_path(path) / ".remote_cache"
+    # Get local store path for caching
+    store_path = _get_store_path(path)
+    cache_path = store_path / ".remote_cache"
     cache_path.mkdir(parents=True, exist_ok=True)
-    try:
-        remote_store = RefgetStore.load_remote(str(cache_path), remote_url)
-    except Exception as e:
-        print_error(f"Failed to connect to remote store at {remote_url}: {e}", EXIT_FAILURE)
 
-    remote_collections = set(remote_store.list_collections())
-    local_collections = set(local_store.list_collections())
-
-    for d in digests:
-        if d in local_collections:
-            print_json({"digest": d, "status": "skipped", "reason": "already in local store"})
-            continue
-
-        if d not in remote_collections:
-            print_error(f"Collection not found in remote store: {d}")
-            continue
-
+    # Check local store first
+    local_collections: set = set()
+    if store_path.exists() and (store_path / "rgstore.json").exists():
         try:
-            # Export from remote to temp FASTA, then import into local
-            _ensure_collection_loaded(remote_store, d)
-            with _temp_file_path(suffix=".fa") as temp_fasta:
-                remote_store.export_fasta(d, temp_fasta)
-                metadata, _ = local_store.add_sequence_collection_from_fasta(temp_fasta)
-            print_json({"digest": metadata.digest, "status": "pulled"})
-        except Exception as e:
-            print_error(f"Failed to pull {d}: {e}")
+            local_store = RefgetStore.open_local(str(store_path))
+            local_collections = set(local_store.list_collections())
+        except Exception:
+            pass  # Local store not available, continue with remote
 
+    results = []
+    for dig in digests:
+        # Check if already in local store
+        if dig in local_collections:
+            results.append({"digest": dig, "status": "already_local", "source": "local"})
+            continue
+
+        # Try remote stores in order
+        pulled = False
+        for remote_url in remote_urls:
+            try:
+                # Connect to remote with local caching
+                remote_store = RefgetStore.open_remote(str(cache_path), remote_url)
+                remote_store.set_quiet(quiet)
+
+                # Check if collection exists on remote
+                remote_collections = remote_store.list_collections()
+                if dig not in remote_collections:
+                    continue  # Try next remote
+
+                # Collection found - metadata is now cached
+                result = {
+                    "digest": dig,
+                    "status": "pulled",
+                    "source": remote_url,
+                    "eager": eager,
+                }
+
+                if eager:
+                    # Pre-fetch all sequences
+                    coll = remote_store.get_collection(dig)
+                    seq_count = 0
+                    for seq in coll.sequences:
+                        # Accessing the sequence triggers download and caching
+                        _ = seq.decode()
+                        seq_count += 1
+                    result["sequences_fetched"] = seq_count
+
+                results.append(result)
+                pulled = True
+                break  # Success, don't try other remotes
+
+            except Exception as e:
+                # Try next remote
+                if not quiet:
+                    import sys
+
+                    print(f"Failed to pull from {remote_url}: {e}", file=sys.stderr)
+                continue
+
+        if not pulled:
+            results.append(
+                {
+                    "digest": dig,
+                    "status": "not_found",
+                    "tried": remote_urls,
+                }
+            )
+
+    # Output results
+    if len(results) == 1:
+        print_json(results[0])
+    else:
+        print_json({"results": results})
+
+    # Exit with error if any failed
+    failed = [r for r in results if r["status"] == "not_found"]
+    if failed:
+        raise typer.Exit(EXIT_FAILURE)
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -549,11 +618,13 @@ def export(
         # Export directly to output file
         output_path = str(output.resolve())
         _do_export(output_path)
-        print_json({
-            "digest": digest,
-            "output": output_path,
-            "status": "exported",
-        })
+        print_json(
+            {
+                "digest": digest,
+                "output": output_path,
+                "status": "exported",
+            }
+        )
 
     raise typer.Exit(EXIT_SUCCESS)
 
@@ -609,7 +680,7 @@ def seq(
 
     if name is not None:
         # Get sequence by collection + name
-        record = store.get_sequence_by_collection_and_name(digest, name)
+        record = store.get_sequence_by_name(digest, name)
         if record is None:
             print_error(f"Sequence '{name}' not found in collection {digest}", EXIT_FAILURE)
         if start is not None and end is not None:
@@ -627,7 +698,7 @@ def seq(
         elif start is not None or end is not None:
             print_error("Both --start and --end must be provided for substring", EXIT_FAILURE)
         else:
-            record = store.get_sequence_by_id(digest)
+            record = store.get_sequence(digest)
             if record is None:
                 print_error(f"Sequence not found: {digest}", EXIT_FAILURE)
             # Use decode() to get the sequence string (handles encoded mode)
@@ -891,8 +962,10 @@ def remove(
     # Remove the collection by manipulating store files
     _remove_collection_from_store(store_path, digest)
 
-    print_json({
-        "digest": digest,
-        "status": "removed",
-    })
+    print_json(
+        {
+            "digest": digest,
+            "status": "removed",
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)

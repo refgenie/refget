@@ -105,9 +105,7 @@ class TestConfigInit:
 
         runner = CliRunner()
         result = runner.invoke(
-            app,
-            ["config", "init"],
-            input=f"{tmp_path}/store\n\n\n"  # Store path + defaults
+            app, ["config", "init"], input=f"{tmp_path}/store\n\n\n"  # Store path + defaults
         )
 
         # Config init should succeed or prompt for input
@@ -121,11 +119,7 @@ class TestConfigInit:
         from refget.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(
-            app,
-            ["config", "init"],
-            input="n\n"  # Say no to overwrite
-        )
+        result = runner.invoke(app, ["config", "init"], input="n\n")  # Say no to overwrite
 
         # Should either skip or require confirmation
         assert result.exit_code in [0, 1]

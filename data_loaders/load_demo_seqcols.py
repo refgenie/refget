@@ -11,8 +11,8 @@ Usage:
 import os
 import json
 
-from refget import add_fasta
 from refget.agents import RefgetDBAgent
+from refget.models import AccessMethod, AccessURL
 
 # Configuration
 FA_ROOT = "test_fasta"
@@ -54,13 +54,30 @@ for name, demo_file in DEMO_FASTA.items():
     filename = demo_file["name"]
     fasta_path = os.path.join(FA_ROOT, filename)
 
-    digest = add_fasta(
-        fasta_path,
-        name=name,
-        dbagent=dbc,
-        storage=DEMO_STORAGE,
-        skip_upload=SKIP_UPLOAD,
-    )
+    # Add seqcol metadata to database
+    seqcol = dbc.seqcol.add_from_fasta_file_with_name(fasta_path, name, update=True)
+    digest = seqcol.digest
+
+    # Register access methods
+    for loc in DEMO_STORAGE:
+        if SKIP_UPLOAD:
+            # Construct demo URL
+            prefix = loc.get("prefix", "")
+            url = f"https://{loc['bucket']}.s3.amazonaws.com/{prefix}{filename}"
+        else:
+            # In real usage, upload first then get URL
+            raise NotImplementedError("Upload not implemented - use CLI for actual uploads")
+
+        dbc.fasta_drs.add_access_method(
+            digest=digest,
+            access_method=AccessMethod(
+                type=loc.get("type", "s3" if loc["cloud"] in ("aws", "backblaze") else "https"),
+                cloud=loc["cloud"],
+                region=loc["region"],
+                access_url=AccessURL(url=url),
+            ),
+        )
+
     demo_results[filename] = digest
     print(f"  {filename}: {digest}")
 

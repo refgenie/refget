@@ -44,9 +44,7 @@ class TestAdminLoad:
     def test_load_fasta_with_name(self, test_fasta_files):
         """Loads FASTA with a human-readable name."""
         result = cli(
-            "admin", "load",
-            str(test_fasta_files["different_names"]),
-            "--name", "Test Genome"
+            "admin", "load", str(test_fasta_files["different_names"]), "--name", "Test Genome"
         )
 
         assert result.exit_code == 0

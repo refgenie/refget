@@ -199,7 +199,7 @@ class SequenceCollectionClient(RefgetClient):
             ImportError: If gtars/RefgetStore is not available
 
         Example:
-            >>> from refget.processing import RefgetStore, StorageMode
+            >>> from refget.store import RefgetStore, StorageMode
             >>> from refget.clients import SequenceCollectionClient
             >>> store = RefgetStore(StorageMode.Encoded)
             >>> client = SequenceCollectionClient()
@@ -436,7 +436,7 @@ class SequenceCollectionClient(RefgetClient):
             raise ValueError("Server does not have a RefgetStore configured")
 
         try:
-            from .processing import RefgetStore
+            from .store import RefgetStore
         except ImportError:
             raise ImportError("gtars is required: pip install gtars")
 
@@ -597,7 +597,7 @@ class FastaDrsClient(RefgetClient):
             ImportError: If gtars/RefgetStore is not available
 
         Example:
-            >>> from refget.processing import RefgetStore, StorageMode
+            >>> from refget.store import RefgetStore, StorageMode
             >>> store = RefgetStore(StorageMode.Encoded)
             >>> client = FastaDrsClient()
             >>> collection_digest = client.download_to_store("abc123", store)
@@ -607,7 +607,7 @@ class FastaDrsClient(RefgetClient):
 
         # Verify store is available
         try:
-            from .processing import RefgetStore as RefgetStoreClass
+            from .store import RefgetStore as RefgetStoreClass
         except ImportError:
             raise ImportError("gtars is required for download_to_store functionality")
 

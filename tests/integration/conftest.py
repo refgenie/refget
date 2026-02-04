@@ -5,6 +5,7 @@ Uses FastAPI TestClient with ephemeral Docker PostgreSQL.
 
 Run with: ./scripts/test-integration.sh
 """
+
 import os
 import pytest
 import socket
@@ -60,8 +61,15 @@ def test_dbagent():
 @pytest.fixture(scope="session")
 def loaded_dbagent(test_dbagent, test_fasta_path):
     """DBAgent pre-loaded with test FASTA files"""
-    # Load test FASTA files
-    for fa_file in ["base.fa", "different_names.fa", "different_order.fa"]:
+    # Load all test FASTA files needed for compliance tests
+    for fa_file in [
+        "base.fa",
+        "different_names.fa",
+        "different_order.fa",
+        "pair_swap.fa",
+        "subset.fa",
+        "swap_wo_coords.fa",
+    ]:
         fa_path = test_fasta_path / fa_file
         test_dbagent.seqcol.add_from_fasta_file(str(fa_path))
     return test_dbagent
@@ -71,7 +79,7 @@ def loaded_dbagent(test_dbagent, test_fasta_path):
 def client(loaded_dbagent):
     """Create TestClient with test database"""
     from seqcolapi.main import app
-    from refget.refget_router import get_dbagent
+    from refget.router import get_dbagent
 
     def override_get_dbagent():
         return loaded_dbagent
@@ -104,15 +112,27 @@ def different_order_digest():
 
 
 @pytest.fixture(scope="session")
-def test_server(loaded_dbagent):
+def test_server(request):
     """
-    Run the seqcolapi server on a free port for CLI integration tests.
+    Provide a seqcol server URL for integration tests.
 
-    Yields the base URL (e.g., "http://localhost:12345") for the server.
+    If --api-root option is provided, uses that external server.
+    Otherwise, spins up a local test server with loaded test data.
+
+    Usage: pytest tests/integration/ --api-root=https://seqcolapi.databio.org
     """
+    external_url = request.config.getoption("--api-root")
+    if external_url:
+        # Use external server - no setup/teardown needed
+        yield external_url.rstrip("/")
+        return
+
+    # Local server setup - needs loaded_dbagent
+    loaded_dbagent = request.getfixturevalue("loaded_dbagent")
+
     import uvicorn
     from seqcolapi.main import app
-    from refget.refget_router import get_dbagent
+    from refget.router import get_dbagent
 
     def override_get_dbagent():
         return loaded_dbagent
@@ -123,8 +143,8 @@ def test_server(loaded_dbagent):
     port = find_free_port()
     server_url = f"http://localhost:{port}"
 
-    # Run server in a background thread
-    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error")
+    # Run server in a background thread (ws="none" disables websockets to avoid deprecation warnings)
+    config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error", ws="none")
     server = uvicorn.Server(config)
 
     thread = threading.Thread(target=server.run, daemon=True)
