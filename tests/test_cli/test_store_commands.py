@@ -186,6 +186,21 @@ class TestStoreList:
         data = assert_json_output(result, ["collections"])
         assert len(data["collections"]) >= 2
 
+    def test_list_returns_string_digests(self, cli, tmp_path):
+        """Regression: list must return string digests, not metadata objects."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+        cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
+
+        result = cli("store", "list", "--path", str(store_path))
+
+        data = assert_json_output(result, ["collections"])
+        # Each collection must have a string digest, not a metadata object
+        for item in data["collections"]:
+            assert "digest" in item
+            assert isinstance(item["digest"], str)
+            assert len(item["digest"]) > 0
+
 
 class TestStoreGet:
     """Tests for: refget store get <digest>"""

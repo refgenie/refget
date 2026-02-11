@@ -176,7 +176,15 @@ export default function DigestPage() {
     return lines.join('\n') + '\n';
   };
 
-  // Convert result to level 2 seqcol format for SCOM
+  // Convert result to level 1 seqcol format (digests only)
+  const resultToSeqcolLevel1 = (result) => ({
+    lengths: result.lengths_digest,
+    names: result.names_digest,
+    sequences: result.sequences_digest,
+    // Note: sorted_sequences and name_length_pairs digests not computed by WASM
+  });
+
+  // Convert result to level 2 seqcol format (arrays)
   const resultToSeqcolLevel2 = (result) => {
     // Build sequences array - check if sha512t24u already has SQ. prefix
     const sequences = result.sequences.map(s => {
@@ -195,9 +203,16 @@ export default function DigestPage() {
       }))
     };
 
-    console.log('Level 2 seqcol for SCOM:', level2);
     return level2;
   };
+
+  // Convert result to uncollated format (record per sequence)
+  const resultToSeqcolUncollated = (result) =>
+    result.sequences.map(s => ({
+      name: s.name,
+      length: s.length,
+      sequence: s.sha512t24u.startsWith('SQ.') ? s.sha512t24u : `SQ.${s.sha512t24u}`
+    }));
 
   // Navigate to SCOM with this collection pre-loaded
   const handleCompareInScom = () => {
@@ -214,12 +229,31 @@ export default function DigestPage() {
     toast.success('Copied JSON');
   };
 
-  const handleDownloadJson = () => {
-    const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+  const handleDownloadJson = (format) => {
+    let data;
+    let suffix;
+    switch (format) {
+      case 'level1':
+        data = resultToSeqcolLevel1(result);
+        suffix = 'level1';
+        break;
+      case 'level2':
+        data = resultToSeqcolLevel2(result);
+        suffix = 'level2';
+        break;
+      case 'uncollated':
+        data = resultToSeqcolUncollated(result);
+        suffix = 'uncollated';
+        break;
+      default:
+        data = resultToSeqcolLevel2(result);
+        suffix = 'level2';
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${fileName}.seqcol.json`;
+    a.download = `${fileName}.seqcol.${suffix}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
