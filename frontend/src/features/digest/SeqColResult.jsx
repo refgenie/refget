@@ -27,14 +27,35 @@ export default function SeqColResult({ result, fileName, onCompare, onDownloadJs
             <i className="bi bi-clipboard me-1"></i>
             Copy JSON
           </button>
-          <button
-            className="btn btn-outline-secondary"
-            onClick={onDownloadJson}
-            title="Download as JSON"
-          >
-            <i className="bi bi-download me-1"></i>
-            JSON
-          </button>
+          <div className="btn-group">
+            <button
+              type="button"
+              className="btn btn-outline-secondary dropdown-toggle"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Download as JSON"
+            >
+              <i className="bi bi-download me-1"></i>
+              JSON
+            </button>
+            <ul className="dropdown-menu">
+              <li>
+                <button className="dropdown-item" onClick={() => onDownloadJson('level2')}>
+                  Level 2 (arrays)
+                </button>
+              </li>
+              <li>
+                <button className="dropdown-item" onClick={() => onDownloadJson('uncollated')}>
+                  Uncollated (records)
+                </button>
+              </li>
+              <li>
+                <button className="dropdown-item" onClick={() => onDownloadJson('level1')}>
+                  Level 1 (digests)
+                </button>
+              </li>
+            </ul>
+          </div>
           <button
             className="btn btn-outline-secondary"
             onClick={onDownloadRgsi}

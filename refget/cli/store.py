@@ -69,6 +69,11 @@ def _get_store_path(path: Optional[Path]) -> Path:
     return get_store_path()
 
 
+def _get_collection_digests(store) -> set:
+    """Get the set of collection digest strings from a store."""
+    return {meta.digest for meta in store.list_collections()}
+
+
 def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[str] = None):
     """
     Load a RefgetStore from local path or remote server.
@@ -251,10 +256,10 @@ def list_collections(
     store = _load_store(path, server=server)
 
     collections = []
-    for digest in store.list_collections():
+    for meta in store.list_collections():
         collections.append(
             {
-                "digest": digest,
+                "digest": meta.digest,
             }
         )
 
@@ -295,7 +300,7 @@ def get(
     store = _load_store(path, server=server)
 
     # Check if collection exists
-    if digest not in store.list_collections():
+    if digest not in _get_collection_digests(store):
         print_error(f"Collection not found: {digest}", EXIT_FAILURE)
         return  # Unreachable, but clarifies control flow
 
@@ -307,7 +312,7 @@ def get(
     lengths = []
     sequences = []
 
-    for coll in store.collections():
+    for coll in store.iter_collections():
         if coll.digest == digest:
             for seq in coll.sequences:
                 m = seq.metadata
@@ -464,7 +469,7 @@ def pull(
     if store_path.exists() and (store_path / "rgstore.json").exists():
         try:
             local_store = RefgetStore.open_local(str(store_path))
-            local_collections = set(local_store.list_collections())
+            local_collections = _get_collection_digests(local_store)
         except Exception:
             pass  # Local store not available, continue with remote
 
@@ -484,7 +489,7 @@ def pull(
                 remote_store.set_quiet(quiet)
 
                 # Check if collection exists on remote
-                remote_collections = remote_store.list_collections()
+                remote_collections = _get_collection_digests(remote_store)
                 if dig not in remote_collections:
                     continue  # Try next remote
 
@@ -750,7 +755,7 @@ def fai(
     lines = []
 
     # Find the collection and get its sequences
-    for coll in store.collections():
+    for coll in store.iter_collections():
         if coll.digest == digest:
             for seq in coll.sequences:
                 m = seq.metadata
@@ -813,7 +818,7 @@ def chrom_sizes(
     lines = []
 
     # Find the collection and get its sequences
-    for coll in store.collections():
+    for coll in store.iter_collections():
         if coll.digest == digest:
             for seq in coll.sequences:
                 m = seq.metadata
@@ -956,7 +961,7 @@ def remove(
     store_path = _get_store_path(path)
 
     # Check if collection exists
-    if digest not in store.list_collections():
+    if digest not in _get_collection_digests(store):
         print_error(f"Collection not found: {digest}", EXIT_FAILURE)
 
     # Remove the collection by manipulating store files
