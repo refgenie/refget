@@ -167,8 +167,12 @@ export default function DigestPage() {
 
   const handleCancel = () => {
     if (workerRef.current) {
-      workerRef.current.postMessage({ type: 'cancel' });
+      workerRef.current.terminate();
+      workerRef.current = null;
     }
+    setStatus(null);
+    setProgress(null);
+    setError('Processing cancelled.');
   };
 
   const handleClear = () => {
