@@ -351,6 +351,7 @@ const router = createBrowserRouter([
       {
         path: '/scim/:digest1/:digest2',
         element: <SCIM />,
+        errorElement: <ErrorBoundary />,
         loader: (request) => {
           return fetchComparison(
             request.params.digest1,

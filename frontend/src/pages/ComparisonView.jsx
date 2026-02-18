@@ -136,21 +136,21 @@ const SequencesReport = ({ messageArray }) => {
 // ✅❔❌❔
 const coordinateSystemInterpretation = (comparison) => {
   const lengthsANotB =
-    comparison.array_elements.a.lengths -
-    comparison.array_elements.a_and_b.lengths;
+    comparison.array_elements.a_count.lengths -
+    comparison.array_elements.a_and_b_count.lengths;
   const lengthsBNotA =
-    comparison.array_elements.b.lengths -
-    comparison.array_elements.a_and_b.lengths;
+    comparison.array_elements.b_count.lengths -
+    comparison.array_elements.a_and_b_count.lengths;
   const namesANotB =
-    comparison.array_elements.a.names - comparison.array_elements.a_and_b.names;
+    comparison.array_elements.a_count.names - comparison.array_elements.a_and_b_count.names;
   const namesBNotA =
-    comparison.array_elements.b.names - comparison.array_elements.a_and_b.names;
+    comparison.array_elements.b_count.names - comparison.array_elements.a_and_b_count.names;
   const nlpANotB =
-    comparison.array_elements.a.name_length_pairs -
-    comparison.array_elements.a_and_b.name_length_pairs;
+    comparison.array_elements.a_count.name_length_pairs -
+    comparison.array_elements.a_and_b_count.name_length_pairs;
   const nlpBNotA =
-    comparison.array_elements.b.name_length_pairs -
-    comparison.array_elements.a_and_b.name_length_pairs;
+    comparison.array_elements.b_count.name_length_pairs -
+    comparison.array_elements.a_and_b_count.name_length_pairs;
   const msgArray = [];
   // If the name_length_pairs match, then the coordinate systems are identical
   if (nlpANotB === 0 && nlpBNotA === 0) {
@@ -162,7 +162,7 @@ const coordinateSystemInterpretation = (comparison) => {
   } else if (nlpANotB > 0 && nlpBNotA === 0) {
     // If B nlp is a subset of A
     msgArray.push("Collection B's coordinate system is a subset of A's.");
-  } else if (comparison.array_elements.a_and_b.name_length_pairs !== 0) {
+  } else if (comparison.array_elements.a_and_b_count.name_length_pairs !== 0) {
     // If there is some overlap
     msgArray.push('The coordinate systems are partially overlapping.');
   } else {
@@ -230,22 +230,22 @@ const ComparisonView = ({ paramComparison }) => {
 
   // ✅❔❌
   const getInterpretation = (comparison, attribute) => {
-    const nSequencesA = comparison.array_elements.a[attribute];
-    const nSequencesB = comparison.array_elements.b[attribute];
+    const nSequencesA = comparison.array_elements.a_count[attribute];
+    const nSequencesB = comparison.array_elements.b_count[attribute];
     const aNotB =
-      comparison.array_elements.a[attribute] -
-      comparison.array_elements.a_and_b[attribute];
+      comparison.array_elements.a_count[attribute] -
+      comparison.array_elements.a_and_b_count[attribute];
     const bNotA =
-      comparison.array_elements.b[attribute] -
-      comparison.array_elements.a_and_b[attribute];
+      comparison.array_elements.b_count[attribute] -
+      comparison.array_elements.a_and_b_count[attribute];
     const orderCheck = comparison.array_elements.a_and_b_same_order[attribute];
 
     let interpTerm = '';
     const msgArray = [];
 
     if (
-      comparison.array_elements.a_and_b[attribute] == nSequencesA &&
-      comparison.array_elements.a_and_b[attribute] == nSequencesB
+      comparison.array_elements.a_and_b_count[attribute] == nSequencesA &&
+      comparison.array_elements.a_and_b_count[attribute] == nSequencesB
     ) {
       msgArray.push(`🟰 The ${attribute} contents are identical.`);
       if (orderCheck === true) {
@@ -256,8 +256,8 @@ const ComparisonView = ({ paramComparison }) => {
       interpTerm = 'identical_content';
     }
     if (
-      comparison.array_elements.a_and_b[attribute] == nSequencesA &&
-      comparison.array_elements.a_and_b[attribute] < nSequencesB
+      comparison.array_elements.a_and_b_count[attribute] == nSequencesA &&
+      comparison.array_elements.a_and_b_count[attribute] < nSequencesB
     ) {
       msgArray.push(
         `Collection B contains all ${nSequencesA} ${attribute} from collection A, and ${bNotA} additional.`,
@@ -265,20 +265,20 @@ const ComparisonView = ({ paramComparison }) => {
       interpTerm = 'subset';
     }
     if (
-      comparison.array_elements.a_and_b[attribute] == nSequencesB &&
-      comparison.array_elements.a_and_b[attribute] < nSequencesA
+      comparison.array_elements.a_and_b_count[attribute] == nSequencesB &&
+      comparison.array_elements.a_and_b_count[attribute] < nSequencesA
     ) {
       msgArray.push(
         `Collection A contains all ${nSequencesB} ${attribute} from collection B, and ${aNotB} additional.`,
       );
       interpTerm = 'subset';
     }
-    if (comparison.array_elements.a_and_b[attribute] === 0) {
+    if (comparison.array_elements.a_and_b_count[attribute] === 0) {
       msgArray.push(`The collections' ${attribute} contents are disjoint.`);
       interpTerm = 'disjoint';
     } else if (
-      comparison.array_elements.a_and_b[attribute] < nSequencesA &&
-      comparison.array_elements.a_and_b[attribute] < nSequencesB
+      comparison.array_elements.a_and_b_count[attribute] < nSequencesA &&
+      comparison.array_elements.a_and_b_count[attribute] < nSequencesB
     ) {
       msgArray.push(
         `The collections' ${attribute} contents are partially overlapping; some are shared, and some are unique to each collection.`,
@@ -375,7 +375,7 @@ const ComparisonView = ({ paramComparison }) => {
         <span className='fw-normal'>(number of elements found in both)</span>:
       </h6>
       <div className='row mb-3'>
-        {Object.entries(comparison.array_elements.a_and_b).map(
+        {Object.entries(comparison.array_elements.a_and_b_count).map(
           ([key, value]) => (
             <div className='d-flex' key={key}>
               <label className='col-sm-3 d-flex justify-content-end px-4 fw-medium'>
