@@ -20,7 +20,7 @@ app.state.dbagent = RefgetDBAgent()
 
 import logging
 
-from fastapi import APIRouter, Response, HTTPException, Request, Depends
+from fastapi import APIRouter, Response, HTTPException, Request, Depends, Query
 from .models import Similarities, PaginationResult, PaginatedDigestList
 from .agents import RefgetDBAgent
 
@@ -100,8 +100,8 @@ seq_router = APIRouter()
 async def sequence(
     dbagent=Depends(get_dbagent),
     sequence_digest: str = example_sequence,
-    start: int = None,
-    end: int = None,
+    start: int | None = Query(None, description="Start position (0-based, inclusive)"),
+    end: int | None = Query(None, description="End position (0-based, exclusive)"),
 ):
     return Response(content=dbagent.seq.get(sequence_digest, start, end), media_type="text/plain")
 
@@ -126,9 +126,9 @@ seqcol_router = APIRouter()
 async def collection(
     dbagent=Depends(get_dbagent),
     collection_digest: str = example_collection_digest,
-    level: int | None = None,
-    collated: bool = True,
-    attribute: str = None,
+    level: int | None = Query(None, description="Recursion depth (1 or 2)", ge=1, le=2),
+    collated: bool = Query(True, description="Return collated format (arrays) vs itemwise"),
+    attribute: str | None = Query(None, description="Return only this attribute (e.g., 'names', 'lengths')"),
 ):
     if level == None:
         level = 2
@@ -212,9 +212,9 @@ async def compare_2_digests(
 )
 async def calc_similarities(
     collection_digest: str,
-    species: str = "human",
-    page_size: int = 50,
-    page: int = 0,
+    species: str = Query("human", description="Species to filter by ('human' or 'mouse')"),
+    page_size: int = Query(50, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
     dbagent=Depends(get_dbagent),
 ) -> Similarities:
     _LOGGER.info("Calculating Jaccard similarities...")
@@ -235,9 +235,9 @@ async def calc_similarities(
 )
 async def calc_similarities_from_json(
     seqcolA: dict,
-    species: str = "human",
-    page_size: int = 50,
-    page: int = 0,
+    species: str = Query("human", description="Species to filter by ('human' or 'mouse')"),
+    page_size: int = Query(50, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
     dbagent=Depends(get_dbagent),
 ) -> Similarities:
     """
@@ -341,13 +341,25 @@ async def compare_1_digest(
     response_model=PaginatedDigestList,
 )
 async def list_collections_by_offset(
-    request: Request,
     dbagent=Depends(get_dbagent),
-    page_size: int = 100,
-    page: int = 0,
+    page_size: int = Query(100, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
+    names: str | None = Query(None, description="Filter by names attribute digest"),
+    lengths: str | None = Query(None, description="Filter by lengths attribute digest"),
+    sequences: str | None = Query(None, description="Filter by sequences attribute digest"),
+    name_length_pairs: str | None = Query(None, description="Filter by name_length_pairs digest"),
+    sorted_sequences: str | None = Query(None, description="Filter by sorted_sequences digest"),
 ):
-    # Extract all query params except pagination params
-    filters = {k: v for k, v in request.query_params.items() if k not in ["page", "page_size"]}
+    # Build filters from explicit parameters
+    filters = {
+        k: v for k, v in {
+            "names": names,
+            "lengths": lengths,
+            "sequences": sequences,
+            "name_length_pairs": name_length_pairs,
+            "sorted_sequences": sorted_sequences,
+        }.items() if v is not None
+    }
 
     if filters:
         try:
@@ -373,7 +385,10 @@ async def list_collections_by_offset(
     response_model=PaginatedDigestList,
 )
 async def list_attributes(
-    dbagent=Depends(get_dbagent), attribute: str = "names", page_size: int = 100, page: int = 0
+    dbagent=Depends(get_dbagent),
+    attribute: str = "names",
+    page_size: int = Query(100, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
 ):
     try:
         res = dbagent.attribute.list(attribute, limit=page_size, offset=page * page_size)
@@ -397,7 +412,9 @@ pangenome_router = APIRouter()
     response_model=PaginatedDigestList,
 )
 async def list_cpangenomes_by_offset(
-    dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
+    dbagent=Depends(get_dbagent),
+    page_size: int = Query(100, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
 ):
     res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
@@ -413,8 +430,8 @@ async def list_cpangenomes_by_offset(
 async def pangenome(
     dbagent=Depends(get_dbagent),
     pangenome_digest: str = example_pangenome_digest,
-    level: int | None = None,
-    collated: bool = True,
+    level: int | None = Query(None, description="Recursion depth (1-4)", ge=1, le=4),
+    collated: bool = Query(True, description="Return collated format (arrays) vs itemwise"),
 ):
     if level == None:
         level = 2

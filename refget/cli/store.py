@@ -906,6 +906,10 @@ def _remove_collection_from_store(store_path: Path, digest: str) -> bool:
     if collection_file.exists():
         collection_file.unlink()
 
+    # Remove the FHR metadata sidecar file (if it exists)
+    fhr_file = store_path / "collections" / f"{digest}.fhr.json"
+    fhr_file.unlink(missing_ok=True)
+
     return True
 
 
@@ -945,4 +949,37 @@ def remove(
             "status": "removed",
         }
     )
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@app.command()
+def metadata(
+    digest: str = typer.Argument(help="Collection digest"),
+    path: Optional[Path] = typer.Option(
+        None, "--path", "-p", help="Store path"
+    ),
+):
+    """Show FHR metadata for a collection."""
+    store = _load_store(path)
+    fhr = store.get_fhr_metadata(digest)
+    if fhr is None:
+        print_error(f"No FHR metadata for collection {digest}", EXIT_FAILURE)
+    import json
+
+    print(json.dumps(fhr.to_dict(), indent=2))
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@app.command("metadata-set")
+def metadata_set(
+    digest: str = typer.Argument(help="Collection digest"),
+    file: Path = typer.Argument(help="Path to FHR JSON file"),
+    path: Optional[Path] = typer.Option(
+        None, "--path", "-p", help="Store path"
+    ),
+):
+    """Set FHR metadata for a collection from a JSON file."""
+    store = _load_store(path)
+    store.load_fhr_metadata(digest, str(file))
+    print(f"Set FHR metadata for collection {digest}")
     raise typer.Exit(EXIT_SUCCESS)
