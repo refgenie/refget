@@ -295,14 +295,63 @@ const CollectionTable = ({ collections }) => {
 function ErrorBoundary() {
   const error = useRouteError();
   console.error(error);
+
+  const isNetworkError =
+    error.message?.includes('Failed to fetch') ||
+    error.message?.includes('NetworkError');
+  const isNotFound = error.isNotFound || error.message?.includes('not found');
+
+  const CopyableDigest = ({ digest }) => (
+    <code
+      className='user-select-all bg-light px-2 py-1 rounded cursor-pointer'
+      style={{ fontSize: '0.85em' }}
+      onClick={() => copyToClipboard(digest)}
+      title='Click to copy'
+    >
+      {digest}
+    </code>
+  );
+
   return (
     <div className='alert alert-danger' role='alert'>
-      {error.message}
-      <br></br>
-      Is the API service operating correctly at{' '}
-      <a href={`${API_BASE}`}>{API_BASE}</a>?<br />
+      <strong>Error:</strong> {error.message}
+      <hr />
+      {isNetworkError ? (
+        <p>
+          Could not connect to the API at{' '}
+          <a href={`${API_BASE}`}>{API_BASE}</a>.
+          <br />
+          Make sure the server is running and accessible.
+        </p>
+      ) : isNotFound ? (
+        <div>
+          <p>
+            The requested collection(s) do not exist on this server.
+          </p>
+          {error.digest1 && error.digest2 && (
+            <div className='mb-3'>
+              <div className='mb-2'>
+                <strong>Digest A:</strong>{' '}
+                <CopyableDigest digest={error.digest1} />
+              </div>
+              <div>
+                <strong>Digest B:</strong>{' '}
+                <CopyableDigest digest={error.digest2} />
+              </div>
+            </div>
+          )}
+          <p className='mb-0'>
+            API: <a href={`${API_BASE}`}>{API_BASE}</a>
+          </p>
+        </div>
+      ) : (
+        <p>
+          Is the API service operating correctly at{' '}
+          <a href={`${API_BASE}`}>{API_BASE}</a>?
+        </p>
+      )}
       <button
-        className='btn btn-danger'
+        className='btn btn-danger mt-3'
         onClick={() => window.location.reload()}
       >
         Reload
@@ -351,6 +400,7 @@ const router = createBrowserRouter([
       {
         path: '/scim/:digest1/:digest2',
         element: <SCIM />,
+        errorElement: <ErrorBoundary />,
         loader: (request) => {
           return fetchComparison(
             request.params.digest1,

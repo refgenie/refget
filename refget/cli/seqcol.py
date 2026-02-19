@@ -19,7 +19,7 @@ from typing import Optional
 
 import typer
 
-from refget.cli.config_manager import get_seqcol_servers
+from refget.cli.config_manager import get_seqcol_servers, get_store_path
 from refget.cli.output import (
     EXIT_FAILURE,
     EXIT_NETWORK_ERROR,
@@ -32,6 +32,7 @@ from refget.cli.output import (
 # Heavy imports moved inside functions to speed up CLI startup:
 # - refget.clients (requests ~51ms)
 # - refget.utils (jsonschema ~60ms)
+# - refget.store (gtars ~100ms)
 
 
 def _get_client(server_override: Optional[str] = None):
@@ -52,6 +53,101 @@ def _get_client(server_override: Optional[str] = None):
         servers = get_seqcol_servers()
         urls = [s["url"] for s in servers]
     return SequenceCollectionClient(urls=urls, raise_errors=False)
+
+
+def _collection_to_seqcol_dict(store, digest: str, level: int = 2) -> Optional[dict]:
+    """
+    Convert a RefgetStore collection to seqcol API dict format.
+
+    Args:
+        store: RefgetStore instance with the collection loaded
+        digest: Collection digest
+        level: 1 for attribute digests only, 2 for full arrays
+
+    Returns:
+        Seqcol dict in API format, or None if collection not found.
+    """
+    from refget.utils import canonical_str
+    from refget.digests import sha512t24u_digest
+
+    names = []
+    lengths = []
+    sequences = []
+
+    for coll in store.iter_collections():
+        if coll.digest == digest:
+            for seq in coll.sequences:
+                m = seq.metadata
+                names.append(m.name)
+                lengths.append(m.length)
+                sequences.append("SQ." + m.sha512t24u)
+            break
+    else:
+        # Collection not found in iteration
+        return None
+
+    if not names:
+        return None
+
+    if level == 1:
+        # Return digests of arrays instead of arrays themselves
+        return {
+            "names": sha512t24u_digest(canonical_str(names)),
+            "lengths": sha512t24u_digest(canonical_str(lengths)),
+            "sequences": sha512t24u_digest(canonical_str(sequences)),
+        }
+    else:
+        # Level 2: return full arrays
+        return {
+            "names": names,
+            "lengths": lengths,
+            "sequences": sequences,
+        }
+
+
+def _get_local_seqcol(digest: str, level: int = 2) -> Optional[dict]:
+    """
+    Try to get a seqcol from the local RefgetStore.
+
+    Args:
+        digest: Collection digest to look up
+        level: 1 for attribute digests only, 2 for full arrays
+
+    Returns:
+        Seqcol dict if found locally, None otherwise.
+    """
+    try:
+        from refget.store import RefgetStore
+    except ImportError:
+        # gtars not installed - can't use local store
+        return None
+
+    store_path = get_store_path()
+    rgstore_path = store_path / "rgstore.json"
+
+    # Check if store exists
+    if not store_path.exists() or not rgstore_path.exists():
+        return None
+
+    try:
+        store = RefgetStore.open_local(str(store_path))
+        store.set_quiet(True)
+
+        # Check if collection exists
+        collection_digests = {meta.digest for meta in store.list_collections()}
+        if digest not in collection_digests:
+            return None
+
+        # Load the collection (triggers lazy loading if needed)
+        if not store.is_collection_loaded(digest):
+            store.get_collection(digest)
+
+        # Convert to seqcol dict format
+        return _collection_to_seqcol_dict(store, digest, level)
+
+    except Exception:
+        # Any error (store corruption, etc.) - fall back to remote
+        return None
 
 
 def _compute_snlp_digest(seqcol_dict: dict) -> str:
@@ -134,6 +230,12 @@ def _load_seqcol(input_str: str, client, level: int = 2) -> Optional[dict]:
             return None
 
     else:  # digest
+        # Try local store first
+        result = _get_local_seqcol(input_str, level=level)
+        if result is not None:
+            return result
+
+        # Fall back to remote
         result = client.get_collection(input_str, level=level)
         if result is None:
             print_error(f"Could not fetch seqcol for digest: {input_str}", EXIT_FAILURE)
@@ -176,6 +278,13 @@ def show(
     Level 1 returns attribute digests only.
     Level 2 (default) returns full arrays.
     """
+    # Try local store first
+    result = _get_local_seqcol(digest, level=level)
+    if result is not None:
+        print_json(result)
+        raise typer.Exit(EXIT_SUCCESS)
+
+    # Fall back to remote servers
     client = _get_client(server)
 
     try:

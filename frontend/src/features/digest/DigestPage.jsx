@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import FastaDropzone from './FastaDropzone';
@@ -54,6 +54,13 @@ function loadFromHistory(digest) {
   }
 }
 
+function createWorker() {
+  return new Worker(
+    new URL('./fastaDigestWorker.js', import.meta.url),
+    { type: 'module' }
+  );
+}
+
 export default function DigestPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -63,6 +70,7 @@ export default function DigestPage() {
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
+  const [stats, setStats] = useState(null);
   const workerRef = useRef(null);
 
   // Load history on mount
@@ -85,15 +93,16 @@ export default function DigestPage() {
     }
   }, [searchParams]);
 
-  // Initialize worker
-  useEffect(() => {
-    workerRef.current = new Worker(
-      new URL('./fastaDigestWorker.js', import.meta.url),
-      { type: 'module' }
-    );
+  const setupWorker = useCallback(() => {
+    // Terminate existing worker if any
+    if (workerRef.current) {
+      workerRef.current.terminate();
+    }
 
-    workerRef.current.onmessage = (e) => {
-      const { type, result, message, bytesProcessed, totalSize, percent } = e.data;
+    const worker = createWorker();
+
+    worker.onmessage = (e) => {
+      const { type, result, message, bytesProcessed, totalSize, percent, stats: workerStats } = e.data;
 
       if (type === 'status') {
         setStatus(message);
@@ -103,8 +112,19 @@ export default function DigestPage() {
         setResult(result);
         setStatus(null);
         setProgress(null);
+        if (workerStats) {
+          setStats(workerStats);
+          if (import.meta.env.DEV) {
+            console.log('[FASTA Digest]', {
+              chunks: workerStats.chunks,
+              avgChunkSize: `${(workerStats.avgChunkSize / 1024).toFixed(1)} KB`,
+              elapsed: `${(workerStats.elapsedMs / 1000).toFixed(1)}s`,
+              throughput: `${(workerStats.totalBytes / workerStats.elapsedMs / 1024).toFixed(1)} MB/s`
+            });
+          }
+        }
         // Save to localStorage
-        const name = workerRef.current._fileName;
+        const name = worker._fileName;
         saveToHistory(result, name);
         setHistory(getHistory());
         // Update URL
@@ -115,20 +135,51 @@ export default function DigestPage() {
         setStatus(null);
         setProgress(null);
         toast.error(message);
+      } else if (type === 'cancelled') {
+        setStatus(null);
+        setProgress(null);
+        setError('Processing cancelled.');
       }
     };
 
-    return () => workerRef.current?.terminate();
+    workerRef.current = worker;
+    return worker;
   }, []);
 
+  // Initialize worker on mount
+  useEffect(() => {
+    setupWorker();
+    return () => workerRef.current?.terminate();
+  }, [setupWorker]);
+
   const handleFileSelected = (file) => {
+    // Cancel and replace any running worker to prevent double-processing
+    const worker = setupWorker();
     setFileName(file.name);
     setResult(null);
     setError(null);
     setProgress(null);
+    setStats(null);
     setStatus('Starting...');
-    workerRef.current._fileName = file.name;
-    workerRef.current.postMessage({ file });
+    worker._fileName = file.name;
+    worker.postMessage({ file });
+  };
+
+  const handleCancel = () => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+    setStatus(null);
+    setProgress(null);
+    setError('Processing cancelled.');
+  };
+
+  const handleClear = () => {
+    setError(null);
+    setStatus(null);
+    setProgress(null);
+    setStats(null);
   };
 
   const handleHistoryClick = (digest) => {
@@ -304,6 +355,12 @@ export default function DigestPage() {
           <div className="d-flex align-items-center mb-2">
             <div className="spinner-border spinner-border-sm me-2"></div>
             <span>{status}</span>
+            <button
+              className="btn btn-sm btn-outline-danger ms-3"
+              onClick={handleCancel}
+            >
+              Cancel
+            </button>
           </div>
 
           {progress && (
@@ -328,11 +385,19 @@ export default function DigestPage() {
         </div>
       )}
 
-      {/* Error */}
+      {/* Error or Cancelled */}
       {error && (
-        <div className="alert alert-danger mt-3">
-          <i className="bi bi-exclamation-triangle me-2"></i>
-          {error}
+        <div className={`alert ${error === 'Processing cancelled.' ? 'alert-warning' : 'alert-danger'} mt-3 d-flex justify-content-between align-items-center`}>
+          <div>
+            <i className={`bi ${error === 'Processing cancelled.' ? 'bi-x-circle' : 'bi-exclamation-triangle'} me-2`}></i>
+            {error}
+          </div>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            onClick={handleClear}
+          >
+            Clear
+          </button>
         </div>
       )}
 
@@ -345,6 +410,21 @@ export default function DigestPage() {
         onDownloadJson={handleDownloadJson}
         onDownloadRgsi={handleDownloadRgsi}
       />
+
+      {/* Processing Stats (collapsed) */}
+      {stats && result && (
+        <details className="mt-3">
+          <summary className="text-muted" style={{ cursor: 'pointer' }}>
+            <small>Processing details</small>
+          </summary>
+          <div className="mt-2 small text-muted">
+            <div>Chunks processed: {stats.chunks.toLocaleString()}</div>
+            <div>Average chunk size: {(stats.avgChunkSize / 1024).toFixed(1)} KB</div>
+            <div>Elapsed time: {(stats.elapsedMs / 1000).toFixed(1)}s</div>
+            <div>Throughput: {(stats.totalBytes / stats.elapsedMs / 1024).toFixed(1)} MB/s</div>
+          </div>
+        </details>
+      )}
 
       {/* History */}
       {history.length > 0 && (

@@ -74,7 +74,18 @@ export const fetchCollectionLevels = async (digest) => {
 
 export const fetchComparison = async (digest1, digest2) => {
   const url = `${API_BASE}/comparison/${digest1}/${digest2}`;
-  return fetch(url).then((response) => response.json());
+  const response = await fetch(url);
+  if (!response.ok) {
+    if (response.status === 404) {
+      const err = new Error('Collection not found');
+      err.digest1 = digest1;
+      err.digest2 = digest2;
+      err.isNotFound = true;
+      throw err;
+    }
+    throw new Error(`Comparison failed: ${response.status} ${response.statusText}`);
+  }
+  return response.json();
 };
 
 export const fetchComparisonJSON = async (data, digest) => {
