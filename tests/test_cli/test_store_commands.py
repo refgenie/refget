@@ -278,25 +278,27 @@ class TestStoreExport:
         assert result.exit_code != 0
 
 
-class TestStoreSeq:
-    """Tests for: refget store seq <digest>"""
+class TestStoreGetSequence:
+    """Tests for: refget store get <digest> --sequence"""
 
     def test_gets_sequence_by_name(self, cli, tmp_path):
-        """Gets sequence by name."""
+        """Gets sequence by name using get -s."""
         store_path = tmp_path / "store"
 
         cli("store", "init", "--path", str(store_path))
         add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
         digest = json.loads(add_result.stdout)["digest"]
 
-        result = cli("store", "seq", digest, "--name", "chr1", "--path", str(store_path))
+        result = cli(
+            "store", "get", digest, "-s", "--name", "chr1", "--path", str(store_path)
+        )
 
         assert result.exit_code == 0
         # Output should be sequence (GGAA for chr1 in base.fa)
         assert len(result.stdout.strip()) > 0
 
     def test_substring(self, cli, tmp_path):
-        """Gets subsequence with range."""
+        """Gets subsequence with range using get -s."""
         store_path = tmp_path / "store"
 
         cli("store", "init", "--path", str(store_path))
@@ -305,8 +307,9 @@ class TestStoreSeq:
 
         result = cli(
             "store",
-            "seq",
+            "get",
             digest,
+            "-s",
             "--name",
             "chrX",
             "--start",
@@ -330,10 +333,47 @@ class TestStoreSeq:
         digest = json.loads(add_result.stdout)["digest"]
 
         result = cli(
-            "store", "seq", digest, "--name", "nonexistent_chr", "--path", str(store_path)
+            "store",
+            "get",
+            digest,
+            "-s",
+            "--name",
+            "nonexistent_chr",
+            "--path",
+            str(store_path),
         )
 
         assert result.exit_code != 0
+
+
+class TestStoreListSequences:
+    """Tests for: refget store list --sequences"""
+
+    def test_list_sequences(self, cli, tmp_path):
+        """Lists sequences with -s flag."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+        cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
+
+        result = cli("store", "list", "-s", "--path", str(store_path))
+
+        data = assert_json_output(result, ["sequences"])
+        assert len(data["sequences"]) >= 1
+        # Each sequence should have digest, name, length
+        for seq in data["sequences"]:
+            assert "digest" in seq
+            assert "name" in seq
+            assert "length" in seq
+
+    def test_list_sequences_empty_store(self, cli, tmp_path):
+        """Lists sequences in empty store."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+
+        result = cli("store", "list", "-s", "--path", str(store_path))
+
+        data = assert_json_output(result, ["sequences"])
+        assert data["sequences"] == []
 
 
 class TestStoreStats:

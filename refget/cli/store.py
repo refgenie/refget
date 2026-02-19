@@ -7,10 +7,10 @@ adding, pulling, and exporting sequence collections.
 Commands:
     init        - Initialize local store
     add         - Import FASTA to local store
-    list        - List collections in store
+    list        - List collections or sequences in store
+    get         - Get collection or sequence by digest
     pull        - Pull collection from remote
     export      - Export collection as FASTA
-    seq         - Get sequence/subsequence
     fai         - Generate .fai from digest
     chrom-sizes - Generate chrom.sizes from digest
     stats       - Store statistics
@@ -74,14 +74,14 @@ def _get_collection_digests(store) -> set:
     return {meta.digest for meta in store.list_collections()}
 
 
-def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[str] = None):
+def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[str] = None):
     """
     Load a RefgetStore from local path or remote server.
 
     Args:
         path: Optional path override (uses config if None)
         must_exist: If True, error if store doesn't exist
-        server: Optional remote server URL (overrides path)
+        remote: Optional remote store URL (overrides path)
 
     Returns:
         RefgetStore instance
@@ -90,10 +90,10 @@ def _load_store(path: Optional[Path], must_exist: bool = True, server: Optional[
     from refget.store import RefgetStore
 
     # Remote store takes precedence
-    if server:
+    if remote:
         cache_path = _get_store_path(path) / ".remote_cache"
         cache_path.mkdir(parents=True, exist_ok=True)
-        return RefgetStore.open_remote(str(cache_path), server)
+        return RefgetStore.open_remote(str(cache_path), remote)
 
     store_path = _get_store_path(path)
 
@@ -234,40 +234,58 @@ def add(
 
 
 @app.command("list")
-def list_collections(
+def list_items(
+    sequences: bool = typer.Option(
+        False,
+        "--sequences",
+        "-s",
+        help="List sequences instead of collections",
+    ),
     path: Optional[Path] = typer.Option(
         None,
         "--path",
         "-p",
         help="Store path (default: from config)",
     ),
-    server: Optional[str] = typer.Option(
+    remote: Optional[str] = typer.Option(
         None,
-        "--server",
-        "-s",
+        "--remote",
+        "-r",
         help="Remote store URL (overrides --path)",
     ),
 ) -> None:
     """
-    List collections in the store.
+    List collections or sequences in the store.
 
-    Outputs JSON: {"collections": [{"digest": "...", "sequences": N}, ...]}
+    By default, lists collections. Use --sequences to list individual sequences.
+
+    Outputs JSON:
+        Collections: {"collections": [{"digest": "..."}, ...]}
+        Sequences:   {"sequences": [{"digest": "...", "name": "...", "length": N}, ...]}
     """
-    store = _load_store(path, server=server)
+    store = _load_store(path, remote=remote)
 
-    collections = []
-    for meta in store.list_collections():
-        collections.append(
-            {
-                "digest": meta.digest,
-            }
-        )
+    if sequences:
+        items = []
+        for meta in store.list_sequences():
+            items.append(
+                {
+                    "digest": meta.sha512t24u,
+                    "name": meta.name,
+                    "length": meta.length,
+                }
+            )
+        print_json({"sequences": items})
+    else:
+        collections = []
+        for meta in store.list_collections():
+            collections.append(
+                {
+                    "digest": meta.digest,
+                }
+            )
+        print_json({"collections": collections})
 
-    print_json(
-        {
-            "collections": collections,
-        }
-    )
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -275,7 +293,29 @@ def list_collections(
 def get(
     digest: str = typer.Argument(
         ...,
-        help="Collection digest to retrieve",
+        help="Collection or sequence digest",
+    ),
+    sequence: bool = typer.Option(
+        False,
+        "--sequence",
+        "-s",
+        help="Get sequence instead of collection",
+    ),
+    name: Optional[str] = typer.Option(
+        None,
+        "--name",
+        "-n",
+        help="Sequence name (when getting sequence from collection)",
+    ),
+    start: Optional[int] = typer.Option(
+        None,
+        "--start",
+        help="Start position for subsequence (0-based, inclusive)",
+    ),
+    end: Optional[int] = typer.Option(
+        None,
+        "--end",
+        help="End position for subsequence (0-based, exclusive)",
     ),
     path: Optional[Path] = typer.Option(
         None,
@@ -283,72 +323,128 @@ def get(
         "-p",
         help="Store path (default: from config)",
     ),
-    server: Optional[str] = typer.Option(
+    remote: Optional[str] = typer.Option(
         None,
-        "--server",
-        "-s",
+        "--remote",
+        "-r",
         help="Remote store URL (overrides --path)",
     ),
 ) -> None:
     """
-    Get a collection by digest.
+    Get a collection or sequence by digest.
 
-    Returns the full sequence collection with names, lengths, and sequences.
+    By default, returns the full sequence collection with names, lengths, and sequences.
+    Use --sequence to get a sequence instead.
 
-    Outputs JSON: {"names": [...], "lengths": [...], "sequences": [...]}
+    Examples:
+        refget store get <coll_digest>                     # Get collection
+        refget store get <seq_digest> -s                   # Get sequence
+        refget store get <coll_digest> -s -n chr1          # Sequence by name
+        refget store get <seq_digest> -s --start 0 --end 100  # Subsequence
+
+    Outputs JSON for collections: {"names": [...], "lengths": [...], "sequences": [...]}
+    Outputs raw sequence text for sequences.
     """
-    store = _load_store(path, server=server)
+    store = _load_store(path, remote=remote)
 
-    # Check if collection exists
-    if digest not in _get_collection_digests(store):
-        print_error(f"Collection not found: {digest}", EXIT_FAILURE)
-        return  # Unreachable, but clarifies control flow
+    if sequence:
+        # Sequence retrieval mode
+        seq_data = None
 
-    # Ensure collection is loaded
-    _ensure_collection_loaded(store, digest)
+        if name is not None:
+            # Get sequence by collection + name
+            try:
+                record = store.get_sequence_by_name(digest, name)
+            except KeyError as e:
+                print_error(str(e), EXIT_FAILURE)
+                return
 
-    # Get collection data
-    names = []
-    lengths = []
-    sequences = []
+            if start is not None and end is not None:
+                # Get substring using the sequence digest
+                try:
+                    seq_data = store.get_substring(record.metadata.sha512t24u, start, end)
+                except KeyError as e:
+                    print_error(str(e), EXIT_FAILURE)
+                    return
+            elif start is not None or end is not None:
+                print_error("Both --start and --end must be provided for substring", EXIT_FAILURE)
+                return
+            else:
+                seq_data = record.decode()
+        else:
+            # Direct sequence lookup by digest
+            if start is not None and end is not None:
+                try:
+                    seq_data = store.get_substring(digest, start, end)
+                except KeyError as e:
+                    print_error(str(e), EXIT_FAILURE)
+                    return
+            elif start is not None or end is not None:
+                print_error("Both --start and --end must be provided for substring", EXIT_FAILURE)
+                return
+            else:
+                try:
+                    record = store.get_sequence(digest)
+                    seq_data = record.decode()
+                except KeyError as e:
+                    print_error(str(e), EXIT_FAILURE)
+                    return
 
-    for coll in store.iter_collections():
-        if coll.digest == digest:
-            for seq in coll.sequences:
-                m = seq.metadata
-                names.append(m.name)
-                lengths.append(m.length)
-                sequences.append("SQ." + m.sha512t24u)
-            break
+        # Output raw sequence to stdout
+        print(seq_data)
+    else:
+        # Collection retrieval mode (default)
+        # Check if collection exists
+        if digest not in _get_collection_digests(store):
+            print_error(f"Collection not found: {digest}", EXIT_FAILURE)
+            return
 
-    if not names:
-        print_error(f"Collection not found: {digest}", EXIT_FAILURE)
-        return  # Unreachable, but clarifies control flow
+        # Ensure collection is loaded
+        _ensure_collection_loaded(store, digest)
 
-    print_json(
-        {
-            "names": names,
-            "lengths": lengths,
-            "sequences": sequences,
-        }
-    )
+        # Get collection data
+        names = []
+        lengths = []
+        sequences = []
+
+        for coll in store.iter_collections():
+            if coll.digest == digest:
+                for seq in coll.sequences:
+                    m = seq.metadata
+                    names.append(m.name)
+                    lengths.append(m.length)
+                    sequences.append("SQ." + m.sha512t24u)
+                break
+
+        if not names:
+            print_error(f"Collection not found: {digest}", EXIT_FAILURE)
+            return
+
+        print_json(
+            {
+                "names": names,
+                "lengths": lengths,
+                "sequences": sequences,
+            }
+        )
+
     raise typer.Exit(EXIT_SUCCESS)
 
 
-def _find_remote_urls(server_override: Optional[str] = None) -> List[str]:
+def _find_remote_urls(remote_override: Optional[str] = None) -> List[str]:
     """
     Find remote RefgetStore URLs to try.
 
     Resolution order:
-        1. --server flag (direct RefgetStore URL)
+        1. --remote flag (direct RefgetStore URL)
         2. Configured remote_stores
         3. Configured seqcol_servers (discover RefgetStore via service-info)
 
     Returns:
         List of remote store URLs to try, in priority order.
     """
-    if server_override:
-        return [server_override]
+    if remote_override:
+        return [remote_override]
 
     urls: List[str] = []
 
@@ -390,10 +486,10 @@ def pull(
         "-p",
         help="Store path (default: from config)",
     ),
-    server: Optional[str] = typer.Option(
+    remote: Optional[str] = typer.Option(
         None,
-        "--server",
-        "-s",
+        "--remote",
+        "-r",
         help="Remote store URL (default: try configured remote_stores)",
     ),
     eager: bool = typer.Option(
@@ -416,7 +512,7 @@ def pull(
     downloaded on-demand when accessed (lazy loading). Use --eager to
     pre-fetch all sequences.
 
-    Resolution order (if --server not specified):
+    Resolution order (if --remote not specified):
         1. Check local store (already cached?)
         2. Try configured remote_stores in priority order
         3. Try seqcol_servers (discover RefgetStore via service-info)
@@ -424,9 +520,9 @@ def pull(
     Use --file for batch operations with multiple digests.
 
     Examples:
-        refget store pull ABC123 --server https://example.com/store
+        refget store pull ABC123 --remote https://example.com/store
         refget store pull ABC123 --eager  # Pre-fetch all sequences
-        refget store pull --file digests.txt --server https://example.com/store
+        refget store pull --file digests.txt --remote https://example.com/store
     """
     check_dependency("gtars", "store", "store")
     from refget.store import RefgetStore
@@ -450,11 +546,11 @@ def pull(
         print_error("No digests to pull", EXIT_FAILURE)
 
     # Determine remote URLs to try
-    remote_urls = _find_remote_urls(server)
+    remote_urls = _find_remote_urls(remote)
 
     if not remote_urls:
         print_error(
-            "No remote store found. Use --server or configure remote_stores:\n"
+            "No remote store found. Use --remote or configure remote_stores:\n"
             "  refget config add remote_store https://example.com/store",
             EXIT_FAILURE,
         )
@@ -575,10 +671,10 @@ def export(
         "-p",
         help="Store path (default: from config)",
     ),
-    server: Optional[str] = typer.Option(
+    remote: Optional[str] = typer.Option(
         None,
-        "--server",
-        "-s",
+        "--remote",
+        "-r",
         help="Remote store URL (overrides --path)",
     ),
     line_width: int = typer.Option(
@@ -598,7 +694,7 @@ def export(
 
     If no output file is specified, exports to stdout.
     """
-    store = _load_store(path, server=server)
+    store = _load_store(path, remote=remote)
 
     # Ensure collection is loaded (required for export)
     _ensure_collection_loaded(store, digest)
@@ -635,86 +731,6 @@ def export(
 
 
 @app.command()
-def seq(
-    digest: str = typer.Argument(
-        ...,
-        help="Sequence digest or collection digest",
-    ),
-    name: Optional[str] = typer.Option(
-        None,
-        "--name",
-        "-n",
-        help="Sequence name (when using collection digest)",
-    ),
-    start: Optional[int] = typer.Option(
-        None,
-        "--start",
-        "-s",
-        help="Start position (0-based, inclusive)",
-    ),
-    end: Optional[int] = typer.Option(
-        None,
-        "--end",
-        "-e",
-        help="End position (0-based, exclusive)",
-    ),
-    path: Optional[Path] = typer.Option(
-        None,
-        "--path",
-        "-p",
-        help="Store path (default: from config)",
-    ),
-    server: Optional[str] = typer.Option(
-        None,
-        "--server",
-        help="Remote store URL (overrides --path)",
-    ),
-) -> None:
-    """
-    Get a sequence or subsequence.
-
-    Examples:
-        refget store seq <seq_digest>                          # Full sequence
-        refget store seq <seq_digest> --start 100 --end 200    # Subsequence
-        refget store seq <coll_digest> --name chr1             # By name
-        refget store seq <coll_digest> --name chr1 -s 100 -e 200
-    """
-    store = _load_store(path, server=server)
-
-    sequence = None
-
-    if name is not None:
-        # Get sequence by collection + name
-        record = store.get_sequence_by_name(digest, name)
-        if record is None:
-            print_error(f"Sequence '{name}' not found in collection {digest}", EXIT_FAILURE)
-        if start is not None and end is not None:
-            # Get substring using the sequence digest
-            sequence = store.get_substring(record.metadata.sha512t24u, start, end)
-        elif start is not None or end is not None:
-            print_error("Both --start and --end must be provided for substring", EXIT_FAILURE)
-        else:
-            # Use decode() to get the sequence string (handles encoded mode)
-            sequence = record.decode()
-    else:
-        # Direct sequence lookup by digest
-        if start is not None and end is not None:
-            sequence = store.get_substring(digest, start, end)
-        elif start is not None or end is not None:
-            print_error("Both --start and --end must be provided for substring", EXIT_FAILURE)
-        else:
-            record = store.get_sequence(digest)
-            if record is None:
-                print_error(f"Sequence not found: {digest}", EXIT_FAILURE)
-            # Use decode() to get the sequence string (handles encoded mode)
-            sequence = record.decode()
-
-    # Output raw sequence to stdout
-    print(sequence)
-    raise typer.Exit(EXIT_SUCCESS)
-
-
-@app.command()
 def fai(
     digest: str = typer.Argument(
         ...,
@@ -732,10 +748,10 @@ def fai(
         "-p",
         help="Store path (default: from config)",
     ),
-    server: Optional[str] = typer.Option(
+    remote: Optional[str] = typer.Option(
         None,
-        "--server",
-        "-s",
+        "--remote",
+        "-r",
         help="Remote store URL (overrides --path)",
     ),
 ) -> None:
@@ -747,7 +763,7 @@ def fai(
     Note: Byte offset columns will be placeholder values since the collection
     may not correspond to any specific FASTA file layout.
     """
-    store = _load_store(path, server=server)
+    store = _load_store(path, remote=remote)
 
     # Ensure collection is loaded
     _ensure_collection_loaded(store, digest)
@@ -798,10 +814,10 @@ def chrom_sizes(
         "-p",
         help="Store path (default: from config)",
     ),
-    server: Optional[str] = typer.Option(
+    remote: Optional[str] = typer.Option(
         None,
-        "--server",
-        "-s",
+        "--remote",
+        "-r",
         help="Remote store URL (overrides --path)",
     ),
 ) -> None:
@@ -810,7 +826,7 @@ def chrom_sizes(
 
     Outputs UCSC-compatible chrom.sizes format (tab-separated name/length).
     """
-    store = _load_store(path, server=server)
+    store = _load_store(path, remote=remote)
 
     # Ensure collection is loaded
     _ensure_collection_loaded(store, digest)
@@ -848,10 +864,10 @@ def stats(
         "-p",
         help="Store path (default: from config)",
     ),
-    server: Optional[str] = typer.Option(
+    remote: Optional[str] = typer.Option(
         None,
-        "--server",
-        "-s",
+        "--remote",
+        "-r",
         help="Remote store URL (overrides --path)",
     ),
 ) -> None:
@@ -863,7 +879,7 @@ def stats(
     Example output:
         {"collections": 3, "sequences": 75, "storage_mode": "Encoded"}
     """
-    store = _load_store(path, server=server)
+    store = _load_store(path, remote=remote)
 
     stats_obj = store.stats()
 
