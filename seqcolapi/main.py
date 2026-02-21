@@ -69,7 +69,7 @@ async def lifespan_loader(app):
 app = FastAPI(
     title="Sequence Collections API",
     description="An API providing metadata such as names, lengths, and other values for collections of reference sequences",
-    version=ALL_VERSIONS["seqcolapi_version"],
+    version=ALL_VERSIONS["refget_version"],
     lifespan=lifespan_loader,
 )
 

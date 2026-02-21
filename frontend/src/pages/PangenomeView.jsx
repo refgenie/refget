@@ -11,6 +11,10 @@ const PangenomeView = ({ params }) => {
   const pangenome = useLoaderData();
   const { digest } = useParams();
 
+  if (!Array.isArray(pangenome) || pangenome.length < 3) {
+    return <div className="alert alert-warning">Failed to load pangenome data.</div>;
+  }
+
   let level1 = pangenome[0];
   let level2 = pangenome[1];
   let itemwise = pangenome[2];

@@ -21,6 +21,7 @@ app.state.dbagent = RefgetDBAgent()
 import logging
 
 from fastapi import APIRouter, Response, HTTPException, Request, Depends, Query
+from fastapi.responses import StreamingResponse
 from .models import Similarities, PaginationResult, PaginatedDigestList
 from .agents import RefgetDBAgent
 
@@ -45,6 +46,7 @@ def create_refget_router(
     collections: bool = True,
     pangenomes: bool = False,
     fasta_drs: bool = False,
+    compliance: bool = True,
     refget_store_url: str = None,
 ) -> APIRouter:
     """
@@ -85,6 +87,9 @@ def create_refget_router(
     if fasta_drs:
         _LOGGER.info("Adding FASTA DRS endpoints...")
         refget_router.include_router(fasta_drs_router, prefix="/fasta")
+    if compliance:
+        _LOGGER.info("Adding compliance endpoints...")
+        refget_router.include_router(compliance_router)
     return refget_router
 
 
@@ -562,3 +567,65 @@ async def get_fasta_index(
         }
     except ValueError:
         raise HTTPException(status_code=404, detail="Object not found")
+
+
+compliance_router = APIRouter()
+
+
+@compliance_router.get(
+    "/compliance/run",
+    summary="Run compliance checks against a seqcol server",
+    tags=["Compliance"],
+)
+def run_compliance_endpoint(
+    request: Request,
+    target_url: str | None = Query(None, description="Target server URL to test (defaults to self)"),
+):
+    """
+    Run GA4GH SeqCol compliance structure tests against a server.
+
+    Only runs structure tests (service-info, list, pagination, collection structure).
+    Content tests that require specific test data are not included.
+
+    If no target_url is provided, tests run against this server.
+    """
+    from .compliance import run_compliance
+
+    if target_url is None:
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        target_url = f"{scheme}://{host}"
+
+    return run_compliance(target_url)
+
+
+@compliance_router.get(
+    "/compliance/stream",
+    summary="Stream compliance checks via Server-Sent Events",
+    tags=["Compliance"],
+)
+def stream_compliance_endpoint(
+    request: Request,
+    target_url: str | None = Query(None, description="Target server URL to test (defaults to self)"),
+):
+    """
+    Stream compliance check results in real-time via Server-Sent Events.
+
+    Each event contains a JSON object with type "start", "result", or "done".
+    """
+    from .compliance import run_compliance_stream
+
+    if target_url is None:
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        target_url = f"{scheme}://{host}"
+
+    def event_stream():
+        for data in run_compliance_stream(target_url):
+            yield f"data: {data}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

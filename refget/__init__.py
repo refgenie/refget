@@ -15,6 +15,8 @@ from .exceptions import InvalidSeqColError
 from .const import GTARS_INSTALLED
 from .utils import canonical_str
 from .store import RefgetStore, StorageMode, digest_fasta, compute_fai, digest_sequence, SequenceCollection
+from .compliance import run_compliance
+from .clients import SequenceCollectionClient
 
 __all__ = [
     "__version__",
@@ -27,4 +29,6 @@ __all__ = [
     "compute_fai",
     "digest_sequence",
     "SequenceCollection",
+    "run_compliance",
+    "SequenceCollectionClient",
 ]

@@ -1,0 +1,14 @@
+{
+  "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
+  "schemaVersion": 1.0,
+  "genome": "Test organism",
+  "version": "v1.0",
+  "taxon": {
+    "name": "Test organism",
+    "uri": "https://identifiers.org/taxonomy:12345"
+  },
+  "masking": "soft-masked",
+  "genomeSynonym": ["test_v1"],
+  "dateCreated": "2025-01-01",
+  "license": "CC0-1.0"
+}

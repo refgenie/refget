@@ -6,6 +6,11 @@ import { AttributeList } from '../components/ObjectLists';
 
 const HomePage = () => {
   const loaderData = useLoaderData();
+
+  if (!Array.isArray(loaderData) || loaderData.length < 3) {
+    return <div className="alert alert-warning">Failed to load homepage data.</div>;
+  }
+
   const collections = loaderData[0];
   const pangenomes = loaderData[1];
   const name_length_pairs = loaderData[2];
@@ -86,7 +91,7 @@ const HomePage = () => {
       </ul>
       <PangenomeExamplesList />
 
-      <h5 className='mt-4'>4. List of name_length_pairs on this server:</h5>
+      <h5 className='mt-4'>5. List of name_length_pairs on this server:</h5>
       <p className='text-muted fs-6'>
         The{' '}
         <span className='font-monospace text-success'>/list/attributes</span>{' '}

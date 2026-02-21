@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import FastaDropzone from './FastaDropzone';
-import SeqColResult from './SeqColResult';
-import './digest.css';
+import FastaDropzone from '../components/digest/FastaDropzone';
+import SeqColResult from '../components/digest/SeqColResult';
+import '../components/digest/digest.css';
 
 const HISTORY_KEY = 'digest-history';
 const MAX_HISTORY = 20;
@@ -56,12 +56,12 @@ function loadFromHistory(digest) {
 
 function createWorker() {
   return new Worker(
-    new URL('./fastaDigestWorker.js', import.meta.url),
+    new URL('../components/digest/fastaDigestWorker.js', import.meta.url),
     { type: 'module' }
   );
 }
 
-export default function DigestPage() {
+export function DigestPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [result, setResult] = useState(null);
@@ -140,6 +140,13 @@ export default function DigestPage() {
         setProgress(null);
         setError('Processing cancelled.');
       }
+    };
+
+    worker.onerror = (event) => {
+      event.preventDefault();
+      setError(event.message || 'Worker crashed unexpectedly');
+      setStatus(null);
+      setProgress(null);
     };
 
     workerRef.current = worker;

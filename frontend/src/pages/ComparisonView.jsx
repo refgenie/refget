@@ -2,139 +2,17 @@ import { useState } from 'react';
 import { LinkedCollectionDigest } from '../components/ValuesAndDigests.jsx';
 import { useLoaderData } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { ReportCard } from '../components/ReportCard.jsx';
 
-
-import { API_BASE } from '../utilities.jsx';
-
-const CoordSystemReport = ({ messageArray }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  return (
-    <div
-      className='card'
-      style={{
-        borderColor: 'var(--bs-border-color-translucent)',
-      }}
-    >
-      <div
-        className='card-header bg-warning bg-opacity-25'
-        style={{
-          borderColor: 'var(--bs-border-color-translucent)',
-        }}
-      >
-        <div className='d-flex align-items-center'>
-          <span className='fw-medium text-warning-emphasis'>
-            Coordinate System
-          </span>
-          <div className='position-relative'>
-            <span
-              className='ms-2 text-warning-emphasis'
-              style={{
-                width: '20px',
-                height: '20px',
-                fontSize: '0.7rem',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-            >
-              <i className='bi bi-question-circle-fill'></i>
-            </span>
-            {showTooltip && (
-              <div
-                className='position-absolute bg-dark text-white rounded p-2 shadow-lg'
-                style={{
-                  left: '25px',
-                  top: '0',
-                  width: '250px',
-                  fontSize: '0.75rem',
-                  zIndex: 1050,
-                }}
-              >
-                This assessment reports on the compatibility of the names and
-                lengths of the sequences, without regard to sequence content.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className='card-body bg-warning bg-opacity-10 rounded-bottom-1'>
-        <ul className='mb-0'>
-          {messageArray.map((msg, index) => (
-            <li key={index}>{msg}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-};
-
-const SequencesReport = ({ messageArray }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-
-  return (
-    <div
-      className='card'
-      style={{
-        borderColor: 'var(--bs-border-color-translucent)',
-      }}
-    >
-      <div
-        className='card-header bg-info bg-opacity-25'
-        style={{
-          borderColor: 'var(--bs-border-color-translucent)',
-        }}
-      >
-        <div className='d-flex align-items-center'>
-          <span className='fw-medium text-info-emphasis'>Sequences</span>
-          <div className='position-relative'>
-            <span
-              className='ms-2 text-info-emphasis'
-              style={{
-                width: '20px',
-                height: '20px',
-                fontSize: '0.7rem',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={() => setShowTooltip(true)}
-              onMouseLeave={() => setShowTooltip(false)}
-            >
-              <i className='bi bi-question-circle-fill'></i>
-            </span>
-            {showTooltip && (
-              <div
-                className='position-absolute bg-dark text-white rounded p-2 shadow-lg'
-                style={{
-                  left: '25px',
-                  top: '0',
-                  width: '250px',
-                  fontSize: '0.75rem',
-                  zIndex: 1050,
-                }}
-              >
-                This assessment reports on the sequences only, without regard to
-                their names.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className='card-body bg-info bg-opacity-10 rounded-bottom-1'>
-        <ul className='mb-0'>
-          {messageArray.map((msg, index) => (
-            <li key={index}>{msg}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-};
+import { API_BASE, encodeToBase64 } from '../utilities.jsx';
 
 // Component to display the comparison between two collections
 // ✅❔❌❔
 const coordinateSystemInterpretation = (comparison) => {
+  if (!comparison?.array_elements?.a_count || !comparison?.array_elements?.b_count || !comparison?.array_elements?.a_and_b_count) {
+    return ['Unable to interpret: incomplete comparison data'];
+  }
+
   const lengthsANotB =
     comparison.array_elements.a_count.lengths -
     comparison.array_elements.a_and_b_count.lengths;
@@ -190,7 +68,7 @@ const coordinateSystemInterpretation = (comparison) => {
 
 const LinkToLocalComparison = ({ comparison }) => {
   const [copied, setCopied] = useState(false);
-  const base64encodedComparison = btoa(JSON.stringify(comparison));
+  const base64encodedComparison = encodeToBase64(JSON.stringify(comparison));
   return (
     <button
       className='btn btn-secondary btn-sm'
@@ -222,6 +100,15 @@ const LinkToLocalComparison = ({ comparison }) => {
 const ComparisonView = ({ paramComparison }) => {
   const loaderData = useLoaderData();
   const comparison = paramComparison || loaderData;
+
+  if (!comparison || !comparison.digests || !comparison.array_elements) {
+    return (
+      <div className='alert alert-warning mt-3' role='alert'>
+        Invalid comparison data. The response may be malformed or incomplete.
+      </div>
+    );
+  }
+
   const comp_str = JSON.stringify(comparison, null, 2);
 
   let api_url = `${API_BASE}/comparison/${comparison.digests.a}/${comparison.digests.b}`;
@@ -230,6 +117,14 @@ const ComparisonView = ({ paramComparison }) => {
 
   // ✅❔❌
   const getInterpretation = (comparison, attribute) => {
+    if (
+      comparison.array_elements.a_count?.[attribute] == null ||
+      comparison.array_elements.b_count?.[attribute] == null ||
+      comparison.array_elements.a_and_b_count?.[attribute] == null
+    ) {
+      return [`Unable to interpret: missing ${attribute} data`];
+    }
+
     const nSequencesA = comparison.array_elements.a_count[attribute];
     const nSequencesB = comparison.array_elements.b_count[attribute];
     const aNotB =
@@ -240,12 +135,11 @@ const ComparisonView = ({ paramComparison }) => {
       comparison.array_elements.a_and_b_count[attribute];
     const orderCheck = comparison.array_elements.a_and_b_same_order[attribute];
 
-    let interpTerm = '';
     const msgArray = [];
 
     if (
-      comparison.array_elements.a_and_b_count[attribute] == nSequencesA &&
-      comparison.array_elements.a_and_b_count[attribute] == nSequencesB
+      comparison.array_elements.a_and_b_count[attribute] === nSequencesA &&
+      comparison.array_elements.a_and_b_count[attribute] === nSequencesB
     ) {
       msgArray.push(`🟰 The ${attribute} contents are identical.`);
       if (orderCheck === true) {
@@ -253,29 +147,25 @@ const ComparisonView = ({ paramComparison }) => {
       } else if (orderCheck === false) {
         msgArray.push('❌ The elements are in different order.');
       }
-      interpTerm = 'identical_content';
     }
     if (
-      comparison.array_elements.a_and_b_count[attribute] == nSequencesA &&
+      comparison.array_elements.a_and_b_count[attribute] === nSequencesA &&
       comparison.array_elements.a_and_b_count[attribute] < nSequencesB
     ) {
       msgArray.push(
         `Collection B contains all ${nSequencesA} ${attribute} from collection A, and ${bNotA} additional.`,
       );
-      interpTerm = 'subset';
     }
     if (
-      comparison.array_elements.a_and_b_count[attribute] == nSequencesB &&
+      comparison.array_elements.a_and_b_count[attribute] === nSequencesB &&
       comparison.array_elements.a_and_b_count[attribute] < nSequencesA
     ) {
       msgArray.push(
         `Collection A contains all ${nSequencesB} ${attribute} from collection B, and ${aNotB} additional.`,
       );
-      interpTerm = 'subset';
     }
     if (comparison.array_elements.a_and_b_count[attribute] === 0) {
       msgArray.push(`The collections' ${attribute} contents are disjoint.`);
-      interpTerm = 'disjoint';
     } else if (
       comparison.array_elements.a_and_b_count[attribute] < nSequencesA &&
       comparison.array_elements.a_and_b_count[attribute] < nSequencesB
@@ -283,7 +173,6 @@ const ComparisonView = ({ paramComparison }) => {
       msgArray.push(
         `The collections' ${attribute} contents are partially overlapping; some are shared, and some are unique to each collection.`,
       );
-      interpTerm = 'partial_overlap';
     }
 
     return msgArray;
@@ -329,10 +218,20 @@ const ComparisonView = ({ paramComparison }) => {
       <h5 className='mt-4'>Interpretation Summary</h5>
       <div className='row'>
         <div className='col-md-6'>
-          <SequencesReport messageArray={interpretation['sequences']} />
+          <ReportCard
+            title="Sequences"
+            tooltipText="This assessment reports on the sequences only, without regard to their names."
+            messageArray={interpretation['sequences']}
+            colorScheme="info"
+          />
         </div>
         <div className='col-md-6'>
-          <CoordSystemReport messageArray={coordSystemMessages} />
+          <ReportCard
+            title="Coordinate System"
+            tooltipText="This assessment reports on the compatibility of the names and lengths of the sequences, without regard to sequence content."
+            messageArray={coordSystemMessages}
+            colorScheme="warning"
+          />
         </div>
       </div>
 
@@ -343,7 +242,7 @@ const ComparisonView = ({ paramComparison }) => {
         <label className='col-sm-3 d-flex justify-content-end px-4 fw-medium'>
           Found in collection A only:
         </label>
-        {comparison.attributes.a_only != '' ? (
+        {comparison.attributes.a_only.length > 0 ? (
           comparison.attributes.a_only.join(', ')
         ) : (
           <span className=''>None</span>
@@ -353,7 +252,7 @@ const ComparisonView = ({ paramComparison }) => {
         <label className='col-sm-3 d-flex justify-content-end px-4 fw-medium'>
           Found in collection B only:
         </label>
-        {comparison.attributes.b_only != '' ? (
+        {comparison.attributes.b_only.length > 0 ? (
           comparison.attributes.b_only.join(', ')
         ) : (
           <span className=''>None</span>
@@ -363,7 +262,7 @@ const ComparisonView = ({ paramComparison }) => {
         <label className='col-sm-3 d-flex justify-content-end px-4 fw-medium'>
           Found in both:
         </label>
-        {comparison.attributes.a_and_b != '' ? (
+        {comparison.attributes.a_and_b.length > 0 ? (
           comparison.attributes.a_and_b.join(', ')
         ) : (
           <span className=''>None</span>

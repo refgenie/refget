@@ -20,7 +20,8 @@ import { SCOM } from './pages/SCOM.jsx';
 import { HomePage } from './pages/HomePage.jsx';
 import { HPRCGenomes } from './pages/HPRCGenomes.jsx';
 import { HumanReferencesView } from './pages/HumanReferences.jsx';
-import { DigestPage } from './features/digest';
+import { DigestPage } from './pages/DigestPage.jsx';
+import { CompliancePage } from './pages/CompliancePage.jsx';
 
 import {
   fetchServiceInfo,
@@ -32,61 +33,19 @@ import {
   fetchAttribute,
 } from './services/fetchData.jsx';
 
-import {
-  AttributeValue,
-  LinkedAttributeDigest,
-} from './components/ValuesAndDigests.jsx';
-import { CollectionList, PangenomeList } from './components/ObjectLists.jsx';
-import { copyToClipboardIcon, copyToClipboard } from './utilities';
+import { copyToClipboard } from './utilities';
 
 import {
   Outlet,
-  Link,
   createBrowserRouter,
   RouterProvider,
   useLoaderData,
-  useParams,
   useRouteError,
   useNavigate,
   useLocation,
 } from 'react-router-dom';
 
 import { API_BASE } from './utilities.jsx';
-
-const Level1Collection = ({ collection }) => {
-  return (
-    <div>
-      Names:{' '}
-      <Link to={`/attribute/collection/names/${collection.names}`}>
-        {collection.names}
-      </Link>
-      <br />
-      Lengths:{' '}
-      <Link to={`/attribute/collection/lengths/${collection.lengths}`}>
-        {collection.lengths}
-      </Link>
-      <br />
-      Sequences:{' '}
-      <Link to={`/attribute/collection/sequences/${collection.sequences}`}>
-        {collection.sequences}
-      </Link>
-      <br />
-    </div>
-  );
-};
-
-const Level2Collection = ({ collection }) => {
-  return (
-    <div>
-      <h3>Names</h3>
-      <pre>{JSON.stringify(collection.names, null, 2)}</pre>
-      <h3>Lengths</h3>
-      <pre>{JSON.stringify(collection.lengths, null, 2)}</pre>
-      <h3>Sequences</h3>
-      <pre>{JSON.stringify(collection.sequences, null, 2)}</pre>
-    </div>
-  );
-};
 
 const Nav = () => {
   const navigate = useNavigate();
@@ -139,7 +98,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <span
                 onClick={() => navigate('/fasta')}
-                className={`nav-link cursor-pointer ${location === 'fasta' ? 'fw-medium text-black' : 'fw-light'}`}
+                className={`nav-link cursor-pointer ${location.startsWith('fasta') ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 FASTADigest
               </span>
@@ -147,7 +106,7 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <span
                 onClick={() => navigate('/scim')}
-                className={`nav-link cursor-pointer ${location === 'scim' ? 'fw-medium text-black' : 'fw-light'}`}
+                className={`nav-link cursor-pointer ${location.startsWith('scim') ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 SCIM
               </span>
@@ -155,9 +114,17 @@ const Nav = () => {
             <li className='nav-item mx-2 my-0 h6'>
               <span
                 onClick={() => navigate('/scom')}
-                className={`nav-link cursor-pointer ${location === 'scom' ? 'fw-medium text-black' : 'fw-light'}`}
+                className={`nav-link cursor-pointer ${location.startsWith('scom') ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 SCOM
+              </span>
+            </li>
+            <li className='nav-item mx-2 my-0 h6'>
+              <span
+                onClick={() => navigate('/compliance')}
+                className={`nav-link cursor-pointer ${location.startsWith('compliance') ? 'fw-medium text-black' : 'fw-light'}`}
+              >
+                Compliance
               </span>
             </li>
             <li className='nav-item mx-2 my-0 h6'>
@@ -197,24 +164,58 @@ const Nav = () => {
   );
 };
 
+class ReactErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('ReactErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className='alert alert-danger' role='alert'>
+          <strong>Something went wrong.</strong>
+          <p className='mt-2'>{this.state.error?.message || 'An unexpected error occurred.'}</p>
+          <button
+            className='btn btn-danger mt-2'
+            onClick={() => window.location.reload()}
+          >
+            Reload
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const App = () => {
   const loaderData = useLoaderData();
-  const refgetVersion = loaderData['version']['refget_pkg_version'];
   return (
     <>
       <Nav />
       <main className='container'>
-        <Outlet />
+        <ReactErrorBoundary>
+          <Outlet />
+        </ReactErrorBoundary>
       </main>
       <div className='container'>
         <footer className='flex-wrap py-3 my-4 align-top d-flex justify-content-between align-items-center border-top'>
           <div className='d-flex flex-column'>
             <div>
               <span className='badge rounded-pill bg-primary text-primary bg-opacity-25 border border-primary me-1'>
-                refget {refgetVersion}
+                refget {loaderData['version']['refget_version']}
               </span>
               <span className='badge rounded-pill bg-primary text-primary bg-opacity-25 border border-primary me-1'>
-                seqcolapi {loaderData['version']['seqcolapi_version']}
+                gtars {loaderData['version']['gtars_version']}
               </span>
               <span className='badge rounded-pill bg-primary text-primary bg-opacity-25 border border-primary me-1'>
                 python {loaderData['version']['python_version']}
@@ -240,55 +241,6 @@ const App = () => {
         </footer>
       </div>
     </>
-  );
-};
-
-const CollectionTable = ({ collections }) => {
-  const seqColList = collections || useLoaderData();
-  return (
-    <table>
-      <thead>
-        <tr>
-          <th>Collection digest</th>
-          <th>Names</th>
-          <th>Lengths</th>
-          <th>Sequences</th>
-        </tr>
-      </thead>
-      <tbody>
-        {seqColList['results'].map((collection) => (
-          <tr key={collection}>
-            <td>
-              <LinkedCollectionDigest
-                digest={collection.digest}
-                clipboard={false}
-              />
-            </td>
-            <td className='tiny mx-2'>
-              <LinkedAttributeDigest
-                attribute='names'
-                digest={collection.names_digest}
-                clipboard={false}
-              />
-            </td>
-            <td className='tiny mx-2'>
-              <LinkedAttributeDigest
-                attribute='lengths'
-                digest={collection.lengths_digest}
-                clipboard={false}
-              />
-            </td>
-            <td className='tiny mx-2'>
-              <LinkedAttributeDigest
-                attribute='sequences'
-                digest={collection.sequences_digest}
-                clipboard={false}
-              />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 };
 
@@ -365,6 +317,7 @@ const router = createBrowserRouter([
     path: '/',
     element: <App />,
     loader: fetchServiceInfo,
+    errorElement: <ErrorBoundary />,
     children: [
       {
         path: '/',
@@ -375,26 +328,37 @@ const router = createBrowserRouter([
       {
         path: '/demo',
         element: <DemoPage />,
+        errorElement: <ErrorBoundary />,
       },
       {
         path: '/fasta',
         element: <DigestPage />,
+        errorElement: <ErrorBoundary />,
+      },
+      {
+        path: '/compliance',
+        element: <CompliancePage />,
+        errorElement: <ErrorBoundary />,
       },
       {
         path: '/human',
         element: <HumanReferencesView />,
+        errorElement: <ErrorBoundary />,
       },
       {
         path: '/hprc',
         element: <HPRCGenomes />,
+        errorElement: <ErrorBoundary />,
       },
       {
         path: '/scim',
         element: <SCIM />,
+        errorElement: <ErrorBoundary />,
       },
       {
         path: '/scom',
         element: <SCOM />,
+        errorElement: <ErrorBoundary />,
         loader: fetchAllSeqCols,
       },
       {
@@ -419,6 +383,7 @@ const router = createBrowserRouter([
       {
         path: '/attribute/:attribute/:digest',
         element: <AttributeView />,
+        errorElement: <ErrorBoundary />,
         loader: (request) => {
           return fetchAttribute(
             request.params.attribute,
@@ -429,6 +394,7 @@ const router = createBrowserRouter([
       {
         path: '/pangenome/:digest',
         element: <PangenomeView />,
+        errorElement: <ErrorBoundary />,
         loader: (request) => fetchPangenomeLevels(request.params.digest),
       },
     ],

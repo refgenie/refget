@@ -13,6 +13,7 @@ from conftest import (
     BASE_FASTA,
     DIFFERENT_NAMES_FASTA,
     DIFFERENT_ORDER_FASTA,
+    SAMPLE_FHR_JSON,
     TEST_FASTA_DIGESTS,
     assert_json_output,
 )
@@ -478,5 +479,154 @@ class TestStoreErrorHandling:
         nonexistent = tmp_path / "nonexistent_store"
 
         result = cli("store", "add", str(BASE_FASTA), "--path", str(nonexistent))
+
+        assert result.exit_code != 0
+
+
+def _setup_store_with_fasta(cli, tmp_path):
+    """Initialize a store, add BASE_FASTA, and return (store_path, digest)."""
+    store_path = tmp_path / "store"
+    cli("store", "init", "--path", str(store_path))
+    add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
+    digest = json.loads(add_result.stdout)["digest"]
+    return store_path, digest
+
+
+class TestStoreMetadata:
+    """Tests for: refget store metadata / metadata-set"""
+
+    def test_metadata_no_fhr_set(self, cli, tmp_path):
+        """Error when no FHR metadata exists for a collection."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code != 0
+        assert "No FHR metadata" in result.stdout
+
+    def test_metadata_set_from_json_file(self, cli, tmp_path):
+        """Happy path: set FHR metadata from a JSON file."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        result = cli(
+            "store", "metadata-set", digest, str(SAMPLE_FHR_JSON),
+            "--path", str(store_path),
+        )
+
+        assert result.exit_code == 0
+        assert "Set FHR metadata for collection" in result.stdout
+
+    def test_metadata_read_after_set(self, cli, tmp_path):
+        """Round-trip: set metadata then read it back."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        cli(
+            "store", "metadata-set", digest, str(SAMPLE_FHR_JSON),
+            "--path", str(store_path),
+        )
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert data["genome"] == "Test organism"
+        assert data["version"] == "v1.0"
+        assert data["masking"] == "soft-masked"
+        assert "test_v1" in data["genomeSynonym"]
+
+    def test_metadata_output_is_valid_json(self, cli, tmp_path):
+        """Output is valid JSON with camelCase keys per FHR spec."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        cli(
+            "store", "metadata-set", digest, str(SAMPLE_FHR_JSON),
+            "--path", str(store_path),
+        )
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+
+        # Verify camelCase keys from the FHR spec
+        assert "schemaVersion" in data
+        assert "genomeSynonym" in data
+        assert "dateCreated" in data
+
+        # Verify no snake_case keys leaked through
+        raw = result.stdout
+        assert "schema_version" not in raw
+        assert "genome_synonym" not in raw
+        assert "date_created" not in raw
+
+    def test_metadata_set_nonexistent_file(self, cli, tmp_path):
+        """Error when JSON file does not exist."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        result = cli(
+            "store", "metadata-set", digest, "/nonexistent/fhr.json",
+            "--path", str(store_path),
+        )
+
+        assert result.exit_code != 0
+
+    def test_metadata_nonexistent_digest(self, cli, tmp_path):
+        """Error when reading metadata for a nonexistent digest."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+
+        result = cli(
+            "store", "metadata", "nonexistent_digest_123",
+            "--path", str(store_path),
+        )
+
+        assert result.exit_code != 0
+
+    def test_metadata_set_then_overwrite(self, cli, tmp_path):
+        """Overwriting metadata replaces the previous values."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        # Set original metadata
+        cli(
+            "store", "metadata-set", digest, str(SAMPLE_FHR_JSON),
+            "--path", str(store_path),
+        )
+
+        # Create updated FHR JSON
+        updated_fhr = tmp_path / "updated_fhr.json"
+        updated_fhr.write_text(json.dumps({
+            "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
+            "schemaVersion": 1.0,
+            "genome": "Updated organism",
+            "version": "v2.0",
+        }))
+
+        # Overwrite
+        cli(
+            "store", "metadata-set", digest, str(updated_fhr),
+            "--path", str(store_path),
+        )
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert data["genome"] == "Updated organism"
+
+    def test_metadata_removed_with_collection(self, cli, tmp_path):
+        """Metadata sidecar is cleaned up when the collection is removed."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        # Set metadata
+        cli(
+            "store", "metadata-set", digest, str(SAMPLE_FHR_JSON),
+            "--path", str(store_path),
+        )
+
+        # Remove the collection
+        cli("store", "remove", digest, "--path", str(store_path))
+
+        # Metadata should be gone
+        result = cli("store", "metadata", digest, "--path", str(store_path))
 
         assert result.exit_code != 0
