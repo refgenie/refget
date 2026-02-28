@@ -1,0 +1,393 @@
+---
+title: "BiocRefgetStore Reference"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{BiocRefgetStore Reference}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Complete reference for every exported function, method, and class in
+BiocRefgetStore.
+
+## Constructors
+
+### RefgetGenome.from_fasta
+
+```r
+RefgetGenome.from_fasta(fasta_path)
+```
+
+Create a `RefgetGenome` from a FASTA file. Builds an in-memory refget store,
+computes digests, and indexes all sequences.
+
+- **fasta_path** — Path to a FASTA file (`.fa`, `.fasta`, `.fa.gz`).
+- **Returns** — A `RefgetGenome` object.
+
+```{r from-fasta, eval=FALSE}
+genome <- RefgetGenome.from_fasta("hg38.fa")
+```
+
+### RefgetGenome.from_directory
+
+```r
+RefgetGenome.from_directory(path, digest = NULL, namespace = NULL, alias = NULL)
+```
+
+Load a `RefgetGenome` from a persisted on-disk refget store directory.
+
+- **path** — Path to a directory created by `gtars::refget_store_on_disk()`.
+- **digest** — Collection digest string (provide this OR namespace + alias).
+- **namespace** — Alias namespace (e.g., `"refseq"`).
+- **alias** — Alias name (e.g., `"GRCh38"`).
+- **Returns** — A `RefgetGenome` object.
+
+```{r from-directory, eval=FALSE}
+genome <- RefgetGenome.from_directory("~/.refget/hg38", digest = "abc123...")
+```
+
+### RefgetGenome.from_remote
+
+```r
+RefgetGenome.from_remote(cache_path, remote_url, digest = NULL, namespace = NULL, alias = NULL)
+```
+
+Create a `RefgetGenome` backed by a remote refget store with local caching.
+
+- **cache_path** — Local directory for caching downloaded data.
+- **remote_url** — URL of the remote refget store.
+- **digest** / **namespace** / **alias** — Same as `RefgetGenome.from_directory`.
+- **Returns** — A `RefgetGenome` object.
+
+```{r from-remote, eval=FALSE}
+genome <- RefgetGenome.from_remote(
+  cache_path = "~/.cache/refget",
+  remote_url = "https://refget.databio.org/store",
+  namespace = "refseq", alias = "GRCh38"
+)
+```
+
+### RefgetGenome (low-level)
+
+```r
+RefgetGenome(store, digest = NULL, namespace = NULL, alias = NULL)
+```
+
+Construct a `RefgetGenome` from an existing `gtars::RefgetStore` object.
+Requires either `digest` or both `namespace` and `alias`.
+
+- **store** — A gtars `RefgetStore` object.
+- **digest** / **namespace** / **alias** — Collection identifier.
+- **Returns** — A `RefgetGenome` object.
+
+```{r constructor, eval=FALSE}
+store <- gtars::refget_store_open_local("/path/to/store")
+genome <- RefgetGenome(store, namespace = "refseq", alias = "GRCh38")
+```
+
+---
+
+## Sequence Access
+
+### getSeq
+
+```r
+getSeq(x, names, start = NA, end = NA, strand = "+", as.character = FALSE, ...)
+```
+
+Extract sequences from a `RefgetGenome`. BSgenome-compatible interface.
+
+- **x** — A `RefgetGenome` object.
+- **names** — Character vector of sequence names, or a `GRanges` object.
+- **start** — Integer start position(s), 1-based inclusive. `NA` for full sequence.
+- **end** — Integer end position(s), 1-based inclusive. `NA` for full sequence.
+- **strand** — `"+"` (default) or `"-"` for reverse complement.
+- **as.character** — If `TRUE`, return character instead of DNAString/DNAStringSet.
+- **Returns** — Single sequence: `DNAString` (or character). Multiple: `DNAStringSet` (or character vector). Named as `"seqname:start-end"` for regions.
+
+```{r getseq, eval=FALSE}
+# Full chromosome
+getSeq(genome, "chr1")
+
+# Region
+getSeq(genome, "chr1", start = 100, end = 200)
+
+# Reverse complement
+getSeq(genome, "chr1", start = 100, end = 200, strand = "-")
+
+# Multiple regions
+getSeq(genome, c("chr1", "chr2"), c(100, 500), c(200, 600))
+
+# From GRanges
+getSeq(genome, GRanges("chr1:100-200:-"))
+```
+
+### `[[` (bracket extraction)
+
+```r
+genome[["chr1"]]
+```
+
+Extract a full sequence by name. Returns `DNAString` if Biostrings is
+installed, otherwise a character string.
+
+- **i** — Sequence name (character).
+- **Returns** — `DNAString` or character string.
+- **Errors** — If the sequence name is not found in the collection.
+
+---
+
+## Metadata Accessors
+
+### seqinfo
+
+```r
+seqinfo(x)
+```
+
+Returns the `Seqinfo` object containing sequence names and lengths.
+
+- **Returns** — A `GenomeInfoDb::Seqinfo` object.
+
+### seqnames
+
+```r
+seqnames(x)
+```
+
+Returns the sequence names.
+
+- **Returns** — Character vector (via `Seqinfo`).
+
+### seqlengths
+
+```r
+seqlengths(x)
+```
+
+Returns named integer vector of sequence lengths.
+
+- **Returns** — Named integer vector.
+
+```{r seqlengths, eval=FALSE}
+seqlengths(genome)
+#>   chr1   chr2   chr3
+#> 248956 242193 198295
+```
+
+### length
+
+```r
+length(x)
+```
+
+Returns the number of sequences in the genome.
+
+- **Returns** — Integer scalar.
+
+### names
+
+```r
+names(x)
+```
+
+Returns the sequence names as a character vector.
+
+- **Returns** — Character vector.
+
+### collection_digest
+
+```r
+collection_digest(genome)
+```
+
+Returns the GA4GH seqcol digest identifying this sequence collection.
+
+- **genome** — A `RefgetGenome` object.
+- **Returns** — Character string.
+
+### coordinate_system
+
+```r
+coordinate_system(genome)
+```
+
+Returns the `sorted_name_length_pairs` digest. Two genomes with the same
+`coordinate_system()` share the same coordinate system and are compatible for
+coordinate-based operations (e.g., lifting over annotations).
+
+- **genome** — A `RefgetGenome` object.
+- **Returns** — Character string.
+
+### sequence_digests
+
+```r
+sequence_digests(genome)
+```
+
+Returns a named character vector of per-sequence SHA512t24u digests.
+
+- **genome** — A `RefgetGenome` object.
+- **Returns** — Named character vector (names are sequence names, values are digests).
+
+```{r seq-digests, eval=FALSE}
+sequence_digests(genome)
+#>                         chr1                          chr2
+#> "SQ.2648ae1bacce4ec4b6cf337..." "SQ.f932a39b4c70..."
+```
+
+### store
+
+```r
+store(genome)
+```
+
+Returns the underlying `gtars::RefgetStore` object. Useful for calling gtars
+functions directly.
+
+- **genome** — A `RefgetGenome` object.
+- **Returns** — A gtars `RefgetStore` object.
+
+---
+
+## Bulk Extraction
+
+### extractRegions
+
+```r
+extractRegions(genome, regions, as.character = FALSE)
+```
+
+Extract multiple genomic regions efficiently using BED-based extraction.
+
+- **genome** — A `RefgetGenome` object.
+- **regions** — A `GRanges` object or a `data.frame` with columns `chrom`, `start`, `end` (1-based inclusive coordinates).
+- **as.character** — If `TRUE`, return character vector instead of `DNAStringSet`.
+- **Returns** — `DNAStringSet` or named character vector. Named as `"chrom:start-end"`.
+
+```{r extract-regions, eval=FALSE}
+regions <- data.frame(
+  chrom = c("chr1", "chr1", "chr2"),
+  start = c(100, 5000, 200),
+  end   = c(199, 5099, 299)
+)
+seqs <- extractRegions(genome, regions)
+```
+
+### extractToFasta
+
+```r
+extractToFasta(genome, regions, output_path)
+```
+
+Write extracted regions directly to a FASTA file.
+
+- **genome** — A `RefgetGenome` object.
+- **regions** — A `GRanges` object or data.frame (same as `extractRegions`).
+- **output_path** — Path for the output FASTA file.
+- **Returns** — Invisibly returns `output_path`.
+
+```{r extract-to-fasta, eval=FALSE}
+extractToFasta(genome, regions, "output.fa")
+```
+
+### exportChromosomes
+
+```r
+exportChromosomes(genome, names = NULL, output_path, line_width = 80L)
+```
+
+Export complete chromosomes to a FASTA file.
+
+- **genome** — A `RefgetGenome` object.
+- **names** — Character vector of chromosome names to export, or `NULL` for all.
+- **output_path** — Path for the output FASTA file.
+- **line_width** — Bases per line in output (default: 80).
+- **Returns** — Invisibly returns `output_path`.
+
+```{r export-chroms, eval=FALSE}
+# Specific chromosomes
+exportChromosomes(genome, c("chr1", "chr22"), "subset.fa")
+
+# All chromosomes
+exportChromosomes(genome, output_path = "full.fa")
+```
+
+---
+
+## Conversion Utilities
+
+### as_DNAString
+
+```r
+as_DNAString(seq_string)
+```
+
+Convert a character string to a Biostrings `DNAString` object.
+
+- **seq_string** — Character string containing a DNA sequence.
+- **Returns** — A `DNAString` object.
+- **Errors** — If Biostrings is not installed.
+
+```{r as-dnastring, eval=FALSE}
+dna <- as_DNAString("ACGTACGT")
+```
+
+### as_DNAStringSet
+
+```r
+as_DNAStringSet(seq_strings, names = NULL)
+```
+
+Convert a character vector to a Biostrings `DNAStringSet` object.
+
+- **seq_strings** — Character vector of DNA sequences.
+- **names** — Optional names for the sequences.
+- **Returns** — A `DNAStringSet` object.
+- **Errors** — If Biostrings is not installed.
+
+```{r as-dnastringset, eval=FALSE}
+seqs <- as_DNAStringSet(c("ACGT", "GGCC"), names = c("seq1", "seq2"))
+```
+
+---
+
+## Working with the Underlying Store
+
+The `store()` accessor gives you access to the full `gtars::RefgetStore` API
+for operations not directly exposed by BiocRefgetStore.
+
+```{r store-advanced, eval=FALSE}
+s <- store(genome)
+
+# List all aliases in the store
+gtars::get_aliases(s)
+
+# Compare two sequence collections
+gtars::compare_seqcols(s, digest_a, digest_b)
+
+# Get FHR (FASTA Header Record) metadata
+gtars::get_fhr(s, collection_digest(genome))
+
+# Access level 2 data (raw attribute arrays)
+level2 <- gtars::get_level2(s, collection_digest(genome))
+level2$names      # sequence names
+level2$lengths    # sequence lengths
+level2$sequences  # sequence digests
+```
+
+### show
+
+```r
+show(object)
+```
+
+Display method for `RefgetGenome`. Prints the number of sequences, collection
+digest, and first few sequence names.
+
+```{r show, eval=FALSE}
+genome
+#> RefgetGenome with 24 sequences
+#>   collection_digest: abc123...
+#>   seqnames: chr1, chr2, chr3, chr4, chr5 ... (19 more)
+```

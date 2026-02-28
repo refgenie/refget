@@ -37,5 +37,6 @@ exportClasses(RefgetGenome)
 # Imports
 import(methods)
 importFrom(GenomeInfoDb, Seqinfo)
+importFrom(GenomeInfoDb, seqinfo)
 importFrom(GenomeInfoDb, seqnames)
 importFrom(GenomeInfoDb, seqlengths)

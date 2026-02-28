@@ -115,8 +115,8 @@ RefgetGenome.from_directory <- function(path, digest = NULL, namespace = NULL, a
 #' @export
 RefgetGenome.from_fasta <- function(fasta_path) {
   store <- gtars::refget_store()
-  digest <- gtars::add_fasta(store, fasta_path)
-  RefgetGenome(store, digest = digest)
+  result <- gtars::add_fasta(store, fasta_path)
+  RefgetGenome(store, digest = result$digest)
 }
 
 #' Create RefgetGenome from a remote store

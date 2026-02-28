@@ -107,10 +107,10 @@ test_that("RefgetGenome from_directory works", {
   writeLines(c(">seq1", "ACGT"), fasta_file)
   on.exit(unlink(fasta_file), add = TRUE)
 
-  digest <- gtars::add_fasta(store, fasta_file)
+  result <- gtars::add_fasta(store, fasta_file)
 
   # Load from directory
-  genome <- RefgetGenome.from_directory(store_dir, digest = digest)
+  genome <- RefgetGenome.from_directory(store_dir, digest = result$digest)
   expect_s4_class(genome, "RefgetGenome")
   expect_equal(names(genome), "seq1")
 })
