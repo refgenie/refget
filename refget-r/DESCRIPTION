@@ -1,0 +1,35 @@
+Package: BiocRefgetStore
+Title: BSgenome-Compatible Interface to RefgetStore
+Version: 0.1.0
+Authors@R:
+    c(person("Nathan", "Sheffield", , "nathan@databio.org", role = c("aut", "cre"),
+             comment = c(ORCID = "0000-0001-5643-4068")),
+      person("Sheffield Lab", role = "fnd"))
+Description: Provides a BSgenome-compatible interface for accessing genomic
+    sequences stored in RefgetStore format. Enables chromosome-name-based
+    sequence access (e.g., getSeq(genome, "chr1", 1000, 2000)) using
+    RefgetStore as the backend, with optional conversion to Biostrings
+    DNAString/DNAStringSet objects.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.0),
+    methods
+Imports:
+    gtars,
+    GenomeInfoDb
+Suggests:
+    Biostrings,
+    GenomicRanges,
+    testthat (>= 3.0.0)
+biocViews: Infrastructure, DataRepresentation, Sequencing
+Config/testthat/edition: 3
+Collate:
+    'utils.R'
+    'RefgetGenome-class.R'
+    'getSeq-methods.R'
+    'conversion.R'
+    'bulk-extraction.R'
+    'zzz.R'
