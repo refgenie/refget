@@ -100,11 +100,8 @@ def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[
     if must_exist:
         if not store_path.exists():
             print_error(f"Store not found at {store_path}", EXIT_FILE_NOT_FOUND)
-        # Check if rgstore.json exists - if not, it's an empty store that needs on_disk
-        # The store uses rgstore.json as its manifest file
-        rgstore_path = store_path / "rgstore.json"
-        if not rgstore_path.exists():
-            # Empty store - use on_disk which handles initialization
+        if not RefgetStore.store_exists(str(store_path)):
+            # Empty directory - use on_disk which handles initialization
             return RefgetStore.on_disk(str(store_path))
         return RefgetStore.open_local(str(store_path))
     else:
@@ -394,39 +391,13 @@ def get(
         print(seq_data)
     else:
         # Collection retrieval mode (default)
-        # Check if collection exists
-        if digest not in _get_collection_digests(store):
+        try:
+            result = store.get_collection_level2(digest)
+        except Exception:
             print_error(f"Collection not found: {digest}", EXIT_FAILURE)
             return
 
-        # Ensure collection is loaded
-        _ensure_collection_loaded(store, digest)
-
-        # Get collection data
-        names = []
-        lengths = []
-        sequences = []
-
-        for coll in store.iter_collections():
-            if coll.digest == digest:
-                for seq in coll.sequences:
-                    m = seq.metadata
-                    names.append(m.name)
-                    lengths.append(m.length)
-                    sequences.append("SQ." + m.sha512t24u)
-                break
-
-        if not names:
-            print_error(f"Collection not found: {digest}", EXIT_FAILURE)
-            return
-
-        print_json(
-            {
-                "names": names,
-                "lengths": lengths,
-                "sequences": sequences,
-            }
-        )
+        print_json(result)
 
     raise typer.Exit(EXIT_SUCCESS)
 
@@ -562,7 +533,7 @@ def pull(
 
     # Check local store first
     local_collections: set = set()
-    if store_path.exists() and (store_path / "rgstore.json").exists():
+    if RefgetStore.store_exists(str(store_path)):
         try:
             local_store = RefgetStore.open_local(str(store_path))
             local_collections = _get_collection_digests(local_store)
@@ -765,24 +736,15 @@ def fai(
     """
     store = _load_store(path, remote=remote)
 
-    # Ensure collection is loaded
-    _ensure_collection_loaded(store, digest)
+    try:
+        lvl2 = store.get_collection_level2(digest)
+    except Exception:
+        print_error(f"Collection not found: {digest}", EXIT_FAILURE)
+        return
 
     lines = []
-
-    # Find the collection and get its sequences
-    for coll in store.iter_collections():
-        if coll.digest == digest:
-            for seq in coll.sequences:
-                m = seq.metadata
-                # FAI format: name, length, offset, linebases, linewidth
-                # Since we don't have a specific FASTA file, offset is 0
-                # Using default line width of 80
-                lines.append(f"{m.name}\t{m.length}\t0\t80\t81")
-            break
-
-    if not lines:
-        print_error(f"Collection not found: {digest}", EXIT_FAILURE)
+    for name, length in zip(lvl2["names"], lvl2["lengths"]):
+        lines.append(f"{name}\t{length}\t0\t80\t81")
 
     fai_content = "\n".join(lines)
     if lines:
@@ -828,21 +790,15 @@ def chrom_sizes(
     """
     store = _load_store(path, remote=remote)
 
-    # Ensure collection is loaded
-    _ensure_collection_loaded(store, digest)
+    try:
+        lvl2 = store.get_collection_level2(digest)
+    except Exception:
+        print_error(f"Collection not found: {digest}", EXIT_FAILURE)
+        return
 
     lines = []
-
-    # Find the collection and get its sequences
-    for coll in store.iter_collections():
-        if coll.digest == digest:
-            for seq in coll.sequences:
-                m = seq.metadata
-                lines.append(f"{m.name}\t{m.length}")
-            break
-
-    if not lines:
-        print_error(f"Collection not found: {digest}", EXIT_FAILURE)
+    for name, length in zip(lvl2["names"], lvl2["lengths"]):
+        lines.append(f"{name}\t{length}")
 
     sizes_content = "\n".join(lines)
     if lines:
@@ -911,52 +867,6 @@ def stats(
     raise typer.Exit(EXIT_SUCCESS)
 
 
-def _remove_collection_from_store(store_path: Path, digest: str) -> bool:
-    """
-    Remove a collection from the store by manipulating store files.
-
-    gtars RefgetStore doesn't provide a remove_collection method, so we
-    implement it by modifying the collections index file directly.
-
-    Args:
-        store_path: Path to the store directory
-        digest: Collection digest to remove
-
-    Returns:
-        True if removed, False if not found
-    """
-    # Validate digest to prevent path traversal
-    if "/" in digest or "\\" in digest or ".." in digest:
-        return False
-
-    # Remove from collections index (TSV file)
-    collections_idx = store_path / "collections.rgci"
-    if collections_idx.exists():
-        lines = collections_idx.read_text().splitlines()
-        new_lines = []
-        found = False
-        for line in lines:
-            if line.startswith("#") or not line.strip():
-                new_lines.append(line)
-            elif line.startswith(digest + "\t"):
-                found = True  # Skip this line (remove it)
-            else:
-                new_lines.append(line)
-        if found:
-            collections_idx.write_text("\n".join(new_lines) + "\n" if new_lines else "")
-
-    # Remove the collection's .rgsi file
-    collection_file = store_path / "collections" / f"{digest}.rgsi"
-    if collection_file.exists():
-        collection_file.unlink()
-
-    # Remove the FHR metadata sidecar file (if it exists)
-    fhr_file = store_path / "collections" / f"{digest}.fhr.json"
-    fhr_file.unlink(missing_ok=True)
-
-    return True
-
-
 @app.command()
 def remove(
     digest: str = typer.Argument(
@@ -978,14 +888,10 @@ def remove(
     with other collections.
     """
     store = _load_store(path)
-    store_path = _get_store_path(path)
 
-    # Check if collection exists
-    if digest not in _get_collection_digests(store):
+    removed = store.remove_collection(digest)
+    if not removed:
         print_error(f"Collection not found: {digest}", EXIT_FAILURE)
-
-    # Remove the collection by manipulating store files
-    _remove_collection_from_store(store_path, digest)
 
     print_json(
         {

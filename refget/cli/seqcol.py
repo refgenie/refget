@@ -67,42 +67,13 @@ def _collection_to_seqcol_dict(store, digest: str, level: int = 2) -> Optional[d
     Returns:
         Seqcol dict in API format, or None if collection not found.
     """
-    from refget.utils import canonical_str
-    from refget.digests import sha512t24u_digest
-
-    names = []
-    lengths = []
-    sequences = []
-
-    for coll in store.iter_collections():
-        if coll.digest == digest:
-            for seq in coll.sequences:
-                m = seq.metadata
-                names.append(m.name)
-                lengths.append(m.length)
-                sequences.append("SQ." + m.sha512t24u)
-            break
-    else:
-        # Collection not found in iteration
+    try:
+        if level == 1:
+            return store.get_collection_level1(digest)
+        else:
+            return store.get_collection_level2(digest)
+    except Exception:
         return None
-
-    if not names:
-        return None
-
-    if level == 1:
-        # Return digests of arrays instead of arrays themselves
-        return {
-            "names": sha512t24u_digest(canonical_str(names)),
-            "lengths": sha512t24u_digest(canonical_str(lengths)),
-            "sequences": sha512t24u_digest(canonical_str(sequences)),
-        }
-    else:
-        # Level 2: return full arrays
-        return {
-            "names": names,
-            "lengths": lengths,
-            "sequences": sequences,
-        }
 
 
 def _get_local_seqcol(digest: str, level: int = 2) -> Optional[dict]:
@@ -123,28 +94,15 @@ def _get_local_seqcol(digest: str, level: int = 2) -> Optional[dict]:
         return None
 
     store_path = get_store_path()
-    rgstore_path = store_path / "rgstore.json"
 
     # Check if store exists
-    if not store_path.exists() or not rgstore_path.exists():
+    if not RefgetStore.store_exists(str(store_path)):
         return None
 
     try:
         store = RefgetStore.open_local(str(store_path))
         store.set_quiet(True)
-
-        # Check if collection exists
-        collection_digests = {meta.digest for meta in store.list_collections()}
-        if digest not in collection_digests:
-            return None
-
-        # Load the collection (triggers lazy loading if needed)
-        if not store.is_collection_loaded(digest):
-            store.get_collection(digest)
-
-        # Convert to seqcol dict format
         return _collection_to_seqcol_dict(store, digest, level)
-
     except Exception:
         # Any error (store corruption, etc.) - fall back to remote
         return None
@@ -419,6 +377,44 @@ def list_collections(
     raise typer.Exit(EXIT_SUCCESS)
 
 
+def _search_local_store(filters: dict) -> Optional[list]:
+    """Search the local RefgetStore for collections matching attribute filters."""
+    try:
+        from refget.store import RefgetStore
+    except ImportError:
+        return None
+
+    store_path = get_store_path()
+
+    if not RefgetStore.store_exists(str(store_path)):
+        return None
+
+    try:
+        store = RefgetStore.open_local(str(store_path))
+        store.set_quiet(True)
+
+        # Search each filter; results must match ALL filters (intersection)
+        result_sets = []
+        for attr_name, attr_digest in filters.items():
+            matches = store.find_collections_by_attribute(attr_name, attr_digest)
+            result_sets.append(set(matches))
+
+        if not result_sets:
+            return None
+
+        # Intersection of all filter results
+        matching = result_sets[0]
+        for s in result_sets[1:]:
+            matching &= s
+
+        if not matching:
+            return None
+
+        return [{"digest": d} for d in sorted(matching)]
+    except Exception:
+        return None
+
+
 @app.command()
 def search(
     names: Optional[str] = typer.Option(
@@ -442,12 +438,25 @@ def search(
         "-s",
         help="Server URL override",
     ),
+    local: bool = typer.Option(
+        False,
+        "--local",
+        help="Search only the local store (skip remote)",
+    ),
+    no_local: bool = typer.Option(
+        False,
+        "--no-local",
+        help="Skip local store and search remote only",
+    ),
 ) -> None:
     """
     Find collections that share an attribute.
 
     The attribute digest is the digest of an attribute array
     (e.g., the names array digest from level 1 output).
+
+    By default, searches the local store first, then falls back to remote.
+    Use --local to search only locally, or --no-local to skip local search.
 
     Example workflow:
         # Get names digest from level 1
@@ -471,6 +480,19 @@ def search(
         )
         return
 
+    # Try local store first (unless --no-local)
+    if not no_local:
+        local_results = _search_local_store(filters)
+        if local_results is not None:
+            print_json(local_results)
+            raise typer.Exit(EXIT_SUCCESS)
+
+        if local:
+            # --local flag set but no results found locally
+            print_error("No matching collections found in local store", EXIT_FAILURE)
+            return
+
+    # Fall back to remote server
     client = _get_client(server)
 
     try:

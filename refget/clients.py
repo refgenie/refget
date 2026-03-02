@@ -199,9 +199,9 @@ class SequenceCollectionClient(RefgetClient):
             ImportError: If gtars/RefgetStore is not available
 
         Example:
-            >>> from refget.store import RefgetStore, StorageMode
+            >>> from refget.store import RefgetStore
             >>> from refget.clients import SequenceCollectionClient
-            >>> store = RefgetStore(StorageMode.Encoded)
+            >>> store = RefgetStore.in_memory()
             >>> client = SequenceCollectionClient()
             >>> collection_digest = client.download_fasta_to_store("abc123", store)
             >>> # Now you can retrieve sequences by digest from the local store
@@ -440,7 +440,7 @@ class SequenceCollectionClient(RefgetClient):
         except ImportError:
             raise ImportError("gtars is required: pip install gtars")
 
-        return RefgetStore.load_remote(cache_dir, url)
+        return RefgetStore.open_remote(cache_dir, url)
 
 
 class PangenomeClient(RefgetClient):
@@ -597,8 +597,8 @@ class FastaDrsClient(RefgetClient):
             ImportError: If gtars/RefgetStore is not available
 
         Example:
-            >>> from refget.store import RefgetStore, StorageMode
-            >>> store = RefgetStore(StorageMode.Encoded)
+            >>> from refget.store import RefgetStore
+            >>> store = RefgetStore.in_memory()
             >>> client = FastaDrsClient()
             >>> collection_digest = client.download_to_store("abc123", store)
         """
@@ -627,7 +627,7 @@ class FastaDrsClient(RefgetClient):
             _LOGGER.info(f"Downloaded FASTA to {downloaded_path}")
 
             # Import into store
-            store.import_fasta(downloaded_path)
+            store.add_sequence_collection_from_fasta(downloaded_path)
             _LOGGER.info(f"Imported FASTA into RefgetStore: {digest}")
 
             return digest

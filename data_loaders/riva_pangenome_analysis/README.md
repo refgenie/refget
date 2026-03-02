@@ -38,7 +38,7 @@ cm = store.get_collection_metadata("s0nMiOFHPsIBrm2bd3PkzWXKLKWQZq70")
 EXAMPLE_COLLECTION = "0aHV7I-94paL9Z1H4LNlqsW3WxJhlou5"
 EXAMPLE_SEQ_NAME = "JAGYVX010000006.1 unmasked:primary_assembly HG03540.pri.mat.f1_v2:JAGYVX010000006.1:1:96320881:1"
 
-record = store.get_sequence_by_collection_and_name(EXAMPLE_COLLECTION, EXAMPLE_SEQ_NAME)
+record = store.get_sequence_by_name(EXAMPLE_COLLECTION, EXAMPLE_SEQ_NAME)
 
 
 ## Upload to S3
@@ -74,7 +74,7 @@ seq
 s1
 seq.decode()
 store.get_collection_metadata(col1.digest)
-col1_loaded.is_loaded()
+store.is_collection_loaded(col1.digest)
 
 
 ```

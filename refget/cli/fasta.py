@@ -25,7 +25,6 @@ from refget.cli.output import (
     EXIT_FILE_NOT_FOUND,
     EXIT_FAILURE,
     EXIT_SUCCESS,
-    not_implemented,
     print_error,
     print_json,
     print_success,
@@ -67,6 +66,8 @@ def index(
         - genome.fa.fai       (FASTA index, samtools-compatible)
         - genome.seqcol.json  (Sequence collection JSON)
         - genome.chrom.sizes  (Chromosome sizes)
+        - genome.rgsi         (RefgetStore sequence index)
+        - genome.rgci         (RefgetStore collection index)
 
     Prints the seqcol digest to stdout.
     """
@@ -137,7 +138,36 @@ def index(
         with open(chrom_sizes_path, "w") as f:
             f.write(chrom_sizes_content)
 
-        files_created = [str(fai_path), str(seqcol_path), str(chrom_sizes_path)]
+        # Write RGSI file
+        stem = base_name
+        for ext in [".fa.gz", ".fasta.gz", ".fa", ".fasta"]:
+            if stem.endswith(ext):
+                stem = stem[: -len(ext)]
+                break
+        rgsi_path = out_dir / f"{stem}.rgsi"
+        sc.write_rgsi(str(rgsi_path))
+
+        # Write RGCI file
+        rgci_path = out_dir / f"{stem}.rgci"
+        with open(rgci_path, "w") as f:
+            meta = sc.metadata
+            f.write(
+                "#digest\tn_sequences\tnames_digest\tsequences_digest"
+                "\tlengths_digest\tname_length_pairs_digest"
+                "\tsorted_name_length_pairs_digest\tsorted_sequences_digest\n"
+            )
+            f.write(
+                f"{meta.digest}\t{meta.n_sequences}\t{meta.names_digest}"
+                f"\t{meta.sequences_digest}\t{meta.lengths_digest}"
+                f"\t{meta.name_length_pairs_digest or ''}"
+                f"\t{meta.sorted_name_length_pairs_digest or ''}"
+                f"\t{meta.sorted_sequences_digest or ''}\n"
+            )
+
+        files_created = [
+            str(fai_path), str(seqcol_path), str(chrom_sizes_path),
+            str(rgsi_path), str(rgci_path),
+        ]
 
         if json_output:
             print_json(
@@ -364,11 +394,34 @@ def rgsi(
     """
     Compute .rgsi (RefgetStore sequence index) from a FASTA file.
 
-    The .rgsi is a binary index file used by RefgetStore for efficient
-    on-disk sequence storage and retrieval. It maps sequence digests to
-    byte offsets.
+    The .rgsi is a TSV index file containing collection-level digest headers
+    and per-sequence metadata (name, length, alphabet, digests). Used by
+    RefgetStore for efficient collection storage and as a FASTA digest cache.
     """
-    not_implemented("fasta rgsi")
+    from gtars.refget import digest_fasta
+
+    try:
+        # Determine output path
+        if output is None:
+            # Replace FASTA extensions with .rgsi
+            stem = file.name
+            for ext in [".fa.gz", ".fasta.gz", ".fa", ".fasta"]:
+                if stem.endswith(ext):
+                    stem = stem[: -len(ext)]
+                    break
+            output = file.parent / f"{stem}.rgsi"
+
+        # Digest the FASTA file
+        with suppress_stdout():
+            sc = digest_fasta(str(file))
+
+        # Write RGSI file using gtars binding
+        sc.write_rgsi(str(output))
+
+        print_success(f"Wrote RGSI index to {output}")
+        raise typer.Exit(EXIT_SUCCESS)
+    except OSError as e:
+        print_error(f"Error processing FASTA file: {e}", EXIT_FAILURE)
 
 
 @app.command()
@@ -389,10 +442,49 @@ def rgci(
     """
     Compute .rgci (RefgetStore collection index) from a FASTA file.
 
-    The .rgci is a binary index file used by RefgetStore to store
-    collection metadata.
+    The .rgci is a TSV index file listing collection metadata (digest,
+    sequence count, and level 1 digests). Used by RefgetStore as a
+    master index of all collections.
     """
-    not_implemented("fasta rgci")
+    from gtars.refget import digest_fasta
+
+    try:
+        # Determine output path
+        if output is None:
+            stem = file.name
+            for ext in [".fa.gz", ".fasta.gz", ".fa", ".fasta"]:
+                if stem.endswith(ext):
+                    stem = stem[: -len(ext)]
+                    break
+            output = file.parent / f"{stem}.rgci"
+
+        # Digest the FASTA file
+        with suppress_stdout():
+            sc = digest_fasta(str(file))
+
+        meta = sc.metadata
+
+        # Write RGCI file (matches store.rs write_collections_rgci format)
+        with open(output, "w") as f:
+            # Header
+            f.write(
+                "#digest\tn_sequences\tnames_digest\tsequences_digest"
+                "\tlengths_digest\tname_length_pairs_digest"
+                "\tsorted_name_length_pairs_digest\tsorted_sequences_digest\n"
+            )
+            # Single collection row
+            f.write(
+                f"{meta.digest}\t{meta.n_sequences}\t{meta.names_digest}"
+                f"\t{meta.sequences_digest}\t{meta.lengths_digest}"
+                f"\t{meta.name_length_pairs_digest or ''}"
+                f"\t{meta.sorted_name_length_pairs_digest or ''}"
+                f"\t{meta.sorted_sequences_digest or ''}\n"
+            )
+
+        print_success(f"Wrote RGCI index to {output}")
+        raise typer.Exit(EXIT_SUCCESS)
+    except OSError as e:
+        print_error(f"Error processing FASTA file: {e}", EXIT_FAILURE)
 
 
 @app.command()
