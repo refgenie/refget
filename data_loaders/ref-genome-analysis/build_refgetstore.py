@@ -26,6 +26,7 @@ def parse_args():
     parser.add_argument("--store-path", default=STORE_PATH, help="RefgetStore path")
     parser.add_argument("--output", default=OUTPUT_CSV, help="Output digest map CSV")
     parser.add_argument("--limit", type=int, default=None, help="Process only first N rows (for testing)")
+    parser.add_argument("--offset", type=int, default=0, help="Skip first N rows")
     return parser.parse_args()
 
 
@@ -58,14 +59,16 @@ def main():
     args = parse_args()
 
     inventory = read_inventory(args.inventory)
+    if args.offset:
+        inventory = inventory[args.offset:]
+        print(f"Skipped first {args.offset} records")
     if args.limit:
         inventory = inventory[:args.limit]
-        print(f"Limited to first {args.limit} records")
+        print(f"Limited to {args.limit} records")
     total = len(inventory)
     print(f"Processing {total} records from {args.inventory}")
 
     store = RefgetStore.on_disk(args.store_path)
-    store.set_quiet(True)
     print(f"Store initialized at {args.store_path}")
 
     results = []
@@ -82,7 +85,7 @@ def main():
         print(f"[{i}/{total}] {filename}...", end=" ", flush=True)
 
         try:
-            meta, was_new = store.add_sequence_collection_from_fasta(fasta_path)
+            meta, was_new = store.add_sequence_collection_from_fasta(fasta_path, threads=4)
             elapsed = time.time() - t0
             status = "NEW" if was_new else "exists"
             if was_new:

@@ -29,7 +29,7 @@ EXAMPLE_SEQ_NAME = "JAGYVX010000006.1 unmasked:primary_assembly HG03540.pri.mat.
 # The store metadata (~1.5 MB) is fetched; sequences are loaded on-demand.
 
 # %%
-store = RefgetStore.load_remote(cache_path=str(CACHE_DIR), remote_url=REMOTE_URL)
+store = RefgetStore.open_remote(cache_path=str(CACHE_DIR), remote_url=REMOTE_URL)
 
 print(f"Loaded {len(store)} sequences from {REMOTE_URL}")
 
@@ -45,9 +45,8 @@ for key, value in stats.items():
 # ## 3. List Sequences
 
 # %%
-records = store.sequence_records()
-for i, rec in enumerate(records[:5]):
-    m = rec.metadata
+records = store.list_sequences()
+for i, m in enumerate(records[:5]):
     print(f"{i+1}. {m.name[:60]}...")
     print(f"   sha512t24u: {m.sha512t24u}, length: {m.length:,} bp")
 
@@ -58,7 +57,7 @@ for i, rec in enumerate(records[:5]):
 
 # %%
 seq_digest = "du4GiRD_OcmdmCn_RmImyb71YZ4XoCdk"
-record = store.get_sequence_by_id(seq_digest)
+record = store.get_sequence(seq_digest)
 if record:
     print(f"Name: {record.metadata.name}")
     print(f"Length: {record.metadata.length:,} bp")
@@ -99,7 +98,7 @@ with open(output_fasta) as f:
 # Look up sequences by collection digest + sequence name.
 
 # %%
-record = store.get_sequence_by_collection_and_name(EXAMPLE_COLLECTION, EXAMPLE_SEQ_NAME)
+record = store.get_sequence_by_name(EXAMPLE_COLLECTION, EXAMPLE_SEQ_NAME)
 if record:
     print(f"Collection: {EXAMPLE_COLLECTION}")
     print(f"Sequence: {EXAMPLE_SEQ_NAME[:50]}...")

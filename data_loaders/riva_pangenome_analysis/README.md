@@ -60,7 +60,6 @@ EXAMPLE_SEQ_NAME = "JAGYVI010000261.1"
 record = store.get_sequence_by_name(EXAMPLE_COLLECTION, EXAMPLE_SEQ_NAME)
 
 
-
 ## Upload to S3
 
 ```bash
@@ -94,7 +93,7 @@ seq
 s1
 seq.decode()
 store.get_collection_metadata(col1.digest)
-col1_loaded.is_loaded()
+store.is_collection_loaded(col1.digest)
 
 
 ```
