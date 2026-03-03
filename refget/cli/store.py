@@ -190,6 +190,12 @@ def add(
         "-q",
         help="Suppress progress output",
     ),
+    threads: Optional[int] = typer.Option(
+        None,
+        "--threads",
+        "-t",
+        help="Number of threads for parallel encoding (default: all CPUs)",
+    ),
 ) -> None:
     """
     Import a FASTA file to the local store.
@@ -220,7 +226,9 @@ def add(
             store.set_encoding_mode(StorageMode.Encoded)
 
     # Add the FASTA file - returns (metadata, was_new) with all info we need
-    metadata, was_new = store.add_sequence_collection_from_fasta(str(fasta.resolve()))
+    metadata, was_new = store.add_sequence_collection_from_fasta(
+        str(fasta.resolve()), threads=threads
+    )
 
     print_json(
         {
