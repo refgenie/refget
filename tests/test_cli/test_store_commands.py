@@ -502,7 +502,7 @@ class TestStoreMetadata:
         result = cli("store", "metadata", digest, "--path", str(store_path))
 
         assert result.exit_code != 0
-        assert "No FHR metadata" in result.stdout
+        assert "No FHR metadata" in result.stderr
 
     def test_metadata_set_from_json_file(self, cli, tmp_path):
         """Happy path: set FHR metadata from a JSON file."""

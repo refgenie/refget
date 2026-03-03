@@ -488,6 +488,7 @@ def pull(
     ),
     remote: Optional[str] = typer.Option(
         None,
+        "--server",
         "--remote",
         "-r",
         help="Remote store URL (default: try configured remote_stores)",

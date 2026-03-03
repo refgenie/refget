@@ -38,7 +38,7 @@ for fa_name, fa_digest_bundle in TEST_FASTA_DIGESTS.items():
 @pytest.fixture
 def runner():
     """Typer CLI test runner."""
-    return CliRunner()
+    return CliRunner(mix_stderr=False)
 
 
 @pytest.fixture
