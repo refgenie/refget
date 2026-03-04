@@ -19,7 +19,7 @@ FA_ROOT = "test_fasta"
 DEMO_FASTA = json.load(open("test_fasta/test_fasta_digests.json"))
 
 # Storage locations from environment (if set, will upload; otherwise use demo defaults with skip_upload)
-ENV_STORAGE = json.loads(os.environ.get("FASTA_STORAGE_LOCATIONS", "[]"))
+ENV_STORAGE = json.loads(os.environ.get("FASTA_STORAGE_LOCATIONS") or "[]")
 if ENV_STORAGE:
     DEMO_STORAGE = ENV_STORAGE
     SKIP_UPLOAD = False

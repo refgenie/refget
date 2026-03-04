@@ -22,6 +22,11 @@ import { HPRCGenomes } from './pages/HPRCGenomes.jsx';
 import { HumanReferencesView } from './pages/HumanReferences.jsx';
 import { DigestPage } from './pages/DigestPage.jsx';
 import { CompliancePage } from './pages/CompliancePage.jsx';
+import { StoreExplorer } from './pages/StoreExplorer.jsx';
+import { StoreOverview } from './pages/StoreOverview.jsx';
+import { StoreSequences } from './pages/StoreSequences.jsx';
+import { StoreCollection } from './pages/StoreCollection.jsx';
+import { StoreAliases } from './pages/StoreAliases.jsx';
 
 import {
   fetchServiceInfo,
@@ -125,6 +130,14 @@ const Nav = () => {
                 className={`nav-link cursor-pointer ${location.startsWith('compliance') ? 'fw-medium text-black' : 'fw-light'}`}
               >
                 Compliance
+              </span>
+            </li>
+            <li className='nav-item mx-2 my-0 h6'>
+              <span
+                onClick={() => navigate('/explore')}
+                className={`nav-link cursor-pointer ${location.startsWith('explore') ? 'fw-medium text-black' : 'fw-light'}`}
+              >
+                Explore Store
               </span>
             </li>
             <li className='nav-item mx-2 my-0 h6'>
@@ -396,6 +409,31 @@ const router = createBrowserRouter([
         element: <PangenomeView />,
         errorElement: <ErrorBoundary />,
         loader: (request) => fetchPangenomeLevels(request.params.digest),
+      },
+      {
+        path: '/explore',
+        element: <StoreExplorer />,
+        errorElement: <ErrorBoundary />,
+      },
+      {
+        path: '/explore/store',
+        element: <StoreOverview />,
+        errorElement: <ErrorBoundary />,
+      },
+      {
+        path: '/explore/store/sequences',
+        element: <StoreSequences />,
+        errorElement: <ErrorBoundary />,
+      },
+      {
+        path: '/explore/store/collection/:digest',
+        element: <StoreCollection />,
+        errorElement: <ErrorBoundary />,
+      },
+      {
+        path: '/explore/store/aliases',
+        element: <StoreAliases />,
+        errorElement: <ErrorBoundary />,
       },
     ],
   },

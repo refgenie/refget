@@ -56,19 +56,27 @@ export const fetchPangenomeLevels = async (digest) => {
 };
 
 export const fetchSeqColList = async () => {
-  const urls = [
-    `${API_BASE}/list/collection?page_size=10&page=0`,
-    `${API_BASE}/list/pangenome?page_size=5`,
-    `${API_BASE}/list/attributes/name_length_pairs?page_size=5`,
-  ];
+  const fetchRequired = async (url) => {
+    const response = await fetch(url);
+    await checkResponse(response, url);
+    return response.json();
+  };
 
-  return Promise.all(
-    urls.map(async (url) => {
+  const fetchOptional = async (url) => {
+    try {
       const response = await fetch(url);
-      await checkResponse(response, url);
+      if (!response.ok) return null;
       return response.json();
-    }),
-  );
+    } catch {
+      return null;
+    }
+  };
+
+  return Promise.all([
+    fetchRequired(`${API_BASE}/list/collection?page_size=10&page=0`),
+    fetchOptional(`${API_BASE}/list/pangenome?page_size=5`),
+    fetchRequired(`${API_BASE}/list/attributes/name_length_pairs?page_size=5`),
+  ]);
 };
 
 export const fetchAllSeqCols = async () => {
