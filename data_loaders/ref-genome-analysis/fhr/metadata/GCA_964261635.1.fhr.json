@@ -1,0 +1,41 @@
+{
+  "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
+  "schemaVersion": 1,
+  "genome": "Lissotriton helveticus",
+  "version": "aLisHel1.1",
+  "dateCreated": "2024-10-17",
+  "taxon": {
+    "name": "Lissotriton helveticus",
+    "uri": "https://identifiers.org/taxonomy:256425"
+  },
+  "genomeSynonym": [
+    "palmate newt"
+  ],
+  "accessionID": {
+    "name": "GCA_964261635.1",
+    "url": "https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_964261635.1/"
+  },
+  "assemblyAuthor": [
+    {
+      "name": "WELLCOME SANGER INSTITUTE"
+    }
+  ],
+  "instrument": [
+    "PacBio",
+    "Arima2"
+  ],
+  "vitalStats": {
+    "N50": 7795245,
+    "L50": 941,
+    "totalBasePairs": 23170028842,
+    "numberContigs": 5693,
+    "numberScaffolds": 448,
+    "scaffoldN50": 2132484007
+  },
+  "relatedLink": [
+    "https://www.genomeark.org/genomeark-all/Lissotriton_helveticus.html",
+    "https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_964261635.1/"
+  ],
+  "documentation": "Projects: Vertebrate Genomes Project; Darwin Tree of Life Project: Genome Data and Assemblies; Earth BioGenome Project (EBP)",
+  "license": "https://www.genomeark.org/documentation/data-use-policy.html"
+}

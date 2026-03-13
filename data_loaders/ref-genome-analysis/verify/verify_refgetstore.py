@@ -26,9 +26,10 @@ import sys
 import tempfile
 import time
 
-STORE_PATH = "/project/shefflab/brickyard/refget_store"
-INVENTORY_CSV = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/refgenomes_inventory.csv"
-DIGEST_MAP_CSV = "/home/nsheff/Dropbox/workspaces/refgenie/repos/refget/data_loaders/ref-genome-analysis/digest_map.csv"
+BRICK_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
+STORE_PATH = f"{BRICK_ROOT}/refget_store"
+INVENTORY_CSV = f"{BRICK_ROOT}/refgenomes_inventory.csv"
+DIGEST_MAP_CSV = f"{BRICK_ROOT}/refget_staging/digest_map.csv"
 
 results = []
 
@@ -75,7 +76,7 @@ def check_store_opens(store_path):
 
     # Count collections and sequences
     try:
-        collections = list(store.list_collections())
+        collections = list(store.list_collections()["results"])
         n_collections = len(collections)
     except Exception as e:
         check("list_collections", False, f"error={e}")
@@ -130,7 +131,7 @@ def check_digest_map(store, digest_map_path):
     )
 
     # Get store collection digests for comparison
-    store_digests = {meta.digest for meta in store.list_collections()}
+    store_digests = {meta.digest for meta in store.list_collections()["results"]}
 
     # Check how many digest_map digests are in the store
     matched = 0
@@ -155,7 +156,7 @@ def check_digest_map(store, digest_map_path):
 
 def check_level2_integrity(store, n_to_check=3):
     """Verify level2 data for a sample of collections."""
-    collections = list(store.list_collections())
+    collections = list(store.list_collections()["results"])
     if not collections:
         check("level2_integrity", False, "no collections to check")
         return
@@ -232,7 +233,7 @@ def check_roundtrip_export(store, store_path, digest_map_path, inventory_path, l
         return
 
     # Pick a sample of collections that have original files
-    collections = list(store.list_collections())
+    collections = list(store.list_collections()["results"])
     test_pairs = []
     for meta in collections:
         if meta.digest in digest_to_original:

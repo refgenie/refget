@@ -1,0 +1,41 @@
+{
+  "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
+  "schemaVersion": 1,
+  "genome": "Lissotriton vulgaris",
+  "version": "aLisVul1.1",
+  "dateCreated": "2024-10-17",
+  "taxon": {
+    "name": "Lissotriton vulgaris",
+    "uri": "https://identifiers.org/taxonomy:8324"
+  },
+  "genomeSynonym": [
+    "common newt"
+  ],
+  "accessionID": {
+    "name": "GCA_964263255.1",
+    "url": "https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_964263255.1/"
+  },
+  "assemblyAuthor": [
+    {
+      "name": "WELLCOME SANGER INSTITUTE"
+    }
+  ],
+  "instrument": [
+    "PacBio",
+    "Arima2"
+  ],
+  "vitalStats": {
+    "N50": 6568731,
+    "L50": 1102,
+    "totalBasePairs": 24226223864,
+    "numberContigs": 19295,
+    "numberScaffolds": 15265,
+    "scaffoldN50": 1925992481
+  },
+  "relatedLink": [
+    "https://www.genomeark.org/genomeark-all/Lissotriton_vulgaris.html",
+    "https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_964263255.1/"
+  ],
+  "documentation": "Projects: Vertebrate Genomes Project; Darwin Tree of Life Project: Genome Data and Assemblies; Earth BioGenome Project (EBP)",
+  "license": "https://www.genomeark.org/documentation/data-use-policy.html"
+}
