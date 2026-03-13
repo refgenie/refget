@@ -2,42 +2,43 @@ from __future__ import annotations
 
 import json
 import os
-import requests
-
 from typing import TYPE_CHECKING
-from sqlmodel import create_engine, select, Session, delete, func, SQLModel
+
+import requests
+from sqlmodel import Session, SQLModel, create_engine, delete, func, select
 
 if TYPE_CHECKING:
     import peppy
-from sqlalchemy.orm import selectinload
+from typing import List, Optional
+
 from sqlalchemy import URL
 from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
-from typing import Optional, List
+from sqlalchemy.orm import selectinload
 
+from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH
 from .models import (
-    Sequence,
-    SequenceCollection,
-    Pangenome,
-    NamesAttr,
-    LengthsAttr,
-    SequencesAttr,
-    SortedSequencesAttr,
-    NameLengthPairsAttr,
-    CollectionNamesAttr,
-    HumanReadableNames,
-    PaginationResult,
-    ResultsSequenceCollections,
-    FastaDrsObject,
     AccessMethod,
     AccessURL,
+    CollectionNamesAttr,
+    FastaDrsObject,
+    HumanReadableNames,
+    LengthsAttr,
+    NameLengthPairsAttr,
+    NamesAttr,
+    PaginationResult,
+    Pangenome,
+    ResultsSequenceCollections,
+    Sequence,
+    SequenceCollection,
+    SequencesAttr,
+    SortedSequencesAttr,
 )
 from .utils import (
-    compare_seqcols,
     build_pangenome_model,
     calc_jaccard_similarities,
+    compare_seqcols,
     fasta_to_seqcol_dict,
 )
-from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,
@@ -304,7 +305,6 @@ class SequenceCollectionAgent(object):
 
                     for name_model in seqcol.human_readable_names:
                         if name_model.human_readable_name not in existing_names:
-
                             new_name = HumanReadableNames(
                                 human_readable_name=name_model.human_readable_name,
                                 digest=existing.digest,
@@ -659,7 +659,6 @@ class AttributeAgent(object):
             }
 
     def search(self, attribute_type: str, digest: str, offset: int = 0, limit: int = 50) -> dict:
-        Attribute = ATTR_TYPE_MAP[attribute_type]
         with Session(self.engine) as session:
             list_stmt = (
                 select(SequenceCollection)
@@ -825,10 +824,52 @@ class RefgetDBAgent(object):
         self.__attribute = AttributeAgent(self.engine)
         self.__fasta_drs = FastaDrsAgent(self.engine, fasta_drs_url_prefix)
 
+    # =========================================================================
+    # SeqColBackend protocol methods
+    # =========================================================================
+
+    def get_collection(self, digest: str, level: int = 2) -> dict:
+        format_map = {1: "level1", 2: "level2"}
+        return self.seqcol.get(digest, return_format=format_map.get(level, "level2"))
+
+    def get_collection_attribute(self, digest: str, attribute: str) -> list:
+        return self.seqcol.get(digest, attribute=attribute)
+
+    def get_collection_itemwise(self, digest: str, limit: int | None = None) -> list[dict]:
+        return self.seqcol.get(digest, return_format="itemwise", itemwise_limit=limit)
+
+    def get_attribute(self, attribute_name: str, attribute_digest: str) -> list:
+        return self.attribute.get(attribute_name, attribute_digest)
+
     def compare_digests(self, digestA: str, digestB: str) -> dict:
         A = self.seqcol.get(digestA, return_format="level2")
         B = self.seqcol.get(digestB, return_format="level2")
         return compare_seqcols(A, B)
+
+    def compare_digest_with_level2(self, digest: str, level2_b: dict) -> dict:
+        return self.compare_1_digest(digest, level2_b)
+
+    def list_collections(
+        self, page: int = 0, page_size: int = 100, filters: dict | None = None
+    ) -> dict:
+        if filters:
+            return self.seqcol.search_by_attributes(
+                filters, limit=page_size, offset=page * page_size
+            )
+        return self.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+
+    def collection_count(self) -> int:
+        result = self.seqcol.list_by_offset(limit=1, offset=0)
+        return result["pagination"]["total"]
+
+    def capabilities(self) -> dict:
+        return {
+            "backend_type": "database",
+            "n_collections": self.collection_count(),
+            "has_sequence_data": True,  # database always has sequences
+            "collection_alias_namespaces": [],
+            "sequence_alias_namespaces": [],
+        }
 
     def calc_similarities(self, digestA: str, digestB: str) -> dict:
         """
@@ -910,20 +951,12 @@ class RefgetDBAgent(object):
         with Session(self.engine) as session:
             statement = delete(SequenceCollection)
             result1 = session.exec(statement)
-            statement = delete(Pangenome)
-            result = session.exec(statement)
-            statement = delete(NamesAttr)
-            result = session.exec(statement)
-            statement = delete(LengthsAttr)
-            result = session.exec(statement)
-            statement = delete(SequencesAttr)
-            result = session.exec(statement)
-            # statement = delete(SortedNameLengthPairsAttr)
-            # result = session.exec(statement)
-            statement = delete(NameLengthPairsAttr)
-            result = session.exec(statement)
-            statement = delete(SortedSequencesAttr)
-            result = session.exec(statement)
+            session.exec(delete(Pangenome))
+            session.exec(delete(NamesAttr))
+            session.exec(delete(LengthsAttr))
+            session.exec(delete(SequencesAttr))
+            session.exec(delete(NameLengthPairsAttr))
+            session.exec(delete(SortedSequencesAttr))
 
             session.commit()
             return result1.rowcount

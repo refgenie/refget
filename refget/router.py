@@ -7,25 +7,26 @@ This router does not supply the /service-info endpoint, which should be created
 by the main app.
 
 To use, first import it, then attach it to the app,
-then create a dbagent object to connect to the database,
-and attach it to the app state like this:
+then create a backend object and attach it to the app state like this:
 
 from refget.router import create_refget_router
 from refget.agents import RefgetDBAgent
 
 router = create_refget_router(sequences=False, collections=True, pangenomes=False)
 app.include_router(router, prefix="/seqcol")
-app.state.dbagent = RefgetDBAgent()
+dbagent = RefgetDBAgent()
+app.state.backend = dbagent       # RefgetDBAgent satisfies SeqColBackend
+app.state.dbagent = dbagent       # For DB-only endpoints (similarities, pangenomes, DRS)
 """
 
 import logging
 
-from fastapi import APIRouter, Response, HTTPException, Request, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
-from .models import Similarities, PaginationResult, PaginatedDigestList
-from .agents import RefgetDBAgent
 
+from .backend import SeqColBackend
 from .examples import *
+from .models import PaginatedDigestList, PaginationResult, Similarities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,9 +37,17 @@ _SAMPLE_DIGESTS: dict[str, list[str]] = {}
 _ROUTER_CONFIG: dict = {}
 
 
-# dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
-async def get_dbagent(request: Request) -> RefgetDBAgent:
-    return request.app.state.dbagent
+async def get_backend(request: Request) -> SeqColBackend:
+    """Get the SeqColBackend from the app state."""
+    return request.app.state.backend
+
+
+async def get_dbagent(request: Request):
+    """Get the RefgetDBAgent for DB-only endpoints. Returns None if not configured."""
+    dbagent = getattr(request.app.state, "dbagent", None)
+    if dbagent is None:
+        raise HTTPException(status_code=501, detail="This endpoint requires database backend")
+    return dbagent
 
 
 def create_refget_router(
@@ -103,10 +112,10 @@ seq_router = APIRouter()
     tags=["Retrieving data"],
 )
 async def sequence(
-    dbagent=Depends(get_dbagent),
     sequence_digest: str = example_sequence,
     start: int | None = Query(None, description="Start position (0-based, inclusive)"),
     end: int | None = Query(None, description="End position (0-based, exclusive)"),
+    dbagent=Depends(get_dbagent),
 ):
     return Response(content=dbagent.seq.get(sequence_digest, start, end), media_type="text/plain")
 
@@ -116,7 +125,7 @@ async def sequence(
     summary="Retrieve metadata for a sequence",
     tags=["Retrieving data"],
 )
-async def seq_metadata(dbagent=Depends(get_dbagent), sequence_digest: str = example_sequence):
+async def seq_metadata(sequence_digest: str = example_sequence, dbagent=Depends(get_dbagent)):
     raise HTTPException(status_code=501, detail="Metadata retrieval not yet implemented.")
 
 
@@ -129,13 +138,15 @@ seqcol_router = APIRouter()
     tags=["Retrieving data"],
 )
 async def collection(
-    dbagent=Depends(get_dbagent),
     collection_digest: str = example_collection_digest,
     level: int | None = Query(None, description="Recursion depth (1 or 2)", ge=1, le=2),
     collated: bool = Query(True, description="Return collated format (arrays) vs itemwise"),
-    attribute: str | None = Query(None, description="Return only this attribute (e.g., 'names', 'lengths')"),
+    attribute: str | None = Query(
+        None, description="Return only this attribute (e.g., 'names', 'lengths')"
+    ),
+    backend=Depends(get_backend),
 ):
-    if level == None:
+    if level is None:
         level = 2
     if level > 2:
         raise HTTPException(
@@ -144,16 +155,10 @@ async def collection(
         )
     try:
         if not collated:
-            return dbagent.seqcol.get(
-                collection_digest, return_format="itemwise", itemwise_limit=10000
-            )
+            return backend.get_collection_itemwise(collection_digest, limit=10000)
         if attribute:
-            return dbagent.seqcol.get(collection_digest, attribute=attribute)
-        if level == 1:
-            return dbagent.seqcol.get(collection_digest, return_format="level1")
-        if level == 2:
-            return dbagent.seqcol.get(collection_digest, return_format="level2")
-        return {"error": "Invalid level specified."}
+            return backend.get_collection_attribute(collection_digest, attribute)
+        return backend.get_collection(collection_digest, level=level)
     except ValueError as e:
         raise HTTPException(
             status_code=404,
@@ -167,18 +172,18 @@ async def collection(
     tags=["Retrieving data"],
 )
 async def attribute(
-    dbagent=Depends(get_dbagent),
     attribute_name: str = "names",
     attribute_digest: str = example_attribute_digest,
+    backend=Depends(get_backend),
 ):
     try:
-        return dbagent.attribute.get(attribute_name, attribute_digest)
-    except KeyError as e:
+        return backend.get_attribute(attribute_name, attribute_digest)
+    except KeyError:
         raise HTTPException(
             status_code=404,
             detail="Error: attribute not found. Check the attribute and try again.",
         )
-    except AttributeError as e:
+    except AttributeError:
         raise HTTPException(
             status_code=404,
             detail="Digest not found. Check the digest and try again.",
@@ -191,15 +196,15 @@ async def attribute(
     tags=["Comparing sequence collections"],
 )
 async def compare_2_digests(
-    dbagent=Depends(get_dbagent),
     collection_digest1: str = example_digest_hg38,
     collection_digest2: str = example_digest_hg38_primary,
+    backend=Depends(get_backend),
 ):
     _LOGGER.info("Comparing two digests...")
     result = {}
     result["digests"] = {"a": collection_digest1, "b": collection_digest2}
     try:
-        result.update(dbagent.compare_digests(collection_digest1, collection_digest2))
+        result.update(backend.compare_digests(collection_digest1, collection_digest2))
     except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
@@ -319,9 +324,9 @@ async def calc_similarities_from_json(
     tags=["Comparing sequence collections"],
 )
 async def compare_1_digest(
-    dbagent=Depends(get_dbagent),
     collection_digest1: str = example_digest_hg38,
     seqcolB: dict = example_hg38_sc,
+    backend=Depends(get_backend),
 ):
     _LOGGER.info("Comparing one digests and one POSTed seqcol...")
     _LOGGER.info(f"digest1: {collection_digest1}")
@@ -329,7 +334,7 @@ async def compare_1_digest(
     result = {}
     result["digests"] = {"a": collection_digest1, "b": "POSTed seqcol"}
     try:
-        result.update(dbagent.compare_1_digest(collection_digest1, seqcolB))
+        result.update(backend.compare_digest_with_level2(collection_digest1, seqcolB))
     except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
@@ -346,7 +351,6 @@ async def compare_1_digest(
     response_model=PaginatedDigestList,
 )
 async def list_collections_by_offset(
-    dbagent=Depends(get_dbagent),
     page_size: int = Query(100, description="Number of results per page"),
     page: int = Query(0, description="Page number (0-indexed)"),
     names: str | None = Query(None, description="Filter by names attribute digest"),
@@ -354,32 +358,28 @@ async def list_collections_by_offset(
     sequences: str | None = Query(None, description="Filter by sequences attribute digest"),
     name_length_pairs: str | None = Query(None, description="Filter by name_length_pairs digest"),
     sorted_sequences: str | None = Query(None, description="Filter by sorted_sequences digest"),
+    backend=Depends(get_backend),
 ):
     # Build filters from explicit parameters
     filters = {
-        k: v for k, v in {
+        k: v
+        for k, v in {
             "names": names,
             "lengths": lengths,
             "sequences": sequences,
             "name_length_pairs": name_length_pairs,
             "sorted_sequences": sorted_sequences,
-        }.items() if v is not None
+        }.items()
+        if v is not None
     }
 
-    if filters:
-        try:
-            # Multi-attribute filtering with AND logic
-            res = dbagent.seqcol.search_by_attributes(
-                filters, limit=page_size, offset=page * page_size
-            )
-        except ValueError as e:
-            # Invalid attribute name
-            raise HTTPException(status_code=400, detail=str(e))
-    else:
-        # No filters, return all collections
-        res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+    try:
+        res = backend.list_collections(page=page, page_size=page_size, filters=filters or None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    res["results"] = [x.digest for x in res["results"]]
+    # Normalize results to digest strings (DB backend returns model objects)
+    res["results"] = [x.digest if hasattr(x, "digest") else x for x in res["results"]]
     return res
 
 
@@ -399,7 +399,7 @@ async def list_attributes(
         res = dbagent.attribute.list(attribute, limit=page_size, offset=page * page_size)
         res["results"] = [x.digest for x in res["results"]]
         return res
-    except KeyError as e:
+    except KeyError:
         raise HTTPException(
             status_code=404,
             detail="Error: attribute not found. Check the attribute and try again.",
@@ -438,7 +438,7 @@ async def pangenome(
     level: int | None = Query(None, description="Recursion depth (1-4)", ge=1, le=4),
     collated: bool = Query(True, description="Return collated format (arrays) vs itemwise"),
 ):
-    if level == None:
+    if level is None:
         level = 2
     try:
         if not collated:
@@ -579,7 +579,9 @@ compliance_router = APIRouter()
 )
 def run_compliance_endpoint(
     request: Request,
-    target_url: str | None = Query(None, description="Target server URL to test (defaults to self)"),
+    target_url: str | None = Query(
+        None, description="Target server URL to test (defaults to self)"
+    ),
 ):
     """
     Run GA4GH SeqCol compliance structure tests against a server.
@@ -606,7 +608,9 @@ def run_compliance_endpoint(
 )
 def stream_compliance_endpoint(
     request: Request,
-    target_url: str | None = Query(None, description="Target server URL to test (defaults to self)"),
+    target_url: str | None = Query(
+        None, description="Target server URL to test (defaults to self)"
+    ),
 ):
     """
     Stream compliance check results in real-time via Server-Sent Events.

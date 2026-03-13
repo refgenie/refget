@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import logging
 import re
+from typing import TYPE_CHECKING, Optional
+
 import requests
 
-from typing import Optional
+if TYPE_CHECKING:
+    from .store import RefgetStore
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -602,12 +607,12 @@ class FastaDrsClient(RefgetClient):
             >>> client = FastaDrsClient()
             >>> collection_digest = client.download_to_store("abc123", store)
         """
-        import tempfile
         import os
+        import tempfile
 
         # Verify store is available
         try:
-            from .store import RefgetStore as RefgetStoreClass
+            from .store import RefgetStore as RefgetStoreClass  # noqa: F401
         except ImportError:
             raise ImportError("gtars is required for download_to_store functionality")
 

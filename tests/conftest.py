@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+
 import pytest
 from typer.testing import CliRunner
 
@@ -38,7 +39,7 @@ for fa_name, fa_digest_bundle in TEST_FASTA_DIGESTS.items():
 @pytest.fixture
 def runner():
     """Typer CLI test runner."""
-    return CliRunner(mix_stderr=False)
+    return CliRunner()
 
 
 @pytest.fixture
@@ -70,6 +71,8 @@ BASE_FASTA = TEST_DATA_DIR / "base.fa"
 def test_data_root():
     """Provides the absolute path to the test_fasta directory."""
     return TEST_DATA_DIR
+
+
 DIFFERENT_NAMES_FASTA = TEST_DATA_DIR / "different_names.fa"
 DIFFERENT_ORDER_FASTA = TEST_DATA_DIR / "different_order.fa"
 PAIR_SWAP_FASTA = TEST_DATA_DIR / "pair_swap.fa"
@@ -253,8 +256,12 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "requires_network: mark test as requiring network access")
     config.addinivalue_line("markers", "requires_db: mark test as requiring database access")
     config.addinivalue_line("markers", "slow: mark test as slow running")
-    config.addinivalue_line("markers", "recommended: mark test as RECOMMENDED (not REQUIRED) by GA4GH spec")
-    config.addinivalue_line("markers", "require_service: mark test as requiring a running seqcol service")
+    config.addinivalue_line(
+        "markers", "recommended: mark test as RECOMMENDED (not REQUIRED) by GA4GH spec"
+    )
+    config.addinivalue_line(
+        "markers", "require_service: mark test as requiring a running seqcol service"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -286,7 +293,9 @@ def pytest_collection_modifyitems(config, items):
     # Skip require_service tests if no api_root or test_server available
     api_root = config.getoption("api_root")
     if api_root is None:
-        skip_service = pytest.mark.skip(reason="No --api-root provided and not running via integration test_server")
+        skip_service = pytest.mark.skip(
+            reason="No --api-root provided and not running via integration test_server"
+        )
         for item in items:
             if "require_service" in item.keywords:
                 # Only skip if this is the base TestAPI class, not a subclass with test_server

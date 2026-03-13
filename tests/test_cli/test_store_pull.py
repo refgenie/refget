@@ -7,22 +7,25 @@ gtars' open_remote (Rust/PyO3) holds the GIL during HTTP requests, which
 would deadlock a Python-thread-based HTTP server.
 """
 
+import importlib.util
 import json
 import os
-import signal
 import socket
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from conftest import (
-    BASE_FASTA,
-    DIFFERENT_NAMES_FASTA,
+_conftest_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
 )
+_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
+_conftest = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_conftest)
+
+BASE_FASTA = _conftest.BASE_FASTA
+DIFFERENT_NAMES_FASTA = _conftest.DIFFERENT_NAMES_FASTA
 
 # Skip entire module if gtars is not installed
 pytest.importorskip("gtars")
@@ -168,8 +171,7 @@ class TestStorePullEager:
         cli("store", "init", "--path", str(local_store))
 
         result = cli(
-            "store", "pull", digest, "--server", server_url,
-            "--path", str(local_store), "--eager"
+            "store", "pull", digest, "--server", server_url, "--path", str(local_store), "--eager"
         )
 
         assert result.exit_code == 0, f"Eager pull failed: {result.stdout}"
@@ -204,8 +206,14 @@ class TestStorePullBatch:
         digest_file.write_text(f"{digest1}\n{digest2}\n")
 
         result = cli(
-            "store", "pull", "--file", str(digest_file),
-            "--server", server_url, "--path", str(local_store)
+            "store",
+            "pull",
+            "--file",
+            str(digest_file),
+            "--server",
+            server_url,
+            "--path",
+            str(local_store),
         )
 
         assert result.exit_code == 0, f"Batch pull failed: {result.stdout}"
@@ -223,8 +231,14 @@ class TestStorePullBatch:
         digest_file.write_text(f"\n  \n{digest}\n\n  \n")
 
         result = cli(
-            "store", "pull", "--file", str(digest_file),
-            "--server", server_url, "--path", str(local_store)
+            "store",
+            "pull",
+            "--file",
+            str(digest_file),
+            "--server",
+            server_url,
+            "--path",
+            str(local_store),
         )
 
         assert result.exit_code == 0
@@ -239,8 +253,14 @@ class TestStorePullBatch:
         cli("store", "init", "--path", str(local_store))
 
         result = cli(
-            "store", "pull", "--file", "/nonexistent/digests.txt",
-            "--server", "http://127.0.0.1:1", "--path", str(local_store)
+            "store",
+            "pull",
+            "--file",
+            "/nonexistent/digests.txt",
+            "--server",
+            "http://127.0.0.1:1",
+            "--path",
+            str(local_store),
         )
 
         assert result.exit_code != 0
@@ -255,8 +275,14 @@ class TestStorePullBatch:
         digest_file.write_text("")
 
         result = cli(
-            "store", "pull", "--file", str(digest_file),
-            "--server", server_url, "--path", str(local_store)
+            "store",
+            "pull",
+            "--file",
+            str(digest_file),
+            "--server",
+            server_url,
+            "--path",
+            str(local_store),
         )
 
         assert result.exit_code != 0
@@ -292,8 +318,13 @@ class TestStorePullErrors:
         cli("store", "init", "--path", str(local_store))
 
         result = cli(
-            "store", "pull", "NONEXISTENT_DIGEST_12345678901234",
-            "--server", server_url, "--path", str(local_store)
+            "store",
+            "pull",
+            "NONEXISTENT_DIGEST_12345678901234",
+            "--server",
+            server_url,
+            "--path",
+            str(local_store),
         )
 
         assert result.exit_code != 0
@@ -306,8 +337,13 @@ class TestStorePullErrors:
         cli("store", "init", "--path", str(local_store))
 
         result = cli(
-            "store", "pull", "some_digest_abc123",
-            "--server", "http://127.0.0.1:1", "--path", str(local_store)
+            "store",
+            "pull",
+            "some_digest_abc123",
+            "--server",
+            "http://127.0.0.1:1",
+            "--path",
+            str(local_store),
         )
 
         assert result.exit_code != 0
@@ -317,10 +353,7 @@ class TestStorePullErrors:
         local_store = tmp_path / "noarg_store"
         cli("store", "init", "--path", str(local_store))
 
-        result = cli(
-            "store", "pull",
-            "--server", "http://127.0.0.1:1", "--path", str(local_store)
-        )
+        result = cli("store", "pull", "--server", "http://127.0.0.1:1", "--path", str(local_store))
 
         assert result.exit_code != 0
 
@@ -333,9 +366,15 @@ class TestStorePullErrors:
         digest_file.write_text("some_digest\n")
 
         result = cli(
-            "store", "pull", "some_digest",
-            "--file", str(digest_file),
-            "--server", "http://127.0.0.1:1", "--path", str(local_store)
+            "store",
+            "pull",
+            "some_digest",
+            "--file",
+            str(digest_file),
+            "--server",
+            "http://127.0.0.1:1",
+            "--path",
+            str(local_store),
         )
 
         assert result.exit_code != 0
@@ -346,15 +385,9 @@ class TestStorePullErrors:
         cli("store", "init", "--path", str(local_store))
 
         # Patch _find_remote_urls to return empty list
-        monkeypatch.setattr(
-            "refget.cli.store._find_remote_urls",
-            lambda server_override=None: []
-        )
+        monkeypatch.setattr("refget.cli.store._find_remote_urls", lambda server_override=None: [])
 
-        result = cli(
-            "store", "pull", "some_digest",
-            "--path", str(local_store)
-        )
+        result = cli("store", "pull", "some_digest", "--path", str(local_store))
 
         assert result.exit_code != 0
 
@@ -383,7 +416,7 @@ class TestStorePullMultipleRemotes:
             # Patch to return empty server first, then the populated one
             monkeypatch.setattr(
                 "refget.cli.store._find_remote_urls",
-                lambda server_override=None: [empty_url, server_url]
+                lambda server_override=None: [empty_url, server_url],
             )
 
             result = cli("store", "pull", digest, "--path", str(local_store), "--quiet")

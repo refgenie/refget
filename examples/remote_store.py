@@ -47,7 +47,7 @@ for key, value in stats.items():
 # %%
 records = store.list_sequences()
 for i, m in enumerate(records[:5]):
-    print(f"{i+1}. {m.name[:60]}...")
+    print(f"{i + 1}. {m.name[:60]}...")
     print(f"   sha512t24u: {m.sha512t24u}, length: {m.length:,} bp")
 
 # %% [markdown]

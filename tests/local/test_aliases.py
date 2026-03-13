@@ -8,7 +8,7 @@ import pytest
 from refget.store import RefgetStore
 
 try:
-    from gtars.refget import RefgetStore as _check
+    from gtars.refget import RefgetStore as _check  # noqa: F401
 
     _RUST_BINDINGS_AVAILABLE = True
 except ImportError:
@@ -33,7 +33,7 @@ def seq_digest(store):
 
 @pytest.fixture
 def col_digest(store):
-    return store.list_collections()[0].digest
+    return store.list_collections()["results"][0].digest
 
 
 @pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")

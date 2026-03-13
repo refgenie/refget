@@ -11,12 +11,20 @@ Import from submodules:
 """
 
 from ._version import __version__
-from .exceptions import InvalidSeqColError
-from .const import GTARS_INSTALLED
-from .utils import canonical_str
-from .store import RefgetStore, StorageMode, digest_fasta, compute_fai, digest_sequence, SequenceCollection
-from .compliance import run_compliance
+from .backend import RefgetStoreBackend, SeqColBackend
 from .clients import SequenceCollectionClient
+from .compliance import run_compliance
+from .const import GTARS_INSTALLED
+from .exceptions import InvalidSeqColError
+from .store import (
+    RefgetStore,
+    SequenceCollection,
+    StorageMode,
+    compute_fai,
+    digest_fasta,
+    digest_sequence,
+)
+from .utils import canonical_str
 
 __all__ = [
     "__version__",
@@ -30,5 +38,7 @@ __all__ = [
     "digest_sequence",
     "SequenceCollection",
     "run_compliance",
+    "SeqColBackend",
+    "RefgetStoreBackend",
     "SequenceCollectionClient",
 ]

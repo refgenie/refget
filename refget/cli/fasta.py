@@ -22,8 +22,8 @@ from typing import Optional
 import typer
 
 from refget.cli.output import (
-    EXIT_FILE_NOT_FOUND,
     EXIT_FAILURE,
+    EXIT_FILE_NOT_FOUND,
     EXIT_SUCCESS,
     print_error,
     print_json,
@@ -165,8 +165,11 @@ def index(
             )
 
         files_created = [
-            str(fai_path), str(seqcol_path), str(chrom_sizes_path),
-            str(rgsi_path), str(rgci_path),
+            str(fai_path),
+            str(seqcol_path),
+            str(chrom_sizes_path),
+            str(rgsi_path),
+            str(rgci_path),
         ]
 
         if json_output:

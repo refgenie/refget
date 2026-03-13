@@ -1,8 +1,9 @@
 import os
+from platform import python_version
+
+from gtars import __version__ as gtars_version
 
 from refget._version import __version__ as refget_version
-from gtars import __version__ as gtars_version
-from platform import python_version
 
 ALL_VERSIONS = {
     "refget_version": refget_version,

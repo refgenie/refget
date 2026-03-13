@@ -14,14 +14,6 @@ from typing import Any, Dict, List, Optional
 
 import typer
 
-from refget.cli.output import (
-    EXIT_CONFIG_ERROR,
-    EXIT_FAILURE,
-    EXIT_SUCCESS,
-    print_error,
-    print_json,
-    print_success,
-)
 from refget.cli.config_manager import (
     DEFAULTS,
     get_config_path,
@@ -29,6 +21,14 @@ from refget.cli.config_manager import (
     load_config,
     save_config,
     set_value,
+)
+from refget.cli.output import (
+    EXIT_CONFIG_ERROR,
+    EXIT_FAILURE,
+    EXIT_SUCCESS,
+    print_error,
+    print_json,
+    print_success,
 )
 
 app = typer.Typer(
@@ -220,7 +220,7 @@ def add(
     if resource_type not in RESOURCE_TYPE_MAP:
         valid_types = ", ".join(RESOURCE_TYPE_MAP.keys())
         print_error(
-            f"Invalid resource type '{resource_type}'.\n" f"Valid types: {valid_types}",
+            f"Invalid resource type '{resource_type}'.\nValid types: {valid_types}",
             EXIT_CONFIG_ERROR,
         )
         return  # Unreachable, but clarifies control flow
@@ -314,7 +314,7 @@ def remove(
     if resource_type not in RESOURCE_TYPE_MAP:
         valid_types = ", ".join(RESOURCE_TYPE_MAP.keys())
         print_error(
-            f"Invalid resource type '{resource_type}'.\n" f"Valid types: {valid_types}",
+            f"Invalid resource type '{resource_type}'.\nValid types: {valid_types}",
             EXIT_CONFIG_ERROR,
         )
         return  # Unreachable, but clarifies control flow

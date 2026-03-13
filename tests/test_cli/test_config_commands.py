@@ -2,7 +2,6 @@
 
 """Tests for refget config CLI commands."""
 
-import pytest
 import json
 
 
@@ -101,11 +100,14 @@ class TestConfigInit:
 
         # Provide minimal input for interactive prompts
         from typer.testing import CliRunner
+
         from refget.cli import app
 
         runner = CliRunner()
         result = runner.invoke(
-            app, ["config", "init"], input=f"{tmp_path}/store\n\n\n"  # Store path + defaults
+            app,
+            ["config", "init"],
+            input=f"{tmp_path}/store\n\n\n",  # Store path + defaults
         )
 
         # Config init should succeed or prompt for input
@@ -116,6 +118,7 @@ class TestConfigInit:
         monkeypatch.setenv("REFGET_CONFIG", str(temp_config))
 
         from typer.testing import CliRunner
+
         from refget.cli import app
 
         runner = CliRunner()

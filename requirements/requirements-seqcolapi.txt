@@ -1,6 +1,0 @@
-fastapi
-psycopg2-binary
-refget
-sqlmodel
-uvicorn>=0.30.0
-ubiquerg>=0.6.1

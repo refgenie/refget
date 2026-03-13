@@ -15,7 +15,7 @@ tests/api/comparison/ fixture files relative to the repository root.
 import json
 import logging
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -96,11 +96,17 @@ def _timed_check(name: str, func, *args, **kwargs) -> CheckResult:
     try:
         func(*args, **kwargs)
         elapsed = (time.monotonic() - start) * 1000
-        return CheckResult(name=name, passed=True, duration_ms=round(elapsed, 2), description=description)
+        return CheckResult(
+            name=name, passed=True, duration_ms=round(elapsed, 2), description=description
+        )
     except AssertionError as e:
         elapsed = (time.monotonic() - start) * 1000
         return CheckResult(
-            name=name, passed=False, duration_ms=round(elapsed, 2), description=description, error=str(e)
+            name=name,
+            passed=False,
+            duration_ms=round(elapsed, 2),
+            description=description,
+            error=str(e),
         )
     except requests.exceptions.RequestException as e:
         elapsed = (time.monotonic() - start) * 1000
@@ -163,9 +169,9 @@ def check_list_attributes(api_root, attribute_name):
     res = requests.get(f"{api_root}/list/attributes/{attribute_name}", timeout=COMPLIANCE_TIMEOUT)
     data = res.json()
     assert "results" in data, f"list/attributes/{attribute_name} missing 'results' field"
-    assert isinstance(
-        data["results"], list
-    ), f"list/attributes/{attribute_name} 'results' should be a list"
+    assert isinstance(data["results"], list), (
+        f"list/attributes/{attribute_name} 'results' should be a list"
+    )
 
 
 def check_openapi_available(api_root):
@@ -185,7 +191,9 @@ def check_collection_level1(api_root, fa_name, bundle):
     """Level 1 response returns digest strings for all attributes."""
     digest = bundle["top_level_digest"]
     res = requests.get(f"{api_root}/collection/{digest}?level=1", timeout=COMPLIANCE_TIMEOUT)
-    assert res.status_code == 200, f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    assert res.status_code == 200, (
+        f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    )
     data = res.json()
     for attr in ["names", "lengths", "sequences"]:
         assert isinstance(data[attr], str), (
@@ -201,7 +209,9 @@ def check_collection_level2(api_root, fa_name, bundle):
     """Level 2 response returns arrays matching expected content."""
     digest = bundle["top_level_digest"]
     res = requests.get(f"{api_root}/collection/{digest}?level=2", timeout=COMPLIANCE_TIMEOUT)
-    assert res.status_code == 200, f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    assert res.status_code == 200, (
+        f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    )
     data = res.json()
     for attr in ["names", "lengths", "sequences"]:
         assert isinstance(data[attr], list), (
@@ -210,14 +220,18 @@ def check_collection_level2(api_root, fa_name, bundle):
         assert data[attr] == bundle["level2"][attr], (
             f"Level 2 {attr} for {fa_name}: expected {bundle['level2'][attr]}, got {data[attr]}"
         )
-    assert "sorted_name_length_pairs" not in data, "Level 2 should not have sorted_name_length_pairs"
+    assert "sorted_name_length_pairs" not in data, (
+        "Level 2 should not have sorted_name_length_pairs"
+    )
 
 
 def check_default_level_returns_level2(api_root, fa_name, bundle):
     """Collection without ?level= param returns level 2 arrays (spec default)."""
     digest = bundle["top_level_digest"]
     res = requests.get(f"{api_root}/collection/{digest}", timeout=COMPLIANCE_TIMEOUT)
-    assert res.status_code == 200, f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    assert res.status_code == 200, (
+        f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    )
     data = res.json()
     for attr in ["names", "lengths", "sequences"]:
         assert isinstance(data[attr], list), (
@@ -229,13 +243,13 @@ def check_sorted_name_length_pairs(api_root, fa_name, bundle):
     """Level 1 sorted_name_length_pairs digest matches expected value."""
     digest = bundle["top_level_digest"]
     res = requests.get(f"{api_root}/collection/{digest}?level=1", timeout=COMPLIANCE_TIMEOUT)
-    assert res.status_code == 200, f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    assert res.status_code == 200, (
+        f"Collection {digest} returned HTTP {res.status_code} (expected 200)"
+    )
     data = res.json()
     expected = bundle["sorted_name_length_pairs_digest"]
     actual = data.get("sorted_name_length_pairs")
-    assert actual == expected, (
-        f"SNLP for {fa_name}: expected {expected}, got {actual}"
-    )
+    assert actual == expected, f"SNLP for {fa_name}: expected {expected}, got {actual}"
 
 
 # ============================================================
@@ -263,13 +277,17 @@ def check_transient_attribute_not_served(api_root):
     """Transient attributes (sorted_name_length_pairs) return 404 from /attribute."""
     bundle = DIGEST_TESTS[0][1]
     digest = bundle["top_level_digest"]
-    level1 = requests.get(f"{api_root}/collection/{digest}?level=1", timeout=COMPLIANCE_TIMEOUT).json()
+    level1 = requests.get(
+        f"{api_root}/collection/{digest}?level=1", timeout=COMPLIANCE_TIMEOUT
+    ).json()
     snlp_digest = level1["sorted_name_length_pairs"]
     res = requests.get(
         f"{api_root}/attribute/collection/sorted_name_length_pairs/{snlp_digest}",
         timeout=COMPLIANCE_TIMEOUT,
     )
-    assert res.status_code == 404, "Transient attributes should not be served by /attribute endpoint"
+    assert res.status_code == 404, (
+        "Transient attributes should not be served by /attribute endpoint"
+    )
 
 
 # ============================================================
@@ -411,33 +429,53 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
     # Collection content checks (per FASTA file)
     for fa_name, bundle in DIGEST_TESTS:
         tag = fa_name.replace(".fa", "")
-        checks.append((f"collection_level1_{tag}", check_collection_level1, [api_root, fa_name, bundle]))
-        checks.append((f"collection_level2_{tag}", check_collection_level2, [api_root, fa_name, bundle]))
-        checks.append((f"default_level2_{tag}", check_default_level_returns_level2, [api_root, fa_name, bundle]))
-        checks.append((f"snlp_digest_{tag}", check_sorted_name_length_pairs, [api_root, fa_name, bundle]))
+        checks.append(
+            (f"collection_level1_{tag}", check_collection_level1, [api_root, fa_name, bundle])
+        )
+        checks.append(
+            (f"collection_level2_{tag}", check_collection_level2, [api_root, fa_name, bundle])
+        )
+        checks.append(
+            (
+                f"default_level2_{tag}",
+                check_default_level_returns_level2,
+                [api_root, fa_name, bundle],
+            )
+        )
+        checks.append(
+            (f"snlp_digest_{tag}", check_sorted_name_length_pairs, [api_root, fa_name, bundle])
+        )
 
     # Attribute retrieval checks (per FASTA, per attribute)
     for fa_name, bundle in DIGEST_TESTS:
         tag = fa_name.replace(".fa", "")
         for attr in ["lengths", "names", "sequences"]:
-            checks.append((
-                f"attribute_{attr}_{tag}",
-                check_attribute_retrieval,
-                [api_root, fa_name, bundle, attr],
-            ))
+            checks.append(
+                (
+                    f"attribute_{attr}_{tag}",
+                    check_attribute_retrieval,
+                    [api_root, fa_name, bundle, attr],
+                )
+            )
 
     # Attribute filtering checks
-    checks.append(("transient_attribute_not_served", check_transient_attribute_not_served, [api_root]))
-    checks.append(("multi_attribute_filter_and", check_list_multi_attribute_filter_and, [api_root]))
+    checks.append(
+        ("transient_attribute_not_served", check_transient_attribute_not_served, [api_root])
+    )
+    checks.append(
+        ("multi_attribute_filter_and", check_list_multi_attribute_filter_and, [api_root])
+    )
 
     # List filter checks (base.fa, filter by each attribute)
     base_name, base_bundle = DIGEST_TESTS[0]
     for attr in ["lengths", "names", "sequences"]:
-        checks.append((
-            f"list_filter_{attr}",
-            check_list_filter_by_attribute,
-            [api_root, base_name, base_bundle, attr],
-        ))
+        checks.append(
+            (
+                f"list_filter_{attr}",
+                check_list_filter_by_attribute,
+                [api_root, base_name, base_bundle, attr],
+            )
+        )
 
     # Comparison checks
     checks.append(("comparison_structure", check_comparison_structure, [api_root]))
@@ -446,7 +484,9 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
     for fixture_name, expected in COMPARISON_FIXTURES.items():
         tag = fixture_name.replace("compare_", "").replace(".json", "")
         checks.append((f"comparison_{tag}", check_comparison, [api_root, fixture_name, expected]))
-        checks.append((f"comparison_post_{tag}", check_comparison_post, [api_root, fixture_name, expected]))
+        checks.append(
+            (f"comparison_post_{tag}", check_comparison_post, [api_root, fixture_name, expected])
+        )
 
     return checks
 

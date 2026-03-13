@@ -1,14 +1,11 @@
 """Smoke test for RefgetStore.remove_collection() Python binding."""
 
-import os
-import tempfile
-
 import pytest
 
 from refget.store import RefgetStore
 
 try:
-    from gtars.refget import RefgetStore as _check
+    from gtars.refget import RefgetStore as _check  # noqa: F401
 
     _RUST_BINDINGS_AVAILABLE = True
 except ImportError:
@@ -24,15 +21,15 @@ def test_remove_collection_round_trip():
     store.set_quiet(True)
     store.add_sequence_collection_from_fasta(FASTA_PATH)
 
-    assert len(store.list_collections()) == 1
+    assert len(store.list_collections()["results"]) == 1
     assert len(store.list_sequences()) > 0
 
-    digest = store.list_collections()[0].digest
+    digest = store.list_collections()["results"][0].digest
 
     # Nonexistent returns False
     assert store.remove_collection("nonexistent") is False
 
     # Real removal with orphan cleanup
     assert store.remove_collection(digest, remove_orphan_sequences=True) is True
-    assert len(store.list_collections()) == 0
+    assert len(store.list_collections()["results"]) == 0
     assert len(store.list_sequences()) == 0

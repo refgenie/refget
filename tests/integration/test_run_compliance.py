@@ -1,6 +1,7 @@
 """Run the standalone compliance suite against the integration test server."""
 
 import pytest
+
 from tests.api.test_compliance import TestAPI
 
 

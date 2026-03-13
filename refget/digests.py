@@ -4,9 +4,8 @@ When gtars is available, uses fast Rust implementations.
 When gtars is not available, falls back to pure Python implementations (slower).
 """
 
-import hashlib
 import base64
-
+import hashlib
 from typing import Callable, Union
 
 from .const import GTARS_INSTALLED
@@ -34,7 +33,7 @@ def py_md5_digest(seq) -> str:
 
 # Default exports - use gtars if available, else Python fallback
 if GTARS_INSTALLED:
-    from gtars.refget import sha512t24u_digest, md5_digest
+    from gtars.refget import md5_digest, sha512t24u_digest
 else:
     sha512t24u_digest = py_sha512t24u_digest
     md5_digest = py_md5_digest

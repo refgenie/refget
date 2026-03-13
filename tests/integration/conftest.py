@@ -7,11 +7,12 @@ Run with: ./scripts/test-integration.sh
 """
 
 import os
-import pytest
 import socket
 import threading
 import time
 from pathlib import Path
+
+import pytest
 
 # Set environment variables BEFORE any app imports
 # Must match test-db.sh settings
@@ -78,8 +79,8 @@ def loaded_dbagent(test_dbagent, test_fasta_path):
 @pytest.fixture(scope="session")
 def client(loaded_dbagent):
     """Create TestClient with test database"""
-    from seqcolapi.main import app
     from refget.router import get_dbagent
+    from seqcolapi.main import app
 
     def override_get_dbagent():
         return loaded_dbagent
@@ -131,8 +132,9 @@ def test_server(request):
     loaded_dbagent = request.getfixturevalue("loaded_dbagent")
 
     import uvicorn
-    from seqcolapi.main import app
+
     from refget.router import get_dbagent
+    from seqcolapi.main import app
 
     def override_get_dbagent():
         return loaded_dbagent
@@ -173,6 +175,7 @@ def test_server(request):
 def cli_runner():
     """CLI runner for integration tests."""
     from typer.testing import CliRunner
+
     from refget.cli.main import app
 
     runner = CliRunner()

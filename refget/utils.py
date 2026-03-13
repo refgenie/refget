@@ -1,19 +1,19 @@
 import json
 import logging
-
-from jsonschema import Draft7Validator
 from pathlib import Path
 from typing import Optional, Union
 
+from jsonschema import Draft7Validator
+
 from .const import (
-    SeqColDict,
     DEFAULT_INHERENT_ATTRS,
     DEFAULT_PASSTHRU_ATTRS,
-    SEQCOL_SCHEMA_PATH,
     GTARS_INSTALLED,
+    SEQCOL_SCHEMA_PATH,
+    SeqColDict,
 )
+from .digests import DigestFunction, sha512t24u_digest
 from .exceptions import InvalidSeqColError
-from .digests import sha512t24u_digest, DigestFunction
 
 _LOGGER = logging.getLogger(__name__)
 

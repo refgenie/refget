@@ -6,21 +6,23 @@ Tests for refget fasta CLI commands.
 These test CLI-specific behavior: output formatting, exit codes, argument parsing.
 """
 
-import pytest
+import importlib.util
 import json
+import os
 from pathlib import Path
 
-import sys
-import os
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from conftest import (
-    BASE_FASTA,
-    DIFFERENT_NAMES_FASTA,
-    TEST_FASTA_DIGESTS,
-    assert_json_output,
-    assert_valid_digest,
+_conftest_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
 )
+_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
+_conftest = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_conftest)
+
+BASE_FASTA = _conftest.BASE_FASTA
+DIFFERENT_NAMES_FASTA = _conftest.DIFFERENT_NAMES_FASTA
+TEST_FASTA_DIGESTS = _conftest.TEST_FASTA_DIGESTS
+assert_json_output = _conftest.assert_json_output
+assert_valid_digest = _conftest.assert_valid_digest
 
 
 class TestFastaDigest:
@@ -184,7 +186,7 @@ class TestFastaRgsi:
         assert "##seqcol_digest=" in content
         assert "#name\tlength\talphabet\tsha512t24u\tmd5\tdescription" in content
 
-        data_lines = [l for l in content.strip().split("\n") if not l.startswith("#")]
+        data_lines = [line for line in content.strip().split("\n") if not line.startswith("#")]
         assert len(data_lines) == 2  # sample_fasta has 2 sequences
 
         # Verify first sequence

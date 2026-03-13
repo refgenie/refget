@@ -1,22 +1,20 @@
 import logging
-
-from fastapi import FastAPI, Depends
-from fastapi import HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
-from refget.router import create_refget_router, get_dbagent
-from starlette.requests import Request
-from starlette.staticfiles import StaticFiles
-from sqlmodel import Session, select
 from contextlib import asynccontextmanager
 
-from .const import ALL_VERSIONS, STATIC_PATH, STATIC_DIRNAME
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from sqlmodel import Session, select
+from starlette.requests import Request
+from starlette.staticfiles import StaticFiles
+
+from refget.agents import RefgetDBAgent
 from refget.const import HUMANS_SAMPLE_LIST, MOUSE_SAMPLES_LIST
 from refget.models import HumanReadableNames
-from .examples import *
+from refget.router import _ROUTER_CONFIG, _SAMPLE_DIGESTS, create_refget_router
 
-from refget.router import _SAMPLE_DIGESTS, _ROUTER_CONFIG
-from refget.agents import RefgetDBAgent
+from .const import ALL_VERSIONS, STATIC_DIRNAME, STATIC_PATH
+from .examples import *
 
 global _LOGGER
 _LOGGER = logging.getLogger(__name__)
@@ -35,6 +33,7 @@ async def lifespan_loader(app):
     # Initialize database agent and store in app state
     dbagent = RefgetDBAgent()
     app.state.dbagent = dbagent
+    app.state.backend = dbagent  # RefgetDBAgent satisfies SeqColBackend
 
     species_samples = {"human": HUMANS_SAMPLE_LIST, "mouse": MOUSE_SAMPLES_LIST}
 
@@ -121,13 +120,13 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 @app.exception_handler(ValueError)
-async def generic_exception_handler(request: Request, exc: Exception):
+async def value_error_handler(request: Request, exc: Exception):
     raise HTTPException(status_code=404, detail=str(exc))
 
 
 @app.get("favicon.ico", include_in_schema=False)
 async def favicon():
-    return FileResponse(f"/static/favicon.ico")
+    return FileResponse("/static/favicon.ico")
 
 
 @app.get("/", summary="Home page", tags=["General endpoints"], response_class=HTMLResponse)
@@ -149,10 +148,14 @@ async def service_info():
         "fasta_drs": {"enabled": _ROUTER_CONFIG.get("fasta_drs", False)},
     }
 
+    # Get backend capabilities
+    backend = getattr(app.state, "backend", None)
+    caps = backend.capabilities() if backend and hasattr(backend, "capabilities") else {}
+
     # Add refget_store info
     store_url = _ROUTER_CONFIG.get("refget_store_url")
     if store_url:
-        seqcol_info["refget_store"] = {"enabled": True, "url": store_url}
+        seqcol_info["refget_store"] = {"enabled": True, "url": store_url, **caps}
     else:
         seqcol_info["refget_store"] = {"enabled": False}
 
@@ -176,7 +179,7 @@ async def service_info():
 
 
 # Mount statics after other routes for lower precedence
-app.mount(f"/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
+app.mount("/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
 
 
 def create_global_dbagent():
@@ -188,5 +191,37 @@ def create_global_dbagent():
     return dbagent
 
 
+def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/tmp/seqcol_cache"):
+    """Create a seqcolapi FastAPI app backed by a RefgetStore (no database).
+
+    Args:
+        store_path: Path to store on disk, or S3 URL for remote stores.
+        remote: If True, open as a remote (S3) store.
+        cache_dir: Local cache directory for remote stores.
+
+    Returns:
+        FastAPI app with store-backed seqcol endpoints.
+    """
+    from refget.backend import RefgetStoreBackend
+    from refget.store import RefgetStore
+
+    if remote:
+        store = RefgetStore.open_remote(cache_dir, store_path)
+    else:
+        store = RefgetStore.on_disk(store_path)
+
+    backend = RefgetStoreBackend(store.into_readonly())
+
+    store_app = FastAPI(title="Sequence Collections API (Store-backed)")
+    store_app.state.backend = backend
+    router = create_refget_router(
+        sequences=False, pangenomes=False, refget_store_url=store_path if remote else None
+    )
+    store_app.include_router(router)
+    return store_app
+
+
 if __name__ != "__main__":
-    app.state.dbagent = create_global_dbagent()
+    _dbagent = create_global_dbagent()
+    app.state.dbagent = _dbagent
+    app.state.backend = _dbagent  # RefgetDBAgent satisfies SeqColBackend

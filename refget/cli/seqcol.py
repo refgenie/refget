@@ -118,8 +118,8 @@ def _compute_snlp_digest(seqcol_dict: dict) -> str:
     Returns:
         The snlp digest (coordinate system identifier)
     """
-    from refget.utils import build_sorted_name_length_pairs, canonical_str
     from refget.digests import sha512t24u_digest
+    from refget.utils import build_sorted_name_length_pairs, canonical_str
 
     snlp_digests = build_sorted_name_length_pairs(seqcol_dict)
     return sha512t24u_digest(canonical_str(snlp_digests))

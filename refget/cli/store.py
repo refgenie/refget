@@ -27,8 +27,8 @@ import typer
 
 from refget.cli.config_manager import get_remote_stores, get_seqcol_servers, get_store_path
 from refget.cli.output import (
-    EXIT_FILE_NOT_FOUND,
     EXIT_FAILURE,
+    EXIT_FILE_NOT_FOUND,
     EXIT_SUCCESS,
     check_dependency,
     print_error,
@@ -71,7 +71,7 @@ def _get_store_path(path: Optional[Path]) -> Path:
 
 def _get_collection_digests(store) -> set:
     """Get the set of collection digest strings from a store."""
-    return {meta.digest for meta in store.list_collections()}
+    return {meta.digest for meta in store.list_collections()["results"]}
 
 
 def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[str] = None):
@@ -150,7 +150,7 @@ def init(
     store_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Initialize the store (creates index files)
-    store = RefgetStore.on_disk(str(store_path))
+    RefgetStore.on_disk(str(store_path))
 
     print_json(
         {
@@ -187,12 +187,6 @@ def add(
         "-q",
         help="Suppress progress output",
     ),
-    threads: Optional[int] = typer.Option(
-        None,
-        "--threads",
-        "-t",
-        help="Number of threads for parallel encoding (default: 1)",
-    ),
 ) -> None:
     """
     Import a FASTA file to the local store.
@@ -223,9 +217,7 @@ def add(
             store.set_encoding_mode(StorageMode.Encoded)
 
     # Add the FASTA file - returns (metadata, was_new) with all info we need
-    metadata, was_new = store.add_sequence_collection_from_fasta(
-        str(fasta.resolve()), threads=threads
-    )
+    metadata, was_new = store.add_sequence_collection_from_fasta(str(fasta.resolve()))
 
     print_json(
         {
@@ -283,7 +275,7 @@ def list_items(
         print_json({"sequences": items})
     else:
         collections = []
-        for meta in store.list_collections():
+        for meta in store.list_collections()["results"]:
             collections.append(
                 {
                     "digest": meta.digest,
@@ -353,7 +345,9 @@ def get(
     store = _load_store(path, remote=remote)
 
     if sequence:
-        # Sequence retrieval mode
+        # Sequence retrieval mode — load sequence data
+        store.load_all_collections()
+        store.load_all_sequences()
         seq_data = None
 
         if name is not None:
@@ -676,8 +670,9 @@ def export(
     """
     store = _load_store(path, remote=remote)
 
-    # Ensure collection is loaded (required for export)
+    # Ensure collection and sequence data are loaded (required for export)
     _ensure_collection_loaded(store, digest)
+    store.load_all_sequences()
 
     def _do_export(output_path: str) -> None:
         """Perform the actual export to a file path."""
@@ -870,7 +865,7 @@ def stats(
         stats_dict["collections"] = int(stats_dict["collections"])
     else:
         # Fallback: count collections ourselves
-        stats_dict["collections"] = len(store.list_collections())
+        stats_dict["collections"] = store.list_collections()["pagination"]["total"]
 
     print_json(stats_dict)
     raise typer.Exit(EXIT_SUCCESS)
@@ -914,9 +909,7 @@ def remove(
 @app.command()
 def metadata(
     digest: str = typer.Argument(help="Collection digest"),
-    path: Optional[Path] = typer.Option(
-        None, "--path", "-p", help="Store path"
-    ),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
 ):
     """Show FHR metadata for a collection."""
     store = _load_store(path)
@@ -933,12 +926,339 @@ def metadata(
 def metadata_set(
     digest: str = typer.Argument(help="Collection digest"),
     file: Path = typer.Argument(help="Path to FHR JSON file"),
-    path: Optional[Path] = typer.Option(
-        None, "--path", "-p", help="Store path"
-    ),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
 ):
     """Set FHR metadata for a collection from a JSON file."""
     store = _load_store(path)
     store.load_fhr_metadata(digest, str(file))
     print(f"Set FHR metadata for collection {digest}")
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@app.command("crate")
+def crate(
+    path: Optional[Path] = typer.Option(
+        None,
+        "--path",
+        "-p",
+        help="Store path (default: from config)",
+    ),
+    name: str = typer.Option(
+        ...,
+        "--name",
+        "-n",
+        help="Name for the RO-Crate root dataset",
+    ),
+    description: Optional[str] = typer.Option(
+        None,
+        "--description",
+        "-d",
+        help="Description of the store",
+    ),
+    author: Optional[str] = typer.Option(
+        None,
+        "--author",
+        "-a",
+        help='Author in "Name <URL>" format, e.g. "Jane Doe <https://orcid.org/...>"',
+    ),
+    license: Optional[str] = typer.Option(
+        None,
+        "--license",
+        "-l",
+        help="License URL, e.g. https://creativecommons.org/publicdomain/zero/1.0/",
+    ),
+    output: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Output path (default: <store-path>/ro-crate-metadata.json)",
+    ),
+) -> None:
+    """Generate an RO-Crate metadata file for a RefgetStore.
+
+    Creates a ro-crate-metadata.json describing the store as a FAIR
+    research object, including structure, provenance, and statistics.
+
+    Examples:
+        refget store crate --path /store --name "My genomes" --author "J Doe <https://orcid.org/0000-0001-1234-5678>"
+        refget store crate -p /store -n "Store" -l https://creativecommons.org/publicdomain/zero/1.0/
+    """
+    import json
+    import re
+    from datetime import datetime, timezone
+
+    from refget._version import __version__
+
+    store = _load_store(path)
+    store_path = _get_store_path(path)
+
+    # Gather stats
+    stats_obj = store.stats()
+    stats_dict = {}
+    if hasattr(stats_obj, "__iter__"):
+        for key, value in stats_obj.items():
+            stats_dict[key] = value
+    elif hasattr(stats_obj, "__dict__"):
+        stats_dict = vars(stats_obj)
+
+    storage_mode = stats_dict.get("storage_mode", "Unknown")
+    seq_count = int(stats_dict.get("n_sequences", stats_dict.get("sequences", 0)))
+
+    # Count collections
+    try:
+        coll_count = store.list_collections()["pagination"]["total"]
+    except Exception:
+        coll_count = 0
+
+    # Build the @graph
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    graph = [
+        # Metadata descriptor
+        {
+            "@id": "ro-crate-metadata.json",
+            "@type": "CreativeWork",
+            "conformsTo": [
+                {"@id": "https://w3id.org/ro/crate/1.2"},
+                {"@id": "https://w3id.org/ga4gh/refget/refgetstore-crate/0.1"},
+            ],
+            "about": {"@id": "./"},
+        },
+    ]
+
+    # Root dataset
+    root = {
+        "@id": "./",
+        "@type": "Dataset",
+        "name": name,
+        "datePublished": today,
+        "conformsTo": {"@id": "https://w3id.org/ga4gh/refget/refgetstore-crate/0.1"},
+        "hasPart": [
+            {"@id": "rgstore.json"},
+            {"@id": "sequences.rgsi"},
+            {"@id": "sequences/"},
+            {"@id": "collections/"},
+        ],
+        "additionalProperty": [
+            {"@id": "#prop-storageMode"},
+            {"@id": "#prop-sequenceCount"},
+            {"@id": "#prop-collectionCount"},
+            {"@id": "#prop-refgetDigestAlgorithm"},
+        ],
+    }
+    if description:
+        root["description"] = description
+    if license:
+        root["license"] = {"@id": license}
+    if author:
+        # Parse "Name <URL>" format
+        match = re.match(r"^(.+?)\s*<(.+?)>\s*$", author)
+        if match:
+            author_name = match.group(1).strip()
+            author_url = match.group(2).strip()
+            root["author"] = {"@id": author_url}
+        else:
+            author_name = author.strip()
+            author_url = None
+            root["author"] = {"@id": f"#author-{author_name.replace(' ', '-').lower()}"}
+
+    # Add aliases/ if it exists
+    aliases_path = store_path / "aliases"
+    if aliases_path.exists() and aliases_path.is_dir():
+        root["hasPart"].append({"@id": "aliases/"})
+
+    graph.append(root)
+
+    # Data entities
+    graph.extend([
+        {
+            "@id": "rgstore.json",
+            "@type": "File",
+            "name": "Store configuration",
+            "description": "Operational configuration for RefgetStore: path templates, storage mode, format version.",
+            "encodingFormat": "application/json",
+        },
+        {
+            "@id": "sequences.rgsi",
+            "@type": "File",
+            "name": "Master sequence index",
+            "description": "Tab-separated index of all sequences in the store with names, lengths, alphabets, and GA4GH digests.",
+            "encodingFormat": "text/tab-separated-values",
+        },
+        {
+            "@id": "sequences/",
+            "@type": "Dataset",
+            "name": "Sequence data",
+            "description": "Content-addressable sequence files organized by digest prefix.",
+        },
+        {
+            "@id": "collections/",
+            "@type": "Dataset",
+            "name": "Sequence collections",
+            "description": "GA4GH sequence collection metadata. Each .rgsi file defines a collection with its member sequences and digests.",
+        },
+    ])
+
+    if aliases_path.exists() and aliases_path.is_dir():
+        graph.append({
+            "@id": "aliases/",
+            "@type": "Dataset",
+            "name": "Alias namespaces",
+            "description": "Human-readable name mappings for sequences and collections.",
+        })
+
+    # PropertyValue entities
+    graph.extend([
+        {
+            "@id": "#prop-storageMode",
+            "@type": "PropertyValue",
+            "propertyID": "storageMode",
+            "name": "Storage Mode",
+            "value": storage_mode,
+        },
+        {
+            "@id": "#prop-sequenceCount",
+            "@type": "PropertyValue",
+            "propertyID": "sequenceCount",
+            "name": "Sequence Count",
+            "value": seq_count,
+        },
+        {
+            "@id": "#prop-collectionCount",
+            "@type": "PropertyValue",
+            "propertyID": "collectionCount",
+            "name": "Collection Count",
+            "value": coll_count,
+        },
+        {
+            "@id": "#prop-refgetDigestAlgorithm",
+            "@type": "PropertyValue",
+            "propertyID": "refgetDigestAlgorithm",
+            "name": "Refget Digest Algorithm",
+            "value": "sha512t24u",
+        },
+    ])
+
+    # CreateAction provenance
+    graph.extend([
+        {
+            "@id": "#crate-creation",
+            "@type": "CreateAction",
+            "name": "Generate RO-Crate metadata for RefgetStore",
+            "endTime": now,
+            "instrument": {"@id": "#refget-software"},
+            "result": {"@id": "./"},
+        },
+        {
+            "@id": "#refget-software",
+            "@type": "SoftwareApplication",
+            "name": "refget",
+            "version": __version__,
+            "url": "https://github.com/refgenie/refget",
+            "description": "Python package implementing GA4GH refget standards for sequences and sequence collections.",
+        },
+    ])
+
+    # Add agent to CreateAction if author provided
+    if author:
+        graph[-2]["agent"] = root["author"]
+
+    # Profile entity
+    graph.append({
+        "@id": "https://w3id.org/ga4gh/refget/refgetstore-crate/0.1",
+        "@type": ["CreativeWork", "Profile"],
+        "name": "RefgetStore RO-Crate Profile",
+        "version": "0.1",
+        "description": "Profile for RO-Crates containing GA4GH RefgetStore sequence databases.",
+    })
+
+    # Author entity
+    if author:
+        match = re.match(r"^(.+?)\s*<(.+?)>\s*$", author)
+        if match:
+            graph.append({
+                "@id": author_url,
+                "@type": "Person",
+                "name": author_name,
+            })
+        else:
+            graph.append({
+                "@id": root["author"]["@id"],
+                "@type": "Person",
+                "name": author_name,
+            })
+
+    # License entity
+    if license:
+        graph.append({
+            "@id": license,
+            "@type": "CreativeWork",
+            "name": license.rstrip("/").split("/")[-1] or "License",
+        })
+
+    crate = {
+        "@context": "https://w3id.org/ro/crate/1.2/context",
+        "@graph": graph,
+    }
+
+    # Write output
+    output_path = output or (store_path / "ro-crate-metadata.json")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(crate, indent=2) + "\n")
+
+    print_json({
+        "output": str(output_path),
+        "status": "created",
+        "entities": len(graph),
+    })
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@app.command("serve")
+def serve(
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Local store path"),
+    remote: Optional[str] = typer.Option(
+        None, "--remote", "-r", help="Remote store URL (e.g. s3://bucket/store/)"
+    ),
+    port: int = typer.Option(8000, "--port", help="Port to serve on"),
+    host: str = typer.Option("0.0.0.0", "--host", help="Host to bind to"),
+):
+    """Serve a seqcol API backed by a RefgetStore (no database required).
+
+    Examples:
+        refget store serve --path /path/to/store --port 8000
+        refget store serve --remote s3://bucket/store/ --port 8000
+    """
+    try:
+        import uvicorn
+    except ImportError:
+        print_error("uvicorn is required: pip install uvicorn", EXIT_FAILURE)
+
+    from refget.backend import RefgetStoreBackend
+
+    if remote:
+        store = _load_store(path=None, remote=remote)
+    elif path:
+        store = _load_store(path)
+    else:
+        store = _load_store(None)
+
+    backend = RefgetStoreBackend(store.into_readonly())
+
+    from fastapi import FastAPI
+
+    from refget.router import create_refget_router
+
+    app = FastAPI(title="Sequence Collections API (Store-backed)")
+    app.state.backend = backend
+    router = create_refget_router(
+        sequences=False,
+        pangenomes=False,
+        refget_store_url=remote,
+    )
+    app.include_router(router)
+
+    typer.echo(f"Serving store-backed seqcol API on {host}:{port}")
+    uvicorn.run(app, host=host, port=port)
     raise typer.Exit(EXIT_SUCCESS)

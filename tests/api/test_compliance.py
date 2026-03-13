@@ -10,25 +10,26 @@
 #   ./scripts/test-integration.sh
 
 import pytest
+
 from refget.compliance import (
-    DIGEST_TESTS,
     COMPARISON_FIXTURES,
-    check_service_info,
-    check_list_collections,
-    check_list_attributes,
-    check_openapi_available,
+    DIGEST_TESTS,
+    check_attribute_retrieval,
     check_collection_level1,
     check_collection_level2,
+    check_comparison,
+    check_comparison_post,
+    check_comparison_same_order_values,
+    check_comparison_structure,
     check_default_level_returns_level2,
-    check_sorted_name_length_pairs,
-    check_attribute_retrieval,
-    check_transient_attribute_not_served,
+    check_list_attributes,
+    check_list_collections,
     check_list_filter_by_attribute,
     check_list_multi_attribute_filter_and,
-    check_comparison,
-    check_comparison_structure,
-    check_comparison_same_order_values,
-    check_comparison_post,
+    check_openapi_available,
+    check_service_info,
+    check_sorted_name_length_pairs,
+    check_transient_attribute_not_served,
 )
 
 

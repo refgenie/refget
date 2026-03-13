@@ -6,7 +6,6 @@ Integration tests for refget seqcol CLI commands that require a server.
 Run with: ./scripts/test-integration.sh
 """
 
-import pytest
 import json
 
 

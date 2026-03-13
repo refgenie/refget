@@ -1,14 +1,19 @@
+from pathlib import Path
+
 import pytest
 
 from refget import GTARS_INSTALLED
-from refget.digests import ga4gh_digest, py_sha512t24u_digest, py_md5_digest
-from pathlib import Path
+from refget.digests import ga4gh_digest, py_md5_digest, py_sha512t24u_digest
 
 if GTARS_INSTALLED:
     from gtars.refget import (
-        sha512t24u_digest as gtars_sha512t24u_digest,
-        md5_digest as gtars_md5_digest,
         digest_fasta,
+    )
+    from gtars.refget import (
+        md5_digest as gtars_md5_digest,
+    )
+    from gtars.refget import (
+        sha512t24u_digest as gtars_sha512t24u_digest,
     )
 
 

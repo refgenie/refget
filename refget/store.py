@@ -18,11 +18,11 @@ from .const import GTARS_INSTALLED
 if GTARS_INSTALLED:
     from gtars.refget import (
         RefgetStore,
-        StorageMode,
-        digest_fasta,
-        compute_fai,
-        digest_sequence,
         SequenceCollection,
+        StorageMode,
+        compute_fai,
+        digest_fasta,
+        digest_sequence,
     )
 else:
     RefgetStore = None

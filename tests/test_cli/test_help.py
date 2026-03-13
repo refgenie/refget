@@ -2,8 +2,6 @@
 
 """Tests for CLI help output."""
 
-import pytest
-
 
 class TestHelpOutput:
     """Verify help text displays correctly."""

@@ -8,8 +8,9 @@ Only tests that verify Python-specific behavior beyond what Rust tests cover:
 """
 
 import json
-import pytest
 from pathlib import Path
+
+import pytest
 
 try:
     from refget.store import RefgetStore
