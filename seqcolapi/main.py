@@ -11,7 +11,7 @@ from starlette.staticfiles import StaticFiles
 from refget.agents import RefgetDBAgent
 from refget.const import HUMANS_SAMPLE_LIST, MOUSE_SAMPLES_LIST
 from refget.models import HumanReadableNames
-from refget.router import _ROUTER_CONFIG, _SAMPLE_DIGESTS, create_refget_router
+from refget.router import _ROUTER_CONFIG, _SAMPLE_DIGESTS, create_refget_router, setup_backend
 
 from .const import ALL_VERSIONS, STATIC_DIRNAME, STATIC_PATH
 from .examples import *
@@ -30,10 +30,8 @@ async def lifespan_loader(app):
     """
     _LOGGER.info("Starting lifespan: Loading sample data...")
 
-    # Initialize database agent and store in app state
-    dbagent = RefgetDBAgent()
-    app.state.dbagent = dbagent
-    app.state.backend = dbagent  # RefgetDBAgent satisfies SeqColBackend
+    # Initialize backend via setup_backend
+    setup_backend(app, engine=RefgetDBAgent().engine)
 
     species_samples = {"human": HUMANS_SAMPLE_LIST, "mouse": MOUSE_SAMPLES_LIST}
 
@@ -41,7 +39,7 @@ async def lifespan_loader(app):
         try:
             _LOGGER.info(f"Loading {len(sample_names)} sample names for {species}")
 
-            with Session(dbagent.engine) as session:
+            with Session(app.state.dbagent.engine) as session:
                 statement = select(HumanReadableNames).where(
                     HumanReadableNames.human_readable_name.in_(sample_names)
                 )
@@ -143,7 +141,7 @@ async def index(request: Request):
 async def service_info():
     # Build seqcol capabilities object
     seqcol_info = {
-        "schema": dbagent.schema_dict,
+        "schema": getattr(app.state.dbagent, "schema_dict", None) if hasattr(app.state, "dbagent") else None,
         "sorted_name_length_pairs": True,
         "fasta_drs": {"enabled": _ROUTER_CONFIG.get("fasta_drs", False)},
     }
@@ -182,15 +180,6 @@ async def service_info():
 app.mount("/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
 
 
-def create_global_dbagent():
-    """
-    Create a global database agent for use in the app.
-    """
-    global dbagent
-    dbagent = RefgetDBAgent()  # Configured via env vars
-    return dbagent
-
-
 def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/tmp/seqcol_cache"):
     """Create a seqcolapi FastAPI app backed by a RefgetStore (no database).
 
@@ -202,7 +191,6 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
     Returns:
         FastAPI app with store-backed seqcol endpoints.
     """
-    from refget.backend import RefgetStoreBackend
     from refget.store import RefgetStore
 
     if remote:
@@ -210,18 +198,65 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
     else:
         store = RefgetStore.on_disk(store_path)
 
-    backend = RefgetStoreBackend(store.into_readonly())
+    store_app = FastAPI(
+        title="Sequence Collections API (Store-backed)",
+        version=ALL_VERSIONS["refget_version"],
+    )
 
-    store_app = FastAPI(title="Sequence Collections API (Store-backed)")
-    store_app.state.backend = backend
+    store_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    setup_backend(store_app, store=store)
     router = create_refget_router(
         sequences=False, pangenomes=False, refget_store_url=store_path if remote else None
     )
     store_app.include_router(router)
+
+    if remote:
+        from refget.middleware import StoreFreshnessMiddleware
+
+        store_app.add_middleware(
+            StoreFreshnessMiddleware,
+            store_url=store_path,
+            cache_dir=cache_dir,
+        )
+
+    @store_app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
+    async def store_service_info():
+        backend = getattr(store_app.state, "backend", None)
+        caps = backend.capabilities() if backend and hasattr(backend, "capabilities") else {}
+        return {
+            "id": "org.databio.seqcolapi.store",
+            "name": "Sequence collections (store-backed)",
+            "type": {
+                "group": "org.ga4gh",
+                "artifact": "refget-seqcol",
+                "version": ALL_VERSIONS["seqcol_spec_version"],
+            },
+            "description": "Store-backed API providing metadata for collections of reference sequences",
+            "organization": {"name": "Databio Lab", "url": "https://databio.org"},
+            "contactUrl": "https://github.com/refgenie/refget/issues",
+            "version": ALL_VERSIONS,
+            "seqcol": {
+                "refget_store": {"enabled": True, "url": store_path, **caps},
+            },
+        }
+
     return store_app
 
 
+import os
+
+_STORE_URL_ENV = os.environ.get("REFGET_STORE_URL")
+
+if _STORE_URL_ENV:
+    store_app = create_store_app(_STORE_URL_ENV, remote=True)
+
+
 if __name__ != "__main__":
-    _dbagent = create_global_dbagent()
-    app.state.dbagent = _dbagent
-    app.state.backend = _dbagent  # RefgetDBAgent satisfies SeqColBackend
+    setup_backend(app, engine=RefgetDBAgent().engine)

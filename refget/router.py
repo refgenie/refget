@@ -6,17 +6,14 @@ endpoints for retrieving and comparing sequence collections.
 This router does not supply the /service-info endpoint, which should be created
 by the main app.
 
-To use, first import it, then attach it to the app,
-then create a backend object and attach it to the app state like this:
+To use, import the router and setup_backend, then wire them up:
 
-from refget.router import create_refget_router
-from refget.agents import RefgetDBAgent
+from refget.router import create_refget_router, setup_backend
 
 router = create_refget_router(sequences=False, collections=True, pangenomes=False)
 app.include_router(router, prefix="/seqcol")
-dbagent = RefgetDBAgent()
-app.state.backend = dbagent       # RefgetDBAgent satisfies SeqColBackend
-app.state.dbagent = dbagent       # For DB-only endpoints (similarities, pangenomes, DRS)
+setup_backend(app, store=my_store)       # RefgetStore backend (no database)
+# OR: setup_backend(app, engine=engine)  # PostgreSQL via RefgetDBAgent
 """
 
 import logging
@@ -35,6 +32,26 @@ _SAMPLE_DIGESTS: dict[str, list[str]] = {}
 
 # Router configuration exposed for service-info endpoints
 _ROUTER_CONFIG: dict = {}
+
+
+def setup_backend(app, store=None, engine=None):
+    """Configure the seqcol backend on a FastAPI app.
+
+    Pass a RefgetStore to serve from the store (default, no database needed).
+    Pass a SQLAlchemy engine to serve from PostgreSQL via RefgetDBAgent.
+    """
+    if store is not None:
+        from .backend import RefgetStoreBackend
+
+        app.state.backend = RefgetStoreBackend(store.into_readonly())
+    elif engine is not None:
+        from .agents import RefgetDBAgent
+
+        dbagent = RefgetDBAgent(engine=engine)
+        app.state.dbagent = dbagent
+        app.state.backend = dbagent
+    else:
+        raise ValueError("setup_backend requires either store or engine")
 
 
 async def get_backend(request: Request) -> SeqColBackend:

@@ -113,17 +113,43 @@ setMethod("getSeq", "RefgetGenome",
     stop("Length mismatch: names, start, end, and strand must have compatible lengths")
   }
 
-  # Extract each sequence
-  seqs <- vapply(seq_len(n), function(i) {
-    .getSeq_single(genome, names[i], start[i], end[i], strand[i], as.character = TRUE)
-  }, character(1))
+  # Use bulk BED extraction if all regions have coordinates
+  if (!any(is.na(start)) && !any(is.na(end))) {
+    # Write temp BED file (convert 1-based closed to 0-based half-open)
+    bed_file <- tempfile(fileext = ".bed")
+    on.exit(unlink(bed_file), add = TRUE)
 
-  # Name the results
-  if (all(is.na(start)) || all(is.na(end))) {
-    result_names <- names
-  } else {
+    bed_df <- data.frame(
+      chrom = names,
+      start = as.integer(start - 1L),
+      end = as.integer(end)
+    )
+    write.table(bed_df, bed_file, sep = "\t", row.names = FALSE,
+                col.names = FALSE, quote = FALSE)
+
+    # Single Rust FFI call for all regions
+    retrieved <- gtars::get_seqs_bed_file_to_vec(
+      genome@store, genome@collection_digest, bed_file
+    )
+
+    seqs <- vapply(retrieved, function(r) r@sequence, character(1))
+
+    # Handle negative strand
+    minus_idx <- which(strand == "-")
+    if (length(minus_idx) > 0) {
+      seqs[minus_idx] <- vapply(seqs[minus_idx], .reverse_complement, character(1))
+    }
+
     result_names <- sprintf("%s:%d-%d", names, start, end)
+  } else {
+    # Fallback: full chromosome extraction (no coordinates)
+    seqs <- vapply(seq_len(n), function(i) {
+      .getSeq_single(genome, names[i], start[i], end[i], strand[i], as.character = TRUE)
+    }, character(1))
+
+    result_names <- names
   }
+
   names(seqs) <- result_names
 
   # Convert to DNAStringSet if requested
