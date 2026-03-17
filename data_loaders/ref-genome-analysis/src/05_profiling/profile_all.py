@@ -17,15 +17,16 @@ def rss_mb():
 
 from gtars.refget import RefgetStore
 
-BRICK_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
-STORE_PATH = f"{BRICK_ROOT}/refget_store"
+import os
+BRICK_ROOT = os.environ["BRICK_ROOT"]
+STORE_PATH = os.environ.get("STORE_PATH", f"{BRICK_ROOT}/refget_store")
 GENOMES = [
     # (path, old_total_time, n_seqs, label)
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964261635.1.fa.gz", 183.7, 448, "newt (2GB chr)"),
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964263255.1.fa.gz", 213.2, 15265, "15K seqs"),
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964263955.1.fa.gz", 42.7, 11150, "11K seqs"),
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964264875.2.fa.gz", 27.4, 585, "585 seqs"),
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964266715.1.fa.gz", 17.0, 1581, "1.6K seqs"),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964261635.1.fa.gz", 183.7, 448, "newt (2GB chr)"),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964263255.1.fa.gz", 213.2, 15265, "15K seqs"),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964263955.1.fa.gz", 42.7, 11150, "11K seqs"),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964264875.2.fa.gz", 27.4, 585, "585 seqs"),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964266715.1.fa.gz", 17.0, 1581, "1.6K seqs"),
 ]
 
 store = RefgetStore.on_disk(STORE_PATH)

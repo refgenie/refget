@@ -31,9 +31,9 @@ print_mem("startup")
 from gtars.refget import RefgetStore
 print_mem("after import")
 
-BRICK_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
-STORE_PATH = f"{BRICK_ROOT}/refget_store"
-NEWT_FASTA = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964261635.1.fa.gz"
+BRICK_ROOT = os.environ["BRICK_ROOT"]
+STORE_PATH = os.environ.get("STORE_PATH", f"{BRICK_ROOT}/refget_store")
+NEWT_FASTA = f"{BRICK_ROOT}/vertebrates/fasta/GCA_964261635.1.fa.gz"
 
 # Open the store
 t0 = time.time()

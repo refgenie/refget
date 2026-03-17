@@ -22,10 +22,11 @@ from collections import defaultdict
 
 from refget.store import RefgetStore
 
-BRICK_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
-STORE_PATH = f"{BRICK_ROOT}/refget_store"
-INVENTORY_CSV = f"{BRICK_ROOT}/refgenomes_inventory.csv"
-ALIAS_TABLE_CSV = f"{BRICK_ROOT}/refget_staging/ncbi_alias_table.csv"
+BRICK_ROOT = os.environ["BRICK_ROOT"]
+STORE_PATH = os.environ.get("STORE_PATH", f"{BRICK_ROOT}/refget_store")
+INVENTORY_CSV = os.environ.get("INVENTORY_CSV", f"{BRICK_ROOT}/refgenomes_inventory.csv")
+STAGING = os.environ.get("STAGING", f"{BRICK_ROOT}/refget_staging")
+ALIAS_TABLE_CSV = f"{STAGING}/ncbi_alias_table.csv"
 
 
 def parse_args():

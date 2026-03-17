@@ -8,7 +8,7 @@ module load miniforge/24.3.0-py3.11
 
 # Build gtars (refget module only)
 cd ~/code/gtars
-git checkout refgetstore
+git checkout dev
 git pull
 cd gtars-python
 rm -f ../target/wheels/gtars-*.whl

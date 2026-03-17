@@ -25,9 +25,9 @@ import sys
 import urllib.error
 import urllib.request
 
-BRICKYARD_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
+BRICKYARD_ROOT = os.environ["BRICK_ROOT"]
 PEP_URL = "https://pephub-api.databio.org/api/v1/projects/donaldcampbelljr/human_mouse_fasta_brickyard/samples?tag=default"
-OUTPUT_FILE = os.path.join(BRICKYARD_ROOT, "refgenomes_inventory.csv")
+OUTPUT_FILE = os.environ.get("INVENTORY_CSV", os.path.join(BRICKYARD_ROOT, "refgenomes_inventory.csv"))
 FASTA_EXTENSIONS = {".fa", ".fa.gz", ".fna", ".fna.gz", ".fasta", ".fasta.gz"}
 ACCESSION_PATTERN = re.compile(r"(GC[AF]_\d+\.\d+)")
 

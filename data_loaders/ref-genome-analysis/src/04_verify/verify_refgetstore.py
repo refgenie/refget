@@ -26,10 +26,11 @@ import sys
 import tempfile
 import time
 
-BRICK_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
-STORE_PATH = f"{BRICK_ROOT}/refget_store"
-INVENTORY_CSV = f"{BRICK_ROOT}/refgenomes_inventory.csv"
-DIGEST_MAP_CSV = f"{BRICK_ROOT}/refget_staging/digest_map.csv"
+BRICK_ROOT = os.environ["BRICK_ROOT"]
+STORE_PATH = os.environ.get("STORE_PATH", f"{BRICK_ROOT}/refget_store")
+INVENTORY_CSV = os.environ.get("INVENTORY_CSV", f"{BRICK_ROOT}/refgenomes_inventory.csv")
+STAGING = os.environ.get("STAGING", f"{BRICK_ROOT}/refget_staging")
+DIGEST_MAP_CSV = f"{STAGING}/digest_map.csv"
 
 results = []
 
@@ -375,8 +376,9 @@ def print_summary(store_path):
             if r["status"] == "FAIL":
                 print(f"  - {r['name']}: {r['detail']}")
 
-    # Write JSON report next to the store
-    report_dir = os.path.dirname(os.path.abspath(__file__))
+    # Write JSON report to staging area
+    report_dir = STAGING
+    os.makedirs(report_dir, exist_ok=True)
     report_path = os.path.join(report_dir, "verification_report.json")
     with open(report_path, "w") as f:
         json.dump(

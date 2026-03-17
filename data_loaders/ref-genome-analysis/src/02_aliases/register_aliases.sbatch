@@ -10,6 +10,7 @@
 
 module load miniforge/24.3.0-py3.11
 
-cd /project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/refget/data_loaders/ref-genome-analysis/aliases
+cd /home/ns5bc/code/ref-genome-analysis
+source env/on-cluster.env
 
-python register_ncbi_aliases.py --store-path /project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/refget_store
+python src/02_aliases/register_ncbi_aliases.py

@@ -10,6 +10,7 @@
 
 module load miniforge/24.3.0-py3.11
 
-cd /project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/refget/data_loaders/ref-genome-analysis/profiling
+cd /home/ns5bc/code/ref-genome-analysis
+source env/on-cluster.env
 
-python profile_normal.py
+python src/05_profiling/profile_normal.py

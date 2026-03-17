@@ -7,13 +7,14 @@ def peak_mb():
 
 from gtars.refget import RefgetStore
 
-BRICK_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
-STORE_PATH = f"{BRICK_ROOT}/refget_store"
+import os
+BRICK_ROOT = os.environ["BRICK_ROOT"]
+STORE_PATH = os.environ.get("STORE_PATH", f"{BRICK_ROOT}/refget_store")
 GENOMES = [
     # (path, old_pipeline_time, old_total_time, n_seqs)
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964263255.1.fa.gz", 203.1, 213.2, 15265),
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964263955.1.fa.gz", 32.6, 42.7, 11150),
-    ("/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta/vertebrates/fasta/GCA_964266715.1.fa.gz", 7.2, 17.0, 1581),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964263255.1.fa.gz", 203.1, 213.2, 15265),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964263955.1.fa.gz", 32.6, 42.7, 11150),
+    (f"{BRICK_ROOT}/vertebrates/fasta/GCA_964266715.1.fa.gz", 7.2, 17.0, 1581),
 ]
 
 store = RefgetStore.on_disk(STORE_PATH)

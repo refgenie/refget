@@ -23,9 +23,9 @@ import time
 import urllib.error
 import urllib.request
 
-BRICK_ROOT = "/project/shefflab/brickyard/datasets_downloaded/refgenomes_fasta"
-INVENTORY_CSV = f"{BRICK_ROOT}/refgenomes_inventory.csv"
-STAGING_DIR = f"{BRICK_ROOT}/refget_staging"
+BRICK_ROOT = os.environ["BRICK_ROOT"]
+INVENTORY_CSV = os.environ.get("INVENTORY_CSV", f"{BRICK_ROOT}/refgenomes_inventory.csv")
+STAGING_DIR = os.environ.get("STAGING", f"{BRICK_ROOT}/refget_staging")
 ACCESSION_PATTERN = re.compile(r"(GC[AF]_\d+\.\d+)")
 NCBI_FTP_BASE = "https://ftp.ncbi.nlm.nih.gov/genomes/all"
 
