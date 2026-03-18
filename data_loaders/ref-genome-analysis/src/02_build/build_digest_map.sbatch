@@ -10,7 +10,7 @@
 
 module load miniforge/24.3.0-py3.11
 
-cd /home/ns5bc/code/ref-genome-analysis
+cd $HOME/code/ref-genome-analysis
 source env/on-cluster.env
 
 python src/02_build/build_digest_map.py

@@ -27,6 +27,9 @@ inventory --> build --> aliases --> fhr --> verify
 | **verify** | `src/04_verify/` | Automated pass/fail checks against the store |
 | **profiling** | `src/05_profiling/` | Memory and timing benchmarks |
 | **split** | `src/90_split_store.py` | Split combined store into VGP and reference genome stores |
+| **backfill** | `src/backfill_sequence_aliases.py` | Re-register aliases into split stores from NCBI alias table |
+| **validate** | `src/validate_split_stores.py` | Validate split stores (counts, aliases, FHR, sequences, cross-store) |
+| **push** | `src/push_to_s3.sh` | Push split stores to S3 (`s3://refgenie/`) |
 | **examples** | `src/examples/` | End-to-end test scripts (e.g., load 20 genomes with FHR) |
 
 ## Environment variables
@@ -59,4 +62,40 @@ python src/03_fhr/load_fhr_metadata.py --store-path $STORE_PATH --fhr-dir $STAGI
 
 # 4. Verify
 python src/04_verify/verify_refgetstore.py
+
+# 5. Split into VGP + ref stores
+sbatch src/90_split_store.sbatch
+
+# 6. Backfill aliases into split stores
+python src/backfill_sequence_aliases.py --target $BRICK_ROOT/vgp_reference_store
+python src/backfill_sequence_aliases.py --target $BRICK_ROOT/refgenome_jungle_store
+
+# 7. Validate split stores
+sbatch src/validate_split_stores.sbatch
+
+# 8. Push to S3 (requires GPG agent forwarding: ssh riva1_gpg)
+bash src/push_to_s3.sh both
+```
+
+## S3 deployment
+
+Requires GPG agent forwarding for `pass` credentials (see `ssh riva1_gpg` in SSH config).
+
+```bash
+ssh riva1_gpg
+cd code/ref-genome-analysis
+source env/on-cluster.env
+bash src/push_to_s3.sh vgp   # or: ref, both, "vgp --dry-run"
+```
+
+Stores are pushed to `s3://refgenie/refget-store/vgp` and `s3://refgenie/refget-store/jungle`.
+
+To load from S3:
+
+```python
+from refget.store import RefgetStore
+store = RefgetStore.open_remote(
+    "~/.refget/vgp_cache",
+    "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vgp"
+)
 ```

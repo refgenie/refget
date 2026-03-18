@@ -33,27 +33,37 @@ REPO_ROOT = Path(__file__).parent.parent
 _DIGESTS_FILE = REPO_ROOT / "test_fasta" / "test_fasta_digests.json"
 _COMPARISON_DIR = REPO_ROOT / "tests" / "api" / "comparison"
 
-# Load digest test data
-with open(_DIGESTS_FILE) as _f:
-    DIGEST_DATA = json.load(_f)
+# Lazy-loaded — these are only needed when running compliance checks
+DIGEST_DATA = None
+DIGEST_TESTS = None
+COMPARISON_FILES = None
+COMPARISON_FIXTURES = None
 
-# Convert to list of (name, bundle) tuples for iteration
-DIGEST_TESTS = [(name, bundle) for name, bundle in DIGEST_DATA.items()]
 
-# Comparison fixture files (base.fa vs each other file)
-COMPARISON_FILES = [
-    _COMPARISON_DIR / "compare_base.fa_subset.fa.json",
-    _COMPARISON_DIR / "compare_base.fa_different_names.fa.json",
-    _COMPARISON_DIR / "compare_base.fa_different_order.fa.json",
-    _COMPARISON_DIR / "compare_base.fa_pair_swap.fa.json",
-    _COMPARISON_DIR / "compare_base.fa_swap_wo_coords.fa.json",
-]
-
-# Load comparison fixtures
-COMPARISON_FIXTURES = {}
-for _f in COMPARISON_FILES:
-    with open(_f) as _fp:
-        COMPARISON_FIXTURES[_f.name] = json.load(_fp)
+def _load_test_data():
+    global DIGEST_DATA, DIGEST_TESTS, COMPARISON_FILES, COMPARISON_FIXTURES
+    if DIGEST_DATA is not None:
+        return
+    if not _DIGESTS_FILE.exists():
+        raise FileNotFoundError(
+            f"Compliance test data not found at {_DIGESTS_FILE}. "
+            "This is expected when refget is pip-installed. "
+            "Clone the repo to run compliance tests."
+        )
+    with open(_DIGESTS_FILE) as f:
+        DIGEST_DATA = json.load(f)
+    DIGEST_TESTS = [(name, bundle) for name, bundle in DIGEST_DATA.items()]
+    COMPARISON_FILES = [
+        _COMPARISON_DIR / "compare_base.fa_subset.fa.json",
+        _COMPARISON_DIR / "compare_base.fa_different_names.fa.json",
+        _COMPARISON_DIR / "compare_base.fa_different_order.fa.json",
+        _COMPARISON_DIR / "compare_base.fa_pair_swap.fa.json",
+        _COMPARISON_DIR / "compare_base.fa_swap_wo_coords.fa.json",
+    ]
+    COMPARISON_FIXTURES = {}
+    for fp in COMPARISON_FILES:
+        with open(fp) as fh:
+            COMPARISON_FIXTURES[fp.name] = json.load(fh)
 
 
 # ============================================================
@@ -417,6 +427,7 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
 
     Returns list of (name, function, args) tuples.
     """
+    _load_test_data()
     checks = []
 
     # Structure checks

@@ -43,7 +43,7 @@ const StoreCollection = () => {
     return (
       <div className="alert alert-warning">
         No store loaded.{' '}
-        <Link to="/explore">Go back to enter a store URL.</Link>
+        <Link to="/explore-store">Go back to enter a store URL.</Link>
       </div>
     );
   }

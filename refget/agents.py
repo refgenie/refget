@@ -862,6 +862,11 @@ class RefgetDBAgent(object):
         result = self.seqcol.list_by_offset(limit=1, offset=0)
         return result["pagination"]["total"]
 
+    def list_attributes(self, attribute: str, page: int = 0, page_size: int = 100) -> dict:
+        res = self.attribute.list(attribute, limit=page_size, offset=page * page_size)
+        res["results"] = [x.digest for x in res["results"]]
+        return res
+
     def capabilities(self) -> dict:
         return {
             "backend_type": "database",

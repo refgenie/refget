@@ -29,6 +29,17 @@ DEFAULT_REF_OUTPUT = os.path.join(BRICK_ROOT, "refgenome_jungle_store")
 VGP_GROUPS = {"vertebrates"}
 
 
+def _paginate(store):
+    """Yield pages of collection results from a store."""
+    page = 0
+    while True:
+        result = store.list_collections(page, 1000)
+        yield result["results"]
+        if len(result["results"]) < 1000:
+            break
+        page += 1
+
+
 def load_digest_map(digest_map_path: str) -> dict[str, set[str]]:
     """Read digest_map.csv and return group -> set of digests."""
     groups: dict[str, set[str]] = {}
@@ -99,20 +110,24 @@ def split_store(
     # Import VGP collections
     print(f"\nCreating VGP store: {vgp_output}")
     vgp_store = RefgetStore.on_disk(vgp_output)
-    print(f"Importing {len(vgp_in_store)} VGP collections...")
+    existing_vgp = {c.digest for p in _paginate(vgp_store) for c in p}
+    to_import_vgp = sorted(vgp_in_store - existing_vgp)
+    print(f"VGP: {len(vgp_in_store)} total, {len(existing_vgp)} already imported, {len(to_import_vgp)} remaining")
     t0 = time.time()
-    for i, digest in enumerate(sorted(vgp_in_store), 1):
-        print(f"  [{i}/{len(vgp_in_store)}] {digest}")
+    for i, digest in enumerate(to_import_vgp, 1):
+        print(f"  [{i}/{len(to_import_vgp)}] {digest}")
         vgp_store.import_collection(source, digest)
     print(f"VGP import done in {time.time() - t0:.1f}s")
 
     # Import ref collections
     print(f"\nCreating ref store: {ref_output}")
     ref_store = RefgetStore.on_disk(ref_output)
-    print(f"Importing {len(ref_in_store)} ref genome collections...")
+    existing_ref = {c.digest for p in _paginate(ref_store) for c in p}
+    to_import_ref = sorted(ref_in_store - existing_ref)
+    print(f"Ref: {len(ref_in_store)} total, {len(existing_ref)} already imported, {len(to_import_ref)} remaining")
     t0 = time.time()
-    for i, digest in enumerate(sorted(ref_in_store), 1):
-        print(f"  [{i}/{len(ref_in_store)}] {digest}")
+    for i, digest in enumerate(to_import_ref, 1):
+        print(f"  [{i}/{len(to_import_ref)}] {digest}")
         ref_store.import_collection(source, digest)
     print(f"Ref import done in {time.time() - t0:.1f}s")
 

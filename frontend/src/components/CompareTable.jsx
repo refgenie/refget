@@ -36,7 +36,7 @@ const CompareTable = ({ seqColDict }) => {
               '='
             ) : (
               <Link
-                to={`/scim/${seqColDigests[i]}/${seqColDigests[j]}`}
+                to={`/compare/${seqColDigests[i]}/${seqColDigests[j]}`}
                 key={`${seqColDigests[i]}-${seqColDigests[j]}`}
               >
                 <img

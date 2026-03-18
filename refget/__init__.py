@@ -13,7 +13,6 @@ Import from submodules:
 from ._version import __version__
 from .backend import RefgetStoreBackend, SeqColBackend
 from .clients import SequenceCollectionClient
-from .compliance import run_compliance
 from .const import GTARS_INSTALLED
 from .exceptions import InvalidSeqColError
 from .store import (
@@ -37,7 +36,6 @@ __all__ = [
     "compute_fai",
     "digest_sequence",
     "SequenceCollection",
-    "run_compliance",
     "SeqColBackend",
     "RefgetStoreBackend",
     "SequenceCollectionClient",

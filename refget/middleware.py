@@ -56,4 +56,4 @@ class StoreFreshnessMiddleware(BaseHTTPMiddleware):
 
         _LOGGER.info(f"Store changed, reloading from {self.store_url}")
         store = RefgetStore.open_remote(self.cache_dir, self.store_url)
-        app.state.backend = RefgetStoreBackend(store.into_readonly())
+        app.state.backend = RefgetStoreBackend(store)

@@ -40,7 +40,7 @@ if [ -n "$DEPLOY_HOST" ] && [ -n "$DEPLOY_DIR" ]; then
   fi
 
   # refget — local source synced to remote deploy dir
-  REFGET_LOCAL="$HOME/Dropbox/workspaces/intervals/repos/refget"
+  REFGET_LOCAL="$HOME/Dropbox/workspaces/refgenie/repos/refget"
   if [ -d "$REFGET_LOCAL" ]; then
     mutagen sync create \
       --name="deploy-refget" \

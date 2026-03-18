@@ -19,6 +19,40 @@ from .examples import *
 global _LOGGER
 _LOGGER = logging.getLogger(__name__)
 
+
+def _load_scom_config(store_path: str, remote: bool):
+    """Load scom_config.json from next to the store if it exists.
+
+    Convention: a JSON file at {store_url}/scom_config.json with format:
+        {"human": ["digest1", "digest2", ...], "mouse": [...]}
+    """
+    import json
+
+    if remote:
+        import urllib.request
+
+        url = store_path.rstrip("/") + "/scom_config.json"
+        try:
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                config = json.loads(resp.read())
+            for species, digests in config.items():
+                _SAMPLE_DIGESTS[species] = digests
+                _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
+        except Exception as e:
+            _LOGGER.info(f"No scom_config.json found at {url} ({e}). SCOM disabled.")
+    else:
+        import os
+
+        config_path = os.path.join(store_path, "scom_config.json")
+        if os.path.exists(config_path):
+            with open(config_path) as f:
+                config = json.load(f)
+            for species, digests in config.items():
+                _SAMPLE_DIGESTS[species] = digests
+                _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
+        else:
+            _LOGGER.info(f"No scom_config.json at {config_path}. SCOM disabled.")
+
 for key, value in ALL_VERSIONS.items():
     _LOGGER.info(f"{key}: {value}")
 
@@ -217,6 +251,9 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
     )
     store_app.include_router(router)
 
+    # Load SCOM config from store (convention: scom_config.json next to rgstore.json)
+    _load_scom_config(store_path, remote)
+
     if remote:
         from refget.middleware import StoreFreshnessMiddleware
 
@@ -228,8 +265,20 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
 
     @store_app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
     async def store_service_info():
+        import json as _json
+        from pathlib import Path as _Path
+
         backend = getattr(store_app.state, "backend", None)
         caps = backend.capabilities() if backend and hasattr(backend, "capabilities") else {}
+
+        # Load the seqcol schema (same schema used by the DB-backed app)
+        _schema_path = _Path(__file__).parent.parent / "refget" / "schemas" / "seqcol.json"
+        try:
+            with open(_schema_path) as _f:
+                schema = _json.load(_f)
+        except Exception:
+            schema = None
+
         return {
             "id": "org.databio.seqcolapi.store",
             "name": "Sequence collections (store-backed)",
@@ -243,7 +292,9 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
             "contactUrl": "https://github.com/refgenie/refget/issues",
             "version": ALL_VERSIONS,
             "seqcol": {
-                "refget_store": {"enabled": True, "url": store_path, **caps},
+                "schema": schema,
+                "refget_store": {"enabled": True, "url": os.environ.get("REFGET_STORE_HTTP_URL", store_path), **caps},
+                "scom": {"enabled": bool(_SAMPLE_DIGESTS), "species": list(_SAMPLE_DIGESTS.keys())},
             },
         }
 
@@ -253,10 +304,12 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
 import os
 
 _STORE_URL_ENV = os.environ.get("REFGET_STORE_URL")
+_STORE_PATH_ENV = os.environ.get("REFGET_STORE_PATH")
 
 if _STORE_URL_ENV:
     store_app = create_store_app(_STORE_URL_ENV, remote=True)
+elif _STORE_PATH_ENV:
+    store_app = create_store_app(_STORE_PATH_ENV, remote=False)
 
-
-if __name__ != "__main__":
+if __name__ != "__main__" and not _STORE_URL_ENV and not _STORE_PATH_ENV:
     setup_backend(app, engine=RefgetDBAgent().engine)

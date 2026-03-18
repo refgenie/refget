@@ -11,9 +11,9 @@ const StoreNav = ({ active, storeUrlParam, collectionDigest }) => {
   const remote = storeUrl || new URLSearchParams(storeUrlParam).get('url') || '';
 
   const items = [
-    { key: 'overview', label: 'Overview', path: '/explore/store', icon: 'bi-house' },
-    { key: 'sequences', label: 'Sequences', path: '/explore/store/sequences', icon: 'bi-list-ol' },
-    { key: 'aliases', label: 'Aliases', path: '/explore/store/aliases', icon: 'bi-tag' },
+    { key: 'overview', label: 'Overview', path: '/explore-store/overview', icon: 'bi-house' },
+    { key: 'sequences', label: 'Sequences', path: '/explore-store/sequences', icon: 'bi-list-ol' },
+    { key: 'aliases', label: 'Aliases', path: '/explore-store/aliases', icon: 'bi-tag' },
   ];
 
   const snippetGroups = [
@@ -137,7 +137,7 @@ store.chrom_sizes("${collectionDigest}")`,
             <i className="bi bi-code-slash me-1" />
             Code
           </button>
-          <Link to="/explore" className="btn btn-sm btn-outline-secondary">
+          <Link to="/explore-store" className="btn btn-sm btn-outline-secondary">
             <i className="bi bi-arrow-left me-1" />
             Change Store
           </Link>

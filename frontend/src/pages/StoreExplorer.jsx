@@ -45,7 +45,7 @@ const StoreExplorer = () => {
     try {
       await loadStore(trimmed);
       saveRecentStore(trimmed);
-      navigate(`/explore/store?url=${encodeURIComponent(trimmed)}`);
+      navigate(`/explore-store/overview?url=${encodeURIComponent(trimmed)}`);
     } catch (err) {
       setLocalError(err.message);
     }
@@ -113,17 +113,31 @@ const StoreExplorer = () => {
           <h6 className="text-muted">Recent stores</h6>
           <div className="list-group">
             {recentStores.map((recentUrl) => (
-              <button
+              <div
                 key={recentUrl}
-                className="list-group-item list-group-item-action font-monospace small"
-                onClick={() => {
-                  setUrl(recentUrl);
-                  handleExplore(recentUrl);
-                }}
+                className="list-group-item d-flex justify-content-between align-items-center"
               >
-                <i className="bi bi-clock-history me-2" />
-                {recentUrl}
-              </button>
+                <span className="font-monospace small text-truncate me-2">{recentUrl}</span>
+                <span className="d-flex gap-1 flex-shrink-0">
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    title="Copy URL"
+                    onClick={() => navigator.clipboard.writeText(recentUrl)}
+                  >
+                    <i className="bi bi-clipboard" />
+                  </button>
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    title="Load store"
+                    onClick={() => {
+                      setUrl(recentUrl);
+                      handleExplore(recentUrl);
+                    }}
+                  >
+                    <i className="bi bi-box-arrow-in-right" />
+                  </button>
+                </span>
+              </div>
             ))}
           </div>
         </div>

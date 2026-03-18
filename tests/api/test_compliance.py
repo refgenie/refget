@@ -11,9 +11,8 @@
 
 import pytest
 
+import refget.compliance as compliance
 from refget.compliance import (
-    COMPARISON_FIXTURES,
-    DIGEST_TESTS,
     check_attribute_retrieval,
     check_collection_level1,
     check_collection_level2,
@@ -31,6 +30,11 @@ from refget.compliance import (
     check_sorted_name_length_pairs,
     check_transient_attribute_not_served,
 )
+
+# Load test data at import time — tests always run from the repo
+compliance._load_test_data()
+DIGEST_TESTS = compliance.DIGEST_TESTS
+COMPARISON_FIXTURES = compliance.COMPARISON_FIXTURES
 
 
 @pytest.mark.require_service

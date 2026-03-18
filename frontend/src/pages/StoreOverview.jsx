@@ -37,7 +37,7 @@ const StoreOverview = () => {
     return (
       <div className="alert alert-warning">
         No store loaded.{' '}
-        <Link to="/explore">Go back to enter a store URL.</Link>
+        <Link to="/explore-store">Go back to enter a store URL.</Link>
       </div>
     );
   }
@@ -122,7 +122,7 @@ const StoreOverview = () => {
                 Sequences
               </h6>
               <Link
-                to={`/explore/store/sequences${storeUrlParam}`}
+                to={`/explore-store/sequences${storeUrlParam}`}
                 className="btn btn-sm btn-outline-primary"
               >
                 Browse all
@@ -175,7 +175,7 @@ const StoreOverview = () => {
         <div className="card-header d-flex justify-content-between align-items-center">
           <h6 className="mb-0">
             <i className="bi bi-collection me-2" />
-            Collections
+            Collections{collections?.length > 0 && ` (${collections.length.toLocaleString()})`}
           </h6>
         </div>
         <div className="card-body">
@@ -194,7 +194,7 @@ const StoreOverview = () => {
                     <tr key={col.digest}>
                       <td>
                         <Link
-                          to={`/explore/store/collection/${col.digest}${storeUrlParam}`}
+                          to={`/explore-store/collection/${col.digest}${storeUrlParam}`}
                           className="font-monospace small"
                         >
                           {col.digest}
@@ -250,7 +250,7 @@ store.export("${col.digest}")`,
             Aliases
           </h6>
           <Link
-            to={`/explore/store/aliases${storeUrlParam}`}
+            to={`/explore-store/aliases${storeUrlParam}`}
             className="btn btn-sm btn-outline-primary"
           >
             Browse aliases
@@ -267,7 +267,7 @@ store.export("${col.digest}")`,
                       {metadata.sequence_alias_namespaces.map((ns) => (
                         <Link
                           key={ns}
-                          to={`/explore/store/aliases${storeUrlParam}`}
+                          to={`/explore-store/aliases${storeUrlParam}`}
                           className="badge bg-secondary me-1 text-decoration-none"
                         >
                           {ns}
@@ -283,7 +283,7 @@ store.export("${col.digest}")`,
                       {metadata.collection_alias_namespaces.map((ns) => (
                         <Link
                           key={ns}
-                          to={`/explore/store/aliases${storeUrlParam}`}
+                          to={`/explore-store/aliases${storeUrlParam}`}
                           className="badge bg-secondary me-1 text-decoration-none"
                         >
                           {ns}

@@ -61,7 +61,7 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
   const linkPrefix =
     type === 'sequences'
       ? null // sequences don't have a detail page in the explorer
-      : `/explore/store/collection/`;
+      : `/explore-store/collection/`;
 
   return (
     <div className="card mb-3">
@@ -167,7 +167,7 @@ const StoreAliases = () => {
     return (
       <div className="alert alert-warning">
         No store loaded.{' '}
-        <Link to="/explore">Go back to enter a store URL.</Link>
+        <Link to="/explore-store">Go back to enter a store URL.</Link>
       </div>
     );
   }

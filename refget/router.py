@@ -37,13 +37,14 @@ _ROUTER_CONFIG: dict = {}
 def setup_backend(app, store=None, engine=None):
     """Configure the seqcol backend on a FastAPI app.
 
-    Pass a RefgetStore to serve from the store (default, no database needed).
+    Pass a RefgetStore to serve from the store (no database needed).
+    The store is used directly (not converted to readonly) so it can lazy-load collections.
     Pass a SQLAlchemy engine to serve from PostgreSQL via RefgetDBAgent.
     """
     if store is not None:
         from .backend import RefgetStoreBackend
 
-        app.state.backend = RefgetStoreBackend(store.into_readonly())
+        app.state.backend = RefgetStoreBackend(store)
     elif engine is not None:
         from .agents import RefgetDBAgent
 
@@ -233,106 +234,72 @@ async def compare_2_digests(
 
 @seqcol_router.post(
     "/similarities/{collection_digest}",
-    summary="Calculate Jaccard similarities between a single sequence collection in the database and all other collections in the database (by species)",
+    summary="Calculate Jaccard similarities between a sequence collection and all others",
     tags=["Comparing sequence collections"],
     response_model=Similarities,
 )
 async def calc_similarities(
     collection_digest: str,
-    species: str = Query("human", description="Species to filter by ('human' or 'mouse')"),
+    species: str = Query("human", description="Species/group to filter by"),
     page_size: int = Query(50, description="Number of results per page"),
     page: int = Query(0, description="Page number (0-indexed)"),
-    dbagent=Depends(get_dbagent),
+    backend=Depends(get_backend),
 ) -> Similarities:
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
-        seqcolA = dbagent.seqcol.get(digest=collection_digest)
-    except Exception as e:
-        _LOGGER.debug(f"Error fetching collection: {e}")
+        seqcolA = backend.get_collection(collection_digest, level=2)
+    except (ValueError, KeyError):
         raise HTTPException(status_code=404, detail="Collection not found")
 
-    return await calc_similarities_from_json(seqcolA, species, page_size, page, dbagent)
+    return await _compute_similarities(seqcolA, species, page_size, page, backend)
 
 
 @seqcol_router.post(
     "/similarities/",
-    summary="Calculate Jaccard similarities between input sequence collection and all collections in database",
+    summary="Calculate Jaccard similarities between input sequence collection and all collections",
     tags=["Comparing sequence collections"],
     response_model=Similarities,
 )
 async def calc_similarities_from_json(
     seqcolA: dict,
-    species: str = Query("human", description="Species to filter by ('human' or 'mouse')"),
+    species: str = Query("human", description="Species/group to filter by"),
     page_size: int = Query(50, description="Number of results per page"),
     page: int = Query(0, description="Page number (0-indexed)"),
-    dbagent=Depends(get_dbagent),
+    backend=Depends(get_backend),
 ) -> Similarities:
-    """
-    Calculate Jaccard similarities between input sequence collection and all collections in DB.
-    Takes a JSON sequence collection directly instead of a digest.
-    Take output from: refget digest-fasta "yourfasta.fa" -l 2 > myoutput.json
+    return await _compute_similarities(seqcolA, species, page_size, page, backend)
 
-    Args:
-        seqcolA: Input sequence collection dictionary
-        species: Species to filter by ("human" or "mouse"), defaults to "human"
-        page_size: Number of results per page
-        page: Page number
-        dbagent: Database agent dependency
-    """
-    _LOGGER.info(
-        f"Calculating Jaccard similarities from input sequence collection for {species}..."
-    )
 
+async def _compute_similarities(
+    seqcolA: dict,
+    species: str,
+    page_size: int,
+    page: int,
+    backend: SeqColBackend,
+) -> Similarities:
+    """Shared implementation for both similarity endpoints."""
     try:
-        # Validate species parameter
-        if species.lower() not in _SAMPLE_DIGESTS:
+        # Get target digests for species if configured
+        target_digests = _SAMPLE_DIGESTS.get(species.lower()) if _SAMPLE_DIGESTS else None
+
+        if not _SAMPLE_DIGESTS:
+            raise HTTPException(
+                status_code=501,
+                detail="Similarities not configured. No scom_config.json found.",
+            )
+        if not target_digests:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid species '{species}'. Choose from: {list(_SAMPLE_DIGESTS.keys())}",
             )
 
-        # Get pre-loaded digests for the species
-        target_digests = _SAMPLE_DIGESTS[species.lower()]
-
-        if not target_digests:
-            _LOGGER.warning(f"No pre-loaded digests found for {species}")
-            return Similarities(
-                similarities=[],
-                pagination=PaginationResult(page=page, page_size=page_size, total=0),
-                reference_digest=None,
-            )
-
-        _LOGGER.info(f"Using {len(target_digests)} pre-loaded digests for {species}")
-
-        # Use the modified get_many_level2_offset function with target_digests filter
-        results = dbagent.seqcol.get_many_level2_offset(
-            limit=page_size, offset=page * page_size, target_digests=target_digests
+        result = backend.compute_similarities(
+            seqcolA, page=page, page_size=page_size, target_digests=target_digests
         )
-
-        similarities = []
-        for key in results.results.keys():
-            human_readable_names = results.results[key]["human_readable_names"]
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
-            similarities.append(
-                {
-                    "digest": key,
-                    "human_readable_names": human_readable_names,
-                    "similarities": jaccard_sims,
-                }
-            )
-
-        result = Similarities(
-            similarities=similarities, pagination=results.pagination, reference_digest=None
-        )
-
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
+        return Similarities(**result)
     except Exception as e:
-        _LOGGER.debug(f"Error in calc_similarities_from_json: {e}")
+        _LOGGER.debug(f"Error computing similarities: {e}")
         raise HTTPException(status_code=500, detail="Error calculating similarities")
-
-    return result
 
 
 @seqcol_router.post(
@@ -407,15 +374,13 @@ async def list_collections_by_offset(
     response_model=PaginatedDigestList,
 )
 async def list_attributes(
-    dbagent=Depends(get_dbagent),
+    backend=Depends(get_backend),
     attribute: str = "names",
     page_size: int = Query(100, description="Number of results per page"),
     page: int = Query(0, description="Page number (0-indexed)"),
 ):
     try:
-        res = dbagent.attribute.list(attribute, limit=page_size, offset=page * page_size)
-        res["results"] = [x.digest for x in res["results"]]
-        return res
+        return backend.list_attributes(attribute, page=page, page_size=page_size)
     except KeyError:
         raise HTTPException(
             status_code=404,

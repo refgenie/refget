@@ -43,7 +43,7 @@ def backend():
     store = RefgetStore.in_memory()
     store.add_sequence_collection_from_fasta(str(BASE_FASTA))
     store.add_sequence_collection_from_fasta(str(DIFFERENT_NAMES_FASTA))
-    return RefgetStoreBackend(store.into_readonly())
+    return RefgetStoreBackend(store)
 
 
 @pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
@@ -171,16 +171,18 @@ class TestStoreBackend501:
 
         store = RefgetStore.in_memory()
         store.add_sequence_collection_from_fasta(str(BASE_FASTA))
-        backend = RefgetStoreBackend(store.into_readonly())
+        backend = RefgetStoreBackend(store)
         app.state.backend = backend
         # Deliberately do NOT set app.state.dbagent
         return TestClient(app)
 
-    def test_list_attributes_returns_501(self, store_client):
-        """GET /list/attributes/names returns 501 without dbagent."""
+    def test_list_attributes_works_without_dbagent(self, store_client):
+        """GET /list/attributes/names works via backend without dbagent."""
         response = store_client.get("/seqcol/list/attributes/names")
-        assert response.status_code == 501
-        assert "database backend" in response.json()["detail"].lower()
+        assert response.status_code == 200
+        data = response.json()
+        assert "results" in data
+        assert "pagination" in data
 
     def test_similarities_post_returns_501(self, store_client):
         """POST /similarities/{digest} returns 501 without dbagent."""

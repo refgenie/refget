@@ -20,7 +20,7 @@ BRICK_ROOT = os.environ["BRICK_ROOT"]
 INVENTORY_CSV = os.environ.get("INVENTORY_CSV", f"{BRICK_ROOT}/refgenomes_inventory.csv")
 STAGING = os.environ.get("STAGING", f"{BRICK_ROOT}/refget_staging")
 FHR_DIR = f"{STAGING}/fhr_metadata"
-STORE_PATH = os.environ.get("STORE_PATH", "/scratch/ns5bc/test_refget_store_20")
+STORE_PATH = os.environ.get("STORE_PATH", "/scratch/$USER/test_refget_store_20")
 
 
 def main():

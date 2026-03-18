@@ -20,7 +20,7 @@
       "environment": [
         {
           "name": "REFGET_STORE_URL",
-          "value": "s3://seqcolapi-store/refget/"
+          "value": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vgp/"
         }
       ],
       "resourceRequirements": null,

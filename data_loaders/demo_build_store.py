@@ -38,7 +38,14 @@ def main():
     store = RefgetStore.on_disk(store_path)
 
     for fasta in fasta_files:
-        store.add_sequence_collection_from_fasta(fasta)
+        result = store.add_sequence_collection_from_fasta(fasta)
+        # Register the filename (without extension) as a collection alias
+        basename = os.path.basename(fasta)
+        name = basename.split(".")[0]  # strip .fa, .fasta, .fa.gz, etc.
+        meta = result[0] if isinstance(result, tuple) else result
+        if meta:
+            store.add_collection_alias("fasta_filename", name, meta.digest)
+            print(f"  {name} → {meta.digest}")
 
     print(f"Done. Store at: {store_path}")
     print(f"Stats: {store.stats()}")

@@ -1244,7 +1244,7 @@ def serve(
     else:
         store = _load_store(None)
 
-    backend = RefgetStoreBackend(store.into_readonly())
+    backend = RefgetStoreBackend(store)
 
     from fastapi import FastAPI
 

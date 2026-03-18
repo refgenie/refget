@@ -33,7 +33,18 @@ const checkResponse = async (response, url) => {
 };
 
 export const fetchServiceInfo = async () => {
-  const url = `${API_BASE}/service-info`;
+  try {
+    const url = `${API_BASE}/service-info`;
+    const response = await fetch(url);
+    await checkResponse(response, url);
+    return response.json();
+  } catch {
+    return null;
+  }
+};
+
+export const fetchServiceInfoFromUrl = async (baseUrl) => {
+  const url = `${baseUrl.replace(/\/+$/, '')}/service-info`;
   const response = await fetch(url);
   await checkResponse(response, url);
   return response.json();
@@ -55,7 +66,8 @@ export const fetchPangenomeLevels = async (digest) => {
   );
 };
 
-export const fetchSeqColList = async () => {
+export const fetchSeqColList = async (baseUrl) => {
+  const base = (baseUrl || API_BASE).replace(/\/+$/, '');
   const fetchRequired = async (url) => {
     const response = await fetch(url);
     await checkResponse(response, url);
@@ -73,15 +85,16 @@ export const fetchSeqColList = async () => {
   };
 
   return Promise.all([
-    fetchRequired(`${API_BASE}/list/collection?page_size=10&page=0`),
-    fetchOptional(`${API_BASE}/list/pangenome?page_size=5`),
-    fetchRequired(`${API_BASE}/list/attributes/name_length_pairs?page_size=5`),
+    fetchRequired(`${base}/list/collection?page_size=10&page=0`),
+    fetchOptional(`${base}/list/pangenome?page_size=5`),
+    fetchRequired(`${base}/list/attributes/name_length_pairs?page_size=5`),
   ]);
 };
 
-export const fetchAllSeqCols = async () => {
+export const fetchAllSeqCols = async (baseUrl) => {
+  const base = (baseUrl || API_BASE).replace(/\/+$/, '');
   const urls = [
-    `${API_BASE}/list/collection?page_size=1000&page=0`,
+    `${base}/list/collection?page_size=1000&page=0`,
   ];
 
   return Promise.all(
@@ -93,11 +106,12 @@ export const fetchAllSeqCols = async () => {
   );
 };
 
-export const fetchCollectionLevels = async (digest) => {
+export const fetchCollectionLevels = async (digest, baseUrl) => {
+  const base = (baseUrl || API_BASE).replace(/\/+$/, '');
   const urls = [
-    `${API_BASE}/collection/${digest}?level=1`,
-    `${API_BASE}/collection/${digest}?level=2`,
-    `${API_BASE}/collection/${digest}?collated=false`,
+    `${base}/collection/${digest}?level=1`,
+    `${base}/collection/${digest}?level=2`,
+    `${base}/collection/${digest}?collated=false`,
   ];
 
   return Promise.all(
@@ -109,8 +123,9 @@ export const fetchCollectionLevels = async (digest) => {
   );
 };
 
-export const fetchComparison = async (digest1, digest2) => {
-  const url = `${API_BASE}/comparison/${digest1}/${digest2}`;
+export const fetchComparison = async (digest1, digest2, baseUrl) => {
+  const base = (baseUrl || API_BASE).replace(/\/+$/, '');
+  const url = `${base}/comparison/${digest1}/${digest2}`;
   const response = await fetch(url);
   if (!response.ok) {
     if (response.status === 404) {
@@ -126,8 +141,9 @@ export const fetchComparison = async (digest1, digest2) => {
   return response.json();
 };
 
-export const fetchComparisonJSON = async (data, digest) => {
-  const url = `${API_BASE}/comparison/${digest}`;
+export const fetchComparisonJSON = async (data, digest, baseUrl) => {
+  const base = (baseUrl || API_BASE).replace(/\/+$/, '');
+  const url = `${base}/comparison/${digest}`;
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -139,10 +155,11 @@ export const fetchComparisonJSON = async (data, digest) => {
   return response.json();
 };
 
-export const fetchAttribute = async (attribute, digest) => {
+export const fetchAttribute = async (attribute, digest, baseUrl) => {
+  const base = (baseUrl || API_BASE).replace(/\/+$/, '');
   const urls = [
-    `${API_BASE}/list/collection?${attribute}=${digest}`,
-    `${API_BASE}/attribute/collection/${attribute}/${digest}`,
+    `${base}/list/collection?${attribute}=${digest}`,
+    `${base}/attribute/collection/${attribute}/${digest}`,
   ];
 
   return Promise.all(
