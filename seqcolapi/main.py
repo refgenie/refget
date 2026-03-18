@@ -21,37 +21,46 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def _load_scom_config(store_path: str, remote: bool):
-    """Load scom_config.json from next to the store if it exists.
+    """Load SCOM target digests from a JSON config.
 
-    Convention: a JSON file at {store_url}/scom_config.json with format:
-        {"human": ["digest1", "digest2", ...], "mouse": [...]}
+    Checks (in order):
+    1. SCOM_CONFIG_URL environment variable (any HTTP URL)
+    2. scom_config.json next to the store (convention)
+
+    Format: {"human": ["digest1", "digest2", ...], "mouse": [...]}
     """
     import json
+    import os
+    import urllib.request
 
-    if remote:
-        import urllib.request
+    # Try env var first
+    config_url = os.environ.get("SCOM_CONFIG_URL")
 
-        url = store_path.rstrip("/") + "/scom_config.json"
-        try:
-            with urllib.request.urlopen(url, timeout=10) as resp:
-                config = json.loads(resp.read())
-            for species, digests in config.items():
-                _SAMPLE_DIGESTS[species] = digests
-                _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
-        except Exception as e:
-            _LOGGER.info(f"No scom_config.json found at {url} ({e}). SCOM disabled.")
-    else:
-        import os
-
-        config_path = os.path.join(store_path, "scom_config.json")
-        if os.path.exists(config_path):
-            with open(config_path) as f:
-                config = json.load(f)
-            for species, digests in config.items():
-                _SAMPLE_DIGESTS[species] = digests
-                _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
+    # Fall back to store convention
+    if not config_url:
+        if remote:
+            config_url = store_path.rstrip("/") + "/scom_config.json"
         else:
-            _LOGGER.info(f"No scom_config.json at {config_path}. SCOM disabled.")
+            config_path = os.path.join(store_path, "scom_config.json")
+            if os.path.exists(config_path):
+                with open(config_path) as f:
+                    config = json.load(f)
+                for species, digests in config.items():
+                    _SAMPLE_DIGESTS[species] = digests
+                    _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
+                return
+            else:
+                _LOGGER.info("No SCOM_CONFIG_URL set and no scom_config.json found. SCOM disabled.")
+                return
+
+    try:
+        with urllib.request.urlopen(config_url, timeout=10) as resp:
+            config = json.loads(resp.read())
+        for species, digests in config.items():
+            _SAMPLE_DIGESTS[species] = digests
+            _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
+    except Exception as e:
+        _LOGGER.info(f"Could not load SCOM config from {config_url} ({e}). SCOM disabled.")
 
 for key, value in ALL_VERSIONS.items():
     _LOGGER.info(f"{key}: {value}")
@@ -251,7 +260,7 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
     )
     store_app.include_router(router)
 
-    # Load SCOM config from store (convention: scom_config.json next to rgstore.json)
+    # Load SCOM config: check SCOM_CONFIG_URL env var, then fall back to store convention
     _load_scom_config(store_path, remote)
 
     if remote:

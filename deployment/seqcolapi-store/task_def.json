@@ -20,7 +20,11 @@
       "environment": [
         {
           "name": "REFGET_STORE_URL",
-          "value": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vgp/"
+          "value": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/jungle/"
+        },
+        {
+          "name": "SCOM_CONFIG_URL",
+          "value": "https://raw.githubusercontent.com/refgenie/refget/dev/deployment/seqcolapi-store/scom_config.json"
         }
       ],
       "resourceRequirements": null,

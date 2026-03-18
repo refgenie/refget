@@ -313,8 +313,11 @@ const SCOM = () => {
       const result = await fetchSimilaritiesJSON(data, species);
       if (result?.similarities) {
         const customDigest = 'Input Seqcol';
-        const flattenedSimilarities = result.similarities.flatMap((s) =>
-          s.human_readable_names.map((humanReadableName) => ({
+        const flattenedSimilarities = result.similarities.flatMap((s) => {
+          const names = s.human_readable_names.length > 0
+            ? s.human_readable_names
+            : [s.digest];
+          return names.map((humanReadableName) => ({
             selectedDigest: name !== '' ? name : customDigest,
             comparedDigest: s.digest,
             comparedAlias: humanReadableName || s.digest,
@@ -325,8 +328,8 @@ const SCOM = () => {
             sorted_sequences: s.similarities.sorted_sequences,
             custom: true,
             raw: data,
-          }))
-        );
+          }));
+        });
 
         if (relationship === 'oneToMany') {
           setCustomCollections([
@@ -599,11 +602,11 @@ const SCOM = () => {
                     >
                       <td>{row.comparedAlias ? row.comparedAlias : row.comparedDigest}</td>
                       <td>{row.comparedDigest}</td>
-                      <td>{Number.isInteger(row.lengths) ? row.lengths : row.lengths.toFixed(3)}</td>
-                      <td>{Number.isInteger(row.name_length_pairs) ? row.name_length_pairs : row.name_length_pairs.toFixed(3)}</td>
-                      <td>{Number.isInteger(row.names) ? row.names : row.names.toFixed(3)}</td>
-                      <td>{Number.isInteger(row.sequences) ? row.sequences : row.sequences.toFixed(3)}</td>
-                      <td>{Number.isInteger(row.sorted_sequences) ? row.sorted_sequences : row.sorted_sequences.toFixed(3)}</td>
+                      <td>{row.lengths != null ? (Number.isInteger(row.lengths) ? row.lengths : row.lengths.toFixed(3)) : '-'}</td>
+                      <td>{row.name_length_pairs != null ? (Number.isInteger(row.name_length_pairs) ? row.name_length_pairs : row.name_length_pairs.toFixed(3)) : '-'}</td>
+                      <td>{row.names != null ? (Number.isInteger(row.names) ? row.names : row.names.toFixed(3)) : '-'}</td>
+                      <td>{row.sequences != null ? (Number.isInteger(row.sequences) ? row.sequences : row.sequences.toFixed(3)) : '-'}</td>
+                      <td>{row.sorted_sequences != null ? (Number.isInteger(row.sorted_sequences) ? row.sorted_sequences : row.sorted_sequences.toFixed(3)) : '-'}</td>
                     </tr>
                   ))}
                 </tbody>

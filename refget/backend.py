@@ -187,7 +187,7 @@ class RefgetStoreBackend:
                 If None, compares against all collections.
         """
         if target_digests:
-            all_digests = target_digests
+            all_digests = list(dict.fromkeys(target_digests))  # deduplicate, preserve order
         else:
             all_cols = self._store.list_collections(page=0, page_size=10000)
             all_digests = [c.digest if hasattr(c, "digest") else c for c in all_cols["results"]]
