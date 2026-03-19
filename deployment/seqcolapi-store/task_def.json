@@ -55,7 +55,7 @@
       "dockerLabels": null,
       "systemControls": null,
       "privileged": null,
-      "name": "seqcolapi-store"
+      "name": "seqcolapi"
     }
   ],
   "placementConstraints": [],
