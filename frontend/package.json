@@ -20,7 +20,7 @@
     "react-hot-toast": "^2.5.2",
     "react-router-dom": "^6.23.1",
     "vega-embed": "^7.0.2",
-    "zustand": "^5.0.7"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@rollup/plugin-alias": "^6.0.0",
