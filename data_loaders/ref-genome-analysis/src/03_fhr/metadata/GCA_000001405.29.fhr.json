@@ -1,0 +1,36 @@
+{
+  "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
+  "schemaVersion": 1,
+  "genome": "Homo sapiens",
+  "version": "GRCh38.p14",
+  "dateCreated": "2022-02-03",
+  "taxon": {
+    "name": "Homo sapiens",
+    "uri": "https://identifiers.org/taxonomy:9606"
+  },
+  "genomeSynonym": [
+    "human"
+  ],
+  "accessionID": {
+    "name": "GCA_000001405.29",
+    "url": "https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_000001405.29/"
+  },
+  "assemblyAuthor": [
+    {
+      "name": "Genome Reference Consortium"
+    }
+  ],
+  "vitalStats": {
+    "N50": 57879411,
+    "L50": 18,
+    "totalBasePairs": 3099734149,
+    "numberContigs": 999,
+    "numberScaffolds": 473,
+    "scaffoldN50": 67794873
+  },
+  "relatedLink": [
+    "https://www.genomeark.org/genomeark-all/Homo_sapiens.html",
+    "https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_000001405.29/"
+  ],
+  "license": "https://www.genomeark.org/documentation/data-use-policy.html"
+}

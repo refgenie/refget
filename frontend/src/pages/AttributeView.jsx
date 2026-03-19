@@ -9,6 +9,11 @@ import { CollectionList } from '../components/ObjectLists.jsx';
 const AttributeView = () => {
   const content = useLoaderData();
   const { attribute, digest } = useParams();
+
+  if (!Array.isArray(content) || content.length < 2) {
+    return <div className="alert alert-warning">Failed to load attribute data.</div>;
+  }
+
   const api_url = `${API_BASE}/attribute/collection/${attribute}/${digest}`;
   const api_url_list = `${API_BASE}/list/collection?${attribute}=${digest}`;
   let results = content[0];

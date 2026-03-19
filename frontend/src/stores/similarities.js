@@ -7,33 +7,41 @@ export const useSimilaritiesStore = create((set, get) => ({
   customCollectionJSON: '',
   customCount: 1,
   similarities: null,
+  error: null,
   sortBy: null,
   sortAscending: false,
   species: 'human',
 
-  setSortBy: (value) => set({ sortBy: value }),
-  setSortAscending: (value) => set({ sortAscending: value }),
   setSpecies: (value) => set({ species: value }),
+  setError: (value) => set({ error: value }),
 
-  sortSimilarities: () => {
+  resetSort: () => set({ sortBy: null, sortAscending: false }),
+
+  sortByColumn: (column) => {
     const { similarities, sortBy, sortAscending } = get();
-    
-    if (!similarities || !sortBy) return;
-    
-    const sampleValue = similarities.find(item => item[sortBy] != null)?.[sortBy];
-    
+
+    const newSortBy = column;
+    const newSortAscending = sortBy === column ? !sortAscending : false;
+
+    if (!similarities) {
+      set({ sortBy: newSortBy, sortAscending: newSortAscending });
+      return;
+    }
+
+    const sampleValue = similarities.find(item => item[newSortBy] != null)?.[newSortBy];
+
     const sorted = [...similarities];
-    
+
     if (typeof sampleValue === 'number') {
-      sorted.sort((a, b) => sortAscending ? a[sortBy] - b[sortBy] : b[sortBy] - a[sortBy]);
+      sorted.sort((a, b) => newSortAscending ? a[newSortBy] - b[newSortBy] : b[newSortBy] - a[newSortBy]);
     } else {
-      sorted.sort((a, b) => sortAscending 
-        ? String(a[sortBy]).localeCompare(String(b[sortBy]))
-        : String(b[sortBy]).localeCompare(String(a[sortBy]))
+      sorted.sort((a, b) => newSortAscending
+        ? String(a[newSortBy]).localeCompare(String(b[newSortBy]))
+        : String(b[newSortBy]).localeCompare(String(a[newSortBy]))
       );
     }
-    
-    set({ similarities: sorted });
+
+    set({ sortBy: newSortBy, sortAscending: newSortAscending, similarities: sorted });
   },
 
   setSelectedCollectionsIndex: (value) => {
@@ -68,25 +76,26 @@ export const useSimilaritiesStore = create((set, get) => ({
 
   setSimilarities: (value) => {
     const { sortBy, sortAscending } = get();
-    
-    if (!sortBy) {
+
+    if (!sortBy || !value) {
       set({ similarities: value });
       return;
     }
 
     const sampleValue = value.find(item => item[sortBy] != null)?.[sortBy];
 
+    const sorted = [...value];
+
     if (typeof sampleValue === 'number') {
-      set({ similarities: sortAscending
-        ? value.sort((a, b) => a[sortBy] - b[sortBy]) 
-        : value.sort((a, b) => b[sortBy] - a[sortBy]) 
-      });
+      sorted.sort((a, b) => sortAscending ? a[sortBy] - b[sortBy] : b[sortBy] - a[sortBy]);
     } else {
-      set({ similarities: sortAscending
-        ? value.sort((a, b) => a[sortBy].localeCompare(b[sortBy])) 
-        : value.sort((a, b) => b[sortBy].localeCompare(a[sortBy])) 
-      });
+      sorted.sort((a, b) => sortAscending
+        ? String(a[sortBy]).localeCompare(String(b[sortBy]))
+        : String(b[sortBy]).localeCompare(String(a[sortBy]))
+      );
     }
+
+    set({ similarities: sorted });
   },
 
   getAllCollections: (collections) => {

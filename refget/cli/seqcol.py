@@ -19,7 +19,7 @@ from typing import Optional
 
 import typer
 
-from refget.cli.config_manager import get_seqcol_servers
+from refget.cli.config_manager import get_seqcol_servers, get_store_path
 from refget.cli.output import (
     EXIT_FAILURE,
     EXIT_NETWORK_ERROR,
@@ -32,6 +32,7 @@ from refget.cli.output import (
 # Heavy imports moved inside functions to speed up CLI startup:
 # - refget.clients (requests ~51ms)
 # - refget.utils (jsonschema ~60ms)
+# - refget.store (gtars ~100ms)
 
 
 def _get_client(server_override: Optional[str] = None):
@@ -54,6 +55,59 @@ def _get_client(server_override: Optional[str] = None):
     return SequenceCollectionClient(urls=urls, raise_errors=False)
 
 
+def _collection_to_seqcol_dict(store, digest: str, level: int = 2) -> Optional[dict]:
+    """
+    Convert a RefgetStore collection to seqcol API dict format.
+
+    Args:
+        store: RefgetStore instance with the collection loaded
+        digest: Collection digest
+        level: 1 for attribute digests only, 2 for full arrays
+
+    Returns:
+        Seqcol dict in API format, or None if collection not found.
+    """
+    try:
+        if level == 1:
+            return store.get_collection_level1(digest)
+        else:
+            return store.get_collection_level2(digest)
+    except Exception:
+        return None
+
+
+def _get_local_seqcol(digest: str, level: int = 2) -> Optional[dict]:
+    """
+    Try to get a seqcol from the local RefgetStore.
+
+    Args:
+        digest: Collection digest to look up
+        level: 1 for attribute digests only, 2 for full arrays
+
+    Returns:
+        Seqcol dict if found locally, None otherwise.
+    """
+    try:
+        from refget.store import RefgetStore
+    except ImportError:
+        # gtars not installed - can't use local store
+        return None
+
+    store_path = get_store_path()
+
+    # Check if store exists
+    if not RefgetStore.store_exists(str(store_path)):
+        return None
+
+    try:
+        store = RefgetStore.open_local(str(store_path))
+        store.set_quiet(True)
+        return _collection_to_seqcol_dict(store, digest, level)
+    except Exception:
+        # Any error (store corruption, etc.) - fall back to remote
+        return None
+
+
 def _compute_snlp_digest(seqcol_dict: dict) -> str:
     """
     Compute the sorted_name_length_pairs digest from a seqcol dict.
@@ -64,8 +118,8 @@ def _compute_snlp_digest(seqcol_dict: dict) -> str:
     Returns:
         The snlp digest (coordinate system identifier)
     """
-    from refget.utils import build_sorted_name_length_pairs, canonical_str
     from refget.digests import sha512t24u_digest
+    from refget.utils import build_sorted_name_length_pairs, canonical_str
 
     snlp_digests = build_sorted_name_length_pairs(seqcol_dict)
     return sha512t24u_digest(canonical_str(snlp_digests))
@@ -134,6 +188,12 @@ def _load_seqcol(input_str: str, client, level: int = 2) -> Optional[dict]:
             return None
 
     else:  # digest
+        # Try local store first
+        result = _get_local_seqcol(input_str, level=level)
+        if result is not None:
+            return result
+
+        # Fall back to remote
         result = client.get_collection(input_str, level=level)
         if result is None:
             print_error(f"Could not fetch seqcol for digest: {input_str}", EXIT_FAILURE)
@@ -176,6 +236,13 @@ def show(
     Level 1 returns attribute digests only.
     Level 2 (default) returns full arrays.
     """
+    # Try local store first
+    result = _get_local_seqcol(digest, level=level)
+    if result is not None:
+        print_json(result)
+        raise typer.Exit(EXIT_SUCCESS)
+
+    # Fall back to remote servers
     client = _get_client(server)
 
     try:
@@ -310,6 +377,44 @@ def list_collections(
     raise typer.Exit(EXIT_SUCCESS)
 
 
+def _search_local_store(filters: dict) -> Optional[list]:
+    """Search the local RefgetStore for collections matching attribute filters."""
+    try:
+        from refget.store import RefgetStore
+    except ImportError:
+        return None
+
+    store_path = get_store_path()
+
+    if not RefgetStore.store_exists(str(store_path)):
+        return None
+
+    try:
+        store = RefgetStore.open_local(str(store_path))
+        store.set_quiet(True)
+
+        # Search each filter; results must match ALL filters (intersection)
+        result_sets = []
+        for attr_name, attr_digest in filters.items():
+            matches = store.find_collections_by_attribute(attr_name, attr_digest)
+            result_sets.append(set(matches))
+
+        if not result_sets:
+            return None
+
+        # Intersection of all filter results
+        matching = result_sets[0]
+        for s in result_sets[1:]:
+            matching &= s
+
+        if not matching:
+            return None
+
+        return [{"digest": d} for d in sorted(matching)]
+    except Exception:
+        return None
+
+
 @app.command()
 def search(
     names: Optional[str] = typer.Option(
@@ -333,12 +438,25 @@ def search(
         "-s",
         help="Server URL override",
     ),
+    local: bool = typer.Option(
+        False,
+        "--local",
+        help="Search only the local store (skip remote)",
+    ),
+    no_local: bool = typer.Option(
+        False,
+        "--no-local",
+        help="Skip local store and search remote only",
+    ),
 ) -> None:
     """
     Find collections that share an attribute.
 
     The attribute digest is the digest of an attribute array
     (e.g., the names array digest from level 1 output).
+
+    By default, searches the local store first, then falls back to remote.
+    Use --local to search only locally, or --no-local to skip local search.
 
     Example workflow:
         # Get names digest from level 1
@@ -362,6 +480,19 @@ def search(
         )
         return
 
+    # Try local store first (unless --no-local)
+    if not no_local:
+        local_results = _search_local_store(filters)
+        if local_results is not None:
+            print_json(local_results)
+            raise typer.Exit(EXIT_SUCCESS)
+
+        if local:
+            # --local flag set but no results found locally
+            print_error("No matching collections found in local store", EXIT_FAILURE)
+            return
+
+    # Fall back to remote server
     client = _get_client(server)
 
     try:

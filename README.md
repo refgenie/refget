@@ -43,9 +43,48 @@ This starts the test database, runs tests, and cleans up automatically.
 
 ## Development and deployment: Backend
 
-### Easy-peasy way
+### Store-backed (no database)
 
-In a moment I'll show you how to do these steps individually, but if you're in a hurry, the easy way get a development API running for testing is to just use my very simple shell script like this (no data persistence, just loads demo data):
+The store-backed seqcolapi uses a RefgetStore (local files) instead of PostgreSQL. This is the simplest way to run the API:
+
+#### Quick start
+
+```console
+bash deployment/store_demo_up.sh
+```
+
+This will:
+- Build a local RefgetStore from test FASTA files
+- Run the store-backed seqcolapi with uvicorn
+- Block the terminal until you press Ctrl+C, which cleans up
+
+No Docker or database required.
+
+#### Step-by-step
+
+1. Build a store from FASTA files:
+
+```console
+python data_loaders/demo_build_store.py test_fasta /tmp/refget_demo_store
+```
+
+2. Start the store-backed API:
+
+```console
+REFGET_STORE_PATH=/tmp/refget_demo_store uvicorn seqcolapi.main:store_app --reload --port 8100
+```
+
+#### Remote store
+
+To run against a remote (S3) store:
+
+```console
+REFGET_STORE_URL=https://example.com/store uvicorn seqcolapi.main:store_app --port 8100
+```
+
+### DB-backed (PostgreSQL)
+
+If you need a database-backed instance (e.g., for mutable data, advanced queries), use the DB-backed workflow. In a moment I'll show you how to do these steps individually, but if you're in a hurry, the easy way to get a development API running for testing is to just use my very simple shell script like this (no data persistence, just loads demo data):
 
 ```console
 bash deployment/demo_up.sh
@@ -58,7 +97,7 @@ This will:
 - load up the demo data
 - block the terminal until you press Ctrl+C, which will shut down all services.
 
-### Step-by-step process
+### Step-by-step process (DB-backed)
 
 Alternatively, if you want to run each step separately to see what's really going on, start here.
 

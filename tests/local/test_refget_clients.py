@@ -8,7 +8,7 @@ For integration tests that test against a real API,
 see tests/integration/test_seqcolapi_client.py
 """
 
-from refget.clients import SequenceCollectionClient, FastaDrsClient
+from refget.clients import FastaDrsClient, SequenceCollectionClient
 
 
 class TestClientConstruction:

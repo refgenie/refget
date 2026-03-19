@@ -1,13 +1,13 @@
 import os
-
-from refget._version import __version__ as refget_pkg_version
 from platform import python_version
 
-from ._version import __version__ as seqcolapi_version
+from gtars import __version__ as gtars_version
+
+from refget._version import __version__ as refget_version
 
 ALL_VERSIONS = {
-    "seqcolapi_version": seqcolapi_version,
-    "refget_pkg_version": refget_pkg_version,
+    "refget_version": refget_version,
+    "gtars_version": gtars_version,
     "python_version": python_version(),
     "seqcol_spec_version": "1.0.0",
 }

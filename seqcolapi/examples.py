@@ -1,7 +1,7 @@
 # Models
 # Used for documentation examples in OpenAPI
 
-from fastapi import Path, Body
+from fastapi import Body, Path
 
 example_digest = Path(
     ...,

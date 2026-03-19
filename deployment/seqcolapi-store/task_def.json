@@ -9,7 +9,7 @@
       "entryPoint": null,
       "portMappings": [
         {
-          "hostPort": 8105,
+          "hostPort": 8106,
           "protocol": "tcp",
           "containerPort": 80
         }
@@ -55,7 +55,7 @@
       "dockerLabels": null,
       "systemControls": null,
       "privileged": null,
-      "name": "seqcolapi"
+      "name": "seqcolapi-store"
     }
   ],
   "placementConstraints": [],

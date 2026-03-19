@@ -15,20 +15,18 @@ Commands:
 import json
 import os
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import typer
 
 from refget.cli.output import (
     EXIT_CONFIG_ERROR,
-    EXIT_FILE_NOT_FOUND,
     EXIT_FAILURE,
-    EXIT_SUCCESS,
+    EXIT_FILE_NOT_FOUND,
     print_error,
     print_info,
     print_json,
     print_success,
-    print_warning,
 )
 
 # Heavy imports (sqlmodel) are done lazily inside functions that need them

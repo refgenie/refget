@@ -105,7 +105,7 @@ def save_config(config: Dict[str, Any]) -> None:
     """
     if tomli_w is None:
         raise ImportError(
-            "tomli_w is required to save configuration.\n" "Install with: pip install tomli-w"
+            "tomli_w is required to save configuration.\nInstall with: pip install tomli-w"
         )
 
     config_path = get_config_path()

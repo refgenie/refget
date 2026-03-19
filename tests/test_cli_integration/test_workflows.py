@@ -6,20 +6,22 @@ Integration tests for multi-command CLI workflows.
 These tests verify that commands work together correctly in typical usage patterns.
 """
 
-import pytest
+import importlib.util
 import json
-import sys
 import os
-from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from conftest import (
-    BASE_FASTA,
-    DIFFERENT_NAMES_FASTA,
-    DIFFERENT_ORDER_FASTA,
-    SUBSET_FASTA,
-    TEST_FASTA_DIGESTS,
+_conftest_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
 )
+_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
+_conftest = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_conftest)
+
+BASE_FASTA = _conftest.BASE_FASTA
+DIFFERENT_NAMES_FASTA = _conftest.DIFFERENT_NAMES_FASTA
+DIFFERENT_ORDER_FASTA = _conftest.DIFFERENT_ORDER_FASTA
+SUBSET_FASTA = _conftest.SUBSET_FASTA
+TEST_FASTA_DIGESTS = _conftest.TEST_FASTA_DIGESTS
 
 
 class TestDigestAndCompare:

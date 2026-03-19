@@ -1,11 +1,12 @@
 import json
 import os
+
 import pytest
+
 from refget import InvalidSeqColError
 from refget.models import SequenceCollection
 from refget.utils import compare_seqcols, validate_seqcol
-
-from tests.conftest import DEMO_FILES, DIGEST_TESTS, API_TEST_DIR
+from tests.conftest import API_TEST_DIR, DEMO_FILES, DIGEST_TESTS
 
 # Pairs of files to compare, with the "correct" compare response
 COMPARE_TESTS = [

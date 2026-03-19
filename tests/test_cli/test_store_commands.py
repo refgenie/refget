@@ -2,20 +2,23 @@
 
 """Tests for refget store CLI commands."""
 
-import pytest
+import importlib.util
 import json
-import sys
 import os
-from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from conftest import (
-    BASE_FASTA,
-    DIFFERENT_NAMES_FASTA,
-    DIFFERENT_ORDER_FASTA,
-    TEST_FASTA_DIGESTS,
-    assert_json_output,
+_conftest_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
 )
+_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
+_conftest = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_conftest)
+
+BASE_FASTA = _conftest.BASE_FASTA
+DIFFERENT_NAMES_FASTA = _conftest.DIFFERENT_NAMES_FASTA
+DIFFERENT_ORDER_FASTA = _conftest.DIFFERENT_ORDER_FASTA
+SAMPLE_FHR_JSON = _conftest.SAMPLE_FHR_JSON
+TEST_FASTA_DIGESTS = _conftest.TEST_FASTA_DIGESTS
+assert_json_output = _conftest.assert_json_output
 
 
 class TestStoreInit:
@@ -214,7 +217,7 @@ class TestStoreGet:
 
         result = cli("store", "get", digest, "--path", str(store_path))
 
-        data = assert_json_output(result, ["names", "lengths", "sequences"])
+        assert_json_output(result, ["names", "lengths", "sequences"])
 
     def test_get_nonexistent_digest(self, cli, tmp_path):
         """Returns error for nonexistent digest."""
@@ -278,25 +281,25 @@ class TestStoreExport:
         assert result.exit_code != 0
 
 
-class TestStoreSeq:
-    """Tests for: refget store seq <digest>"""
+class TestStoreGetSequence:
+    """Tests for: refget store get <digest> --sequence"""
 
     def test_gets_sequence_by_name(self, cli, tmp_path):
-        """Gets sequence by name."""
+        """Gets sequence by name using get -s."""
         store_path = tmp_path / "store"
 
         cli("store", "init", "--path", str(store_path))
         add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
         digest = json.loads(add_result.stdout)["digest"]
 
-        result = cli("store", "seq", digest, "--name", "chr1", "--path", str(store_path))
+        result = cli("store", "get", digest, "-s", "--name", "chr1", "--path", str(store_path))
 
         assert result.exit_code == 0
         # Output should be sequence (GGAA for chr1 in base.fa)
         assert len(result.stdout.strip()) > 0
 
     def test_substring(self, cli, tmp_path):
-        """Gets subsequence with range."""
+        """Gets subsequence with range using get -s."""
         store_path = tmp_path / "store"
 
         cli("store", "init", "--path", str(store_path))
@@ -305,8 +308,9 @@ class TestStoreSeq:
 
         result = cli(
             "store",
-            "seq",
+            "get",
             digest,
+            "-s",
             "--name",
             "chrX",
             "--start",
@@ -330,10 +334,47 @@ class TestStoreSeq:
         digest = json.loads(add_result.stdout)["digest"]
 
         result = cli(
-            "store", "seq", digest, "--name", "nonexistent_chr", "--path", str(store_path)
+            "store",
+            "get",
+            digest,
+            "-s",
+            "--name",
+            "nonexistent_chr",
+            "--path",
+            str(store_path),
         )
 
         assert result.exit_code != 0
+
+
+class TestStoreListSequences:
+    """Tests for: refget store list --sequences"""
+
+    def test_list_sequences(self, cli, tmp_path):
+        """Lists sequences with -s flag."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+        cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
+
+        result = cli("store", "list", "-s", "--path", str(store_path))
+
+        data = assert_json_output(result, ["sequences"])
+        assert len(data["sequences"]) >= 1
+        # Each sequence should have digest, name, length
+        for seq in data["sequences"]:
+            assert "digest" in seq
+            assert "name" in seq
+            assert "length" in seq
+
+    def test_list_sequences_empty_store(self, cli, tmp_path):
+        """Lists sequences in empty store."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+
+        result = cli("store", "list", "-s", "--path", str(store_path))
+
+        data = assert_json_output(result, ["sequences"])
+        assert data["sequences"] == []
 
 
 class TestStoreStats:
@@ -438,5 +479,189 @@ class TestStoreErrorHandling:
         nonexistent = tmp_path / "nonexistent_store"
 
         result = cli("store", "add", str(BASE_FASTA), "--path", str(nonexistent))
+
+        assert result.exit_code != 0
+
+
+def _setup_store_with_fasta(cli, tmp_path):
+    """Initialize a store, add BASE_FASTA, and return (store_path, digest)."""
+    store_path = tmp_path / "store"
+    cli("store", "init", "--path", str(store_path))
+    add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
+    digest = json.loads(add_result.stdout)["digest"]
+    return store_path, digest
+
+
+class TestStoreMetadata:
+    """Tests for: refget store metadata / metadata-set"""
+
+    def test_metadata_no_fhr_set(self, cli, tmp_path):
+        """Error when no FHR metadata exists for a collection."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code != 0
+        assert "No FHR metadata" in result.stderr
+
+    def test_metadata_set_from_json_file(self, cli, tmp_path):
+        """Happy path: set FHR metadata from a JSON file."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        result = cli(
+            "store",
+            "metadata-set",
+            digest,
+            str(SAMPLE_FHR_JSON),
+            "--path",
+            str(store_path),
+        )
+
+        assert result.exit_code == 0
+        assert "Set FHR metadata for collection" in result.stdout
+
+    def test_metadata_read_after_set(self, cli, tmp_path):
+        """Round-trip: set metadata then read it back."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        cli(
+            "store",
+            "metadata-set",
+            digest,
+            str(SAMPLE_FHR_JSON),
+            "--path",
+            str(store_path),
+        )
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert data["genome"] == "Test organism"
+        assert data["version"] == "v1.0"
+        assert data["masking"] == "soft-masked"
+        assert "test_v1" in data["genomeSynonym"]
+
+    def test_metadata_output_is_valid_json(self, cli, tmp_path):
+        """Output is valid JSON with camelCase keys per FHR spec."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        cli(
+            "store",
+            "metadata-set",
+            digest,
+            str(SAMPLE_FHR_JSON),
+            "--path",
+            str(store_path),
+        )
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+
+        # Verify camelCase keys from the FHR spec
+        assert "schemaVersion" in data
+        assert "genomeSynonym" in data
+        assert "dateCreated" in data
+
+        # Verify no snake_case keys leaked through
+        raw = result.stdout
+        assert "schema_version" not in raw
+        assert "genome_synonym" not in raw
+        assert "date_created" not in raw
+
+    def test_metadata_set_nonexistent_file(self, cli, tmp_path):
+        """Error when JSON file does not exist."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        result = cli(
+            "store",
+            "metadata-set",
+            digest,
+            "/nonexistent/fhr.json",
+            "--path",
+            str(store_path),
+        )
+
+        assert result.exit_code != 0
+
+    def test_metadata_nonexistent_digest(self, cli, tmp_path):
+        """Error when reading metadata for a nonexistent digest."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+
+        result = cli(
+            "store",
+            "metadata",
+            "nonexistent_digest_123",
+            "--path",
+            str(store_path),
+        )
+
+        assert result.exit_code != 0
+
+    def test_metadata_set_then_overwrite(self, cli, tmp_path):
+        """Overwriting metadata replaces the previous values."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        # Set original metadata
+        cli(
+            "store",
+            "metadata-set",
+            digest,
+            str(SAMPLE_FHR_JSON),
+            "--path",
+            str(store_path),
+        )
+
+        # Create updated FHR JSON
+        updated_fhr = tmp_path / "updated_fhr.json"
+        updated_fhr.write_text(
+            json.dumps(
+                {
+                    "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
+                    "schemaVersion": 1.0,
+                    "genome": "Updated organism",
+                    "version": "v2.0",
+                }
+            )
+        )
+
+        # Overwrite
+        cli(
+            "store",
+            "metadata-set",
+            digest,
+            str(updated_fhr),
+            "--path",
+            str(store_path),
+        )
+
+        result = cli("store", "metadata", digest, "--path", str(store_path))
+
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert data["genome"] == "Updated organism"
+
+    def test_metadata_removed_with_collection(self, cli, tmp_path):
+        """Metadata sidecar is cleaned up when the collection is removed."""
+        store_path, digest = _setup_store_with_fasta(cli, tmp_path)
+
+        # Set metadata
+        cli(
+            "store",
+            "metadata-set",
+            digest,
+            str(SAMPLE_FHR_JSON),
+            "--path",
+            str(store_path),
+        )
+
+        # Remove the collection
+        cli("store", "remove", digest, "--path", str(store_path))
+
+        # Metadata should be gone
+        result = cli("store", "metadata", digest, "--path", str(store_path))
 
         assert result.exit_code != 0

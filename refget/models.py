@@ -2,12 +2,11 @@ import json
 import logging
 from copy import copy
 from datetime import datetime, timezone
-from sqlalchemy.types import TypeDecorator
-from sqlmodel import Field, SQLModel, Column, Relationship
-from sqlmodel import JSON
-from typing import List, Optional, Dict, Any, Literal, TYPE_CHECKING
-from pydantic import BaseModel, field_validator, field_serializer
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
 
+from pydantic import BaseModel, field_serializer, field_validator
+from sqlalchemy.types import TypeDecorator
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel
 
 from .digests import sha512t24u_digest
 
@@ -38,19 +37,18 @@ class PydanticJSON(TypeDecorator):
         return item
 
 
-from .const import (
+from .const import (  # noqa: E402
     DEFAULT_INHERENT_ATTRS,
-    DEFAULT_PASSTHRU_ATTRS,
-    SEQCOL_SCHEMA_PATH,
     GTARS_INSTALLED,
+    SEQCOL_SCHEMA_PATH,
 )
-from .exceptions import InvalidSeqColError
-from .utils import (
-    canonical_str,
+from .exceptions import InvalidSeqColError  # noqa: E402
+from .utils import (  # noqa: E402
     build_name_length_pairs,
-    seqcol_dict_to_level1_dict,
-    level1_dict_to_seqcol_digest,
+    canonical_str,
     fasta_to_seqcol_dict,
+    level1_dict_to_seqcol_digest,
+    seqcol_dict_to_level1_dict,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -71,9 +69,9 @@ def create_fasta_drs_object(fasta_file: str, digest: str = None) -> "FastaDrsObj
     Raises:
         ImportError: If gtars is not installed (required for FASTA processing)
     """
-    import os
     import hashlib
-    from datetime import datetime, timezone
+    import os
+    from datetime import datetime
 
     if not GTARS_INSTALLED:
         raise ImportError(

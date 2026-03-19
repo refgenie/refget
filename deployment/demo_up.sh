@@ -39,7 +39,8 @@ uvicorn seqcolapi.main:app --reload --port 8100 &
 PID=$!
 
 echo "Loading demo sequence collections..."
-python data_loaders/load_demo_seqcols.py
+# Unset storage locations so demo loader creates fake URLs instead of uploading
+FASTA_STORAGE_LOCATIONS="" python data_loaders/load_demo_seqcols.py
 
 # Set up cleanup on Ctrl+C
 trap cleanup SIGINT EXIT

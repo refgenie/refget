@@ -7,21 +7,23 @@ These are unit tests that do NOT require network access.
 Network-dependent tests are in tests/integration/test_cli_seqcol_integration.py
 """
 
-import pytest
+import importlib.util
 import json
-import sys
 import os
-from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from conftest import (
-    BASE_FASTA,
-    DIFFERENT_NAMES_FASTA,
-    DIFFERENT_ORDER_FASTA,
-    SUBSET_FASTA,
-    TEST_FASTA_DIGESTS,
-    assert_json_output,
+_conftest_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
 )
+_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
+_conftest = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_conftest)
+
+BASE_FASTA = _conftest.BASE_FASTA
+DIFFERENT_NAMES_FASTA = _conftest.DIFFERENT_NAMES_FASTA
+DIFFERENT_ORDER_FASTA = _conftest.DIFFERENT_ORDER_FASTA
+SUBSET_FASTA = _conftest.SUBSET_FASTA
+TEST_FASTA_DIGESTS = _conftest.TEST_FASTA_DIGESTS
+assert_json_output = _conftest.assert_json_output
 
 
 class TestSeqcolCompare:
@@ -213,4 +215,123 @@ class TestSeqcolErrorHandling:
 
         result = cli("seqcol", "digest", str(invalid))
 
+        assert result.exit_code != 0
+
+
+class TestSeqcolLocalStoreLookup:
+    """Tests for local store lookup in seqcol show and compare commands."""
+
+    def test_show_from_local_store(self, cli, populated_store):
+        """Show command retrieves collection from local store."""
+        digest = populated_store["digest"]
+        store_path = populated_store["path"]
+
+        # Use REFGET_STORE env var to point to our test store
+        import os
+
+        old_env = os.environ.get("REFGET_STORE")
+        os.environ["REFGET_STORE"] = str(store_path)
+
+        try:
+            result = cli("seqcol", "show", digest)
+
+            assert result.exit_code == 0
+            data = json.loads(result.stdout)
+            # Level 2 (default) should have arrays
+            assert "names" in data
+            assert "lengths" in data
+            assert "sequences" in data
+            assert isinstance(data["names"], list)
+        finally:
+            if old_env:
+                os.environ["REFGET_STORE"] = old_env
+            elif "REFGET_STORE" in os.environ:
+                del os.environ["REFGET_STORE"]
+
+    def test_show_from_local_store_level1(self, cli, populated_store):
+        """Show command with level=1 returns digests from local store."""
+        digest = populated_store["digest"]
+        store_path = populated_store["path"]
+
+        import os
+
+        old_env = os.environ.get("REFGET_STORE")
+        os.environ["REFGET_STORE"] = str(store_path)
+
+        try:
+            result = cli("seqcol", "show", digest, "--level", "1")
+
+            assert result.exit_code == 0
+            data = json.loads(result.stdout)
+            # Level 1 should have string digests, not arrays
+            assert "names" in data
+            assert "lengths" in data
+            assert "sequences" in data
+            assert isinstance(data["names"], str)
+            assert isinstance(data["lengths"], str)
+            assert isinstance(data["sequences"], str)
+        finally:
+            if old_env:
+                os.environ["REFGET_STORE"] = old_env
+            elif "REFGET_STORE" in os.environ:
+                del os.environ["REFGET_STORE"]
+
+    def test_compare_uses_local_store_for_digest(self, cli, populated_store):
+        """Compare command resolves digest inputs from local store first."""
+        digest = populated_store["digest"]
+        store_path = populated_store["path"]
+
+        import os
+
+        old_env = os.environ.get("REFGET_STORE")
+        os.environ["REFGET_STORE"] = str(store_path)
+
+        try:
+            # Compare local store collection with itself
+            result = cli("seqcol", "compare", digest, digest)
+
+            # Should succeed (both resolved from local store)
+            assert result.exit_code == 0
+            data = json.loads(result.stdout)
+            assert data.get("compatible", False) is True
+        finally:
+            if old_env:
+                os.environ["REFGET_STORE"] = old_env
+            elif "REFGET_STORE" in os.environ:
+                del os.environ["REFGET_STORE"]
+
+    def test_compare_local_digest_with_fasta(self, cli, populated_store):
+        """Compare local store digest with FASTA file."""
+        digest = populated_store["digest"]
+        store_path = populated_store["path"]
+
+        import os
+
+        old_env = os.environ.get("REFGET_STORE")
+        os.environ["REFGET_STORE"] = str(store_path)
+
+        try:
+            # Compare local store collection with original FASTA
+            result = cli("seqcol", "compare", digest, str(BASE_FASTA))
+
+            # Should succeed and show they are compatible (same content)
+            assert result.exit_code == 0
+            data = json.loads(result.stdout)
+            assert data.get("compatible") is True
+        finally:
+            if old_env:
+                os.environ["REFGET_STORE"] = old_env
+            elif "REFGET_STORE" in os.environ:
+                del os.environ["REFGET_STORE"]
+
+    def test_show_nonexistent_digest_not_in_local_store(self, cli, temp_store, monkeypatch):
+        """Show command falls back to remote for digest not in local store."""
+        # Use a digest that doesn't exist anywhere
+        fake_digest = "NONEXISTENT123456789012345678901234567890"
+
+        monkeypatch.setenv("REFGET_STORE", str(temp_store))
+
+        result = cli("seqcol", "show", fake_digest)
+
+        # Should fail (not in local store, not on remote servers)
         assert result.exit_code != 0

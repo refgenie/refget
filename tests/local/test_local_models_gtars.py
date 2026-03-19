@@ -1,24 +1,26 @@
-import pytest
 import logging
-
-_LOGGER = logging.getLogger(__name__)
 from pathlib import Path
 
-from refget.models import SequenceCollection as pythonSequenceCollection
+import pytest
 
-from refget.store import RefgetStore, StorageMode
+from refget.models import SequenceCollection as pythonSequenceCollection
+from refget.store import RefgetStore
+
+_LOGGER = logging.getLogger(__name__)
 
 try:
-    from gtars.refget import (
+    from gtars.refget import (  # noqa: F401
         SequenceCollection as gtarsSequenceCollection,
+    )
+    from gtars.refget import (
         digest_fasta,
     )
 
     _RUST_BINDINGS_AVAILABLE = True
 
-except ImportError as e:
+except ImportError:
     _LOGGER.warning(
-        f"Could not import gtars python bindings. `from_PySequenceCollection` will not be available."
+        "Could not import gtars python bindings. `from_PySequenceCollection` will not be available."
     )
     _RUST_BINDINGS_AVAILABLE = False
 
@@ -35,9 +37,9 @@ class TestRustPySequenceCollection:
         bridged_seq_col = pythonSequenceCollection.from_PySequenceCollection(
             gtars_seq_col=gtars_digested_seq_col
         )
-        assert (
-            bridged_seq_col.digest == python_seq_col.digest == gtars_digested_seq_col.digest
-        ), "Top-level digest mismatch!"
+        assert bridged_seq_col.digest == python_seq_col.digest == gtars_digested_seq_col.digest, (
+            "Top-level digest mismatch!"
+        )
 
         assert bridged_seq_col.sequences.digest == python_seq_col.sequences.digest
         assert bridged_seq_col.sequences.value == python_seq_col.sequences.value

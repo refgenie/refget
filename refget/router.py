@@ -6,25 +6,24 @@ endpoints for retrieving and comparing sequence collections.
 This router does not supply the /service-info endpoint, which should be created
 by the main app.
 
-To use, first import it, then attach it to the app,
-then create a dbagent object to connect to the database,
-and attach it to the app state like this:
+To use, import the router and setup_backend, then wire them up:
 
-from refget.router import create_refget_router
-from refget.agents import RefgetDBAgent
+from refget.router import create_refget_router, setup_backend
 
 router = create_refget_router(sequences=False, collections=True, pangenomes=False)
 app.include_router(router, prefix="/seqcol")
-app.state.dbagent = RefgetDBAgent()
+setup_backend(app, store=my_store)       # RefgetStore backend (no database)
+# OR: setup_backend(app, engine=engine)  # PostgreSQL via RefgetDBAgent
 """
 
 import logging
 
-from fastapi import APIRouter, Response, HTTPException, Request, Depends
-from .models import Similarities, PaginationResult, PaginatedDigestList
-from .agents import RefgetDBAgent
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import StreamingResponse
 
+from .backend import SeqColBackend
 from .examples import *
+from .models import PaginatedDigestList, Similarities
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -35,9 +34,38 @@ _SAMPLE_DIGESTS: dict[str, list[str]] = {}
 _ROUTER_CONFIG: dict = {}
 
 
-# dbagent is a RefgetDBAgent, which handles connection to the POSTGRES database
-async def get_dbagent(request: Request) -> RefgetDBAgent:
-    return request.app.state.dbagent
+def setup_backend(app, store=None, engine=None):
+    """Configure the seqcol backend on a FastAPI app.
+
+    Pass a RefgetStore to serve from the store (no database needed).
+    The store is used directly (not converted to readonly) so it can lazy-load collections.
+    Pass a SQLAlchemy engine to serve from PostgreSQL via RefgetDBAgent.
+    """
+    if store is not None:
+        from .backend import RefgetStoreBackend
+
+        app.state.backend = RefgetStoreBackend(store)
+    elif engine is not None:
+        from .agents import RefgetDBAgent
+
+        dbagent = RefgetDBAgent(engine=engine)
+        app.state.dbagent = dbagent
+        app.state.backend = dbagent
+    else:
+        raise ValueError("setup_backend requires either store or engine")
+
+
+async def get_backend(request: Request) -> SeqColBackend:
+    """Get the SeqColBackend from the app state."""
+    return request.app.state.backend
+
+
+async def get_dbagent(request: Request):
+    """Get the RefgetDBAgent for DB-only endpoints. Returns None if not configured."""
+    dbagent = getattr(request.app.state, "dbagent", None)
+    if dbagent is None:
+        raise HTTPException(status_code=501, detail="This endpoint requires database backend")
+    return dbagent
 
 
 def create_refget_router(
@@ -45,6 +73,7 @@ def create_refget_router(
     collections: bool = True,
     pangenomes: bool = False,
     fasta_drs: bool = False,
+    compliance: bool = True,
     refget_store_url: str = None,
 ) -> APIRouter:
     """
@@ -85,6 +114,9 @@ def create_refget_router(
     if fasta_drs:
         _LOGGER.info("Adding FASTA DRS endpoints...")
         refget_router.include_router(fasta_drs_router, prefix="/fasta")
+    if compliance:
+        _LOGGER.info("Adding compliance endpoints...")
+        refget_router.include_router(compliance_router)
     return refget_router
 
 
@@ -98,10 +130,10 @@ seq_router = APIRouter()
     tags=["Retrieving data"],
 )
 async def sequence(
-    dbagent=Depends(get_dbagent),
     sequence_digest: str = example_sequence,
-    start: int = None,
-    end: int = None,
+    start: int | None = Query(None, description="Start position (0-based, inclusive)"),
+    end: int | None = Query(None, description="End position (0-based, exclusive)"),
+    dbagent=Depends(get_dbagent),
 ):
     return Response(content=dbagent.seq.get(sequence_digest, start, end), media_type="text/plain")
 
@@ -111,7 +143,7 @@ async def sequence(
     summary="Retrieve metadata for a sequence",
     tags=["Retrieving data"],
 )
-async def seq_metadata(dbagent=Depends(get_dbagent), sequence_digest: str = example_sequence):
+async def seq_metadata(sequence_digest: str = example_sequence, dbagent=Depends(get_dbagent)):
     raise HTTPException(status_code=501, detail="Metadata retrieval not yet implemented.")
 
 
@@ -124,13 +156,15 @@ seqcol_router = APIRouter()
     tags=["Retrieving data"],
 )
 async def collection(
-    dbagent=Depends(get_dbagent),
     collection_digest: str = example_collection_digest,
-    level: int | None = None,
-    collated: bool = True,
-    attribute: str = None,
+    level: int | None = Query(None, description="Recursion depth (1 or 2)", ge=1, le=2),
+    collated: bool = Query(True, description="Return collated format (arrays) vs itemwise"),
+    attribute: str | None = Query(
+        None, description="Return only this attribute (e.g., 'names', 'lengths')"
+    ),
+    backend=Depends(get_backend),
 ):
-    if level == None:
+    if level is None:
         level = 2
     if level > 2:
         raise HTTPException(
@@ -139,16 +173,10 @@ async def collection(
         )
     try:
         if not collated:
-            return dbagent.seqcol.get(
-                collection_digest, return_format="itemwise", itemwise_limit=10000
-            )
+            return backend.get_collection_itemwise(collection_digest, limit=10000)
         if attribute:
-            return dbagent.seqcol.get(collection_digest, attribute=attribute)
-        if level == 1:
-            return dbagent.seqcol.get(collection_digest, return_format="level1")
-        if level == 2:
-            return dbagent.seqcol.get(collection_digest, return_format="level2")
-        return {"error": "Invalid level specified."}
+            return backend.get_collection_attribute(collection_digest, attribute)
+        return backend.get_collection(collection_digest, level=level)
     except ValueError as e:
         raise HTTPException(
             status_code=404,
@@ -162,18 +190,18 @@ async def collection(
     tags=["Retrieving data"],
 )
 async def attribute(
-    dbagent=Depends(get_dbagent),
     attribute_name: str = "names",
     attribute_digest: str = example_attribute_digest,
+    backend=Depends(get_backend),
 ):
     try:
-        return dbagent.attribute.get(attribute_name, attribute_digest)
-    except KeyError as e:
+        return backend.get_attribute(attribute_name, attribute_digest)
+    except KeyError:
         raise HTTPException(
             status_code=404,
             detail="Error: attribute not found. Check the attribute and try again.",
         )
-    except AttributeError as e:
+    except AttributeError:
         raise HTTPException(
             status_code=404,
             detail="Digest not found. Check the digest and try again.",
@@ -186,15 +214,15 @@ async def attribute(
     tags=["Comparing sequence collections"],
 )
 async def compare_2_digests(
-    dbagent=Depends(get_dbagent),
     collection_digest1: str = example_digest_hg38,
     collection_digest2: str = example_digest_hg38_primary,
+    backend=Depends(get_backend),
 ):
     _LOGGER.info("Comparing two digests...")
     result = {}
     result["digests"] = {"a": collection_digest1, "b": collection_digest2}
     try:
-        result.update(dbagent.compare_digests(collection_digest1, collection_digest2))
+        result.update(backend.compare_digests(collection_digest1, collection_digest2))
     except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
@@ -206,106 +234,74 @@ async def compare_2_digests(
 
 @seqcol_router.post(
     "/similarities/{collection_digest}",
-    summary="Calculate Jaccard similarities between a single sequence collection in the database and all other collections in the database (by species)",
+    summary="Calculate Jaccard similarities between a sequence collection and all others",
     tags=["Comparing sequence collections"],
     response_model=Similarities,
 )
 async def calc_similarities(
     collection_digest: str,
-    species: str = "human",
-    page_size: int = 50,
-    page: int = 0,
-    dbagent=Depends(get_dbagent),
+    species: str = Query("human", description="Species/group to filter by"),
+    page_size: int = Query(50, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
+    backend=Depends(get_backend),
 ) -> Similarities:
     _LOGGER.info("Calculating Jaccard similarities...")
     try:
-        seqcolA = dbagent.seqcol.get(digest=collection_digest)
-    except Exception as e:
-        _LOGGER.debug(f"Error fetching collection: {e}")
+        seqcolA = backend.get_collection(collection_digest, level=2)
+    except (ValueError, KeyError):
         raise HTTPException(status_code=404, detail="Collection not found")
 
-    return await calc_similarities_from_json(seqcolA, species, page_size, page, dbagent)
+    return await _compute_similarities(seqcolA, species, page_size, page, backend)
 
 
 @seqcol_router.post(
     "/similarities/",
-    summary="Calculate Jaccard similarities between input sequence collection and all collections in database",
+    summary="Calculate Jaccard similarities between input sequence collection and all collections",
     tags=["Comparing sequence collections"],
     response_model=Similarities,
 )
 async def calc_similarities_from_json(
     seqcolA: dict,
-    species: str = "human",
-    page_size: int = 50,
-    page: int = 0,
-    dbagent=Depends(get_dbagent),
+    species: str = Query("human", description="Species/group to filter by"),
+    page_size: int = Query(50, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
+    backend=Depends(get_backend),
 ) -> Similarities:
-    """
-    Calculate Jaccard similarities between input sequence collection and all collections in DB.
-    Takes a JSON sequence collection directly instead of a digest.
-    Take output from: refget digest-fasta "yourfasta.fa" -l 2 > myoutput.json
+    return await _compute_similarities(seqcolA, species, page_size, page, backend)
 
-    Args:
-        seqcolA: Input sequence collection dictionary
-        species: Species to filter by ("human" or "mouse"), defaults to "human"
-        page_size: Number of results per page
-        page: Page number
-        dbagent: Database agent dependency
-    """
-    _LOGGER.info(
-        f"Calculating Jaccard similarities from input sequence collection for {species}..."
-    )
 
+async def _compute_similarities(
+    seqcolA: dict,
+    species: str,
+    page_size: int,
+    page: int,
+    backend: SeqColBackend,
+) -> Similarities:
+    """Shared implementation for both similarity endpoints."""
     try:
-        # Validate species parameter
-        if species.lower() not in _SAMPLE_DIGESTS:
+        # Get target digests for species if configured
+        target_digests = _SAMPLE_DIGESTS.get(species.lower()) if _SAMPLE_DIGESTS else None
+
+        if not _SAMPLE_DIGESTS:
+            raise HTTPException(
+                status_code=501,
+                detail="Similarities not configured. No scom_config.json found.",
+            )
+        if not target_digests:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid species '{species}'. Choose from: {list(_SAMPLE_DIGESTS.keys())}",
             )
 
-        # Get pre-loaded digests for the species
-        target_digests = _SAMPLE_DIGESTS[species.lower()]
-
-        if not target_digests:
-            _LOGGER.warning(f"No pre-loaded digests found for {species}")
-            return Similarities(
-                similarities=[],
-                pagination=PaginationResult(page=page, page_size=page_size, total=0),
-                reference_digest=None,
-            )
-
-        _LOGGER.info(f"Using {len(target_digests)} pre-loaded digests for {species}")
-
-        # Use the modified get_many_level2_offset function with target_digests filter
-        results = dbagent.seqcol.get_many_level2_offset(
-            limit=page_size, offset=page * page_size, target_digests=target_digests
+        result = backend.compute_similarities(
+            seqcolA, page=page, page_size=page_size, target_digests=target_digests
         )
-
-        similarities = []
-        for key in results.results.keys():
-            human_readable_names = results.results[key]["human_readable_names"]
-            jaccard_sims = dbagent.calc_similarities_seqcol_dicts(seqcolA, results.results[key])
-            similarities.append(
-                {
-                    "digest": key,
-                    "human_readable_names": human_readable_names,
-                    "similarities": jaccard_sims,
-                }
-            )
-
-        result = Similarities(
-            similarities=similarities, pagination=results.pagination, reference_digest=None
-        )
-
+        return Similarities(**result)
     except HTTPException:
-        # Re-raise HTTP exceptions
         raise
     except Exception as e:
-        _LOGGER.debug(f"Error in calc_similarities_from_json: {e}")
+        _LOGGER.debug(f"Error computing similarities: {e}")
         raise HTTPException(status_code=500, detail="Error calculating similarities")
-
-    return result
 
 
 @seqcol_router.post(
@@ -314,9 +310,9 @@ async def calc_similarities_from_json(
     tags=["Comparing sequence collections"],
 )
 async def compare_1_digest(
-    dbagent=Depends(get_dbagent),
     collection_digest1: str = example_digest_hg38,
     seqcolB: dict = example_hg38_sc,
+    backend=Depends(get_backend),
 ):
     _LOGGER.info("Comparing one digests and one POSTed seqcol...")
     _LOGGER.info(f"digest1: {collection_digest1}")
@@ -324,7 +320,7 @@ async def compare_1_digest(
     result = {}
     result["digests"] = {"a": collection_digest1, "b": "POSTed seqcol"}
     try:
-        result.update(dbagent.compare_1_digest(collection_digest1, seqcolB))
+        result.update(backend.compare_digest_with_level2(collection_digest1, seqcolB))
     except ValueError as e:
         _LOGGER.debug(e)
         raise HTTPException(
@@ -341,28 +337,35 @@ async def compare_1_digest(
     response_model=PaginatedDigestList,
 )
 async def list_collections_by_offset(
-    request: Request,
-    dbagent=Depends(get_dbagent),
-    page_size: int = 100,
-    page: int = 0,
+    page_size: int = Query(100, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
+    names: str | None = Query(None, description="Filter by names attribute digest"),
+    lengths: str | None = Query(None, description="Filter by lengths attribute digest"),
+    sequences: str | None = Query(None, description="Filter by sequences attribute digest"),
+    name_length_pairs: str | None = Query(None, description="Filter by name_length_pairs digest"),
+    sorted_sequences: str | None = Query(None, description="Filter by sorted_sequences digest"),
+    backend=Depends(get_backend),
 ):
-    # Extract all query params except pagination params
-    filters = {k: v for k, v in request.query_params.items() if k not in ["page", "page_size"]}
+    # Build filters from explicit parameters
+    filters = {
+        k: v
+        for k, v in {
+            "names": names,
+            "lengths": lengths,
+            "sequences": sequences,
+            "name_length_pairs": name_length_pairs,
+            "sorted_sequences": sorted_sequences,
+        }.items()
+        if v is not None
+    }
 
-    if filters:
-        try:
-            # Multi-attribute filtering with AND logic
-            res = dbagent.seqcol.search_by_attributes(
-                filters, limit=page_size, offset=page * page_size
-            )
-        except ValueError as e:
-            # Invalid attribute name
-            raise HTTPException(status_code=400, detail=str(e))
-    else:
-        # No filters, return all collections
-        res = dbagent.seqcol.list_by_offset(limit=page_size, offset=page * page_size)
+    try:
+        res = backend.list_collections(page=page, page_size=page_size, filters=filters or None)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    res["results"] = [x.digest for x in res["results"]]
+    # Normalize results to digest strings (DB backend returns model objects)
+    res["results"] = [x.digest if hasattr(x, "digest") else x for x in res["results"]]
     return res
 
 
@@ -373,13 +376,14 @@ async def list_collections_by_offset(
     response_model=PaginatedDigestList,
 )
 async def list_attributes(
-    dbagent=Depends(get_dbagent), attribute: str = "names", page_size: int = 100, page: int = 0
+    backend=Depends(get_backend),
+    attribute: str = "names",
+    page_size: int = Query(100, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
 ):
     try:
-        res = dbagent.attribute.list(attribute, limit=page_size, offset=page * page_size)
-        res["results"] = [x.digest for x in res["results"]]
-        return res
-    except KeyError as e:
+        return backend.list_attributes(attribute, page=page, page_size=page_size)
+    except KeyError:
         raise HTTPException(
             status_code=404,
             detail="Error: attribute not found. Check the attribute and try again.",
@@ -397,7 +401,9 @@ pangenome_router = APIRouter()
     response_model=PaginatedDigestList,
 )
 async def list_cpangenomes_by_offset(
-    dbagent=Depends(get_dbagent), page_size: int = 100, page: int = 0
+    dbagent=Depends(get_dbagent),
+    page_size: int = Query(100, description="Number of results per page"),
+    page: int = Query(0, description="Page number (0-indexed)"),
 ):
     res = dbagent.pangenome.list_by_offset(limit=page_size, offset=page * page_size)
     res["results"] = [x.digest for x in res["results"]]
@@ -413,10 +419,10 @@ async def list_cpangenomes_by_offset(
 async def pangenome(
     dbagent=Depends(get_dbagent),
     pangenome_digest: str = example_pangenome_digest,
-    level: int | None = None,
-    collated: bool = True,
+    level: int | None = Query(None, description="Recursion depth (1-4)", ge=1, le=4),
+    collated: bool = Query(True, description="Return collated format (arrays) vs itemwise"),
 ):
-    if level == None:
+    if level is None:
         level = 2
     try:
         if not collated:
@@ -545,3 +551,69 @@ async def get_fasta_index(
         }
     except ValueError:
         raise HTTPException(status_code=404, detail="Object not found")
+
+
+compliance_router = APIRouter()
+
+
+@compliance_router.get(
+    "/compliance/run",
+    summary="Run compliance checks against a seqcol server",
+    tags=["Compliance"],
+)
+def run_compliance_endpoint(
+    request: Request,
+    target_url: str | None = Query(
+        None, description="Target server URL to test (defaults to self)"
+    ),
+):
+    """
+    Run GA4GH SeqCol compliance structure tests against a server.
+
+    Only runs structure tests (service-info, list, pagination, collection structure).
+    Content tests that require specific test data are not included.
+
+    If no target_url is provided, tests run against this server.
+    """
+    from .compliance import run_compliance
+
+    if target_url is None:
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        target_url = f"{scheme}://{host}"
+
+    return run_compliance(target_url)
+
+
+@compliance_router.get(
+    "/compliance/stream",
+    summary="Stream compliance checks via Server-Sent Events",
+    tags=["Compliance"],
+)
+def stream_compliance_endpoint(
+    request: Request,
+    target_url: str | None = Query(
+        None, description="Target server URL to test (defaults to self)"
+    ),
+):
+    """
+    Stream compliance check results in real-time via Server-Sent Events.
+
+    Each event contains a JSON object with type "start", "result", or "done".
+    """
+    from .compliance import run_compliance_stream
+
+    if target_url is None:
+        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+        host = request.headers.get("host", request.url.netloc)
+        target_url = f"{scheme}://{host}"
+
+    def event_stream():
+        for data in run_compliance_stream(target_url):
+            yield f"data: {data}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )

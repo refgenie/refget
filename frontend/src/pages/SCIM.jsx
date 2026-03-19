@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useLoaderData } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-import { API_BASE } from '../utilities.jsx';
+import { API_BASE, encodeToBase64, decodeFromBase64 } from '../utilities.jsx';
 import { ComparisonView } from './ComparisonView.jsx';
 
 // Seqcol Comparison Interpretation Module (SCIM)
@@ -30,18 +30,24 @@ const SCIM = () => {
   useEffect(() => {
     const comparisonFromQuery = searchParams.get('val');
     if (comparisonFromQuery) {
-      // decode base64encoded string
-      const decodedComparisonFromQuery = atob(comparisonFromQuery);
-      // prettify the comparison string
-      const prettyComparison = JSON.stringify(
-        JSON.parse(decodedComparisonFromQuery),
-        null,
-        2,
-      );
-      setComparisonStr(prettyComparison);
+      try {
+        // decode base64encoded string
+        const decodedComparisonFromQuery = decodeFromBase64(comparisonFromQuery);
+        // prettify the comparison string
+        const prettyComparison = JSON.stringify(
+          JSON.parse(decodedComparisonFromQuery),
+          null,
+          2,
+        );
+        setComparisonStr(prettyComparison);
 
-      const parsedComparison = JSON.parse(decodedComparisonFromQuery);
-      setComparison(parsedComparison);
+        const parsedComparison = JSON.parse(decodedComparisonFromQuery);
+        setComparison(parsedComparison);
+      } catch {
+        toast.error('Invalid comparison URL. The data may be corrupted.');
+        setComparison(null);
+        setComparisonStr('');
+      }
     }
   }, [searchParams]);
 
@@ -79,7 +85,7 @@ const SCIM = () => {
     setComparison(parsedComparison);
 
     // update the query param to base64 encoded string
-    const base64encodedComparison = btoa(comparisonStr);
+    const base64encodedComparison = encodeToBase64(comparisonStr);
     window.history.pushState(
       {},
       '',
@@ -95,9 +101,9 @@ const SCIM = () => {
 
   const loadExample = () => {
     const exampleData =
-      'eyJkaWdlc3RzIjp7ImEiOiJYWmxyY0VHaTZtbG9wWjJ1RDhPYkhrUUIxZDBvRHdLayIsImIiOiJRdlQ1dEFRMEI4Vmt4ZC1xRmZ0bHpFazJReWZQdGdPdiJ9LCJhdHRyaWJ1dGVzIjp7ImFfb25seSI6W10sImJfb25seSI6W10sImFfYW5kX2IiOlsibGVuZ3RocyIsIm5hbWVfbGVuZ3RoX3BhaXJzIiwibmFtZXMiLCJzZXF1ZW5jZXMiLCJzb3J0ZWRfc2VxdWVuY2VzIl19LCJhcnJheV9lbGVtZW50cyI6eyJhIjp7Imxlbmd0aHMiOjMsIm5hbWVfbGVuZ3RoX3BhaXJzIjozLCJuYW1lcyI6Mywic2VxdWVuY2VzIjozLCJzb3J0ZWRfc2VxdWVuY2VzIjozfSwiYiI6eyJsZW5ndGhzIjozLCJuYW1lX2xlbmd0aF9wYWlycyI6MywibmFtZXMiOjMsInNlcXVlbmNlcyI6Mywic29ydGVkX3NlcXVlbmNlcyI6M30sImFfYW5kX2IiOnsibGVuZ3RocyI6MywibmFtZV9sZW5ndGhfcGFpcnMiOjAsIm5hbWVzIjowLCJzZXF1ZW5jZXMiOjMsInNvcnRlZF9zZXF1ZW5jZXMiOjN9LCJhX2FuZF9iX3NhbWVfb3JkZXIiOnsibGVuZ3RocyI6dHJ1ZSwibmFtZV9sZW5ndGhfcGFpcnMiOm51bGwsIm5hbWVzIjpudWxsLCJzZXF1ZW5jZXMiOnRydWUsInNvcnRlZF9zZXF1ZW5jZXMiOnRydWV9fX0=';
+      'eyJkaWdlc3RzIjp7ImEiOiJYWmxyY0VHaTZtbG9wWjJ1RDhPYkhrUUIxZDBvRHdLayIsImIiOiJRdlQ1dEFRMEI4Vmt4ZC1xRmZ0bHpFazJReWZQdGdPdiJ9LCJhdHRyaWJ1dGVzIjp7ImFfb25seSI6W10sImJfb25seSI6W10sImFfYW5kX2IiOlsibGVuZ3RocyIsIm5hbWVfbGVuZ3RoX3BhaXJzIiwibmFtZXMiLCJzZXF1ZW5jZXMiLCJzb3J0ZWRfc2VxdWVuY2VzIl19LCJhcnJheV9lbGVtZW50cyI6eyJhX2NvdW50Ijp7Imxlbmd0aHMiOjMsIm5hbWVfbGVuZ3RoX3BhaXJzIjozLCJuYW1lcyI6Mywic2VxdWVuY2VzIjozLCJzb3J0ZWRfc2VxdWVuY2VzIjozfSwiYl9jb3VudCI6eyJsZW5ndGhzIjozLCJuYW1lX2xlbmd0aF9wYWlycyI6MywibmFtZXMiOjMsInNlcXVlbmNlcyI6Mywic29ydGVkX3NlcXVlbmNlcyI6M30sImFfYW5kX2JfY291bnQiOnsibGVuZ3RocyI6MywibmFtZV9sZW5ndGhfcGFpcnMiOjAsIm5hbWVzIjowLCJzZXF1ZW5jZXMiOjMsInNvcnRlZF9zZXF1ZW5jZXMiOjN9LCJhX2FuZF9iX3NhbWVfb3JkZXIiOnsibGVuZ3RocyI6dHJ1ZSwibmFtZV9sZW5ndGhfcGFpcnMiOm51bGwsIm5hbWVzIjpudWxsLCJzZXF1ZW5jZXMiOnRydWUsInNvcnRlZF9zZXF1ZW5jZXMiOnRydWV9fX0=';
 
-    const decodedComparison = atob(exampleData);
+    const decodedComparison = decodeFromBase64(exampleData);
     const prettyComparison = JSON.stringify(
       JSON.parse(decodedComparison),
       null,

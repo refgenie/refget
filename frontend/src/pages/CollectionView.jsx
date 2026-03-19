@@ -1,44 +1,21 @@
 import { Link, useLoaderData, useParams } from 'react-router-dom';
-import { useState } from 'react';
 import { API_BASE } from '../utilities.jsx';
 import {
   AttributeValue,
   LinkedAttributeDigest,
 } from '../components/ValuesAndDigests.jsx';
 
-const CollectionView = (params) => {
+const CollectionView = () => {
   const collection = useLoaderData();
-  const [collectionRepresentation, setCollectionRepresentation] =
-    useState(null);
   const { digest } = useParams();
+
+  if (!Array.isArray(collection) || collection.length < 3) {
+    return <div className="alert alert-warning">Failed to load collection data.</div>;
+  }
 
   let level1 = collection[0];
   let level2 = collection[1];
   let uncollated = collection[2];
-
-  // const col_str = (2 == 1 ? "asdf" : <pre>{JSON.stringify(collectionRepresentation, null, 2)}</pre>)
-  const showLevel = (level, collated = true) => {
-    fetchSeqColDetails(digest, level, collated).then((data) => {
-      if (level == 1) {
-        data = Level1Collection(data);
-      } else if (level == 2) {
-        data = Level2Collection(data);
-      }
-      setCollectionRepresentation(data);
-    });
-
-    const showUncollated = () => {
-      fetchSeqColDetails(digest, 'uncollated').then((data) => {
-        setCollectionRepresentation(data);
-      });
-    };
-  };
-
-  const urls = {
-    level1: `/collection/${digest}?level=1`,
-    level2: `/collection/${digest}?level=2`,
-    uncollated: `/collection/${digest}?collated=false`,
-  };
 
   let attribute_list_views = [];
   for (let attribute in level2) {
@@ -101,11 +78,11 @@ const CollectionView = (params) => {
                 aria-expanded='true'
                 aria-controls='collapseLevel1'
               >
-                <h6 className='mb-0'>Level 1: {urls['level1']}</h6>
+                <h6 className='mb-0'>Level 1: {`/collection/${digest}?level=1`}</h6>
               </button>
               <a
                 className='btn btn-secondary btn-sm'
-                href={API_BASE + urls['level1']}
+                href={API_BASE + `/collection/${digest}?level=1`}
                 target='_blank'
                 rel='noopener noreferrer'
                 style={{ zIndex: 999 }}
@@ -135,11 +112,11 @@ const CollectionView = (params) => {
                 aria-expanded='false'
                 aria-controls='collapseLevel2'
               >
-                <h6 className='mb-0'>Level 2: {urls['level2']}</h6>
+                <h6 className='mb-0'>Level 2: {`/collection/${digest}?level=2`}</h6>
               </button>
               <a
                 className='btn btn-secondary btn-sm'
-                href={API_BASE + urls['level2']}
+                href={API_BASE + `/collection/${digest}?level=2`}
                 target='_blank'
                 rel='noopener noreferrer'
                 style={{ zIndex: 999 }}
@@ -169,11 +146,11 @@ const CollectionView = (params) => {
                 aria-expanded='false'
                 aria-controls='collapseUncollated'
               >
-                <h6 className='mb-0'>Uncollated: {urls['uncollated']}</h6>
+                <h6 className='mb-0'>Uncollated: {`/collection/${digest}?collated=false`}</h6>
               </button>
               <a
                 className='btn btn-secondary btn-sm'
-                href={API_BASE + urls['uncollated']}
+                href={API_BASE + `/collection/${digest}?collated=false`}
                 target='_blank'
                 rel='noopener noreferrer'
                 style={{ zIndex: 999 }}

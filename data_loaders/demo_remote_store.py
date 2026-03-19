@@ -39,7 +39,7 @@ def main():
     print(f"\n1. Loading remote store from:\n   {REMOTE_URL}")
     print(f"   Cache directory: {CACHE_DIR}\n")
 
-    store = RefgetStore.load_remote(cache_path=str(CACHE_DIR), remote_url=REMOTE_URL)
+    store = RefgetStore.open_remote(cache_path=str(CACHE_DIR), remote_url=REMOTE_URL)
 
     print(f"   Loaded! {len(store)} sequences available (metadata only)")
 
@@ -51,9 +51,8 @@ def main():
 
     # 3. List sequences (first 5)
     print(f"\n3. Listing sequences (first 5 of {len(store)}):")
-    records = store.sequence_records()
-    for i, rec in enumerate(records[:5]):
-        m = rec.metadata
+    records = store.list_sequences()
+    for i, m in enumerate(records[:5]):
         print(f"   {i+1}. {m.name[:50]}...")
         print(f"      sha512t24u: {m.sha512t24u}")
         print(f"      length: {m.length:,} bp")
@@ -61,7 +60,7 @@ def main():
     # 4. Fetch a sequence by ID (downloads sequence data on first access)
     seq_digest = "du4GiRD_OcmdmCn_RmImyb71YZ4XoCdk"
     print(f"\n4. Get sequence record by ID (fetches from remote):")
-    record = store.get_sequence_by_id(seq_digest)
+    record = store.get_sequence(seq_digest)
     if record:
         print(f"   Name: {record.metadata.name}")
         print(f"   Length: {record.metadata.length:,} bp")
@@ -107,7 +106,7 @@ def main():
     print(f"   Collection: {EXAMPLE_COLLECTION}")
     print(f"   Sequence: {EXAMPLE_SEQ_NAME[:50]}...")
 
-    record = store.get_sequence_by_collection_and_name(EXAMPLE_COLLECTION, EXAMPLE_SEQ_NAME)
+    record = store.get_sequence_by_name(EXAMPLE_COLLECTION, EXAMPLE_SEQ_NAME)
     if record:
         print(f"   Found! Length: {record.metadata.length:,} bp")
         print(f"   Digest: {record.metadata.sha512t24u}")
@@ -149,9 +148,9 @@ def main():
     print(f"\nCache directory: {CACHE_DIR}")
     print(f"Temp files: {temp_dir}")
     print("\nKey features demonstrated:")
-    print("  - load_remote(): Load store from URL, fetch sequences on-demand")
-    print("  - get_sequence_by_id(): Lookup by SHA-512/24u or MD5 digest")
-    print("  - get_sequence_by_collection_and_name(): Lookup by sequence name")
+    print("  - open_remote(): Load store from URL, fetch sequences on-demand")
+    print("  - get_sequence(): Lookup by SHA-512/24u or MD5 digest")
+    print("  - get_sequence_by_name(): Lookup by collection digest + sequence name")
     print("  - substrings_from_regions(): Batch retrieval from BED file")
     print("  - export_fasta_by_digests(): Export sequences by digest")
     print("  - export_fasta_from_regions(): Export BED regions to FASTA")

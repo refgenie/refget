@@ -7,11 +7,12 @@ Run with: ./scripts/test-integration.sh
 """
 
 import os
-import pytest
 import socket
 import threading
 import time
 from pathlib import Path
+
+import pytest
 
 # Set environment variables BEFORE any app imports
 # Must match test-db.sh settings
@@ -78,8 +79,8 @@ def loaded_dbagent(test_dbagent, test_fasta_path):
 @pytest.fixture(scope="session")
 def client(loaded_dbagent):
     """Create TestClient with test database"""
-    from seqcolapi.main import app
     from refget.router import get_dbagent
+    from seqcolapi.main import app
 
     def override_get_dbagent():
         return loaded_dbagent
@@ -131,8 +132,9 @@ def test_server(request):
     loaded_dbagent = request.getfixturevalue("loaded_dbagent")
 
     import uvicorn
-    from seqcolapi.main import app
+
     from refget.router import get_dbagent
+    from seqcolapi.main import app
 
     def override_get_dbagent():
         return loaded_dbagent
@@ -169,10 +171,123 @@ def test_server(request):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(scope="session")
+def store_test_server(tmp_path_factory):
+    """
+    Provide a store-backed seqcol server URL for integration tests.
+
+    Creates a temporary RefgetStore, loads all 6 test FASTA files,
+    and runs a store-backed uvicorn server in a background thread.
+    No database required.
+
+    Note: We build the app manually (instead of create_store_app) so we can
+    reuse the same store instance that loaded the FASTAs, preserving
+    correct array ordering. Opening a new store from the same path
+    would lose FASTA-order due to a gtars hash-map ordering issue.
+    """
+    import json
+
+    import uvicorn
+    from fastapi import FastAPI
+    from fastapi.middleware.cors import CORSMiddleware
+
+    from refget.router import create_refget_router, setup_backend
+    from refget.store import RefgetStore
+    from seqcolapi.const import ALL_VERSIONS
+
+    # Create store and load test FASTAs
+    store_dir = tmp_path_factory.mktemp("store")
+    store = RefgetStore.on_disk(str(store_dir))
+
+    test_fasta_dir = Path(__file__).parent.parent.parent / "test_fasta"
+    for fa_file in [
+        "base.fa",
+        "different_names.fa",
+        "different_order.fa",
+        "pair_swap.fa",
+        "subset.fa",
+        "swap_wo_coords.fa",
+    ]:
+        fa_path = test_fasta_dir / fa_file
+        store.add_sequence_collection_from_fasta(str(fa_path))
+
+    # Build the app directly using the same store instance
+    store_app = FastAPI(
+        title="Sequence Collections API (Store-backed test)",
+        version=ALL_VERSIONS["refget_version"],
+    )
+    store_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    setup_backend(store_app, store=store)
+    router = create_refget_router(sequences=False, pangenomes=False)
+    store_app.include_router(router)
+
+    # Load seqcol schema for service-info
+    schema_path = Path(__file__).parent.parent.parent / "refget" / "schemas" / "seqcol.json"
+    try:
+        with open(schema_path) as f:
+            schema = json.load(f)
+    except Exception:
+        schema = None
+
+    @store_app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
+    async def store_service_info():
+        backend = getattr(store_app.state, "backend", None)
+        caps = backend.capabilities() if backend and hasattr(backend, "capabilities") else {}
+        return {
+            "id": "org.databio.seqcolapi.store",
+            "name": "Sequence collections (store-backed)",
+            "type": {
+                "group": "org.ga4gh",
+                "artifact": "refget-seqcol",
+                "version": ALL_VERSIONS["seqcol_spec_version"],
+            },
+            "description": "Store-backed API providing metadata for collections of reference sequences",
+            "organization": {"name": "Databio Lab", "url": "https://databio.org"},
+            "contactUrl": "https://github.com/refgenie/refget/issues",
+            "version": ALL_VERSIONS,
+            "seqcol": {
+                "schema": schema,
+                "refget_store": {"enabled": True, **caps},
+            },
+        }
+
+    port = find_free_port()
+    server_url = f"http://localhost:{port}"
+
+    config = uvicorn.Config(store_app, host="127.0.0.1", port=port, log_level="error", ws="none")
+    server = uvicorn.Server(config)
+
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+
+    # Wait for server to start
+    max_wait = 5.0
+    start_time = time.time()
+    while time.time() - start_time < max_wait:
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=0.1):
+                break
+        except (ConnectionRefusedError, OSError):
+            time.sleep(0.1)
+    else:
+        raise RuntimeError(f"Store test server failed to start on port {port}")
+
+    yield server_url
+
+    server.should_exit = True
+
+
 @pytest.fixture
 def cli_runner():
     """CLI runner for integration tests."""
     from typer.testing import CliRunner
+
     from refget.cli.main import app
 
     runner = CliRunner()

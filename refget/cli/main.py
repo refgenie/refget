@@ -4,16 +4,16 @@ Main Typer application for the refget CLI.
 This module defines the main CLI app and registers all command groups.
 """
 
-import typer
 from typing import Optional
 
-from refget._version import __version__
+import typer
 
+from refget._version import __version__
+from refget.cli.admin import app as admin_app
 from refget.cli.config import app as config_app
 from refget.cli.fasta import app as fasta_app
-from refget.cli.store import app as store_app
 from refget.cli.seqcol import app as seqcol_app
-from refget.cli.admin import app as admin_app
+from refget.cli.store import app as store_app
 
 app = typer.Typer(
     name="refget",

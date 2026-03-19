@@ -7,9 +7,6 @@ These are unit tests that do NOT require database access.
 Database-dependent admin tests are in tests/integration/test_cli_admin_integration.py
 """
 
-import pytest
-import json
-
 
 class TestAdminStatus:
     """Tests for: refget admin status
