@@ -37,7 +37,7 @@ dependencies = [
 refget = "refget.cli:main"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov>=6.0.0"]
+test = ["pytest", "pytest-cov>=6.0.0", "fastapi", "httpx"]
 seqcolapi = [
     "fastapi",
     "psycopg2-binary",
