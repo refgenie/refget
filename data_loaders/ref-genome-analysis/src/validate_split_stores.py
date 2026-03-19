@@ -25,8 +25,8 @@ import time
 BRICK_ROOT = os.environ["BRICK_ROOT"]
 STAGING = os.environ.get("STAGING", os.path.join(BRICK_ROOT, "refget_staging"))
 SOURCE_PATH = os.environ.get("STORE_PATH", os.path.join(BRICK_ROOT, "refget_store"))
-VGP_PATH = os.path.join(BRICK_ROOT, "vgp_reference_store")
-REF_PATH = os.path.join(BRICK_ROOT, "refgenome_jungle_store")
+VGP_PATH = os.path.join(BRICK_ROOT, "refget-store/vgp")
+REF_PATH = os.path.join(BRICK_ROOT, "refget-store/jungle")
 DIGEST_MAP = os.path.join(STAGING, "digest_map.csv")
 
 VGP_GROUPS = {"vertebrates"}

@@ -23,8 +23,8 @@ BRICK_ROOT = os.environ["BRICK_ROOT"]
 DEFAULT_SOURCE = os.environ.get("STORE_PATH", os.path.join(BRICK_ROOT, "refget_store"))
 STAGING = os.environ.get("STAGING", os.path.join(BRICK_ROOT, "refget_staging"))
 DEFAULT_DIGEST_MAP = os.path.join(STAGING, "digest_map.csv")
-DEFAULT_VGP_OUTPUT = os.path.join(BRICK_ROOT, "vgp_reference_store")
-DEFAULT_REF_OUTPUT = os.path.join(BRICK_ROOT, "refgenome_jungle_store")
+DEFAULT_VGP_OUTPUT = os.environ.get("VGP_STORE_PATH", os.path.join(BRICK_ROOT, "refget-store", "vgp"))
+DEFAULT_REF_OUTPUT = os.environ.get("REF_STORE_PATH", os.path.join(BRICK_ROOT, "refget-store", "jungle"))
 
 VGP_GROUPS = {"vertebrates"}
 

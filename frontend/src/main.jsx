@@ -279,7 +279,7 @@ const App = () => {
                 </div>
                 <div className='d-flex flex-row mt-1 align-items-center'>
                   <div className='p-1 bg-success border border-success rounded-circle me-1'></div>
-                  Connected
+                  Connected to {API_BASE}
                 </div>
               </>
             ) : (
