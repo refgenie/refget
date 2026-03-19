@@ -299,5 +299,9 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "require_service" in item.keywords:
                 # Only skip if this is the base TestAPI class, not a subclass with test_server
-                if "TestAPI" in item.nodeid and "TestComplianceViaIntegration" not in item.nodeid and "TestStoreCompliance" not in item.nodeid:
+                if (
+                    "TestAPI" in item.nodeid
+                    and "TestComplianceViaIntegration" not in item.nodeid
+                    and "TestStoreCompliance" not in item.nodeid
+                ):
                     item.add_marker(skip_service)

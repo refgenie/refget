@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from .const import DEFAULT_TRANSIENT_ATTRS
-from .utils import compare_seqcols, calc_jaccard_similarities
+from .utils import calc_jaccard_similarities, compare_seqcols
 
 
 @runtime_checkable
@@ -50,9 +50,7 @@ class SeqColBackend(Protocol):
         Returns {"results": [...], "pagination": {...}}"""
         ...
 
-    def list_attributes(
-        self, attribute: str, page: int = 0, page_size: int = 100
-    ) -> dict:
+    def list_attributes(self, attribute: str, page: int = 0, page_size: int = 100) -> dict:
         """List unique attribute digests. Returns {"results": [...], "pagination": {...}}"""
         ...
 
@@ -105,7 +103,9 @@ class RefgetStoreBackend:
 
     def get_attribute(self, attribute_name: str, attribute_digest: str) -> list:
         if attribute_name in DEFAULT_TRANSIENT_ATTRS:
-            raise KeyError(f"Transient attribute '{attribute_name}' is not served via /attribute endpoint")
+            raise KeyError(
+                f"Transient attribute '{attribute_name}' is not served via /attribute endpoint"
+            )
         result = self._store.get_attribute(attribute_name, attribute_digest)
         if result is None:
             raise KeyError(f"Attribute {attribute_name}/{attribute_digest} not found")
@@ -155,9 +155,7 @@ class RefgetStoreBackend:
     ) -> dict:
         result = self._store.list_collections(page=page, page_size=page_size, filters=filters)
         # Extract digest strings from SequenceCollectionMetadata objects
-        result["results"] = [
-            r.digest if hasattr(r, "digest") else r for r in result["results"]
-        ]
+        result["results"] = [r.digest if hasattr(r, "digest") else r for r in result["results"]]
         return result
 
     def list_attributes(self, attribute: str, page: int = 0, page_size: int = 100) -> dict:
@@ -177,7 +175,10 @@ class RefgetStoreBackend:
         }
 
     def compute_similarities(
-        self, seqcol: dict, page: int = 0, page_size: int = 50,
+        self,
+        seqcol: dict,
+        page: int = 0,
+        page_size: int = 50,
         target_digests: list[str] | None = None,
     ) -> dict:
         """Compute Jaccard similarities between a seqcol and collections in the store.
@@ -211,11 +212,13 @@ class RefgetStoreBackend:
                 if level2 is None:
                     continue
                 jaccard = calc_jaccard_similarities(seqcol, level2)
-                similarities.append({
-                    "digest": digest,
-                    "human_readable_names": alias_map.get(digest, []),
-                    "similarities": jaccard,
-                })
+                similarities.append(
+                    {
+                        "digest": digest,
+                        "human_readable_names": alias_map.get(digest, []),
+                        "similarities": jaccard,
+                    }
+                )
             except Exception:
                 continue
 

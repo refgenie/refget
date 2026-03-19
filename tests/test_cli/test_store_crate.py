@@ -33,9 +33,12 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         result = cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
         )
 
         assert result.exit_code == 0
@@ -52,9 +55,12 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -73,9 +79,12 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -90,9 +99,12 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "My Genome Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "My Genome Store",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -104,9 +116,12 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -128,10 +143,14 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
-            "--author", "Jane Doe <https://orcid.org/0000-0001-1234-5678>",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
+            "--author",
+            "Jane Doe <https://orcid.org/0000-0001-1234-5678>",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -154,10 +173,14 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
-            "--author", "John Smith",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
+            "--author",
+            "John Smith",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -173,10 +196,14 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
-            "--license", "https://creativecommons.org/publicdomain/zero/1.0/",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
+            "--license",
+            "https://creativecommons.org/publicdomain/zero/1.0/",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -185,8 +212,11 @@ class TestStoreCrate:
         assert root["license"]["@id"] == "https://creativecommons.org/publicdomain/zero/1.0/"
 
         license_entity = next(
-            (e for e in crate["@graph"]
-             if e["@id"] == "https://creativecommons.org/publicdomain/zero/1.0/"),
+            (
+                e
+                for e in crate["@graph"]
+                if e["@id"] == "https://creativecommons.org/publicdomain/zero/1.0/"
+            ),
             None,
         )
         assert license_entity is not None
@@ -198,10 +228,14 @@ class TestStoreCrate:
         output_path = tmp_path / "custom" / "crate.json"
 
         result = cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
-            "--output", str(output_path),
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
+            "--output",
+            str(output_path),
         )
 
         assert result.exit_code == 0
@@ -218,12 +252,16 @@ class TestStoreCrate:
         aliases = store_path / "aliases"
         if aliases.exists():
             import shutil
+
             shutil.rmtree(aliases)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -235,9 +273,12 @@ class TestStoreCrate:
         store_path = _init_and_add(cli, tmp_path)
 
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
         )
 
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
@@ -264,9 +305,12 @@ class TestStoreCrate:
 
         # Without description
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
         )
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
         root = next(e for e in crate["@graph"] if e["@id"] == "./")
@@ -274,10 +318,14 @@ class TestStoreCrate:
 
         # With description
         cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Test Store",
-            "--description", "A test store for genomes",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Test Store",
+            "--description",
+            "A test store for genomes",
         )
         crate = json.loads((store_path / "ro-crate-metadata.json").read_text())
         root = next(e for e in crate["@graph"] if e["@id"] == "./")
@@ -289,9 +337,12 @@ class TestStoreCrate:
         cli("store", "init", "--path", str(store_path))
 
         result = cli(
-            "store", "crate",
-            "--path", str(store_path),
-            "--name", "Empty Store",
+            "store",
+            "crate",
+            "--path",
+            str(store_path),
+            "--name",
+            "Empty Store",
         )
 
         assert result.exit_code == 0

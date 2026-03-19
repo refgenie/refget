@@ -1071,131 +1071,147 @@ def crate(
     graph.append(root)
 
     # Data entities
-    graph.extend([
-        {
-            "@id": "rgstore.json",
-            "@type": "File",
-            "name": "Store configuration",
-            "description": "Operational configuration for RefgetStore: path templates, storage mode, format version.",
-            "encodingFormat": "application/json",
-        },
-        {
-            "@id": "sequences.rgsi",
-            "@type": "File",
-            "name": "Master sequence index",
-            "description": "Tab-separated index of all sequences in the store with names, lengths, alphabets, and GA4GH digests.",
-            "encodingFormat": "text/tab-separated-values",
-        },
-        {
-            "@id": "sequences/",
-            "@type": "Dataset",
-            "name": "Sequence data",
-            "description": "Content-addressable sequence files organized by digest prefix.",
-        },
-        {
-            "@id": "collections/",
-            "@type": "Dataset",
-            "name": "Sequence collections",
-            "description": "GA4GH sequence collection metadata. Each .rgsi file defines a collection with its member sequences and digests.",
-        },
-    ])
+    graph.extend(
+        [
+            {
+                "@id": "rgstore.json",
+                "@type": "File",
+                "name": "Store configuration",
+                "description": "Operational configuration for RefgetStore: path templates, storage mode, format version.",
+                "encodingFormat": "application/json",
+            },
+            {
+                "@id": "sequences.rgsi",
+                "@type": "File",
+                "name": "Master sequence index",
+                "description": "Tab-separated index of all sequences in the store with names, lengths, alphabets, and GA4GH digests.",
+                "encodingFormat": "text/tab-separated-values",
+            },
+            {
+                "@id": "sequences/",
+                "@type": "Dataset",
+                "name": "Sequence data",
+                "description": "Content-addressable sequence files organized by digest prefix.",
+            },
+            {
+                "@id": "collections/",
+                "@type": "Dataset",
+                "name": "Sequence collections",
+                "description": "GA4GH sequence collection metadata. Each .rgsi file defines a collection with its member sequences and digests.",
+            },
+        ]
+    )
 
     if aliases_path.exists() and aliases_path.is_dir():
-        graph.append({
-            "@id": "aliases/",
-            "@type": "Dataset",
-            "name": "Alias namespaces",
-            "description": "Human-readable name mappings for sequences and collections.",
-        })
+        graph.append(
+            {
+                "@id": "aliases/",
+                "@type": "Dataset",
+                "name": "Alias namespaces",
+                "description": "Human-readable name mappings for sequences and collections.",
+            }
+        )
 
     # PropertyValue entities
-    graph.extend([
-        {
-            "@id": "#prop-storageMode",
-            "@type": "PropertyValue",
-            "propertyID": "storageMode",
-            "name": "Storage Mode",
-            "value": storage_mode,
-        },
-        {
-            "@id": "#prop-sequenceCount",
-            "@type": "PropertyValue",
-            "propertyID": "sequenceCount",
-            "name": "Sequence Count",
-            "value": seq_count,
-        },
-        {
-            "@id": "#prop-collectionCount",
-            "@type": "PropertyValue",
-            "propertyID": "collectionCount",
-            "name": "Collection Count",
-            "value": coll_count,
-        },
-        {
-            "@id": "#prop-refgetDigestAlgorithm",
-            "@type": "PropertyValue",
-            "propertyID": "refgetDigestAlgorithm",
-            "name": "Refget Digest Algorithm",
-            "value": "sha512t24u",
-        },
-    ])
+    graph.extend(
+        [
+            {
+                "@id": "#prop-storageMode",
+                "@type": "PropertyValue",
+                "propertyID": "storageMode",
+                "name": "Storage Mode",
+                "value": storage_mode,
+            },
+            {
+                "@id": "#prop-sequenceCount",
+                "@type": "PropertyValue",
+                "propertyID": "sequenceCount",
+                "name": "Sequence Count",
+                "value": seq_count,
+            },
+            {
+                "@id": "#prop-collectionCount",
+                "@type": "PropertyValue",
+                "propertyID": "collectionCount",
+                "name": "Collection Count",
+                "value": coll_count,
+            },
+            {
+                "@id": "#prop-refgetDigestAlgorithm",
+                "@type": "PropertyValue",
+                "propertyID": "refgetDigestAlgorithm",
+                "name": "Refget Digest Algorithm",
+                "value": "sha512t24u",
+            },
+        ]
+    )
 
     # CreateAction provenance
-    graph.extend([
-        {
-            "@id": "#crate-creation",
-            "@type": "CreateAction",
-            "name": "Generate RO-Crate metadata for RefgetStore",
-            "endTime": now,
-            "instrument": {"@id": "#refget-software"},
-            "result": {"@id": "./"},
-        },
-        {
-            "@id": "#refget-software",
-            "@type": "SoftwareApplication",
-            "name": "refget",
-            "version": __version__,
-            "url": "https://github.com/refgenie/refget",
-            "description": "Python package implementing GA4GH refget standards for sequences and sequence collections.",
-        },
-    ])
+    graph.extend(
+        [
+            {
+                "@id": "#crate-creation",
+                "@type": "CreateAction",
+                "name": "Generate RO-Crate metadata for RefgetStore",
+                "endTime": now,
+                "instrument": {"@id": "#refget-software"},
+                "result": {"@id": "./"},
+            },
+            {
+                "@id": "#refget-software",
+                "@type": "SoftwareApplication",
+                "name": "refget",
+                "version": __version__,
+                "url": "https://github.com/refgenie/refget",
+                "description": "Python package implementing GA4GH refget standards for sequences and sequence collections.",
+            },
+        ]
+    )
 
     # Add agent to CreateAction if author provided
     if author:
         graph[-2]["agent"] = root["author"]
 
     # Profile entity
-    graph.append({
-        "@id": "https://w3id.org/ga4gh/refget/refgetstore-crate/0.1",
-        "@type": ["CreativeWork", "Profile"],
-        "name": "RefgetStore RO-Crate Profile",
-        "version": "0.1",
-        "description": "Profile for RO-Crates containing GA4GH RefgetStore sequence databases.",
-    })
+    graph.append(
+        {
+            "@id": "https://w3id.org/ga4gh/refget/refgetstore-crate/0.1",
+            "@type": ["CreativeWork", "Profile"],
+            "name": "RefgetStore RO-Crate Profile",
+            "version": "0.1",
+            "description": "Profile for RO-Crates containing GA4GH RefgetStore sequence databases.",
+        }
+    )
 
     # Author entity
     if author:
         match = re.match(r"^(.+?)\s*<(.+?)>\s*$", author)
         if match:
-            graph.append({
-                "@id": author_url,
-                "@type": "Person",
-                "name": author_name,
-            })
+            graph.append(
+                {
+                    "@id": author_url,
+                    "@type": "Person",
+                    "name": author_name,
+                }
+            )
         else:
-            graph.append({
-                "@id": root["author"]["@id"],
-                "@type": "Person",
-                "name": author_name,
-            })
+            graph.append(
+                {
+                    "@id": root["author"]["@id"],
+                    "@type": "Person",
+                    "name": author_name,
+                }
+            )
 
     # License entity
     if license:
-        graph.append({
-            "@id": license,
-            "@type": "CreativeWork",
-            "name": license.rstrip("/").split("/")[-1] or "License",
-        })
+        graph.append(
+            {
+                "@id": license,
+                "@type": "CreativeWork",
+                "name": license.rstrip("/").split("/")[-1] or "License",
+            }
+        )
 
     crate = {
         "@context": "https://w3id.org/ro/crate/1.2/context",
@@ -1207,11 +1223,13 @@ def crate(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(crate, indent=2) + "\n")
 
-    print_json({
-        "output": str(output_path),
-        "status": "created",
-        "entities": len(graph),
-    })
+    print_json(
+        {
+            "output": str(output_path),
+            "status": "created",
+            "entities": len(graph),
+        }
+    )
     raise typer.Exit(EXIT_SUCCESS)
 
 

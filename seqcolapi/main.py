@@ -50,7 +50,9 @@ def _load_scom_config(store_path: str, remote: bool):
                     _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
                 return
             else:
-                _LOGGER.info("No SCOM_CONFIG_URL set and no scom_config.json found. SCOM disabled.")
+                _LOGGER.info(
+                    "No SCOM_CONFIG_URL set and no scom_config.json found. SCOM disabled."
+                )
                 return
 
     try:
@@ -61,6 +63,7 @@ def _load_scom_config(store_path: str, remote: bool):
             _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
     except Exception as e:
         _LOGGER.info(f"Could not load SCOM config from {config_url} ({e}). SCOM disabled.")
+
 
 for key, value in ALL_VERSIONS.items():
     _LOGGER.info(f"{key}: {value}")
@@ -184,7 +187,9 @@ async def index(request: Request):
 async def service_info():
     # Build seqcol capabilities object
     seqcol_info = {
-        "schema": getattr(app.state.dbagent, "schema_dict", None) if hasattr(app.state, "dbagent") else None,
+        "schema": getattr(app.state.dbagent, "schema_dict", None)
+        if hasattr(app.state, "dbagent")
+        else None,
         "sorted_name_length_pairs": True,
         "fasta_drs": {"enabled": _ROUTER_CONFIG.get("fasta_drs", False)},
     }
@@ -302,8 +307,15 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
             "version": ALL_VERSIONS,
             "seqcol": {
                 "schema": schema,
-                "refget_store": {"enabled": True, "url": os.environ.get("REFGET_STORE_HTTP_URL", store_path), **caps},
-                "scom": {"enabled": bool(_SAMPLE_DIGESTS), "species": list(_SAMPLE_DIGESTS.keys())},
+                "refget_store": {
+                    "enabled": True,
+                    "url": os.environ.get("REFGET_STORE_HTTP_URL", store_path),
+                    **caps,
+                },
+                "scom": {
+                    "enabled": bool(_SAMPLE_DIGESTS),
+                    "species": list(_SAMPLE_DIGESTS.keys()),
+                },
             },
         }
 

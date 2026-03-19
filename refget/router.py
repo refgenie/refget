@@ -23,7 +23,7 @@ from fastapi.responses import StreamingResponse
 
 from .backend import SeqColBackend
 from .examples import *
-from .models import PaginatedDigestList, PaginationResult, Similarities
+from .models import PaginatedDigestList, Similarities
 
 _LOGGER = logging.getLogger(__name__)
 
