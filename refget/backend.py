@@ -118,7 +118,10 @@ class RefgetStoreBackend:
         sequences). For comparison, we need the derived attributes too. We get them
         from level 1 digests and resolve each via get_attribute.
         """
-        level2 = self._store.get_collection_level2(digest)
+        try:
+            level2 = self._store.get_collection_level2(digest)
+        except (OSError, IOError):
+            raise ValueError(f"Collection '{digest}' not found")
         if level2 is None:
             raise ValueError(f"Collection '{digest}' not found")
         try:

@@ -297,6 +297,8 @@ async def _compute_similarities(
             seqcolA, page=page, page_size=page_size, target_digests=target_digests
         )
         return Similarities(**result)
+    except HTTPException:
+        raise
     except Exception as e:
         _LOGGER.debug(f"Error computing similarities: {e}")
         raise HTTPException(status_code=500, detail="Error calculating similarities")
