@@ -1,4 +1,5 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -321,8 +322,6 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
 
     return store_app
 
-
-import os
 
 _STORE_URL_ENV = os.environ.get("REFGET_STORE_URL")
 _STORE_PATH_ENV = os.environ.get("REFGET_STORE_PATH")
