@@ -13,10 +13,12 @@ const getRecentApis = () => {
   }
 };
 
+const DEFAULT_API = 'https://seqcolapi.databio.org';
+
 const APIExplorer = () => {
   const navigate = useNavigate();
   const { probeApi, loading, error } = useApiExplorerStore();
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(DEFAULT_API);
   const [localError, setLocalError] = useState(null);
   const recentApis = getRecentApis();
 
@@ -53,7 +55,7 @@ const APIExplorer = () => {
           <input
             type="url"
             className="form-control"
-            placeholder="https://seqcolapi.databio.org"
+            placeholder="Enter API URL..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             required

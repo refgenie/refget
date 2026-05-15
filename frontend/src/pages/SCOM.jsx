@@ -8,7 +8,9 @@ import {
   fetchSimilaritiesJSON,
   fetchComparison,
   fetchComparisonJSON,
+  fetchCollectionLevels,
 } from '../services/fetchData.jsx';
+import { API_BASE } from '../utilities.jsx';
 import { MultiMetricHeatmapPlot } from '../components/MultiMetricHeatmapPlot.jsx';
 import { StripPlot } from '../components/StripPlot.jsx';
 
@@ -73,6 +75,33 @@ const SCOM = () => {
           console.error('Failed to load prefill data:', e);
         }
       }
+    }
+  }, [searchParams]);
+
+  // Handle digest query parameter - fetch collection and prefill
+  useEffect(() => {
+    const digestParam = searchParams.get('digest');
+    const nameParam = searchParams.get('name');
+    if (digestParam && !pendingPrefill) {
+      const loadFromDigest = async () => {
+        setIsLoading(true);
+        try {
+          const levels = await fetchCollectionLevels(digestParam, API_BASE);
+          if (levels && levels.length >= 2) {
+            const collectionJson = levels[1]; // level=2 is the canonical format needed for /similarities/
+            setCustomCollectionJSON(JSON.stringify(collectionJson, null, 2));
+            setCustomCollectionName(nameParam || digestParam);
+            setPendingPrefill({ json: collectionJson, name: nameParam || digestParam });
+            toast.success(`Loaded collection ${nameParam || digestParam}`);
+          }
+        } catch (e) {
+          console.error('Failed to load collection from digest:', e);
+          toast.error(`Failed to load collection: ${e.message}`);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadFromDigest();
     }
   }, [searchParams]);
 
@@ -420,23 +449,36 @@ const SCOM = () => {
 
           <div className='mt-2 mb-0 text-muted'>
             <p className='mb-2'>
-              This tool provides summary similarity metrics for comparisons between
-              all sequence collections on the server and one of your choice.
+              Compare your sequence collection against all assemblies on the server.
+              This tool shows similarity metrics across multiple reference genomes at once.
             </p>
 
-            <p className='mb-2'>Two easy ways to use this tool:</p>
-
-            <ol className='mb-0'>
-              <li>
-                If you have a FASTA file, compare it against assemblies on the
-                server using the in-browser <a href='/fasta'>FASTADigest</a> tool.
-              </li>
-              <li>
-                If you already have the refget sequence collection JSON output
-                (e.g. from <code>refget fasta seqcol yourfasta.fa</code>), paste it
-                in the text box below.
-              </li>
-            </ol>
+            <div className='alert alert-light border small'>
+              <strong>Step 1:</strong> Get your sequence collection as a canonical SeqCol object (JSON)
+              <ul className='mb-2 mt-1'>
+                <li><strong>From a FASTA file:</strong> Use the <a href='/fasta'>FASTA Digester</a> tool, then click "Compare in SCOM"</li>
+                <li><strong>From Python:</strong> Run <code>refget fasta seqcol yourfasta.fa</code></li>
+                <li><strong>From the API:</strong> Call <code>/collection/{'{digest}'}</code> with <code>?level=2</code></li>
+                <li><strong>Quick start:</strong> Use the example button to load example data</li>
+              </ul>
+              <strong>Step 2:</strong> Paste the SeqCol JSON in the text box below and click Submit
+              <div className='mt-3'>
+                <button
+                  className='btn btn-outline-primary'
+                  disabled={isLoading}
+                  onClick={async () => {
+                    setCustomCollectionJSON(JSON.stringify(sampleJSON, null, 4));
+                    handleAddCustomCollection(
+                      JSON.stringify(sampleJSON),
+                      customCollectionName,
+                    )
+                  }}
+                >
+                  <i className='bi bi-play-circle me-2'></i>
+                  Load Example Data
+                </button>
+              </div>
+            </div>
           </div>
           <div className='row mt-4'>
             <div
@@ -456,19 +498,6 @@ const SCOM = () => {
                     }
                   >
                     {isLoading ? 'Loading...' : (relationship === 'oneToMany' ? 'Submit' : 'Add')}
-                  </button>
-                  <button
-                    className='btn btn-secondary btn-xs shadow-sm ms-1'
-                    disabled={isLoading}
-                    onClick={async () => {
-                      setCustomCollectionJSON(JSON.stringify(sampleJSON, null, 4));
-                      handleAddCustomCollection(
-                        JSON.stringify(sampleJSON),
-                        customCollectionName,
-                      )
-                    }}
-                  >
-                    Example
                   </button>
                 </div>
                 <input
