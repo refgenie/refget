@@ -14,7 +14,7 @@ import {
 
 const ExplorerCollection = () => {
   const { digest } = useParams();
-  const { hasStore, hasAPI, storeUrl, apiUrl } = useUnifiedStore();
+  const { hasStore, hasAPI, storeUrl, apiUrl, probe, probed } = useUnifiedStore();
   const { loadCollection, loadFhrMetadata, loadStore, metadata } = useExplorerStore();
 
   const [storeData, setStoreData] = useState(null);
@@ -26,7 +26,16 @@ const ExplorerCollection = () => {
   const [showRaw, setShowRaw] = useState(false);
   const [codeTab, setCodeTab] = useState('cli');
 
+  // Ensure probe runs first
   useEffect(() => {
+    if (!probed) {
+      probe();
+    }
+  }, [probed, probe]);
+
+  useEffect(() => {
+    if (!probed) return; // Wait for probe to complete
+
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -63,7 +72,7 @@ const ExplorerCollection = () => {
       }
     };
     load();
-  }, [digest]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [digest, probed, hasStore, hasAPI, storeUrl, apiUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (

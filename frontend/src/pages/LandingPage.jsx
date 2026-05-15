@@ -1,229 +1,197 @@
-import { Link, useOutletContext } from 'react-router-dom';
-import { useUnifiedStore } from '../stores/unifiedStore.js';
-import { CopyableDigest } from '../components/CopyableDigest.jsx';
-import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
+
+import ga4gh_logo from '../assets/ga4gh-logo.png';
+import python_logo from '../assets/logo_python.svg';
+import refget_logo from '../assets/refget_logo.svg';
+import seqcol_logo from '../assets/seqcol_logo.svg';
 
 const LandingPage = () => {
-  const { apiAvailable } = useOutletContext();
-  const { hasStore, hasAPI, storeUrl, storeMetadata, storeCollections, serviceInfo, probe, probed } =
-    useUnifiedStore();
-
-  useEffect(() => {
-    if (!probed) probe();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const nCollections = storeCollections?.length || serviceInfo?.seqcol?.refget_store?.n_collections;
-  const nSequences = serviceInfo?.seqcol?.refget_store?.n_sequences || storeMetadata?.n_sequences;
-  const aliasNamespaces = storeMetadata?.collection_alias_namespaces || serviceInfo?.seqcol?.refget_store?.collection_alias_namespaces || [];
-  const scomEnabled = serviceInfo?.seqcol?.scom?.enabled;
-
   return (
     <div className="mb-5">
-      <h3 className="fw-light mb-4">Refget Sequence Collections</h3>
+      <div className="text-center mb-5">
+        <img src={seqcol_logo} alt="Refget" height="80" className="mb-3" />
+        <h2 className="fw-light mb-3">Refget Sequence Collections</h2>
+        <p className="lead text-muted mx-auto" style={{ maxWidth: '700px' }}>
+          Refget is a set of GA4GH standards for identifying and distributing
+          reference biological sequences. Sequence collections provide a way to
+          represent, compare, and retrieve sets of sequences, like reference genomes, using
+          content-derived identifiers.
+        </p>
+      </div>
 
-      <p>
-        Welcome to the Refget Sequence Collections service. Browse, compare, and
-        explore reference genome sequence collections following the{' '}
-        <a
-          href="https://ga4gh.github.io/refget/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          GA4GH refget specification
-        </a>.
-      </p>
-
-      <div className="row g-4 mt-3">
-        {/* Browse section */}
-        <div className="col-md-6">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">
-                <i className="bi bi-collection me-2" />
-                Browse
-              </h5>
+      <div className="row g-4 justify-content-center">
+        {/* The Specification */}
+        <div className="col-md-3">
+          <a
+            href="https://ga4gh.github.io/refget/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-decoration-none"
+          >
+            <div className="card h-100 text-center border-0 shadow-sm hover-shadow">
+              <div className="card-body py-5">
+                <img src={ga4gh_logo} alt="GA4GH" height="60" className="mb-4" />
+                <h4 className="card-title">The Specification</h4>
+                <p className="card-text text-muted">
+                  Read the GA4GH specification for refget sequences and sequence collections.
+                </p>
+              </div>
             </div>
-            <div className="card-body">
-              <p className="text-muted small mb-3">
-                Explore sequence collections on this server. Each collection represents a reference genome assembly with its sequences, names, and lengths.
-              </p>
-              {storeUrl && (
-                <div className="mb-3 d-flex align-items-center">
-                  <small className="text-muted me-2">Store:</small>
-                  <span style={{ fontSize: '0.7rem', fontFamily: '"Roboto Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif', fontStretch: 'condensed', wordBreak: 'break-all' }}>
-                    <CopyableDigest value={storeUrl} />
-                  </span>
+          </a>
+        </div>
+
+        {/* Python Package */}
+        <div className="col-md-3">
+          <a
+            href="https://refgenie.org/refget/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-decoration-none"
+          >
+            <div className="card h-100 text-center border-0 shadow-sm hover-shadow">
+              <div className="card-body py-5">
+                <div className="mb-4" style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  <img src={refget_logo} alt="Refget" height="50" />
+                  <img src={python_logo} alt="Python" height="30" />
                 </div>
-              )}
-              <ul className="list-unstyled mb-0">
-                <li className="mb-2">
-                  <Link to="/collections" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Collections
-                    {nCollections && <span className="text-muted ms-1">(n = {Number(nCollections).toLocaleString()})</span>}
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link to="/sequences" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Sequences
-                    {nSequences && <span className="text-muted ms-1">(n = {Number(nSequences).toLocaleString()})</span>}
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link to="/aliases" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Aliases
-                    {aliasNamespaces.length > 0 && (
-                      <span className="text-muted ms-1">
-                        ({aliasNamespaces.length} namespace{aliasNamespaces.length !== 1 ? 's' : ''}: {aliasNamespaces.join(', ')})
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              </ul>
+                <h4 className="card-title">Python Package</h4>
+                <p className="card-text text-muted">
+                  Compute digests, compare collections, and interact with APIs using Python.
+                </p>
+              </div>
             </div>
-          </div>
+          </a>
         </div>
 
-        {/* Tools section */}
-        <div className="col-md-6">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">
-                <i className="bi bi-tools me-2" />
-                Tools
-              </h5>
+        {/* Try it Live */}
+        <div className="col-md-3">
+          <Link to="/explore" className="text-decoration-none">
+            <div className="card h-100 text-center border-0 shadow-sm hover-shadow">
+              <div className="card-body py-5">
+                <i className="bi bi-play-circle fs-1 text-primary mb-3 d-block" style={{ height: '60px', lineHeight: '60px' }}></i>
+                <h4 className="card-title">Try it Live</h4>
+                <p className="card-text text-muted">
+                  Browse sequence collections on this server.
+                </p>
+              </div>
             </div>
-            <div className="card-body">
-              <p className="text-muted small mb-3">
-                Standalone tools for working with sequence collections. Compute digests, compare assemblies, or connect to external servers.
-              </p>
-              <ul className="list-unstyled mb-0">
-                <li className="mb-2">
-                  <Link to="/fasta" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    FASTA Digester
-                  </Link>
-                  <span className="text-muted d-block small ms-4">
-                    Compute digests from FASTA files in-browser
-                  </span>
-                </li>
-                <li className="mb-2">
-                  <Link to="/compare" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Compare (SCIM)
-                  </Link>
-                  <span className="text-muted d-block small ms-4">
-                    Interpret sequence collection comparisons
-                  </span>
-                </li>
-                <li className="mb-2">
-                  <Link to="/explore-store" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Explore a Store
-                  </Link>
-                  <span className="text-muted d-block small ms-4">
-                    Browse any RefgetStore by URL
-                  </span>
-                </li>
-                <li className="mb-2">
-                  <Link to="/explore-api" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Explore an API
-                  </Link>
-                  <span className="text-muted d-block small ms-4">
-                    Connect to any SeqCol API server
-                  </span>
-                </li>
-              </ul>
+          </Link>
+        </div>
+
+        {/* The Jungle */}
+        <div className="col-md-3">
+          <Link to="/jungle" className="text-decoration-none">
+            <div className="card h-100 text-center border-0 shadow-sm hover-shadow">
+              <div className="card-body py-5">
+                <span className="fs-1 mb-3 d-block" style={{ height: '60px', lineHeight: '60px' }}>🧬</span>
+                <h4 className="card-title">The Jungle</h4>
+                <p className="card-text text-muted">
+                  100+ reference genomes with provenance.
+                </p>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
-      <div className="row g-4 mt-1">
-        {/* Curated section */}
-        <div className="col-md-6">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">
-                <i className="bi bi-bookmark-star me-2" />
-                Curated
-              </h5>
+      {/* How should I use this? */}
+      <div className="mt-5 pt-4 border-top">
+        <h5 className="fw-light text-center mb-4">How should I use this?</h5>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+
+          {/* Header row */}
+          <div className="row g-0 pb-2 mb-2 border-bottom">
+            <div className="col-md-5 pe-3 text-end">
+              <strong className="text-muted small text-uppercase">Are you...</strong>
             </div>
-            <div className="card-body">
-              <p className="text-muted small mb-3">
-                Pre-built views for specific genome sets. Precomputed similarity matrices and curated reference genome pages.
-              </p>
-              <ul className="list-unstyled mb-0">
-                {scomEnabled && (
-                  <li className="mb-2">
-                    <Link to="/scom" className="text-decoration-none">
-                      <i className="bi bi-arrow-right me-2" />
-                      SCOM — Similarity Matrix
-                    </Link>
-                  </li>
-                )}
-                <li className="mb-2">
-                  <Link to="/human" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Human Reference Genomes
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link to="/hprc" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    HPRC Genomes
-                  </Link>
-                </li>
-              </ul>
+            <div className="col-md-7 ps-3 border-start">
+              <strong className="text-muted small text-uppercase">Then...</strong>
             </div>
           </div>
-        </div>
-        <div className="col-md-6">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">
-                <i className="bi bi-check-circle me-2" />
-                Developer
-              </h5>
+
+          <div className="row g-0 py-2">
+            <div className="col-md-5 pe-3 text-end">
+              <i className="bi bi-journal-text me-2 text-primary" />
+              Publishing data aligned to a reference?
             </div>
-            <div className="card-body">
-              <p className="text-muted small mb-3">
-                Test API compliance and explore the raw API endpoints. For developers building on the seqcol specification.
-              </p>
-              <ul className="list-unstyled mb-0">
-                <li className="mb-2">
-                  <Link to="/compliance" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Compliance Testing
-                  </Link>
-                  <span className="text-muted d-block small ms-4">
-                    Run GA4GH spec compliance checks
-                  </span>
-                </li>
-                <li className="mb-2">
-                  <Link to="/demo" className="text-decoration-none">
-                    <i className="bi bi-arrow-right me-2" />
-                    Demo
-                  </Link>
-                  <span className="text-muted d-block small ms-4">
-                    Collection comparison demo
-                  </span>
-                </li>
-              </ul>
+            <div className="col-md-7 ps-3 border-start text-muted">
+              Publish the unambiguous refget digest to identify the reference you used. Use the <Link to="/fasta">FASTA Digester</Link> or <Link to="/collections">browse known references</Link>.
             </div>
           </div>
+
+          <div className="row g-0 py-2">
+            <div className="col-md-5 pe-3 text-end">
+              <i className="bi bi-collection me-2 text-primary" />
+              Looking for available reference genomes?
+            </div>
+            <div className="col-md-7 ps-3 border-start text-muted">
+              <Link to="/jungle">Browse the Jungle</Link> to find GRCh38, T2T-CHM13, and 100+ references with provenance and source links.
+            </div>
+          </div>
+
+          <div className="row g-0 py-2">
+            <div className="col-md-5 pe-3 text-end">
+              <i className="bi bi-arrow-left-right me-2 text-primary" />
+              Comparing your reference against known genomes?
+            </div>
+            <div className="col-md-7 ps-3 border-start text-muted">
+              Use <Link to="/scom">SCOM</Link> to compare your local reference against human, mouse, and other genomes on the server.
+            </div>
+          </div>
+
+          <div className="row g-0 py-2">
+            <div className="col-md-5 pe-3 text-end">
+              <i className="bi bi-search me-2 text-primary" />
+              Trying to identify an unknown FASTA?
+            </div>
+            <div className="col-md-7 ps-3 border-start text-muted">
+              Use the <Link to="/fasta">FASTA Digester</Link> to compute a digest, then <Link to="/scom">compare</Link> to find matches.
+            </div>
+          </div>
+
+          <div className="row g-0 py-2">
+            <div className="col-md-5 pe-3 text-end">
+              <i className="bi bi-file-text me-2 text-primary" />
+              Have comparison output to interpret?
+            </div>
+            <div className="col-md-7 ps-3 border-start text-muted">
+              Use <Link to="/compare">SCIM</Link> to get a human-friendly interpretation of comparison results.
+            </div>
+          </div>
+
+          <div className="row g-0 py-2">
+            <div className="col-md-5 pe-3 text-end">
+              <i className="bi bi-list-ol me-2 text-primary" />
+              Referring to sequences without names?
+            </div>
+            <div className="col-md-7 ps-3 border-start text-muted">
+              Use <code>sorted_sequences</code> to identify sequences regardless of names or order.
+            </div>
+          </div>
+
+          <div className="row g-0 py-2">
+            <div className="col-md-5 pe-3 text-end">
+              <i className="bi bi-rulers me-2 text-primary" />
+              Checking coordinate system compatibility?
+            </div>
+            <div className="col-md-7 ps-3 border-start text-muted">
+              Compare <code>sorted_name_length_pairs</code> to check if "chr1" and "1" map to the same positions.
+            </div>
+          </div>
+
         </div>
       </div>
 
-      {!apiAvailable && (
-        <div className="alert alert-warning mt-4">
-          <i className="bi bi-exclamation-triangle me-2" />
-          The API is currently unavailable. Some features may be limited.
-        </div>
-      )}
+      <style>{`
+        .hover-shadow:hover {
+          box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+          transform: translateY(-2px);
+          transition: all 0.2s ease-in-out;
+        }
+        .hover-shadow {
+          transition: all 0.2s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };

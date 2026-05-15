@@ -128,9 +128,32 @@ const SCIM = () => {
           Seqcol Comparison Interpretation Module (SCIM)
         </h4>
         <p className='mt-3 mb-1 text-muted'>
-          This tool runs a local interpretation of the output of a sequence
-          collection comparison.
+          This tool visualizes the output of a sequence collection comparison,
+          helping you understand how two reference genomes differ.
         </p>
+
+        <div className='alert alert-light border small'>
+          <strong>How to get comparison output:</strong>
+          <ul className='mb-2 mt-2'>
+            <li>
+              <strong>Via API:</strong> Call the <code>/comparison/{'{digest1}'}/{'{digest2}'}</code> endpoint
+              on any SeqCol API server (e.g., <a href={`${API_BASE}/docs#/Sequence%20collections/compare_2_digests_comparison__digest1___digest2__get`} target="_blank" rel="noopener noreferrer">see API docs</a>)
+            </li>
+            <li>
+              <strong>Via Python:</strong> Use <code>seqcol.compare(digest1, digest2)</code> from the refget package
+            </li>
+            <li>
+              <strong>Quick start:</strong> Use the example button to load example data
+            </li>
+          </ul>
+          <button
+            className='btn btn-outline-primary'
+            onClick={loadExample}
+          >
+            <i className='bi bi-play-circle me-2'></i>
+            Load Example Data
+          </button>
+        </div>
 
         <div className='card mt-4'>
           <div className='card-header tiny d-flex justify-content-between'>
@@ -148,12 +171,6 @@ const SCIM = () => {
               onClick={clearComparison}
             >
               Clear
-            </button>
-            <button
-              className='btn btn-secondary btn-xs shadow-sm ms-1'
-              onClick={loadExample}
-            >
-              Example
             </button>
           </div>
           <textarea

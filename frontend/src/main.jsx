@@ -11,10 +11,9 @@ import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap/dist/js/bootstrap.bundle.js';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-import { useUnifiedStore } from './stores/unifiedStore.js';
-
 // Unified Explorer pages
 import { LandingPage } from './pages/LandingPage.jsx';
+import { ExplorePage } from './pages/ExplorePage.jsx';
 import { Explorer } from './pages/Explorer.jsx';
 import { ExplorerCollection } from './pages/ExplorerCollection.jsx';
 import { ExplorerSequences } from './pages/ExplorerSequences.jsx';
@@ -44,6 +43,7 @@ import { HPRCGenomes } from './pages/HPRCGenomes.jsx';
 import { HumanReferencesView } from './pages/HumanReferences.jsx';
 import { DigestPage } from './pages/DigestPage.jsx';
 import { CompliancePage } from './pages/CompliancePage.jsx';
+import { JungleBrowser } from './pages/JungleBrowser.jsx';
 
 import {
   fetchServiceInfo,
@@ -88,18 +88,6 @@ const NavItem = ({ path, label, location, navigate, isDropdown }) => {
 const Nav = () => {
   const navigate = useNavigate();
   const location = useLocation().pathname.substring(1) || '';
-  const { serviceInfo } = useUnifiedStore();
-  const scomEnabled = serviceInfo?.seqcol?.scom?.enabled;
-
-  const navTo = (path) => {
-    navigate(path);
-    // Close any open Bootstrap dropdown
-    document.querySelectorAll('.dropdown-menu.show').forEach((el) => {
-      el.classList.remove('show');
-      el.previousElementSibling?.classList.remove('show');
-      el.previousElementSibling?.setAttribute('aria-expanded', 'false');
-    });
-  };
 
   return (
     <nav
@@ -137,73 +125,67 @@ const Nav = () => {
           id='navbarSupportedContent'
         >
           <ul className='navbar-nav ms-auto mb-2 mb-sm-0'>
-            {/* Browse */}
             <NavItem path="/" label="Home" location={location} navigate={navigate} />
-            <NavItem path="/collections" label="Collections" location={location} navigate={navigate} />
 
-            {/* Tools dropdown */}
-            <li className='nav-item dropdown mx-2 my-0 h6'>
-              <span
-                className={`nav-link cursor-pointer dropdown-toggle ${
-                  ['fasta', 'compare', 'compliance', 'explore-store', 'explore-api'].some(p => location.startsWith(p))
-                    ? 'fw-medium text-black' : 'fw-light'
-                }`}
-                role='button'
-                data-bs-toggle='dropdown'
-                aria-expanded='false'
-              >
-                Tools
-              </span>
-              <ul className='dropdown-menu'>
-                <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/fasta')}>FASTA Digester</span></li>
-                <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/compare')}>Compare (SCIM)</span></li>
-                <li><hr className='dropdown-divider' /></li>
-                <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/explore-store')}>Explore a Store</span></li>
-                <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/explore-api')}>Explore an API</span></li>
-                <li><hr className='dropdown-divider' /></li>
-                <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/compliance')}>Compliance Testing</span></li>
-              </ul>
-            </li>
-
-            {/* Curated dropdown */}
-            <li className='nav-item dropdown mx-2 my-0 h6'>
-              <span
-                className={`nav-link cursor-pointer dropdown-toggle ${
-                  ['scom', 'human', 'hprc'].some(p => location.startsWith(p))
-                    ? 'fw-medium text-black' : 'fw-light'
-                }`}
-                role='button'
-                data-bs-toggle='dropdown'
-                aria-expanded='false'
-              >
-                Curated
-              </span>
-              <ul className='dropdown-menu'>
-                {scomEnabled && <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/scom')}>SCOM</span></li>}
-                <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/human')}>Human Genomes</span></li>
-                <li><span className='dropdown-item cursor-pointer' onClick={() => navTo('/hprc')}>HPRC Genomes</span></li>
-              </ul>
-            </li>
-
+            {/* The Specification - external link */}
             <li className='nav-item mx-2 my-0 h6'>
               <a
-                href={`${API_BASE}/docs`}
+                href='https://ga4gh.github.io/refget/'
                 className='nav-link fw-light'
                 target='_blank'
                 rel='noopener noreferrer'
               >
-                API
+                Specification <i className='bi bi-box-arrow-up-right' style={{ fontSize: '0.7em' }}></i>
               </a>
             </li>
+
+            {/* Python Package - external link */}
             <li className='nav-item mx-2 my-0 h6'>
               <a
-                href='https://github.com/refgenie/refget'
+                href='https://refgenie.org/refget/'
                 className='nav-link fw-light'
                 target='_blank'
                 rel='noopener noreferrer'
+              >
+                Python <i className='bi bi-box-arrow-up-right' style={{ fontSize: '0.7em' }}></i>
+              </a>
+            </li>
+
+            {/* Explore link */}
+            <NavItem path="/explore" label="Explore" location={location} navigate={navigate} />
+
+            {/* GitHub dropdown */}
+            <li className='nav-item dropdown mx-2 my-0 h6'>
+              <span
+                className='nav-link cursor-pointer dropdown-toggle fw-light'
+                role='button'
+                data-bs-toggle='dropdown'
+                aria-expanded='false'
               >
                 GitHub
-              </a>
+              </span>
+              <ul className='dropdown-menu dropdown-menu-end'>
+                <li>
+                  <a
+                    href='https://github.com/ga4gh/refget'
+                    className='dropdown-item'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                  >
+                    <i className='bi bi-file-text me-2'></i>Specification
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href='https://github.com/refgenie/refget'
+                    className='dropdown-item'
+                    target='_blank'
+                    rel='noopener noreferrer'
+                  >
+                    <i className='bi bi-code-slash me-2'></i>Python Package
+                  </a>
+                </li>
+              </ul>
             </li>
           </ul>
         </div>
@@ -386,6 +368,13 @@ const router = createBrowserRouter([
         errorElement: <ErrorBoundary />,
       },
 
+      // Explore page (4-card disambiguation)
+      {
+        path: '/explore',
+        element: <ExplorePage />,
+        errorElement: <ErrorBoundary />,
+      },
+
       // Unified Explorer
       {
         path: '/collections',
@@ -437,6 +426,11 @@ const router = createBrowserRouter([
       },
 
       // Site-specific curated pages
+      {
+        path: '/jungle',
+        element: <JungleBrowser />,
+        errorElement: <ErrorBoundary />,
+      },
       {
         path: '/scom',
         element: <SCOM />,
