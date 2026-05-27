@@ -57,41 +57,6 @@ def validate_seqcol(seqcol_obj: SeqColDict, schema=None) -> bool:
     return True
 
 
-def chrom_sizes_to_snlp_digest(
-    chrom_sizes_file_path: str,
-    digest_function: DigestFunction = sha512t24u_digest,
-) -> dict:
-    """
-    Given a chrom.sizes file, return a level 1 digest for the
-    sorted_name_length_pairs attribute
-    """
-    with open(chrom_sizes_file_path, "r") as f:
-        lines = f.readlines()
-    seqcol_obj: dict[str, list] = {"lengths": [], "names": []}
-
-    for line in lines:
-        line = line.strip()
-        if line == "":
-            continue
-        seq_name, seq_length, ga4gh_digest, _ = line.split("\t")
-        seqcol_obj["lengths"].append(int(seq_length))
-        seqcol_obj["names"].append(seq_name)
-
-    return seqcol_to_snlp_digest(seqcol_obj)
-
-
-def seqcol_to_snlp_digest(seqcol_obj: SeqColDict) -> str:
-    """
-    Generate a sorted_name_length_pair attribute digest for a sequence collection object
-    """
-
-    name_length_pairs = build_name_length_pairs(seqcol_obj)
-    nlp_strings = [canonical_str(x).decode("utf-8") for x in name_length_pairs]
-    nlp_strings.sort()
-    snlp_digest = sha512t24u_digest(canonical_str(nlp_strings))
-    return snlp_digest
-
-
 def build_sorted_name_length_pairs(
     obj: dict, digest_function: DigestFunction = sha512t24u_digest
 ) -> list[str]:
