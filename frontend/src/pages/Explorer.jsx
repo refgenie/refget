@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedStore } from '../stores/unifiedStore.js';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { ExplorerNav } from '../components/ExplorerNav.jsx';
 import { fetchSeqColList } from '../services/fetchData.jsx';
+import { fetchCollectionIndex } from '../services/storeService.js';
 
 const Explorer = () => {
   const { hasStore, hasAPI, storeUrl, apiUrl, storeCollections, probe, probed, loading: probing } =
@@ -15,6 +16,9 @@ const Explorer = () => {
   const [sortCol, setSortCol] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
   const [loading, setLoading] = useState(true);
+  // Holds a cache-bypassing re-fetch of the store index when it disagrees with the API.
+  const [storeOverride, setStoreOverride] = useState(null);
+  const revalidatedRef = useRef(false);
 
   useEffect(() => {
     const init = async () => {
@@ -63,6 +67,31 @@ const Explorer = () => {
     load();
   }, [probed, hasStore, hasAPI]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Prefer a freshly revalidated store index over the (possibly cached) probe result.
+  const effectiveStoreCollections = storeOverride ?? storeCollections;
+
+  // Self-validating revalidation: the store index (collections.rgci) and the store-backed
+  // API are two views of the SAME store, so their collection counts must agree. If they
+  // don't, the likely cause is a stale browser-cached index file — so revalidate BOTH
+  // once, bypassing the HTTP cache, and reconcile to whatever they then report. Guarded
+  // to run at most once (a genuine version/superset difference must not loop).
+  useEffect(() => {
+    if (loading || probing || revalidatedRef.current) return;
+    const apiTotal = apiCollections?.pagination?.total;
+    const storeLen = effectiveStoreCollections?.length;
+    if (apiTotal == null || storeLen == null || storeLen === apiTotal) return;
+
+    revalidatedRef.current = true;
+    (async () => {
+      const [freshStore, freshApi] = await Promise.all([
+        storeUrl ? fetchCollectionIndex(storeUrl, { cache: 'reload' }).catch(() => null) : null,
+        hasAPI ? fetchSeqColList(apiUrl, { cache: 'reload' }).catch(() => null) : null,
+      ]);
+      if (freshStore) setStoreOverride(freshStore);
+      if (freshApi?.[0]) setApiCollections(freshApi[0]);
+    })();
+  }, [loading, probing, apiCollections, effectiveStoreCollections, storeUrl, apiUrl, hasAPI]);
+
   // Merge store collections with API collection list
   // NOTE: useMemo hooks must be called before any early returns to avoid
   // "Rendered more hooks than during the previous render" errors
@@ -70,8 +99,8 @@ const Explorer = () => {
     const byDigest = new Map();
 
     // Store collections have richer data (n_sequences, attribute digests)
-    if (storeCollections) {
-      storeCollections.forEach((col) => {
+    if (effectiveStoreCollections) {
+      effectiveStoreCollections.forEach((col) => {
         byDigest.set(col.digest, {
           digest: col.digest,
           n_sequences: col.n_sequences,
@@ -96,7 +125,7 @@ const Explorer = () => {
     }
 
     return Array.from(byDigest.values());
-  }, [storeCollections, apiCollections, aliasMap]);
+  }, [effectiveStoreCollections, apiCollections, aliasMap]);
 
   const filtered = useMemo(() => {
     if (!filter) return collections;

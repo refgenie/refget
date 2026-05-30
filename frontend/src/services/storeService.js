@@ -67,9 +67,9 @@ const parseRgci = (text) => {
   }));
 };
 
-/** Fetch with error handling */
-const fetchFile = async (url) => {
-  const response = await fetch(url);
+/** Fetch with error handling. `opts` is passed through to fetch() (e.g. { cache: 'reload' }). */
+const fetchFile = async (url, opts = {}) => {
+  const response = await fetch(url, opts);
   if (!response.ok) {
     if (response.status === 404 || response.status === 403) return null;
     throw new Error(`HTTP ${response.status} fetching ${url}`);
@@ -169,10 +169,10 @@ export const fetchSequenceIndex = async (baseUrl, { maxBytes } = {}) => {
   return { rows: parseSequenceRows(cleanText), partial: true, totalSize };
 };
 
-/** GET collections.rgci → array of collection summaries */
-export const fetchCollectionIndex = async (baseUrl) => {
+/** GET collections.rgci → array of collection summaries. `opts` passes through to fetch(). */
+export const fetchCollectionIndex = async (baseUrl, opts = {}) => {
   const url = `${normalizeUrl(baseUrl)}/collections.rgci`;
-  const response = await fetchFile(url);
+  const response = await fetchFile(url, opts);
   if (!response) return null; // No collection index available
   const text = await response.text();
   return parseRgci(text);
