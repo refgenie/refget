@@ -42,6 +42,7 @@ import { SCOM } from './pages/SCOM.jsx';
 import { HPRCGenomes } from './pages/HPRCGenomes.jsx';
 import { HumanReferencesView } from './pages/HumanReferences.jsx';
 import { DigestPage } from './pages/DigestPage.jsx';
+import { VrsConverter } from './pages/VrsConverter.jsx';
 import { CompliancePage } from './pages/CompliancePage.jsx';
 import { JungleBrowser } from './pages/JungleBrowser.jsx';
 
@@ -401,6 +402,11 @@ const router = createBrowserRouter([
       {
         path: '/fasta',
         element: <DigestPage />,
+        errorElement: <ErrorBoundary />,
+      },
+      {
+        path: '/vrs',
+        element: <VrsConverter />,
         errorElement: <ErrorBoundary />,
       },
       {
