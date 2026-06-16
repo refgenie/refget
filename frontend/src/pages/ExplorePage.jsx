@@ -24,7 +24,7 @@ const ExplorePage = () => {
       <p className="text-muted small mb-3">Work offline, no server needed.</p>
 
       <div className="row g-3 mb-5">
-        <div className="col-md-6">
+        <div className="col-md-4">
           <div className="card h-100">
             <div className="card-body">
               <h6 className="card-title">
@@ -39,7 +39,22 @@ const ExplorePage = () => {
             </div>
           </div>
         </div>
-        <div className="col-md-6">
+        <div className="col-md-4">
+          <div className="card h-100">
+            <div className="card-body">
+              <h6 className="card-title">
+                <Link to="/vrs" className="text-decoration-none">
+                  <i className="bi bi-arrow-right me-2" />
+                  VCF / HGVS → VRS
+                </Link>
+              </h6>
+              <p className="card-text text-muted small mb-0">
+                Convert variants to GA4GH VRS allele IDs in-browser.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
           <div className="card h-100">
             <div className="card-body">
               <h6 className="card-title">
@@ -71,8 +86,8 @@ const ExplorePage = () => {
             </div>
             <div className="card-body">
               <p className="text-muted small mb-3">
-                A comprehensive collection of reference genomes including human assemblies (GRCh38, T2T-CHM13, HPRC pangenome),
-                model organisms, and common research references. Includes precomputed similarity matrices for comparing assemblies.
+                A curated collection of reference genome assemblies from major providers — including human references
+                such as GRCh38 and T2T-CHM13 — alongside model organisms and other common research references.
               </p>
               <div className="mb-3">
                 <div className="d-flex align-items-center mb-1">
