@@ -181,7 +181,12 @@ class SequenceCollectionClient(RefgetClient):
         return self._get_fasta_helper().download(digest, dest_path, access_id)
 
     def download_fasta_to_store(
-        self, digest: str, store: "RefgetStore", access_id: str = None, temp_dir: str = None
+        self,
+        digest: str,
+        store: "RefgetStore",
+        access_id: str = None,
+        temp_dir: str = None,
+        namespaces: Optional[list[str]] = None,
     ) -> str:
         """
         Download the FASTA file and import it into a RefgetStore.
@@ -212,7 +217,9 @@ class SequenceCollectionClient(RefgetClient):
             >>> # Now you can retrieve sequences by digest from the local store
             >>> seq = store.get_substring(sequence_digest, 0, 100)
         """
-        return self._get_fasta_helper().download_to_store(digest, store, access_id, temp_dir)
+        return self._get_fasta_helper().download_to_store(
+            digest, store, access_id, temp_dir, namespaces=namespaces
+        )
 
     def build_fai(self, digest: str) -> str:
         """
@@ -409,6 +416,107 @@ class SequenceCollectionClient(RefgetClient):
         info = self.service_info()
         return info.get("seqcol", {}).get("fasta_drs", {}).get("enabled", False)
 
+    def resolve_alias(
+        self, namespace: str, alias: str, kind: str = "collection"
+    ) -> Optional[dict]:
+        """
+        Resolve a namespace:alias to a digest.
+
+        Args:
+            namespace (str): The alias namespace.
+            alias (str): The alias name.
+            kind (str): "collection" (default) or "sequence".
+
+        Returns:
+            (dict): {"namespace": ..., "alias": ..., "digest": ...} or None.
+        """
+        endpoint = f"/alias/{kind}/{namespace}/{alias}"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def list_alias_namespaces(self, kind: str = "collection") -> Optional[dict]:
+        """
+        List alias namespaces for the given kind.
+
+        Args:
+            kind (str): "collection" (default) or "sequence".
+
+        Returns:
+            (dict): {"namespaces": [...]}.
+        """
+        endpoint = f"/list/alias/{kind}"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def list_aliases(self, namespace: str, kind: str = "collection") -> Optional[dict]:
+        """
+        List aliases within a namespace.
+
+        Args:
+            namespace (str): The alias namespace.
+            kind (str): "collection" (default) or "sequence".
+
+        Returns:
+            (dict): {"namespace": ..., "aliases": [...]}.
+        """
+        endpoint = f"/list/alias/{kind}/{namespace}"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def aliases_for(self, digest: str, kind: str = "collection") -> Optional[dict]:
+        """
+        Reverse lookup: list all (namespace, alias) pairs for a digest.
+
+        Args:
+            digest (str): The digest to look up.
+            kind (str): "collection" (default) or "sequence".
+
+        Returns:
+            (dict): {"digest": ..., "aliases": [[namespace, alias], ...]}.
+        """
+        endpoint = f"/aliases/{kind}/{digest}"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def get_fhr(self, digest: str) -> Optional[dict]:
+        """
+        Get FHR metadata for a collection.
+
+        Args:
+            digest (str): The collection digest.
+
+        Returns:
+            (dict): FHR metadata, or None if not found.
+        """
+        endpoint = f"/collection/{digest}/fhr"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def list_fhr(self) -> Optional[dict]:
+        """
+        List collections that have FHR metadata.
+
+        Returns:
+            (dict): {"collections": [...]}.
+        """
+        endpoint = "/list/fhr"
+        return _try_urls(self.urls, endpoint, raise_errors=self.raise_errors)
+
+    def is_aliases_enabled(self) -> bool:
+        """
+        Check if alias endpoints are advertised in service-info.
+
+        Returns:
+            (bool): True if aliases are enabled, False otherwise.
+        """
+        info = self.service_info()
+        return info.get("seqcol", {}).get("aliases", {}).get("enabled", False)
+
+    def is_fhr_enabled(self) -> bool:
+        """
+        Check if FHR metadata is advertised in service-info.
+
+        Returns:
+            (bool): True if FHR metadata is enabled, False otherwise.
+        """
+        info = self.service_info()
+        return info.get("seqcol", {}).get("fhr_metadata", {}).get("enabled", False)
+
     def get_refget_store_url(self) -> Optional[str]:
         """
         Discover RefgetStore URL from service-info if available.
@@ -579,7 +687,12 @@ class FastaDrsClient(RefgetClient):
         raise ValueError(f"No accessible URLs for {digest}")
 
     def download_to_store(
-        self, digest: str, store: "RefgetStore", access_id: str = None, temp_dir: str = None
+        self,
+        digest: str,
+        store: "RefgetStore",
+        access_id: str = None,
+        temp_dir: str = None,
+        namespaces: Optional[list[str]] = None,
     ) -> str:
         """
         Download the FASTA file and import it into a RefgetStore.
@@ -593,6 +706,8 @@ class FastaDrsClient(RefgetClient):
             store (RefgetStore): The RefgetStore instance to import into
             access_id (str, optional): Specific access method to use. If None, tries all.
             temp_dir (str, optional): Directory for temporary download. If None, uses system temp.
+            namespaces (list[str], optional): Namespace prefixes to extract aliases from
+                FASTA headers when importing into the store.
 
         Returns:
             (str): The collection digest of the imported sequences
@@ -632,7 +747,7 @@ class FastaDrsClient(RefgetClient):
             _LOGGER.info(f"Downloaded FASTA to {downloaded_path}")
 
             # Import into store
-            store.add_sequence_collection_from_fasta(downloaded_path)
+            store.add_sequence_collection_from_fasta(downloaded_path, namespaces=namespaces)
             _LOGGER.info(f"Imported FASTA into RefgetStore: {digest}")
 
             return digest

@@ -390,6 +390,100 @@ async def list_attributes(
         )
 
 
+def _require_backend_method(backend, method_name: str):
+    """Return a bound backend method or raise 501 if the backend lacks it."""
+    method = getattr(backend, method_name, None)
+    if method is None:
+        raise HTTPException(
+            status_code=501,
+            detail=f"This backend does not support '{method_name}'",
+        )
+    return method
+
+
+def _validate_alias_kind(kind: str) -> str:
+    if kind not in ("collection", "sequence"):
+        raise HTTPException(
+            status_code=400, detail="kind must be 'collection' or 'sequence'"
+        )
+    return kind
+
+
+@seqcol_router.get(
+    "/alias/{kind}/{namespace}/{alias}",
+    summary="Resolve a namespace:alias to a digest",
+    tags=["Aliases"],
+)
+async def resolve_alias(
+    kind: str,
+    namespace: str,
+    alias: str,
+    backend=Depends(get_backend),
+):
+    _validate_alias_kind(kind)
+    resolve = _require_backend_method(backend, "resolve_alias")
+    digest = resolve(kind, namespace, alias)
+    if digest is None:
+        raise HTTPException(status_code=404, detail="Alias not found")
+    return {"namespace": namespace, "alias": alias, "digest": digest}
+
+
+@seqcol_router.get(
+    "/list/alias/{kind}",
+    summary="List alias namespaces",
+    tags=["Aliases"],
+)
+async def list_alias_namespaces(kind: str, backend=Depends(get_backend)):
+    _validate_alias_kind(kind)
+    method = _require_backend_method(backend, "list_alias_namespaces")
+    return {"namespaces": method(kind)}
+
+
+@seqcol_router.get(
+    "/list/alias/{kind}/{namespace}",
+    summary="List aliases within a namespace",
+    tags=["Aliases"],
+)
+async def list_aliases(kind: str, namespace: str, backend=Depends(get_backend)):
+    _validate_alias_kind(kind)
+    method = _require_backend_method(backend, "list_aliases")
+    return {"namespace": namespace, "aliases": method(kind, namespace)}
+
+
+@seqcol_router.get(
+    "/aliases/{kind}/{digest}",
+    summary="Reverse lookup aliases for a digest",
+    tags=["Aliases"],
+)
+async def aliases_for(kind: str, digest: str, backend=Depends(get_backend)):
+    _validate_alias_kind(kind)
+    method = _require_backend_method(backend, "aliases_for")
+    return {"digest": digest, "aliases": method(kind, digest)}
+
+
+@seqcol_router.get(
+    "/collection/{collection_digest}/fhr",
+    summary="Retrieve FHR metadata for a collection",
+    tags=["Retrieving data"],
+)
+async def collection_fhr(collection_digest: str, backend=Depends(get_backend)):
+    method = _require_backend_method(backend, "get_fhr")
+    fhr = method(collection_digest)
+    if fhr is None:
+        raise HTTPException(status_code=404, detail="FHR metadata not found")
+    return fhr
+
+
+@seqcol_router.get(
+    "/list/fhr",
+    summary="List collections that have FHR metadata",
+    tags=["Retrieving data"],
+)
+async def list_fhr(backend=Depends(get_backend)):
+    method = _require_backend_method(backend, "list_fhr")
+    return {"collections": method()}
+
+
 pangenome_router = APIRouter()
 
 

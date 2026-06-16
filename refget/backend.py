@@ -245,6 +245,42 @@ class RefgetStoreBackend:
         result = self._store.list_collections(page=0, page_size=1)
         return result["pagination"]["total"]
 
+    # --- Alias API -------------------------------------------------------
+
+    def resolve_alias(self, kind: str, namespace: str, alias: str) -> str | None:
+        """Resolve a namespace:alias to a digest. kind in {collection, sequence}."""
+        if kind == "sequence":
+            meta = self._store.get_sequence_metadata_by_alias(namespace, alias)
+        else:
+            meta = self._store.get_collection_metadata_by_alias(namespace, alias)
+        if meta is None:
+            return None
+        return getattr(meta, "digest", None) or getattr(meta, "sha512t24u", None)
+
+    def list_alias_namespaces(self, kind: str) -> list[str]:
+        if kind == "sequence":
+            return self._store.list_sequence_alias_namespaces() or []
+        return self._store.list_collection_alias_namespaces() or []
+
+    def list_aliases(self, kind: str, namespace: str) -> list[str]:
+        if kind == "sequence":
+            return self._store.list_sequence_aliases(namespace) or []
+        return self._store.list_collection_aliases(namespace) or []
+
+    def aliases_for(self, kind: str, digest: str) -> list[tuple[str, str]]:
+        if kind == "sequence":
+            return self._store.get_aliases_for_sequence(digest) or []
+        return self._store.get_aliases_for_collection(digest) or []
+
+    # --- FHR metadata ----------------------------------------------------
+
+    def get_fhr(self, digest: str) -> dict | None:
+        m = self._store.get_fhr_metadata(digest)
+        return m.to_dict() if m else None
+
+    def list_fhr(self) -> list[str]:
+        return self._store.list_fhr_metadata()
+
     def capabilities(self) -> dict:
         stats = self._store.stats()
         n_collections = int(stats.get("n_collections", 0))
@@ -256,4 +292,5 @@ class RefgetStoreBackend:
             "has_sequence_data": n_sequences > 0,
             "collection_alias_namespaces": self._store.list_collection_alias_namespaces(),
             "sequence_alias_namespaces": self._store.list_sequence_alias_namespaces(),
+            "fhr_metadata_collections": self._store.list_fhr_metadata(),
         }

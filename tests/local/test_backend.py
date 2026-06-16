@@ -240,3 +240,123 @@ class TestStoreBackend501:
         data = response.json()
         assert "results" in data
         assert "pagination" in data
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+class TestBackendAliasAndFhr:
+    """Backend-level alias resolution and FHR metadata."""
+
+    def test_resolve_alias(self, backend):
+        backend._store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
+        assert backend.resolve_alias("collection", "ucsc", "hg38_base") == BASE_DIGEST
+        assert backend.resolve_alias("collection", "ucsc", "missing") is None
+
+    def test_list_alias_namespaces_and_aliases(self, backend):
+        backend._store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
+        assert "ucsc" in backend.list_alias_namespaces("collection")
+        assert "hg38_base" in backend.list_aliases("collection", "ucsc")
+
+    def test_aliases_for(self, backend):
+        backend._store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
+        pairs = backend.aliases_for("collection", BASE_DIGEST)
+        assert ("ucsc", "hg38_base") in pairs
+
+    def test_get_and_list_fhr(self, backend):
+        from refget.store import FhrMetadata
+
+        assert backend.get_fhr(BASE_DIGEST) is None
+        backend._store.set_fhr_metadata(BASE_DIGEST, FhrMetadata(genome="Test", version="v1"))
+        fhr = backend.get_fhr(BASE_DIGEST)
+        assert fhr is not None and fhr.get("genome") == "Test"
+        assert BASE_DIGEST in backend.list_fhr()
+
+    def test_capabilities_includes_fhr(self, backend):
+        caps = backend.capabilities()
+        assert "fhr_metadata_collections" in caps
+        assert isinstance(caps["fhr_metadata_collections"], list)
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+class TestAliasFhrEndpoints:
+    """Router-level alias + FHR endpoints over a store-backed app."""
+
+    @pytest.fixture
+    def app_client(self):
+        app = FastAPI()
+        router = create_refget_router(sequences=False, collections=True, pangenomes=False)
+        app.include_router(router, prefix="/seqcol")
+
+        store = RefgetStore.in_memory()
+        store.add_sequence_collection_from_fasta(str(BASE_FASTA))
+        store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
+        from refget.store import FhrMetadata
+
+        store.set_fhr_metadata(BASE_DIGEST, FhrMetadata(genome="Test organism", version="v1.0"))
+        app.state.backend = RefgetStoreBackend(store)
+        return TestClient(app)
+
+    def test_resolve_alias_endpoint(self, app_client):
+        r = app_client.get("/seqcol/alias/collection/ucsc/hg38_base")
+        assert r.status_code == 200
+        assert r.json()["digest"] == BASE_DIGEST
+
+    def test_resolve_alias_not_found(self, app_client):
+        r = app_client.get("/seqcol/alias/collection/ucsc/nope")
+        assert r.status_code == 404
+
+    def test_resolve_alias_bad_kind(self, app_client):
+        r = app_client.get("/seqcol/alias/bogus/ucsc/hg38_base")
+        assert r.status_code == 400
+
+    def test_list_alias_namespaces_endpoint(self, app_client):
+        r = app_client.get("/seqcol/list/alias/collection")
+        assert r.status_code == 200
+        assert "ucsc" in r.json()["namespaces"]
+
+    def test_list_aliases_endpoint(self, app_client):
+        r = app_client.get("/seqcol/list/alias/collection/ucsc")
+        assert r.status_code == 200
+        assert "hg38_base" in r.json()["aliases"]
+
+    def test_aliases_for_endpoint(self, app_client):
+        r = app_client.get(f"/seqcol/aliases/collection/{BASE_DIGEST}")
+        assert r.status_code == 200
+        assert ["ucsc", "hg38_base"] in r.json()["aliases"]
+
+    def test_fhr_endpoint(self, app_client):
+        r = app_client.get(f"/seqcol/collection/{BASE_DIGEST}/fhr")
+        assert r.status_code == 200
+        assert r.json()["genome"] == "Test organism"
+
+    def test_fhr_endpoint_not_found(self, app_client):
+        r = app_client.get("/seqcol/collection/nonexistent/fhr")
+        assert r.status_code == 404
+
+    def test_list_fhr_endpoint(self, app_client):
+        r = app_client.get("/seqcol/list/fhr")
+        assert r.status_code == 200
+        assert BASE_DIGEST in r.json()["collections"]
+
+    def test_client_resolve_alias_and_fhr(self, app_client):
+        """SequenceCollectionClient methods work against the mounted app."""
+        from refget.clients import SequenceCollectionClient
+
+        client = SequenceCollectionClient(urls=["http://testserver/seqcol"], raise_errors=False)
+
+        # Patch the client's HTTP layer to use the TestClient.
+        import refget.clients as clients_mod
+
+        orig_get = clients_mod.requests.get
+
+        def fake_get(url, params=None, **kwargs):
+            path = url.replace("http://testserver", "")
+            return app_client.get(path, params=params)
+
+        clients_mod.requests.get = fake_get
+        try:
+            resolved = client.resolve_alias("ucsc", "hg38_base")
+            assert resolved["digest"] == BASE_DIGEST
+            fhr = client.get_fhr(BASE_DIGEST)
+            assert fhr["genome"] == "Test organism"
+        finally:
+            clients_mod.requests.get = orig_get

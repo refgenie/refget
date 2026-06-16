@@ -874,7 +874,29 @@ class RefgetDBAgent(object):
             "has_sequence_data": True,  # database always has sequences
             "collection_alias_namespaces": [],
             "sequence_alias_namespaces": [],
+            "fhr_metadata_collections": [],
         }
+
+    # Alias + FHR parity stubs. The database backend does not (yet) implement
+    # namespaced aliases or FHR metadata; these return empty/None so the
+    # router can serve the endpoints uniformly across backends.
+    def resolve_alias(self, kind: str, namespace: str, alias: str):
+        return None
+
+    def list_alias_namespaces(self, kind: str) -> list:
+        return []
+
+    def list_aliases(self, kind: str, namespace: str) -> list:
+        return []
+
+    def aliases_for(self, kind: str, digest: str) -> list:
+        return []
+
+    def get_fhr(self, digest: str):
+        return None
+
+    def list_fhr(self) -> list:
+        return []
 
     def calc_similarities(self, digestA: str, digestB: str) -> dict:
         """

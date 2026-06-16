@@ -6,13 +6,15 @@ adding, pulling, and exporting sequence collections.
 
 Commands:
     init        - Initialize local store
-    add         - Import FASTA to local store
+    add         - Import one or more FASTAs (paths/globs/dirs) to local store
     list        - List collections or sequences in store
     get         - Get collection or sequence by digest
     pull        - Pull collection from remote
     export      - Export collection as FASTA
     chrom-sizes - Generate chrom.sizes from digest
     stats       - Store statistics
+    alias       - Manage sequence and collection aliases
+    fhr         - Manage FHR (FAIR Headers Reference genome) metadata
 """
 
 import os
@@ -59,6 +61,21 @@ app = typer.Typer(
     help="RefgetStore operations",
     no_args_is_help=True,
 )
+
+alias_app = typer.Typer(
+    name="alias",
+    help="Manage sequence and collection aliases",
+    no_args_is_help=True,
+)
+
+fhr_app = typer.Typer(
+    name="fhr",
+    help="Manage FHR (FAIR Headers Reference genome) metadata",
+    no_args_is_help=True,
+)
+
+app.add_typer(alias_app, name="alias")
+app.add_typer(fhr_app, name="fhr")
 
 
 def _get_store_path(path: Optional[Path]) -> Path:
@@ -162,11 +179,33 @@ def init(
 
 @app.command()
 def add(
-    fasta: Path = typer.Argument(
-        ...,
-        help="Path to FASTA file to import (supports .gz)",
-        exists=True,
-        readable=True,
+    fastas: Optional[List[str]] = typer.Argument(
+        None,
+        help="FASTA paths, glob patterns, or directories to import (supports .gz)",
+    ),
+    namespaces: Optional[List[str]] = typer.Option(
+        None,
+        "--namespace",
+        "-N",
+        help="Namespace prefixes to extract aliases from FASTA headers (repeatable)",
+    ),
+    file_list: Optional[Path] = typer.Option(
+        None,
+        "--file-list",
+        "-F",
+        help="File-of-filenames (one path/glob/dir per line)",
+    ),
+    jobs: int = typer.Option(
+        0,
+        "--jobs",
+        "-j",
+        help="Concurrent imports (0=auto, 1=serial)",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        "-f",
+        help="Overwrite existing collections/sequences",
     ),
     path: Optional[Path] = typer.Option(
         None,
@@ -188,9 +227,12 @@ def add(
     ),
 ) -> None:
     """
-    Import a FASTA file to the local store.
+    Import one or more FASTA files into the local store.
 
-    Creates a sequence collection from the FASTA and stores all sequences.
+    Accepts explicit paths, glob patterns, and directories (expanded by gtars),
+    as well as a file-of-filenames via --file-list. Use --jobs for parallel
+    imports. Creates a sequence collection from each FASTA and stores all
+    sequences.
 
     Storage modes (--mode):
         encoded - Bit-packed compression (default, ~4x smaller)
@@ -199,8 +241,25 @@ def add(
     Note: Storage mode is specified at add time, not init, because mode
     applies to how sequences are encoded - an empty store has no sequences.
 
-    Outputs JSON: {"digest": "abc123...", "sequences": 25}
+    Use --namespace to extract aliases from FASTA headers, e.g.:
+        refget store add genome.fa -N ncbi -N refseq
+
+    Examples:
+        refget store add genome.fa
+        refget store add 'fastas/*.fa.gz' --jobs 4
+        refget store add --file-list manifest.txt
+        refget store add dir1/ dir2/ -N ucsc
+
+    Outputs JSON. Single explicit path:
+        {"digest": "abc...", "fasta": "...", "sequences": 25, "was_new": true}
+    Multiple inputs / globs / --file-list / --jobs>1:
+        {"results": [{"digest": "...", "sequences": 25, "was_new": true}, ...], "count": N}
     """
+    fastas = list(fastas) if fastas else []
+
+    if not fastas and file_list is None:
+        print_error("Must provide at least one FASTA path/glob/dir or --file-list", EXIT_FAILURE)
+
     store = _load_store(path, must_exist=True)
 
     # Set quiet mode if requested
@@ -215,15 +274,55 @@ def add(
         else:
             store.set_encoding_mode(StorageMode.Encoded)
 
-    # Add the FASTA file - returns (metadata, was_new) with all info we need
-    metadata, was_new = store.add_sequence_collection_from_fasta(str(fasta.resolve()))
+    # Single-file fast path: exactly one explicit path that is an existing
+    # regular file, no file-list, serial. Globs/directories fall through to
+    # the bulk path so gtars can expand them.
+    single = (
+        len(fastas) == 1
+        and file_list is None
+        and jobs in (0, 1)
+        and Path(fastas[0]).is_file()
+    )
+
+    if single:
+        single_path = Path(fastas[0])
+        try:
+            metadata, was_new = store.add_sequence_collection_from_fasta(
+                str(single_path.resolve()), force=force, namespaces=namespaces
+            )
+        except (OSError, IOError, ValueError) as e:
+            print_error(f"Failed to import {fastas[0]}: {e}", EXIT_FAILURE)
+            return
+        print_json(
+            {
+                "digest": metadata.digest,
+                "fasta": str(single_path.resolve()),
+                "sequences": metadata.n_sequences,
+                "was_new": was_new,
+            }
+        )
+        raise typer.Exit(EXIT_SUCCESS)
+
+    # Bulk path: multiple inputs, globs, directories, --file-list, or --jobs>1.
+    try:
+        results = store.add_sequence_collections_from_fastas(
+            fastas,
+            file_list=str(file_list) if file_list else None,
+            jobs=jobs,
+            force=force,
+            namespaces=namespaces,
+        )
+    except (OSError, IOError, ValueError) as e:
+        print_error(f"Failed to import FASTAs: {e}", EXIT_FAILURE)
+        return
 
     print_json(
         {
-            "digest": metadata.digest,
-            "fasta": str(fasta.resolve()),
-            "sequences": metadata.n_sequences,
-            "was_new": was_new,
+            "results": [
+                {"digest": m.digest, "sequences": m.n_sequences, "was_new": new}
+                for (m, new) in results
+            ],
+            "count": len(results),
         }
     )
     raise typer.Exit(EXIT_SUCCESS)
@@ -848,13 +947,189 @@ def remove(
     raise typer.Exit(EXIT_SUCCESS)
 
 
-@app.command()
-def metadata(
-    digest: str = typer.Argument(help="Collection digest"),
+# ============================================================
+# Alias commands (refget store alias ...)
+# ============================================================
+
+
+def _alias_kind(seq: bool) -> str:
+    return "sequence" if seq else "collection"
+
+
+@alias_app.command("add")
+def alias_add(
+    namespace: str = typer.Argument(help="Alias namespace"),
+    alias: str = typer.Argument(help="Alias name"),
+    digest: str = typer.Argument(help="Digest the alias points to"),
+    seq: bool = typer.Option(
+        False, "--seq", "-s", help="Operate on sequence aliases (default: collection)"
+    ),
     path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
 ):
-    """Show FHR metadata for a collection."""
+    """Add a sequence or collection alias mapping namespace:alias -> digest."""
     store = _load_store(path)
+    kind = _alias_kind(seq)
+    if seq:
+        store.add_sequence_alias(namespace, alias, digest)
+    else:
+        store.add_collection_alias(namespace, alias, digest)
+    print_json({"namespace": namespace, "alias": alias, "digest": digest, "kind": kind})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@alias_app.command("get")
+def alias_get(
+    namespace: str = typer.Argument(help="Alias namespace"),
+    alias: str = typer.Argument(help="Alias name"),
+    seq: bool = typer.Option(
+        False, "--seq", "-s", help="Operate on sequence aliases (default: collection)"
+    ),
+    metadata: bool = typer.Option(
+        False, "--metadata", help="Print full metadata instead of just the digest"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+    remote: Optional[str] = typer.Option(
+        None, "--remote", "-r", help="Remote store URL (overrides --path)"
+    ),
+):
+    """Resolve a namespace:alias to a digest (or full metadata with --metadata)."""
+    store = _load_store(path, remote=remote)
+    kind = _alias_kind(seq)
+    if seq:
+        meta = store.get_sequence_metadata_by_alias(namespace, alias)
+    else:
+        meta = store.get_collection_metadata_by_alias(namespace, alias)
+    if meta is None:
+        print_error(f"Alias not found: {namespace}:{alias} ({kind})", EXIT_FAILURE)
+        return
+
+    if metadata:
+        if hasattr(meta, "to_dict"):
+            print_json(meta.to_dict())
+        else:
+            attrs = {
+                a: getattr(meta, a)
+                for a in dir(meta)
+                if not a.startswith("_") and not callable(getattr(meta, a))
+            }
+            print_json(attrs)
+    else:
+        digest = getattr(meta, "digest", None) or getattr(meta, "sha512t24u", None)
+        print_json({"namespace": namespace, "alias": alias, "digest": digest, "kind": kind})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@alias_app.command("list")
+def alias_list(
+    namespace: Optional[str] = typer.Argument(
+        None, help="Namespace to list aliases for (omit to list namespaces)"
+    ),
+    seq: bool = typer.Option(
+        False, "--seq", "-s", help="Operate on sequence aliases (default: collection)"
+    ),
+    namespaces: bool = typer.Option(
+        False, "--namespaces", help="List alias namespaces instead of aliases"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+    remote: Optional[str] = typer.Option(
+        None, "--remote", "-r", help="Remote store URL (overrides --path)"
+    ),
+):
+    """List alias namespaces, or aliases within a namespace."""
+    store = _load_store(path, remote=remote)
+    if namespaces or namespace is None:
+        if seq:
+            result = store.list_sequence_alias_namespaces()
+        else:
+            result = store.list_collection_alias_namespaces()
+        print_json({"namespaces": result or []})
+    else:
+        if seq:
+            aliases = store.list_sequence_aliases(namespace)
+        else:
+            aliases = store.list_collection_aliases(namespace)
+        print_json({"namespace": namespace, "aliases": aliases or []})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@alias_app.command("rm")
+def alias_rm(
+    namespace: str = typer.Argument(help="Alias namespace"),
+    alias: str = typer.Argument(help="Alias name"),
+    seq: bool = typer.Option(
+        False, "--seq", "-s", help="Operate on sequence aliases (default: collection)"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+):
+    """Remove a sequence or collection alias."""
+    store = _load_store(path)
+    if seq:
+        removed = store.remove_sequence_alias(namespace, alias)
+    else:
+        removed = store.remove_collection_alias(namespace, alias)
+    if not removed:
+        print_error(f"Alias not found: {namespace}:{alias}", EXIT_FAILURE)
+    print_json({"removed": removed})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@alias_app.command("load")
+def alias_load(
+    namespace: str = typer.Argument(help="Alias namespace"),
+    file: Path = typer.Argument(help="TSV file of alias<TAB>digest lines"),
+    seq: bool = typer.Option(
+        False, "--seq", "-s", help="Operate on sequence aliases (default: collection)"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+):
+    """Load aliases for a namespace from a TSV file."""
+    store = _load_store(path)
+    if not file.exists():
+        print_error(f"File not found: {file}", EXIT_FILE_NOT_FOUND)
+    if seq:
+        loaded = store.load_sequence_aliases(namespace, str(file))
+    else:
+        loaded = store.load_collection_aliases(namespace, str(file))
+    print_json({"namespace": namespace, "loaded": loaded})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@alias_app.command("for")
+def alias_for(
+    digest: str = typer.Argument(help="Digest to reverse-lookup aliases for"),
+    seq: bool = typer.Option(
+        False, "--seq", "-s", help="Operate on sequence aliases (default: collection)"
+    ),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+    remote: Optional[str] = typer.Option(
+        None, "--remote", "-r", help="Remote store URL (overrides --path)"
+    ),
+):
+    """Reverse lookup: list all (namespace, alias) pairs for a digest."""
+    store = _load_store(path, remote=remote)
+    if seq:
+        pairs = store.get_aliases_for_sequence(digest)
+    else:
+        pairs = store.get_aliases_for_collection(digest)
+    print_json({"digest": digest, "aliases": [list(p) for p in (pairs or [])]})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+# ============================================================
+# FHR metadata commands (refget store fhr ...)
+# ============================================================
+
+
+@fhr_app.command("get")
+def fhr_get(
+    digest: str = typer.Argument(help="Collection digest"),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+    remote: Optional[str] = typer.Option(
+        None, "--remote", "-r", help="Remote store URL (overrides --path)"
+    ),
+):
+    """Show FHR metadata for a collection."""
+    store = _load_store(path, remote=remote)
     fhr = store.get_fhr_metadata(digest)
     if fhr is None:
         print_error(f"No FHR metadata for collection {digest}", EXIT_FAILURE)
@@ -864,16 +1139,91 @@ def metadata(
     raise typer.Exit(EXIT_SUCCESS)
 
 
-@app.command("metadata-set")
-def metadata_set(
+@fhr_app.command("set")
+def fhr_set(
     digest: str = typer.Argument(help="Collection digest"),
     file: Path = typer.Argument(help="Path to FHR JSON file"),
     path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
 ):
     """Set FHR metadata for a collection from a JSON file."""
     store = _load_store(path)
+    if not file.exists():
+        print_error(f"File not found: {file}", EXIT_FILE_NOT_FOUND)
     store.load_fhr_metadata(digest, str(file))
     print(f"Set FHR metadata for collection {digest}")
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@fhr_app.command("set-fields")
+def fhr_set_fields(
+    digest: str = typer.Argument(help="Collection digest"),
+    genome: Optional[str] = typer.Option(None, "--genome", help="Genome name"),
+    version: Optional[str] = typer.Option(None, "--version", help="Genome version"),
+    masking: Optional[str] = typer.Option(None, "--masking", help="Masking description"),
+    genome_synonym: Optional[List[str]] = typer.Option(
+        None, "--genome-synonym", help="Genome synonym (repeatable)"
+    ),
+    voucher_specimen: Optional[str] = typer.Option(
+        None, "--voucher-specimen", help="Voucher specimen"
+    ),
+    documentation: Optional[str] = typer.Option(None, "--documentation", help="Documentation URL"),
+    identifier: Optional[List[str]] = typer.Option(
+        None, "--identifier", help="Identifier (repeatable)"
+    ),
+    scholarly_article: Optional[str] = typer.Option(
+        None, "--scholarly-article", help="Scholarly article"
+    ),
+    funding: Optional[str] = typer.Option(None, "--funding", help="Funding"),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+):
+    """Set FHR metadata for a collection from individual fields."""
+    store = _load_store(path)
+    from refget.store import FhrMetadata
+
+    fields = {
+        "genome": genome,
+        "version": version,
+        "masking": masking,
+        "genome_synonym": list(genome_synonym) if genome_synonym else None,
+        "voucher_specimen": voucher_specimen,
+        "documentation": documentation,
+        "identifier": list(identifier) if identifier else None,
+        "scholarly_article": scholarly_article,
+        "funding": funding,
+    }
+    kwargs = {k: v for k, v in fields.items() if v is not None}
+    if not kwargs:
+        print_error("No FHR fields provided", EXIT_FAILURE)
+    fhr = FhrMetadata(**kwargs)
+    store.set_fhr_metadata(digest, fhr)
+    print_json({"digest": digest, "status": "set"})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@fhr_app.command("rm")
+def fhr_rm(
+    digest: str = typer.Argument(help="Collection digest"),
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+):
+    """Remove FHR metadata for a collection."""
+    store = _load_store(path)
+    removed = store.remove_fhr_metadata(digest)
+    if not removed:
+        print_error(f"No FHR metadata for collection {digest}", EXIT_FAILURE)
+    print_json({"removed": removed})
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@fhr_app.command("list")
+def fhr_list(
+    path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
+    remote: Optional[str] = typer.Option(
+        None, "--remote", "-r", help="Remote store URL (overrides --path)"
+    ),
+):
+    """List collection digests that have FHR metadata."""
+    store = _load_store(path, remote=remote)
+    print_json({"collections": store.list_fhr_metadata()})
     raise typer.Exit(EXIT_SUCCESS)
 
 

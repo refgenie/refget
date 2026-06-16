@@ -206,6 +206,14 @@ async def service_info():
     else:
         seqcol_info["refget_store"] = {"enabled": False}
 
+    # Advertise alias + FHR availability independent of refget_store_url
+    seqcol_info["aliases"] = {
+        "enabled": bool(
+            caps.get("collection_alias_namespaces") or caps.get("sequence_alias_namespaces")
+        )
+    }
+    seqcol_info["fhr_metadata"] = {"enabled": bool(caps.get("fhr_metadata_collections"))}
+
     return {
         "id": "org.databio.seqcolapi",
         "name": "Sequence collections",
@@ -313,6 +321,13 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
                     "url": os.environ.get("REFGET_STORE_HTTP_URL", store_path),
                     **caps,
                 },
+                "aliases": {
+                    "enabled": bool(
+                        caps.get("collection_alias_namespaces")
+                        or caps.get("sequence_alias_namespaces")
+                    )
+                },
+                "fhr_metadata": {"enabled": bool(caps.get("fhr_metadata_collections"))},
                 "scom": {
                     "enabled": bool(_SAMPLE_DIGESTS),
                     "species": list(_SAMPLE_DIGESTS.keys()),

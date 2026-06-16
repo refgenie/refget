@@ -11,12 +11,16 @@ RefgetStore also provides namespace-based alias management:
   Collection aliases: add_collection_alias, get_collection_by_alias,
     get_aliases_for_collection, list_collection_alias_namespaces,
     list_collection_aliases, remove_collection_alias, load_collection_aliases
+
+FHR (FAIR Headers Reference genome) metadata is also exposed via FhrMetadata
+and the store's set/get/remove/list/load_fhr_metadata methods.
 """
 
 from .const import GTARS_INSTALLED
 
 if GTARS_INSTALLED:
     from gtars.refget import (
+        FhrMetadata,
         RefgetStore,
         SequenceCollection,
         StorageMode,
@@ -25,6 +29,7 @@ if GTARS_INSTALLED:
         digest_sequence,
     )
 else:
+    FhrMetadata = None
     RefgetStore = None
     StorageMode = None
     digest_fasta = None
@@ -33,6 +38,7 @@ else:
     SequenceCollection = None
 
 __all__ = [
+    "FhrMetadata",
     "RefgetStore",
     "digest_fasta",
     "StorageMode",
