@@ -1,0 +1,39 @@
+[
+  {
+    "name": "Reference Genome Jungle",
+    "description": "Human & mouse reference assemblies across many providers (UCSC, Ensembl, GENCODE, NCBI, iGenomes, …).",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/jungle/",
+    "api": "seqcolapi.databio.org",
+    "hero": true
+  },
+  {
+    "name": "Pangenome (HPRC)",
+    "description": "HPRC haplotype-resolved human assemblies.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/pangenome/"
+  },
+  {
+    "name": "iGenomes",
+    "description": "AWS iGenomes — prebuilt references used by nf-core / Illumina pipelines.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/igenomes/"
+  },
+  {
+    "name": "RefSeq",
+    "description": "NCBI RefSeq protein and transcript sequences.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/refseq/"
+  },
+  {
+    "name": "VGP",
+    "description": "Vertebrate Genomes Project assemblies.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vgp/"
+  },
+  {
+    "name": "VRS",
+    "description": "A VRS-compatible store for variant representation.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vrs/"
+  },
+  {
+    "name": "Demo",
+    "description": "Small test FASTAs for development and CI.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/demo/"
+  }
+]

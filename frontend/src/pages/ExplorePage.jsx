@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE } from '../utilities.jsx';
+import stores from '../data/stores.json';
 
 const CopyableUrl = ({ url }) => (
   <code
@@ -11,42 +12,25 @@ const CopyableUrl = ({ url }) => (
   </code>
 );
 
-// All publicly published RefgetStores. Stats (collection counts) are fetched
-// live from each store's public collections.rgci. `api` marks the one store
-// that also has a hosted SeqCol API server.
-const STORE_BASE = 'https://refgenie.s3.us-east-1.amazonaws.com/refget-store';
-const STORES = [
-  {
-    slug: 'jungle',
-    name: 'Reference Genome Jungle',
-    desc: 'Human & mouse reference assemblies across many providers (UCSC, Ensembl, GENCODE, NCBI, iGenomes, …).',
-    api: 'seqcolapi.databio.org',
-  },
-  { slug: 'pangenome', name: 'Pangenome (HPRC)', desc: 'HPRC haplotype-resolved human assemblies.' },
-  { slug: 'igenomes', name: 'iGenomes', desc: 'AWS iGenomes — prebuilt references used by nf-core / Illumina pipelines.' },
-  { slug: 'refseq', name: 'RefSeq', desc: 'NCBI RefSeq protein and transcript sequences.' },
-  { slug: 'vgp', name: 'VGP', desc: 'Vertebrate Genomes Project assemblies.' },
-  { slug: 'vrs', name: 'VRS', desc: 'A VRS-compatible store for variant representation.' },
-  { slug: 'demo', name: 'Demo', desc: 'Small test FASTAs for development and CI.' },
-];
-const storeUrl = (slug) => `${STORE_BASE}/${slug}/`;
+// The hero store (the one with a hosted SeqCol API); falls back to the first.
+const heroStore = stores.find((s) => s.hero) || stores[0];
 
 const ExplorePage = () => {
-  const jungleStoreUrl = storeUrl('jungle');
+  const jungleStoreUrl = heroStore.url;
 
-  // Live collection counts per store, from the public collections.rgci index.
-  const [counts, setCounts] = useState({}); // slug -> number | null (error) | undefined (loading)
+  // Live collection counts per store, from each store's public collections.rgci.
+  const [counts, setCounts] = useState({}); // url -> number | null (error) | undefined (loading)
   useEffect(() => {
     let cancelled = false;
-    STORES.forEach(async (s) => {
+    stores.forEach(async (s) => {
       try {
-        const res = await fetch(`${storeUrl(s.slug)}collections.rgci`);
+        const res = await fetch(`${s.url}collections.rgci`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         const n = text.split('\n').filter((l) => l && !l.startsWith('#')).length;
-        if (!cancelled) setCounts((c) => ({ ...c, [s.slug]: n }));
+        if (!cancelled) setCounts((c) => ({ ...c, [s.url]: n }));
       } catch {
-        if (!cancelled) setCounts((c) => ({ ...c, [s.slug]: null }));
+        if (!cancelled) setCounts((c) => ({ ...c, [s.url]: null }));
       }
     });
     return () => {
@@ -54,8 +38,8 @@ const ExplorePage = () => {
     };
   }, []);
 
-  const fmtCount = (slug) => {
-    const v = counts[slug];
+  const fmtCount = (url) => {
+    const v = counts[url];
     if (v === undefined) return '…';
     if (v === null) return '—';
     return v.toLocaleString();
@@ -130,7 +114,7 @@ const ExplorePage = () => {
       <div className="card mb-5">
         <div className="card-header">
           <h5 className="mb-0">
-            The Reference Genome Jungle
+            {heroStore.name}
             <span className="badge bg-success ms-2">API</span>
           </h5>
         </div>
@@ -144,14 +128,14 @@ const ExplorePage = () => {
             <div className="d-flex align-items-center mb-1">
               <span className="badge bg-success me-2">API</span>
               <strong className="small">Sequence Collections API:</strong>
-              <span className="ms-2"><CopyableUrl url="seqcolapi.databio.org" /></span>
+              <span className="ms-2"><CopyableUrl url={heroStore.api} /></span>
             </div>
             <div className="d-flex align-items-center mb-1">
               <span className="badge bg-secondary me-2">Store</span>
               <strong className="small">Store:</strong>
               <span className="ms-2"><CopyableUrl url={jungleStoreUrl} /></span>
             </div>
-            <div className="text-muted small mt-2">{fmtCount('jungle')} collections</div>
+            <div className="text-muted small mt-2">{fmtCount(jungleStoreUrl)} collections</div>
           </div>
 
           <div className="mb-3">
@@ -211,7 +195,7 @@ const ExplorePage = () => {
         </div>
       </div>
 
-      {/* REFGETSTORES (table of all published stores) */}
+      {/* REFGETSTORES (table of all published stores, from src/data/stores.json) */}
       <h4 className="fw-light mb-3">
         <i className="bi bi-archive me-2" />
         RefgetStores
@@ -232,16 +216,16 @@ const ExplorePage = () => {
             </tr>
           </thead>
           <tbody>
-            {STORES.map((s) => (
-              <tr key={s.slug}>
+            {stores.map((s) => (
+              <tr key={s.url}>
                 <td className="fw-medium text-nowrap">
                   {s.name}
                   {s.api && <span className="badge bg-success ms-2">API</span>}
                 </td>
-                <td className="text-muted small">{s.desc}</td>
-                <td className="text-end">{fmtCount(s.slug)}</td>
+                <td className="text-muted small">{s.description}</td>
+                <td className="text-end">{fmtCount(s.url)}</td>
                 <td className="text-nowrap small">
-                  <Link to={`/explore-store/overview?url=${encodeURIComponent(storeUrl(s.slug))}`}>
+                  <Link to={`/explore-store/overview?url=${encodeURIComponent(s.url)}`}>
                     Browse store
                   </Link>
                   {s.api && (
