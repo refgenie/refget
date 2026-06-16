@@ -155,6 +155,7 @@ def check_service_info(api_root):
     assert "seqcol" in data, "service-info must have 'seqcol' section"
     assert "schema" in data["seqcol"], "seqcol section must include 'schema'"
     schema = data["seqcol"]["schema"]
+    assert schema is not None, "seqcol 'schema' must not be null (server must publish its JSON Schema)"
     assert "properties" in schema, "schema must have 'properties'"
     assert "lengths" in schema["properties"], "schema must define 'lengths'"
     assert "names" in schema["properties"], "schema must define 'names'"
@@ -427,7 +428,14 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
 
     Returns list of (name, function, args) tuples.
     """
-    _load_test_data()
+    fixtures_available = True
+    try:
+        _load_test_data()
+    except FileNotFoundError:
+        # Compliance fixtures aren't packaged with refget (expected on a
+        # pip-installed deploy). Run only the data-independent structure
+        # checks rather than crashing the whole endpoint.
+        fixtures_available = False
     checks = []
 
     # Structure checks
@@ -436,6 +444,11 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
     for attr in ["lengths", "names", "sequences"]:
         checks.append((f"list_attributes_{attr}", check_list_attributes, [api_root, attr]))
     checks.append(("openapi_available", check_openapi_available, [api_root]))
+
+    # Content checks below require the test fixtures; skip them (rather than
+    # crash) when those fixtures aren't available.
+    if not fixtures_available:
+        return checks
 
     # Collection content checks (per FASTA file)
     for fa_name, bundle in DIGEST_TESTS:

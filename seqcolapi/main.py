@@ -299,10 +299,13 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
         backend = getattr(store_app.state, "backend", None)
         caps = backend.capabilities() if backend and hasattr(backend, "capabilities") else {}
 
-        # Load the seqcol schema (same schema used by the DB-backed app)
-        _schema_path = _Path(__file__).parent.parent / "refget" / "schemas" / "seqcol.json"
+        # Load the seqcol schema (same schema used by the DB-backed app).
+        # Resolve via the installed refget package, not a dev-relative path —
+        # in the deployed image refget lives in site-packages, not ../refget.
+        from refget.const import SEQCOL_SCHEMA_PATH
+
         try:
-            with open(_schema_path) as _f:
+            with open(SEQCOL_SCHEMA_PATH) as _f:
                 schema = _json.load(_f)
         except Exception:
             schema = None
