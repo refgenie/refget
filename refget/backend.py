@@ -196,18 +196,6 @@ class RefgetStoreBackend:
             all_cols = self._store.list_collections(page=0, page_size=10000)
             all_digests = [c.digest if hasattr(c, "digest") else c for c in all_cols["results"]]
 
-        # Get aliases for human-readable names
-        alias_map = {}
-        for ns in self._store.list_collection_alias_namespaces():
-            try:
-                aliases = self._store.list_collection_aliases(ns)
-                for a in aliases:
-                    digest = a["digest"] if isinstance(a, dict) else a.digest
-                    alias = a["alias"] if isinstance(a, dict) else a.alias
-                    alias_map.setdefault(digest, []).append(alias)
-            except Exception:
-                pass
-
         similarities = []
         for digest in all_digests:
             try:
@@ -215,10 +203,22 @@ class RefgetStoreBackend:
                 if level2 is None:
                     continue
                 jaccard = calc_jaccard_similarities(seqcol, level2)
+
+                # Reverse lookup: gtars returns list[tuple[str, str]] of
+                # (namespace, alias) pairs pointing to this collection digest.
+                # We surface bare alias names; the namespace is available if a
+                # richer (namespace-qualified) display is ever wanted.
+                # A collection with no aliases is normal and yields [].
+                try:
+                    alias_pairs = self._store.get_aliases_for_collection(digest)
+                    human_readable_names = [alias for (_namespace, alias) in alias_pairs]
+                except Exception:
+                    human_readable_names = []
+
                 similarities.append(
                     {
                         "digest": digest,
-                        "human_readable_names": alias_map.get(digest, []),
+                        "human_readable_names": human_readable_names,
                         "similarities": jaccard,
                     }
                 )

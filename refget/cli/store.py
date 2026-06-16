@@ -11,7 +11,6 @@ Commands:
     get         - Get collection or sequence by digest
     pull        - Pull collection from remote
     export      - Export collection as FASTA
-    fai         - Generate .fai from digest
     chrom-sizes - Generate chrom.sizes from digest
     stats       - Store statistics
 """
@@ -701,63 +700,6 @@ def export(
                 "status": "exported",
             }
         )
-
-    raise typer.Exit(EXIT_SUCCESS)
-
-
-@app.command()
-def fai(
-    digest: str = typer.Argument(
-        ...,
-        help="Collection digest",
-    ),
-    output: Optional[Path] = typer.Option(
-        None,
-        "--output",
-        "-o",
-        help="Output file path (default: stdout)",
-    ),
-    path: Optional[Path] = typer.Option(
-        None,
-        "--path",
-        "-p",
-        help="Store path (default: from config)",
-    ),
-    remote: Optional[str] = typer.Option(
-        None,
-        "--remote",
-        "-r",
-        help="Remote store URL (overrides --path)",
-    ),
-) -> None:
-    """
-    Generate .fai index from a collection digest.
-
-    Outputs samtools-compatible .fai format (tab-separated).
-
-    Note: Byte offset columns will be placeholder values since the collection
-    may not correspond to any specific FASTA file layout.
-    """
-    store = _load_store(path, remote=remote)
-
-    try:
-        lvl2 = store.get_collection_level2(digest)
-    except Exception:
-        print_error(f"Collection not found: {digest}", EXIT_FAILURE)
-        return
-
-    lines = []
-    for name, length in zip(lvl2["names"], lvl2["lengths"]):
-        lines.append(f"{name}\t{length}\t0\t80\t81")
-
-    fai_content = "\n".join(lines)
-    if lines:
-        fai_content += "\n"
-
-    if output is not None:
-        output.write_text(fai_content)
-    else:
-        print(fai_content, end="")
 
     raise typer.Exit(EXIT_SUCCESS)
 

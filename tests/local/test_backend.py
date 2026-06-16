@@ -157,6 +157,30 @@ class TestRefgetStoreBackend:
         assert isinstance(caps["sequence_alias_namespaces"], list)
         assert caps["n_collections"] >= 2
 
+    def test_compute_similarities_surfaces_aliases(self, backend):
+        """human_readable_names is populated from registered collection aliases.
+
+        Regression test: the prior implementation scanned alias namespaces and
+        assumed list_collection_aliases returned dicts/objects with .digest/.alias,
+        which raised on every iteration and left human_readable_names empty. The
+        reverse get_aliases_for_collection lookup must surface the alias name.
+        """
+        backend._store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
+
+        seqcol = backend.get_collection(BASE_DIGEST)
+        result = backend.compute_similarities(seqcol)
+
+        entry = next(
+            s for s in result["similarities"] if s["digest"] == BASE_DIGEST
+        )
+        assert "hg38_base" in entry["human_readable_names"]
+
+        # A collection with no aliases yields an empty list, not a skipped entry.
+        other = next(
+            s for s in result["similarities"] if s["digest"] == DIFFERENT_NAMES_DIGEST
+        )
+        assert other["human_readable_names"] == []
+
 
 @pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
 class TestStoreBackend501:
