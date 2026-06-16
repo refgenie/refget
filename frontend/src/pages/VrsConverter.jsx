@@ -533,22 +533,22 @@ export function VrsConverter() {
       <div className="card mb-3">
         <div className="card-body">
           <h5 className="card-title">2. Input</h5>
-          <ul className="nav nav-pills mb-3">
+          <div className="btn-group mb-3" role="group" aria-label="Input mode">
             {[
               ['vcf-file', 'VCF file'],
               ['vcf-paste', 'VCF (paste)'],
               ['hgvs', 'HGVS'],
             ].map(([mode, label]) => (
-              <li className="nav-item" key={mode}>
-                <button
-                  className={`nav-link text-nowrap ${inputMode === mode ? 'active' : ''}`}
-                  onClick={() => setInputMode(mode)}
-                >
-                  {label}
-                </button>
-              </li>
+              <button
+                key={mode}
+                type="button"
+                className={`btn btn-sm text-nowrap ${inputMode === mode ? 'btn-primary' : 'btn-outline-primary'}`}
+                onClick={() => setInputMode(mode)}
+              >
+                {label}
+              </button>
             ))}
-          </ul>
+          </div>
 
           {inputMode === 'vcf-file' && (
             <div
