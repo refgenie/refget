@@ -13,15 +13,19 @@ const StoreOverview = () => {
 
   const urlParam = searchParams.get('url');
 
-  // If we have a URL param but no loaded store, load it
+  // Load the store whenever the URL param differs from the currently loaded
+  // store. Guarding on storeUrl (not metadata) ensures navigating between
+  // stores — e.g. jungle -> pangenome — actually reloads instead of showing
+  // the previously loaded store. loadStore sets storeUrl synchronously, so
+  // this settles after one load without re-triggering.
   useEffect(() => {
     const init = async () => {
-      if (urlParam && !metadata && !loading) {
+      if (urlParam && urlParam !== storeUrl && !loading) {
         await loadStore(urlParam).catch(() => {});
       }
     };
     init();
-  }, [urlParam]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [urlParam, storeUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-load sequence index (fetchSequenceIndex handles size check internally)
   useEffect(() => {
