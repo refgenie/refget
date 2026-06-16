@@ -1,0 +1,7 @@
+name = "refget"
+compatibility_date = "2025-06-01"
+
+# Static-only SPA served by Workers Static Assets (no Worker script).
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
