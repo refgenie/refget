@@ -154,18 +154,8 @@ const ExplorePage = () => {
                       </Link>
                     </li>
                     <li className="mb-1">
-                      <Link to="/hprc" className="text-decoration-none small">
-                        <i className="bi bi-arrow-right me-1" />HPRC Genomes
-                      </Link>
-                    </li>
-                    <li className="mb-1">
                       <Link to="/scom" className="text-decoration-none small">
                         <i className="bi bi-arrow-right me-1" />SCOM
-                      </Link>
-                    </li>
-                    <li className="mb-1">
-                      <Link to="/demo" className="text-decoration-none small">
-                        <i className="bi bi-arrow-right me-1" />Demo
                       </Link>
                     </li>
                   </ul>
@@ -189,9 +179,14 @@ const ExplorePage = () => {
         <div className="col-md-6">
           <div className="card h-100">
             <div className="card-header">
-              <h5 className="mb-0">Pangenome</h5>
+              <h5 className="mb-0">Pangenome (HPRC)</h5>
             </div>
             <div className="card-body">
+              <p className="text-muted small mb-3">
+                HPRC haplotype-resolved assemblies. These live in a dedicated
+                RefgetStore (not the seqcol API), so browse them through the store
+                explorer below.
+              </p>
               <div className="mb-3">
                 <div className="d-flex align-items-center mb-1">
                   <span className="badge bg-secondary me-2">Store</span>
@@ -211,7 +206,7 @@ const ExplorePage = () => {
                     to={`/explore-store/overview?url=${encodeURIComponent(pangenomeStoreUrl)}`}
                     className="text-decoration-none small"
                   >
-                    <i className="bi bi-arrow-right me-1" />Browse Store
+                    <i className="bi bi-arrow-right me-1" />Browse HPRC assemblies
                   </Link>
                 </li>
               </ul>

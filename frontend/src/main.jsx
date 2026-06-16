@@ -36,10 +36,8 @@ import { StoreAliases } from './pages/StoreAliases.jsx';
 // Site-specific pages
 import { PangenomeView } from './pages/PangenomeView.jsx';
 import { AttributeView } from './pages/AttributeView.jsx';
-import { DemoPage } from './pages/DemoPage.jsx';
 import { SCIM } from './pages/SCIM.jsx';
 import { SCOM } from './pages/SCOM.jsx';
-import { HPRCGenomes } from './pages/HPRCGenomes.jsx';
 import { HumanReferencesView } from './pages/HumanReferences.jsx';
 import { DigestPage } from './pages/DigestPage.jsx';
 import { VrsConverter } from './pages/VrsConverter.jsx';
@@ -449,16 +447,6 @@ const router = createBrowserRouter([
       {
         path: '/human',
         element: <HumanReferencesView />,
-        errorElement: <ErrorBoundary />,
-      },
-      {
-        path: '/hprc',
-        element: <HPRCGenomes />,
-        errorElement: <ErrorBoundary />,
-      },
-      {
-        path: '/demo',
-        element: <DemoPage />,
         errorElement: <ErrorBoundary />,
       },
 
