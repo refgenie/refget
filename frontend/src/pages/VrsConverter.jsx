@@ -541,7 +541,7 @@ export function VrsConverter() {
             ].map(([mode, label]) => (
               <li className="nav-item" key={mode}>
                 <button
-                  className={`nav-link ${inputMode === mode ? 'active' : ''}`}
+                  className={`nav-link text-nowrap ${inputMode === mode ? 'active' : ''}`}
                   onClick={() => setInputMode(mode)}
                 >
                   {label}
