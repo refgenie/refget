@@ -74,7 +74,7 @@ const LinkToLocalComparison = ({ comparison }) => {
       className='btn btn-secondary btn-sm'
       onClick={() => {
         navigator.clipboard.writeText(
-          `${window.location.origin}/scim?val=${base64encodedComparison}`,
+          `${window.location.origin}/compare?val=${base64encodedComparison}`,
         );
         setCopied(true);
         setTimeout(() => {

@@ -312,7 +312,7 @@ const SCOM = () => {
         );
       }
       const encodedComparison = encodeComparison(comparison);
-      navigate(`/scim?val=${encodedComparison}`);
+      navigate(`/compare?val=${encodedComparison}`);
     } catch (error) {
       setStoreError('Comparison could not be made.');
       toast.error(
