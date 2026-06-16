@@ -56,4 +56,7 @@ class StoreFreshnessMiddleware(BaseHTTPMiddleware):
 
         _LOGGER.info(f"Store changed, reloading from {self.store_url}")
         store = RefgetStore.open_remote(self.cache_dir, self.store_url)
-        app.state.backend = RefgetStoreBackend(store)
+        # Load all collections and convert to a thread-safe readonly store so the
+        # swapped-in backend serves concurrent reads with immutable borrows.
+        store.load_all_collections()
+        app.state.backend = RefgetStoreBackend(store.into_readonly())

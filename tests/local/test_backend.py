@@ -183,6 +183,87 @@ class TestRefgetStoreBackend:
 
 
 @pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+class TestReadonlyStoreBackend:
+    """RefgetStoreBackend served from a ReadonlyRefgetStore (the concurrent path).
+
+    Builds a store, loads all collections, converts via into_readonly(), wraps
+    the readonly store in RefgetStoreBackend, and exercises every backend method
+    to prove they all work against ReadonlyRefgetStore.
+    """
+
+    @pytest.fixture
+    def readonly_backend(self):
+        store = RefgetStore.in_memory()
+        store.add_sequence_collection_from_fasta(str(BASE_FASTA))
+        store.add_sequence_collection_from_fasta(str(DIFFERENT_NAMES_FASTA))
+        store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
+        # Load-then-convert: readonly store cannot lazy-load.
+        store.load_all_collections()
+        readonly = store.into_readonly()
+        # Sanity: the readonly variant is a distinct type.
+        from refget.store import ReadonlyRefgetStore
+
+        assert isinstance(readonly, ReadonlyRefgetStore)
+        return RefgetStoreBackend(readonly)
+
+    def test_satisfies_protocol(self, readonly_backend):
+        assert isinstance(readonly_backend, SeqColBackend)
+
+    def test_get_collection(self, readonly_backend):
+        result = readonly_backend.get_collection(BASE_DIGEST)
+        assert "names" in result and "lengths" in result and "sequences" in result
+
+    def test_get_collection_attribute(self, readonly_backend):
+        names = readonly_backend.get_collection_attribute(BASE_DIGEST, "names")
+        assert isinstance(names, list)
+
+    def test_get_attribute(self, readonly_backend):
+        result = readonly_backend.get_attribute("names", BASE_LEVEL1["names"])
+        assert isinstance(result, list)
+
+    def test_list_collections(self, readonly_backend):
+        result = readonly_backend.list_collections()
+        assert result["pagination"]["total"] >= 2
+
+    def test_capabilities(self, readonly_backend):
+        caps = readonly_backend.capabilities()
+        assert caps["backend_type"] == "refget_store"
+        assert caps["n_collections"] >= 2
+
+    def test_compute_similarities(self, readonly_backend):
+        seqcol = readonly_backend.get_collection(BASE_DIGEST)
+        result = readonly_backend.compute_similarities(seqcol)
+        entry = next(s for s in result["similarities"] if s["digest"] == BASE_DIGEST)
+        assert "hg38_base" in entry["human_readable_names"]
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+class TestServeReadonlyConversion:
+    """The `store serve` CLI helper loads + converts to a readonly store, and
+    --lazy preserves the mutable-store path."""
+
+    def test_into_readonly_helper(self):
+        from refget.cli.store import _into_readonly
+        from refget.store import ReadonlyRefgetStore
+
+        store = RefgetStore.in_memory()
+        store.add_sequence_collection_from_fasta(str(BASE_FASTA))
+        readonly = _into_readonly(store, load_sequences=False)
+        assert isinstance(readonly, ReadonlyRefgetStore)
+        backend = RefgetStoreBackend(readonly)
+        assert backend.collection_count() >= 1
+
+    def test_lazy_serves_from_mutable_store(self):
+        # The --lazy path wraps the mutable RefgetStore directly (no conversion).
+        store = RefgetStore.in_memory()
+        store.add_sequence_collection_from_fasta(str(BASE_FASTA))
+        backend = RefgetStoreBackend(store)
+        assert backend._store is store
+        assert isinstance(backend._store, RefgetStore)
+        assert backend.collection_count() >= 1
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
 class TestStoreBackend501:
     """Verify DB-only endpoints return 501 when only RefgetStoreBackend is configured."""
 

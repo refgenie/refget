@@ -45,7 +45,9 @@ This starts the test database, runs tests, and cleans up automatically.
 
 ### Store-backed (no database)
 
-The store-backed seqcolapi uses a RefgetStore (local files) instead of PostgreSQL. This is the simplest way to run the API:
+The store-backed seqcolapi uses a RefgetStore (local files) instead of PostgreSQL. This is the simplest way to run the API.
+
+For safe concurrent serving, the store is fully loaded and converted to a read-only store (`RefgetStore.into_readonly()`) before serving, so HTTP reads borrow immutably across request threads. The `refget store serve` CLI does this by default; pass `--lazy` to serve directly from the mutable, lazy-loading store instead (single-reader-oriented, not recommended for concurrent production serving).
 
 #### Quick start
 

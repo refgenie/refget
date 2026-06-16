@@ -125,6 +125,33 @@ def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[
         return RefgetStore.on_disk(str(store_path))
 
 
+def _into_readonly(store, *, load_sequences: bool = False):
+    """
+    Fully load a mutable RefgetStore and convert it to a ReadonlyRefgetStore.
+
+    The readonly store's methods all borrow immutably, making it safe to share
+    across request threads for concurrent serving. Because the readonly store
+    cannot lazy-load, all collections (and optionally sequences) must be loaded
+    on the mutable store *before* conversion.
+
+    Note: ``into_readonly()`` consumes the mutable store (replacing it with an
+    empty in-memory store), so the caller must use only the returned readonly
+    handle afterward.
+
+    Args:
+        store: A mutable RefgetStore instance.
+        load_sequences: If True, also load all sequences (needed when serving
+            sequence/substring endpoints).
+
+    Returns:
+        A ReadonlyRefgetStore ready for concurrent reads.
+    """
+    store.load_all_collections()
+    if load_sequences:
+        store.load_all_sequences()
+    return store.into_readonly()
+
+
 def _ensure_collection_loaded(store, digest: str) -> None:
     """
     Ensure a collection is loaded in the store.
@@ -1533,12 +1560,28 @@ def serve(
     ),
     port: int = typer.Option(8000, "--port", help="Port to serve on"),
     host: str = typer.Option("0.0.0.0", "--host", help="Host to bind to"),
+    lazy: bool = typer.Option(
+        False,
+        "--lazy",
+        help=(
+            "Serve directly from the mutable, lazy-loading RefgetStore instead "
+            "of converting to a readonly store. This avoids loading the whole "
+            "store into memory up front, but is single-reader-oriented and NOT "
+            "recommended for concurrent production serving."
+        ),
+    ),
 ):
     """Serve a seqcol API backed by a RefgetStore (no database required).
+
+    By default the store is fully loaded and converted to a ReadonlyRefgetStore,
+    whose methods borrow immutably and are safe to share across request threads
+    for concurrent serving. Use --lazy to skip loading and serve from the mutable
+    store (single-reader-oriented; not recommended for concurrent serving).
 
     Examples:
         refget store serve --path /path/to/store --port 8000
         refget store serve --remote s3://bucket/store/ --port 8000
+        refget store serve --path /path/to/store --lazy
     """
     try:
         import uvicorn
@@ -1554,7 +1597,14 @@ def serve(
     else:
         store = _load_store(None)
 
-    backend = RefgetStoreBackend(store)
+    if lazy:
+        backend = RefgetStoreBackend(store)
+    else:
+        # Load all collections and convert to a thread-safe readonly store.
+        # Sequence endpoints are disabled below, so sequences are not loaded;
+        # enabling them later should also pass load_sequences=True here.
+        readonly_store = _into_readonly(store, load_sequences=False)
+        backend = RefgetStoreBackend(readonly_store)
 
     from fastapi import FastAPI
 

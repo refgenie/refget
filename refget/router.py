@@ -12,8 +12,11 @@ from refget.router import create_refget_router, setup_backend
 
 router = create_refget_router(sequences=False, collections=True, pangenomes=False)
 app.include_router(router, prefix="/seqcol")
-setup_backend(app, store=my_store)       # RefgetStore backend (no database)
-# OR: setup_backend(app, engine=engine)  # PostgreSQL via RefgetDBAgent
+setup_backend(app, store=readonly_store)  # store backend (no database)
+# OR: setup_backend(app, engine=engine)   # PostgreSQL via RefgetDBAgent
+
+For concurrent serving, ``store`` should be a fully loaded ReadonlyRefgetStore
+(see refget.store), obtained via ``RefgetStore.into_readonly()``.
 """
 
 import logging
@@ -37,8 +40,11 @@ _ROUTER_CONFIG: dict = {}
 def setup_backend(app, store=None, engine=None):
     """Configure the seqcol backend on a FastAPI app.
 
-    Pass a RefgetStore to serve from the store (no database needed).
-    The store is used directly (not converted to readonly) so it can lazy-load collections.
+    Pass a store to serve from the store (no database needed). For concurrent
+    serving, ``store`` should already be a fully loaded ReadonlyRefgetStore
+    (obtained via ``RefgetStore.into_readonly()``); converting/loading is the
+    caller's responsibility. ``setup_backend`` simply wraps whatever store it
+    is given in a RefgetStoreBackend.
     Pass a SQLAlchemy engine to serve from PostgreSQL via RefgetDBAgent.
     """
     if store is not None:

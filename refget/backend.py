@@ -5,6 +5,10 @@ The SeqColBackend protocol defines the interface for serving seqcol API endpoint
 Two implementations:
 - RefgetDBAgent (PostgreSQL) — full features including similarities, pangenomes, DRS
 - RefgetStoreBackend (RefgetStore) — core seqcol operations, no database required
+
+For concurrent serving, RefgetStoreBackend is intended to wrap a fully loaded
+ReadonlyRefgetStore (obtained via RefgetStore.into_readonly()), whose methods all
+borrow immutably and are therefore safe to share across request threads.
 """
 
 from __future__ import annotations
@@ -69,8 +73,12 @@ class RefgetStoreBackend:
     def __init__(self, store):
         """
         Args:
-            store: A RefgetStore instance from gtars. Do NOT pass a
-                ReadonlyRefgetStore — it cannot lazy-load collections.
+            store: A gtars store to read from. For thread-safe concurrent
+                serving, pass a ReadonlyRefgetStore obtained via
+                ``RefgetStore.into_readonly()`` after loading all collections
+                (and sequences, if serving sequence/substring endpoints). A
+                mutable RefgetStore also works but is single-reader-oriented
+                (lazy-loading relies on a mutable borrow).
         """
         self._store = store
 

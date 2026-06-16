@@ -14,6 +14,12 @@ RefgetStore also provides namespace-based alias management:
 
 FHR (FAIR Headers Reference genome) metadata is also exposed via FhrMetadata
 and the store's set/get/remove/list/load_fhr_metadata methods.
+
+ReadonlyRefgetStore is the read-only variant of RefgetStore. All of its methods
+borrow ``&self`` (no mutable borrow), making it safe to share across threads for
+concurrent server reads. It is obtained only via ``RefgetStore.into_readonly()``
+and cannot lazy-load: the mutable RefgetStore must call ``load_all_collections()``
+(and ``load_all_sequences()`` for sequence/substring serving) before conversion.
 """
 
 from .const import GTARS_INSTALLED
@@ -21,6 +27,7 @@ from .const import GTARS_INSTALLED
 if GTARS_INSTALLED:
     from gtars.refget import (
         FhrMetadata,
+        ReadonlyRefgetStore,
         RefgetStore,
         SequenceCollection,
         StorageMode,
@@ -30,6 +37,7 @@ if GTARS_INSTALLED:
     )
 else:
     FhrMetadata = None
+    ReadonlyRefgetStore = None
     RefgetStore = None
     StorageMode = None
     digest_fasta = None
@@ -39,6 +47,7 @@ else:
 
 __all__ = [
     "FhrMetadata",
+    "ReadonlyRefgetStore",
     "RefgetStore",
     "digest_fasta",
     "StorageMode",

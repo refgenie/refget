@@ -255,6 +255,11 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
     else:
         store = RefgetStore.on_disk(store_path)
 
+    # Load all collections and convert to a thread-safe ReadonlyRefgetStore so
+    # concurrent HTTP reads borrow immutably (no mutable lazy-loading borrow).
+    store.load_all_collections()
+    store = store.into_readonly()
+
     store_app = FastAPI(
         title="Sequence Collections API (Store-backed)",
         version=ALL_VERSIONS["refget_version"],
