@@ -66,17 +66,17 @@ export const fetchPangenomeLevels = async (digest) => {
   );
 };
 
-export const fetchSeqColList = async (baseUrl) => {
+export const fetchSeqColList = async (baseUrl, opts = {}) => {
   const base = (baseUrl || API_BASE).replace(/\/+$/, '');
   const fetchRequired = async (url) => {
-    const response = await fetch(url);
+    const response = await fetch(url, opts);
     await checkResponse(response, url);
     return response.json();
   };
 
   const fetchOptional = async (url) => {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, opts);
       if (!response.ok) return null;
       return response.json();
     } catch {
