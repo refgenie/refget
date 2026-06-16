@@ -90,7 +90,7 @@ const StoreExplorer = () => {
             ) : (
               <>
                 <i className="bi bi-search me-2" />
-                Explore
+                Explore store
               </>
             )}
           </button>
