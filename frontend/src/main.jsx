@@ -155,6 +155,9 @@ const Nav = () => {
             {/* Explore link */}
             <NavItem path="/explore" label="Explore" location={location} navigate={navigate} />
 
+            {/* VRS converter */}
+            <NavItem path="/vrs" label="VRS" location={location} navigate={navigate} />
+
             {/* GitHub dropdown */}
             <li className='nav-item dropdown mx-2 my-0 h6'>
               <span

@@ -86,8 +86,9 @@ const ExplorePage = () => {
             </div>
             <div className="card-body">
               <p className="text-muted small mb-3">
-                A curated collection of reference genome assemblies from major providers — including human references
-                such as GRCh38 and T2T-CHM13 — alongside model organisms and other common research references.
+                A curated collection of human (GRCh38/hg19/hg18) and mouse (mm39 and earlier) reference assemblies
+                from many authorities — UCSC, Ensembl, GENCODE, NCBI, iGenomes, refgenie, ENA, DDBJ, and others —
+                so you can compare how the same genome is represented across providers.
               </p>
               <div className="mb-3">
                 <div className="d-flex align-items-center mb-1">

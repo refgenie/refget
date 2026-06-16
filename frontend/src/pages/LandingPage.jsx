@@ -125,7 +125,7 @@ const LandingPage = () => {
               Looking for available reference genomes?
             </div>
             <div className="col-md-7 ps-3 border-start text-muted">
-              <Link to="/jungle">Browse the Jungle</Link> to find GRCh38, T2T-CHM13, and 100+ references with provenance and source links.
+              <Link to="/jungle">Browse the Jungle</Link> to find GRCh38, hg19, mouse assemblies, and 100+ human and mouse references with provenance and source links.
             </div>
           </div>
 
