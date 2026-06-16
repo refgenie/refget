@@ -161,36 +161,66 @@ class TestStorePullBasic:
         assert data["status"] == "pulled"
 
 
-class TestStorePullEager:
-    """Eager sequence fetching tests."""
+class TestStorePullMaterializes:
+    """Pull materializes collections (sequences + aliases + FHR) into the local store."""
 
-    def test_pull_eager_fetches_sequences(self, cli, tmp_path, remote_store_server):
-        """Pull with --eager pre-fetches all sequences."""
+    def test_pull_persists_collection_locally(self, cli, tmp_path, remote_store_server):
+        """After pulling, the collection is present in the local store (materialized)."""
         server_url, digest, _ = remote_store_server
-        local_store = tmp_path / "eager_store"
-        cli("store", "init", "--path", str(local_store))
-
-        result = cli(
-            "store", "pull", digest, "--server", server_url, "--path", str(local_store), "--eager"
-        )
-
-        assert result.exit_code == 0, f"Eager pull failed: {result.stdout}"
-        data = json.loads(result.stdout)
-        assert data["eager"] is True
-        assert data["sequences_fetched"] > 0
-
-    def test_pull_default_is_lazy(self, cli, tmp_path, remote_store_server):
-        """Pull without --eager uses lazy mode."""
-        server_url, digest, _ = remote_store_server
-        local_store = tmp_path / "lazy_store"
+        local_store = tmp_path / "materialized_store"
         cli("store", "init", "--path", str(local_store))
 
         result = cli("store", "pull", digest, "--server", server_url, "--path", str(local_store))
+        assert result.exit_code == 0, f"Pull failed: {result.stdout}"
 
-        assert result.exit_code == 0
-        data = json.loads(result.stdout)
-        assert data["eager"] is False
-        assert "sequences_fetched" not in data
+        # The collection should now be listed in the local store.
+        list_result = cli("store", "list", "--path", str(local_store))
+        assert list_result.exit_code == 0
+        collections = [c["digest"] for c in json.loads(list_result.stdout)["collections"]]
+        assert digest in collections
+
+    def test_pull_transfers_aliases_and_fhr(self, cli, tmp_path):
+        """import_collection carries the collection's aliases and FHR metadata."""
+        # Build a source store with an alias and FHR on the collection.
+        source_store = tmp_path / "alias_source"
+        cli("store", "init", "--path", str(source_store))
+        add_result = cli("store", "add", str(BASE_FASTA), "--path", str(source_store))
+        assert add_result.exit_code == 0
+        digest = json.loads(add_result.stdout)["digest"]
+
+        cli(
+            "store", "alias", "add", "test", "mygenome", digest, "--path", str(source_store)
+        )
+        cli(
+            "store", "fhr", "set-fields", digest, "--genome", "myorg", "--path", str(source_store)
+        )
+
+        port = _find_free_port()
+        proc = _start_http_server(str(source_store), port)
+        try:
+            server_url = f"http://127.0.0.1:{port}"
+            local_store = tmp_path / "alias_dest"
+            cli("store", "init", "--path", str(local_store))
+
+            result = cli(
+                "store", "pull", digest, "--server", server_url, "--path", str(local_store)
+            )
+            assert result.exit_code == 0, f"Pull failed: {result.stdout}"
+
+            # Alias should have travelled with the collection.
+            alias_result = cli(
+                "store", "alias", "for", digest, "--path", str(local_store)
+            )
+            assert alias_result.exit_code == 0
+            aliases = json.loads(alias_result.stdout)["aliases"]
+            assert ["test", "mygenome"] in aliases
+
+            # FHR should have travelled too.
+            fhr_result = cli("store", "fhr", "get", digest, "--path", str(local_store))
+            assert fhr_result.exit_code == 0
+            assert "myorg" in fhr_result.stdout
+        finally:
+            _stop_http_server(proc)
 
 
 class TestStorePullBatch:
@@ -424,7 +454,7 @@ class TestStorePullMultipleRemotes:
             assert result.exit_code == 0, f"Multi-remote pull failed: {result.stdout}"
             # Extract JSON from output (error messages from failed remotes may precede it)
             stdout = result.stdout
-            json_start = stdout.rfind("{")
+            json_start = stdout.find("{")
             assert json_start >= 0, f"No JSON found in output: {stdout}"
             data = json.loads(stdout[json_start:])
             assert data["status"] == "pulled"

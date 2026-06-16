@@ -62,6 +62,14 @@ class SeqColBackend(Protocol):
         """Total number of collections."""
         ...
 
+    def substrings_from_regions(self, digest: str, regions: list[dict]) -> list[dict]:
+        """Extract region substrings from a collection.
+
+        ``regions`` is a list of {"chrom", "start", "end"} dicts. Returns a list
+        of {"chrom_name", "start", "end", "sequence"} dicts. Backends that cannot
+        extract sequence bytes should raise NotImplementedError."""
+        raise NotImplementedError("This backend does not support region extraction")
+
     def capabilities(self) -> dict:
         """Return backend capabilities for service-info."""
         ...
@@ -252,6 +260,34 @@ class RefgetStoreBackend:
     def collection_count(self) -> int:
         result = self._store.list_collections(page=0, page_size=1)
         return result["pagination"]["total"]
+
+    def substrings_from_regions(self, digest: str, regions: list[dict]) -> list[dict]:
+        """Extract region substrings from a collection via the store.
+
+        Writes the requested regions to a temporary BED file and delegates to
+        the store's substrings_from_regions, returning structured records.
+        """
+        import os
+        import tempfile
+
+        fd, bed_path = tempfile.mkstemp(suffix=".bed")
+        try:
+            with os.fdopen(fd, "w") as f:
+                for r in regions:
+                    f.write(f"{r['chrom']}\t{r['start']}\t{r['end']}\n")
+            retrieved = self._store.substrings_from_regions(digest, bed_path)
+        finally:
+            if os.path.exists(bed_path):
+                os.unlink(bed_path)
+        return [
+            {
+                "chrom_name": rs.chrom_name,
+                "start": rs.start,
+                "end": rs.end,
+                "sequence": rs.sequence,
+            }
+            for rs in retrieved
+        ]
 
     # --- Alias API -------------------------------------------------------
 

@@ -20,6 +20,16 @@ borrow ``&self`` (no mutable borrow), making it safe to share across threads for
 concurrent server reads. It is obtained only via ``RefgetStore.into_readonly()``
 and cannot lazy-load: the mutable RefgetStore must call ``load_all_collections()``
 (and ``load_all_sequences()`` for sequence/substring serving) before conversion.
+
+Region retrieval as structured data is available via the store's
+``substrings_from_regions`` (BED file -> list[RetrievedSequence]) and
+``get_substrings`` (one sequence, list of (start, end) ranges) methods.
+VRS allele identifiers are computed via ``compute_vrs_ids`` (collection + VCF).
+Remote import is provided by ``import_collection`` (pulls sequences + aliases +
+FHR for a collection), ``pull_aliases``, and ``pull_fhr``.
+
+Utility re-exports: load_fasta, RetrievedSequence, SequenceMetadata, compute_fai,
+md5_digest, sha512t24u_digest.
 """
 
 from .const import GTARS_INSTALLED
@@ -29,30 +39,45 @@ if GTARS_INSTALLED:
         FhrMetadata,
         ReadonlyRefgetStore,
         RefgetStore,
+        RetrievedSequence,
         SequenceCollection,
+        SequenceMetadata,
         StorageMode,
         compute_fai,
         digest_fasta,
         digest_sequence,
+        load_fasta,
+        md5_digest,
+        sha512t24u_digest,
     )
 else:
     FhrMetadata = None
     ReadonlyRefgetStore = None
     RefgetStore = None
+    RetrievedSequence = None
+    SequenceMetadata = None
     StorageMode = None
     digest_fasta = None
     compute_fai = None
     digest_sequence = None
     SequenceCollection = None
+    load_fasta = None
+    md5_digest = None
+    sha512t24u_digest = None
 
 __all__ = [
     "FhrMetadata",
     "ReadonlyRefgetStore",
     "RefgetStore",
+    "RetrievedSequence",
+    "SequenceMetadata",
     "digest_fasta",
     "StorageMode",
     "compute_fai",
     "digest_sequence",
     "SequenceCollection",
+    "load_fasta",
+    "md5_digest",
+    "sha512t24u_digest",
     "GTARS_INSTALLED",
 ]

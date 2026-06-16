@@ -16,6 +16,8 @@ Commands:
 """
 
 import json
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -36,6 +38,29 @@ app = typer.Typer(
     help="FASTA file utilities",
     no_args_is_help=True,
 )
+
+
+def _write_rgci(fasta_file: Path, output: Path) -> None:
+    """
+    Write a single-collection .rgci using the store-native emitter.
+
+    Builds a temporary on-disk RefgetStore from the FASTA, lets gtars write
+    its own ``collections.rgci``, then copies it to ``output``. This avoids
+    hand-formatting the on-disk TSV layout (which would silently rot if gtars
+    changed the format).
+    """
+    from refget.store import RefgetStore
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        store = RefgetStore.on_disk(tmp_dir)
+        store.set_quiet(True)
+        with suppress_stdout():
+            store.add_sequence_collection_from_fasta(str(fasta_file.resolve()))
+            store.write()
+        emitted = Path(tmp_dir) / "collections.rgci"
+        if not emitted.exists():
+            raise OSError("store did not emit collections.rgci")
+        shutil.copyfile(emitted, output)
 
 
 @app.command()
@@ -147,22 +172,9 @@ def index(
         rgsi_path = out_dir / f"{stem}.rgsi"
         sc.write_rgsi(str(rgsi_path))
 
-        # Write RGCI file
+        # Write RGCI file via the store-native emitter (no hand-formatted TSV)
         rgci_path = out_dir / f"{stem}.rgci"
-        with open(rgci_path, "w") as f:
-            meta = sc.metadata
-            f.write(
-                "#digest\tn_sequences\tnames_digest\tsequences_digest"
-                "\tlengths_digest\tname_length_pairs_digest"
-                "\tsorted_name_length_pairs_digest\tsorted_sequences_digest\n"
-            )
-            f.write(
-                f"{meta.digest}\t{meta.n_sequences}\t{meta.names_digest}"
-                f"\t{meta.sequences_digest}\t{meta.lengths_digest}"
-                f"\t{meta.name_length_pairs_digest or ''}"
-                f"\t{meta.sorted_name_length_pairs_digest or ''}"
-                f"\t{meta.sorted_sequences_digest or ''}\n"
-            )
+        _write_rgci(file, rgci_path)
 
         files_created = [
             str(fai_path),
@@ -447,10 +459,10 @@ def rgci(
 
     The .rgci is a TSV index file listing collection metadata (digest,
     sequence count, and level 1 digests). Used by RefgetStore as a
-    master index of all collections.
+    master index of all collections. The file is produced by the store's
+    own emitter rather than hand-formatted, so it always matches the
+    on-disk format gtars writes.
     """
-    from gtars.refget import digest_fasta
-
     try:
         # Determine output path
         if output is None:
@@ -461,28 +473,7 @@ def rgci(
                     break
             output = file.parent / f"{stem}.rgci"
 
-        # Digest the FASTA file
-        with suppress_stdout():
-            sc = digest_fasta(str(file))
-
-        meta = sc.metadata
-
-        # Write RGCI file (matches store.rs write_collections_rgci format)
-        with open(output, "w") as f:
-            # Header
-            f.write(
-                "#digest\tn_sequences\tnames_digest\tsequences_digest"
-                "\tlengths_digest\tname_length_pairs_digest"
-                "\tsorted_name_length_pairs_digest\tsorted_sequences_digest\n"
-            )
-            # Single collection row
-            f.write(
-                f"{meta.digest}\t{meta.n_sequences}\t{meta.names_digest}"
-                f"\t{meta.sequences_digest}\t{meta.lengths_digest}"
-                f"\t{meta.name_length_pairs_digest or ''}"
-                f"\t{meta.sorted_name_length_pairs_digest or ''}"
-                f"\t{meta.sorted_sequences_digest or ''}\n"
-            )
+        _write_rgci(file, output)
 
         print_success(f"Wrote RGCI index to {output}")
         raise typer.Exit(EXIT_SUCCESS)

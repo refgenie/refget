@@ -345,6 +345,26 @@ class SequenceCollectionClient(RefgetClient):
         endpoint = f"/comparison/{digest}"
         return _try_urls(self.urls, endpoint, method="POST", json=local_collection)
 
+    def get_regions(self, digest: str, regions: list) -> Optional[list]:
+        """
+        Extract region substrings from a server-hosted sequence collection.
+
+        Posts a list of regions to the server's region-extraction endpoint and
+        returns the structured results. Requires a store-backed server (the
+        database backend responds with HTTP 501).
+
+        Args:
+            digest (str): The collection digest to extract regions from.
+            regions (list): A list of {"chrom", "start", "end"} dicts.
+
+        Returns:
+            (list): A list of {"chrom_name", "start", "end", "sequence"} dicts.
+        """
+        endpoint = f"/collection/{digest}/regions"
+        return _try_urls(
+            self.urls, endpoint, method="POST", json=regions, raise_errors=self.raise_errors
+        )
+
     def list_collections(
         self,
         page: Optional[int] = None,

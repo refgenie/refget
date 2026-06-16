@@ -14,6 +14,7 @@ from refget.cli.config import app as config_app
 from refget.cli.fasta import app as fasta_app
 from refget.cli.seqcol import app as seqcol_app
 from refget.cli.store import app as store_app
+from refget.cli.vrs import app as vrs_app
 
 app = typer.Typer(
     name="refget",
@@ -26,6 +27,7 @@ app.add_typer(config_app, name="config", help="Configuration management")
 app.add_typer(fasta_app, name="fasta", help="FASTA file utilities")
 app.add_typer(store_app, name="store", help="RefgetStore operations")
 app.add_typer(seqcol_app, name="seqcol", help="Sequence collection API")
+app.add_typer(vrs_app, name="vrs", help="VRS allele identifier computation")
 app.add_typer(admin_app, name="admin", help="Admin/database operations")
 
 

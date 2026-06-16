@@ -490,6 +490,32 @@ async def list_fhr(backend=Depends(get_backend)):
     return {"collections": method()}
 
 
+@seqcol_router.post(
+    "/collection/{collection_digest}/regions",
+    summary="Extract region substrings from a collection",
+    tags=["Retrieving data"],
+)
+async def collection_regions(
+    collection_digest: str,
+    regions: list[dict],
+    backend=Depends(get_backend),
+):
+    """Extract sequence substrings for a list of regions.
+
+    Body is a JSON list of {"chrom", "start", "end"} objects. Returns a list of
+    {"chrom_name", "start", "end", "sequence"} records. Requires a backend that
+    can extract sequence bytes (RefgetStoreBackend); the database backend
+    returns HTTP 501.
+    """
+    method = _require_backend_method(backend, "substrings_from_regions")
+    try:
+        return method(collection_digest, regions)
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
+    except (ValueError, KeyError, OSError, IOError):
+        raise HTTPException(status_code=404, detail="Collection not found")
+
+
 pangenome_router = APIRouter()
 
 

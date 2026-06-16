@@ -9,8 +9,9 @@ Commands:
     add         - Import one or more FASTAs (paths/globs/dirs) to local store
     list        - List collections or sequences in store
     get         - Get collection or sequence by digest
-    pull        - Pull collection from remote
-    export      - Export collection as FASTA
+    pull        - Pull collection (sequences + aliases + FHR) from remote
+    export      - Export collection as FASTA (by collection, names, BED, or sequence digests)
+    regions     - Extract BED-file regions as structured sequence data
     chrom-sizes - Generate chrom.sizes from digest
     stats       - Store statistics
     alias       - Manage sequence and collection aliases
@@ -591,11 +592,11 @@ def pull(
         "-r",
         help="Remote store URL (default: try configured remote_stores)",
     ),
-    eager: bool = typer.Option(
-        False,
-        "--eager",
-        "-e",
-        help="Pre-fetch all sequences immediately (default: lazy/on-demand)",
+    alias_strategy: str = typer.Option(
+        "keep-ours",
+        "--alias-strategy",
+        help="Conflict strategy when fetching alias/FHR sidecars from the remote: "
+        "keep-ours, keep-theirs, or notify",
     ),
     quiet: bool = typer.Option(
         False,
@@ -605,11 +606,14 @@ def pull(
     ),
 ) -> None:
     """
-    Pull a collection from a remote store to local cache.
+    Pull collections from a remote store into the local store.
 
-    By default, only metadata is fetched immediately. Sequence data is
-    downloaded on-demand when accessed (lazy loading). Use --eager to
-    pre-fetch all sequences.
+    Each requested collection is imported in full via import_collection,
+    which materializes the collection's sequences, aliases, and FHR metadata
+    into the local on-disk store. Pull always materializes the collection into
+    the local store (there is no lazy mode). Before importing, the remote's
+    alias and FHR sidecars are fetched (using --alias-strategy to resolve
+    conflicts) so they travel with the collection.
 
     Resolution order (if --remote not specified):
         1. Check local store (already cached?)
@@ -620,7 +624,6 @@ def pull(
 
     Examples:
         refget store pull ABC123 --remote https://example.com/store
-        refget store pull ABC123 --eager  # Pre-fetch all sequences
         refget store pull --file digests.txt --remote https://example.com/store
     """
     check_dependency("gtars", "store", "store")
@@ -654,19 +657,23 @@ def pull(
             EXIT_FAILURE,
         )
 
-    # Get local store path for caching
+    # Open the local destination as a writable on-disk store so imports persist.
     store_path = _get_store_path(path)
     cache_path = store_path / ".remote_cache"
     cache_path.mkdir(parents=True, exist_ok=True)
+    local_store = RefgetStore.on_disk(str(store_path))
+    local_store.set_quiet(quiet)
+    local_collections = _get_collection_digests(local_store)
 
-    # Check local store first
-    local_collections: set = set()
-    if RefgetStore.store_exists(str(store_path)):
-        try:
-            local_store = RefgetStore.open_local(str(store_path))
-            local_collections = _get_collection_digests(local_store)
-        except Exception:
-            pass  # Local store not available, continue with remote
+    # Open each remote store once (lazy metadata fetch), reused across digests.
+    remote_stores: dict = {}
+
+    def _get_remote(url: str):
+        if url not in remote_stores:
+            rs = RefgetStore.open_remote(str(cache_path), url)
+            rs.set_quiet(quiet)
+            remote_stores[url] = rs
+        return remote_stores[url]
 
     results = []
     for dig in digests:
@@ -679,34 +686,50 @@ def pull(
         pulled = False
         for remote_url in remote_urls:
             try:
-                # Connect to remote with local caching
-                remote_store = RefgetStore.open_remote(str(cache_path), remote_url)
-                remote_store.set_quiet(quiet)
+                remote_store = _get_remote(remote_url)
 
                 # Check if collection exists on remote
-                remote_collections = _get_collection_digests(remote_store)
-                if dig not in remote_collections:
+                if dig not in _get_collection_digests(remote_store):
                     continue  # Try next remote
 
-                # Collection found - metadata is now cached
-                result = {
-                    "digest": dig,
-                    "status": "pulled",
-                    "source": remote_url,
-                    "eager": eager,
-                }
+                # Materialize the collection's sequences into the remote's local
+                # cache so import_collection can copy the .seq files. Remote
+                # stores lazy-load, so the sequence bytes aren't present until
+                # explicitly loaded.
+                remote_store.load_collection(dig)
+                level2 = remote_store.get_collection_level2(dig)
+                for seq_digest in level2.get("sequences", []):
+                    # level2 sequences are refget IDs ("SQ.<sha512t24u>");
+                    # load_sequence wants the bare digest.
+                    bare = seq_digest.split(".", 1)[1] if "." in seq_digest else seq_digest
+                    remote_store.load_sequence(bare)
 
-                if eager:
-                    # Pre-fetch all sequences
-                    coll = remote_store.get_collection(dig)
-                    seq_count = 0
-                    for seq in coll.sequences:
-                        # Accessing the sequence triggers download and caching
-                        _ = seq.decode()
-                        seq_count += 1
-                    result["sequences_fetched"] = seq_count
+                # Fetch the remote's alias + FHR sidecars into the remote store
+                # so import_collection carries them to the local store. These
+                # are no-ops if the remote advertises none.
+                alias_result = {}
+                fhr_result = {}
+                try:
+                    alias_result = remote_store.pull_aliases(strategy=alias_strategy)
+                except Exception:
+                    pass
+                try:
+                    fhr_result = remote_store.pull_fhr(strategy=alias_strategy)
+                except Exception:
+                    pass
 
-                results.append(result)
+                # Import the full collection (sequences + aliases + FHR).
+                local_store.import_collection(remote_store, dig)
+                local_collections.add(dig)
+                results.append(
+                    {
+                        "digest": dig,
+                        "status": "pulled",
+                        "source": remote_url,
+                        "aliases": alias_result,
+                        "fhr": fhr_result,
+                    }
+                )
                 pulled = True
                 break  # Success, don't try other remotes
 
@@ -727,6 +750,11 @@ def pull(
                 }
             )
 
+    # Persist all imported collections (with their aliases + FHR) to disk.
+    # import_collection carries each collection's aliases and FHR metadata
+    # along with its sequences, so they travel with the collection.
+    local_store.write()
+
     # Output results
     if len(results) == 1:
         print_json(results[0])
@@ -742,9 +770,9 @@ def pull(
 
 @app.command()
 def export(
-    digest: str = typer.Argument(
-        ...,
-        help="Collection digest to export",
+    digest: Optional[str] = typer.Argument(
+        None,
+        help="Collection digest to export (omit when using --seq-digest)",
     ),
     output: Optional[Path] = typer.Option(
         None,
@@ -763,6 +791,15 @@ def export(
         "--name",
         "-n",
         help="Sequence names to include (can be repeated)",
+    ),
+    seq_digests: Optional[List[str]] = typer.Option(
+        None,
+        "--seq-digest",
+        "-S",
+        help=(
+            "Export ad-hoc by SEQUENCE (sha512t24u) digest, bypassing collections "
+            "(repeatable). When given, the collection digest argument is ignored."
+        ),
     ),
     path: Optional[Path] = typer.Option(
         None,
@@ -784,24 +821,38 @@ def export(
     ),
 ) -> None:
     """
-    Export a collection as a FASTA file.
+    Export sequences as a FASTA file.
 
-    Can export:
-        - Full collection
-        - Subset by sequence names (--name chr1 --name chr2)
-        - Regions from BED file (--bed regions.bed)
+    Four export modes:
+        - Full collection      (digest)
+        - Subset by names       (digest --name chr1 --name chr2)
+        - Regions from BED file (digest --bed regions.bed)
+        - Ad-hoc by sequence digest, bypassing collections
+          (--seq-digest <sha512t24u> --seq-digest ...). The --seq-digest mode
+          takes SEQUENCE digests, not a collection digest, and ignores the
+          collection digest argument.
 
     If no output file is specified, exports to stdout.
     """
     store = _load_store(path, remote=remote)
 
-    # Ensure collection and sequence data are loaded (required for export)
-    _ensure_collection_loaded(store, digest)
-    store.load_all_sequences()
+    by_digest = bool(seq_digests)
+
+    if by_digest:
+        # Ad-hoc cross-collection export: sequence digests only, no collection load.
+        store.load_all_sequences()
+    else:
+        if digest is None:
+            print_error("Provide a collection digest, or use --seq-digest", EXIT_FAILURE)
+        # Ensure collection and sequence data are loaded (required for export)
+        _ensure_collection_loaded(store, digest)
+        store.load_all_sequences()
 
     def _do_export(output_path: str) -> None:
         """Perform the actual export to a file path."""
-        if bed is not None:
+        if by_digest:
+            store.export_fasta_by_digests(list(seq_digests), output_path, line_width)
+        elif bed is not None:
             if not bed.exists():
                 print_error(f"BED file not found: {bed}", EXIT_FILE_NOT_FOUND)
             store.export_fasta_from_regions(digest, str(bed.resolve()), output_path)
@@ -819,13 +870,86 @@ def export(
         # Export directly to output file
         output_path = str(output.resolve())
         _do_export(output_path)
+        result = {"output": output_path, "status": "exported"}
+        if by_digest:
+            result["seq_digests"] = list(seq_digests)
+        else:
+            result["digest"] = digest
+        print_json(result)
+
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@app.command()
+def regions(
+    digest: str = typer.Argument(
+        ...,
+        help="Collection digest to extract regions from",
+    ),
+    bed: Path = typer.Option(
+        ...,
+        "--bed",
+        "-b",
+        help="BED file of regions to extract",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output as a JSON list of region records instead of FASTA",
+    ),
+    path: Optional[Path] = typer.Option(
+        None,
+        "--path",
+        "-p",
+        help="Store path (default: from config)",
+    ),
+    remote: Optional[str] = typer.Option(
+        None,
+        "--remote",
+        "-r",
+        help="Remote store URL (overrides --path)",
+    ),
+) -> None:
+    """
+    Extract BED-file regions from a collection as structured sequence data.
+
+    Reads a BED file and returns the sequence for each region. By default,
+    emits FASTA-style records with headers ">{chrom}:{start}-{end}". Use
+    --json to emit a list of {chrom_name, start, end, sequence} objects.
+
+    Examples:
+        refget store regions <digest> --bed regions.bed
+        refget store regions <digest> -b regions.bed --json
+    """
+    if not bed.exists():
+        print_error(f"BED file not found: {bed}", EXIT_FILE_NOT_FOUND)
+
+    store = _load_store(path, remote=remote)
+    _ensure_collection_loaded(store, digest)
+    store.load_all_sequences()
+
+    retrieved = store.substrings_from_regions(digest, str(bed.resolve()))
+
+    if json_output:
         print_json(
-            {
-                "digest": digest,
-                "output": output_path,
-                "status": "exported",
-            }
+            [
+                {
+                    "chrom_name": r.chrom_name,
+                    "start": r.start,
+                    "end": r.end,
+                    "sequence": r.sequence,
+                }
+                for r in retrieved
+            ]
         )
+    else:
+        lines = []
+        for r in retrieved:
+            lines.append(f">{r.chrom_name}:{r.start}-{r.end}")
+            lines.append(r.sequence)
+        if lines:
+            print("\n".join(lines))
 
     raise typer.Exit(EXIT_SUCCESS)
 
@@ -902,40 +1026,17 @@ def stats(
     """
     Display store statistics.
 
-    Outputs JSON with storage_mode, collections, and sequences counts.
+    Outputs the store's stats dict: n_sequences, n_collections,
+    n_collections_loaded, and storage_mode.
 
     Example output:
-        {"collections": 3, "sequences": 75, "storage_mode": "Encoded"}
+        {"n_sequences": 75, "n_collections": 3, "n_collections_loaded": 0,
+         "storage_mode": "Encoded"}
     """
     store = _load_store(path, remote=remote)
 
-    stats_obj = store.stats()
-
-    # Convert stats object to dict for JSON output
-    # The stats object should have properties like collections, sequences, etc.
-    stats_dict = {}
-    if hasattr(stats_obj, "__iter__"):
-        # If it's dict-like
-        for key, value in stats_obj.items():
-            stats_dict[key] = value
-    elif hasattr(stats_obj, "__dict__"):
-        stats_dict = vars(stats_obj)
-    else:
-        # Try to convert to string representation
-        stats_dict = {"stats": str(stats_obj)}
-
-    # Ensure 'collections' key exists as an integer
-    # The underlying stats may use 'n_collections' as a string
-    if "n_collections" in stats_dict and "collections" not in stats_dict:
-        stats_dict["collections"] = int(stats_dict["n_collections"])
-    elif "collections" in stats_dict:
-        # Ensure it's an integer
-        stats_dict["collections"] = int(stats_dict["collections"])
-    else:
-        # Fallback: count collections ourselves
-        stats_dict["collections"] = store.list_collections()["pagination"]["total"]
-
-    print_json(stats_dict)
+    # store.stats() returns a plain dict with stable keys.
+    print_json(store.stats())
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -1311,23 +1412,11 @@ def crate(
     store = _load_store(path)
     store_path = _get_store_path(path)
 
-    # Gather stats
-    stats_obj = store.stats()
-    stats_dict = {}
-    if hasattr(stats_obj, "__iter__"):
-        for key, value in stats_obj.items():
-            stats_dict[key] = value
-    elif hasattr(stats_obj, "__dict__"):
-        stats_dict = vars(stats_obj)
-
+    # Gather stats (store.stats() returns a plain dict with stable keys)
+    stats_dict = store.stats()
     storage_mode = stats_dict.get("storage_mode", "Unknown")
-    seq_count = int(stats_dict.get("n_sequences", stats_dict.get("sequences", 0)))
-
-    # Count collections
-    try:
-        coll_count = store.list_collections()["pagination"]["total"]
-    except Exception:
-        coll_count = 0
+    seq_count = int(stats_dict.get("n_sequences", 0))
+    coll_count = int(stats_dict.get("n_collections", 0))
 
     # Build the @graph
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

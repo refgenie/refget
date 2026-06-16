@@ -280,6 +280,72 @@ class TestStoreExport:
 
         assert result.exit_code != 0
 
+    def test_export_by_seq_digest(self, cli, tmp_path):
+        """Exports ad-hoc by sequence digest, bypassing the collection."""
+        store_path = tmp_path / "store"
+
+        cli("store", "init", "--path", str(store_path))
+        cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
+
+        # Find a sequence digest in the store.
+        list_result = cli("store", "list", "--sequences", "--path", str(store_path))
+        seq_digest = json.loads(list_result.stdout)["sequences"][0]["digest"]
+
+        result = cli(
+            "store", "export", "--seq-digest", seq_digest, "--path", str(store_path)
+        )
+
+        assert result.exit_code == 0, result.stdout
+        assert result.stdout.startswith(">")
+
+
+class TestStoreRegions:
+    """Tests for: refget store regions <digest> --bed"""
+
+    def _setup(self, cli, tmp_path):
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+        add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
+        digest = json.loads(add_result.stdout)["digest"]
+        # Get a sequence name to build a valid BED region.
+        list_result = cli("store", "list", "--sequences", "--path", str(store_path))
+        seq = json.loads(list_result.stdout)["sequences"][0]
+        bed = tmp_path / "regions.bed"
+        bed.write_text(f"{seq['name']}\t0\t3\n")
+        return store_path, digest, bed, seq["name"]
+
+    def test_regions_fasta(self, cli, tmp_path):
+        """Extracts regions as FASTA records."""
+        store_path, digest, bed, name = self._setup(cli, tmp_path)
+        result = cli(
+            "store", "regions", digest, "--bed", str(bed), "--path", str(store_path)
+        )
+        assert result.exit_code == 0, result.stdout
+        assert result.stdout.startswith(f">{name}:0-3")
+
+    def test_regions_json(self, cli, tmp_path):
+        """Extracts regions as JSON records."""
+        store_path, digest, bed, name = self._setup(cli, tmp_path)
+        result = cli(
+            "store", "regions", digest, "--bed", str(bed), "--json", "--path", str(store_path)
+        )
+        assert result.exit_code == 0, result.stdout
+        data = json.loads(result.stdout)
+        assert isinstance(data, list)
+        assert data[0]["chrom_name"] == name
+        assert data[0]["start"] == 0
+        assert data[0]["end"] == 3
+        assert len(data[0]["sequence"]) == 3
+
+    def test_regions_missing_bed(self, cli, tmp_path):
+        """Returns error when BED file does not exist."""
+        store_path, digest, _bed, _name = self._setup(cli, tmp_path)
+        result = cli(
+            "store", "regions", digest, "--bed", str(tmp_path / "nope.bed"),
+            "--path", str(store_path),
+        )
+        assert result.exit_code != 0
+
 
 class TestStoreGetSequence:
     """Tests for: refget store get <digest> --sequence"""
@@ -389,8 +455,8 @@ class TestStoreStats:
 
         result = cli("store", "stats", "--path", str(store_path))
 
-        data = assert_json_output(result, ["collections"])
-        assert data["collections"] >= 1
+        data = assert_json_output(result, ["n_collections"])
+        assert int(data["n_collections"]) >= 1
 
     def test_empty_store_stats(self, cli, tmp_path):
         """Stats for empty store."""
@@ -399,8 +465,8 @@ class TestStoreStats:
 
         result = cli("store", "stats", "--path", str(store_path))
 
-        data = assert_json_output(result, ["collections"])
-        assert data["collections"] == 0
+        data = assert_json_output(result, ["n_collections"])
+        assert int(data["n_collections"]) == 0
 
     def test_stats_shows_storage_mode_encoded(self, cli, tmp_path):
         """Stats shows storage_mode for encoded store (default)."""
