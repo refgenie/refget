@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { API_BASE } from '../utilities.jsx';
 
@@ -10,9 +11,55 @@ const CopyableUrl = ({ url }) => (
   </code>
 );
 
+// All publicly published RefgetStores. Stats (collection counts) are fetched
+// live from each store's public collections.rgci. `api` marks the one store
+// that also has a hosted SeqCol API server.
+const STORE_BASE = 'https://refgenie.s3.us-east-1.amazonaws.com/refget-store';
+const STORES = [
+  {
+    slug: 'jungle',
+    name: 'Reference Genome Jungle',
+    desc: 'Human & mouse reference assemblies across many providers (UCSC, Ensembl, GENCODE, NCBI, iGenomes, …).',
+    api: 'seqcolapi.databio.org',
+  },
+  { slug: 'pangenome', name: 'Pangenome (HPRC)', desc: 'HPRC haplotype-resolved human assemblies.' },
+  { slug: 'igenomes', name: 'iGenomes', desc: 'AWS iGenomes — prebuilt references used by nf-core / Illumina pipelines.' },
+  { slug: 'refseq', name: 'RefSeq', desc: 'NCBI RefSeq protein and transcript sequences.' },
+  { slug: 'vgp', name: 'VGP', desc: 'Vertebrate Genomes Project assemblies.' },
+  { slug: 'vrs', name: 'VRS', desc: 'A VRS-compatible store for variant representation.' },
+  { slug: 'demo', name: 'Demo', desc: 'Small test FASTAs for development and CI.' },
+];
+const storeUrl = (slug) => `${STORE_BASE}/${slug}/`;
+
 const ExplorePage = () => {
-  const jungleStoreUrl = 'https://refgenie.s3.us-east-1.amazonaws.com/refget-store/jungle/';
-  const pangenomeStoreUrl = 'https://refgenie.s3.us-east-1.amazonaws.com/pangenome_refget_store';
+  const jungleStoreUrl = storeUrl('jungle');
+
+  // Live collection counts per store, from the public collections.rgci index.
+  const [counts, setCounts] = useState({}); // slug -> number | null (error) | undefined (loading)
+  useEffect(() => {
+    let cancelled = false;
+    STORES.forEach(async (s) => {
+      try {
+        const res = await fetch(`${storeUrl(s.slug)}collections.rgci`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const n = text.split('\n').filter((l) => l && !l.startsWith('#')).length;
+        if (!cancelled) setCounts((c) => ({ ...c, [s.slug]: n }));
+      } catch {
+        if (!cancelled) setCounts((c) => ({ ...c, [s.slug]: null }));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const fmtCount = (slug) => {
+    const v = counts[slug];
+    if (v === undefined) return '…';
+    if (v === null) return '—';
+    return v.toLocaleString();
+  };
 
   return (
     <div className="mb-5">
@@ -71,182 +118,173 @@ const ExplorePage = () => {
         </div>
       </div>
 
-      {/* SERVERS */}
+      {/* SEQCOL API (hero — the one hosted API server, backed by the jungle store) */}
       <h4 className="fw-light mb-3">
         <i className="bi bi-hdd-network me-2" />
-        Servers
+        SeqCol API
       </h4>
+      <p className="text-muted small mb-3">
+        The hosted Sequence Collections API, backed by the Reference Genome Jungle store.
+      </p>
 
-      <div className="row g-4">
-        {/* Jungle Server */}
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header">
-              <h5 className="mb-0">The Reference Genome Jungle</h5>
+      <div className="card mb-5">
+        <div className="card-header">
+          <h5 className="mb-0">
+            The Reference Genome Jungle
+            <span className="badge bg-success ms-2">API</span>
+          </h5>
+        </div>
+        <div className="card-body">
+          <p className="text-muted small mb-3">
+            A curated collection of human (GRCh38/hg19/hg18) and mouse (mm39 and earlier) reference assemblies
+            from many authorities — UCSC, Ensembl, GENCODE, NCBI, iGenomes, refgenie, ENA, DDBJ, and others —
+            so you can compare how the same genome is represented across providers.
+          </p>
+          <div className="mb-3">
+            <div className="d-flex align-items-center mb-1">
+              <span className="badge bg-success me-2">API</span>
+              <strong className="small">Sequence Collections API:</strong>
+              <span className="ms-2"><CopyableUrl url="seqcolapi.databio.org" /></span>
             </div>
-            <div className="card-body">
-              <p className="text-muted small mb-3">
-                A curated collection of human (GRCh38/hg19/hg18) and mouse (mm39 and earlier) reference assemblies
-                from many authorities — UCSC, Ensembl, GENCODE, NCBI, iGenomes, refgenie, ENA, DDBJ, and others —
-                so you can compare how the same genome is represented across providers.
-              </p>
-              <div className="mb-3">
-                <div className="d-flex align-items-center mb-1">
-                  <span className="badge bg-success me-2">API</span>
-                  <strong className="small">Sequence Collections API:</strong>
-                  <span className="ms-2"><CopyableUrl url="seqcolapi.databio.org" /></span>
-                </div>
-                <div className="d-flex align-items-center mb-1">
-                  <span className="badge bg-secondary me-2">Store</span>
-                  <strong className="small">Store:</strong>
-                  <span className="ms-2"><CopyableUrl url={jungleStoreUrl} /></span>
-                </div>
-                <div className="text-muted small mt-2">
-                  205 collections · 580,742 sequences
-                </div>
-              </div>
+            <div className="d-flex align-items-center mb-1">
+              <span className="badge bg-secondary me-2">Store</span>
+              <strong className="small">Store:</strong>
+              <span className="ms-2"><CopyableUrl url={jungleStoreUrl} /></span>
+            </div>
+            <div className="text-muted small mt-2">{fmtCount('jungle')} collections</div>
+          </div>
 
-              <div className="mb-3">
-                <Link to="/jungle" className="btn btn-outline-primary">
-                  <i className="bi bi-tree me-2" />
-                  Browse with Provenance
-                </Link>
-              </div>
+          <div className="mb-3">
+            <Link to="/jungle" className="btn btn-outline-primary">
+              <i className="bi bi-tree me-2" />
+              Browse with Provenance
+            </Link>
+          </div>
 
-              <div className="row">
-                <div className="col-md-4">
-                  <h6 className="text-muted small text-uppercase mb-2">Browse via API</h6>
-                  <ul className="list-unstyled mb-0">
-                    <li className="mb-1">
-                      <Link to="/collections" className="text-decoration-none small">
-                        <i className="bi bi-arrow-right me-1" />Collections
-                      </Link>
-                    </li>
-                    <li className="mb-1">
-                      <Link to="/sequences" className="text-decoration-none small">
-                        <i className="bi bi-arrow-right me-1" />Sequences
-                      </Link>
-                    </li>
-                    <li className="mb-1">
-                      <Link to="/aliases" className="text-decoration-none small">
-                        <i className="bi bi-arrow-right me-1" />Aliases
-                      </Link>
-                    </li>
-                  </ul>
-                  <h6 className="text-muted small text-uppercase mb-2 mt-3">Browse Store Directly</h6>
-                  <ul className="list-unstyled mb-0">
-                    <li className="mb-1">
-                      <Link
-                        to={`/explore-store/overview?url=${encodeURIComponent(jungleStoreUrl)}`}
-                        className="text-decoration-none small"
-                      >
-                        <i className="bi bi-arrow-right me-1" />Browse Store
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-                <div className="col-md-4">
-                  <h6 className="text-muted small text-uppercase mb-2">Views</h6>
-                  <ul className="list-unstyled mb-0">
-                    <li className="mb-1">
-                      <Link to="/human" className="text-decoration-none small">
-                        <i className="bi bi-arrow-right me-1" />Human Genomes
-                      </Link>
-                    </li>
-                    <li className="mb-1">
-                      <Link to="/scom" className="text-decoration-none small">
-                        <i className="bi bi-arrow-right me-1" />SCOM
-                      </Link>
-                    </li>
-                  </ul>
-                </div>
-                <div className="col-md-4">
-                  <h6 className="text-muted small text-uppercase mb-2">Developer</h6>
-                  <ul className="list-unstyled mb-0">
-                    <li className="mb-1">
-                      <a href={`${API_BASE}/docs`} className="text-decoration-none small" target="_blank" rel="noopener noreferrer">
-                        <i className="bi bi-arrow-right me-1" />API Docs
+          <div className="row">
+            <div className="col-md-4">
+              <h6 className="text-muted small text-uppercase mb-2">Browse via API</h6>
+              <ul className="list-unstyled mb-0">
+                <li className="mb-1">
+                  <Link to="/collections" className="text-decoration-none small">
+                    <i className="bi bi-arrow-right me-1" />Collections
+                  </Link>
+                </li>
+                <li className="mb-1">
+                  <Link to="/sequences" className="text-decoration-none small">
+                    <i className="bi bi-arrow-right me-1" />Sequences
+                  </Link>
+                </li>
+                <li className="mb-1">
+                  <Link to="/aliases" className="text-decoration-none small">
+                    <i className="bi bi-arrow-right me-1" />Aliases
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div className="col-md-4">
+              <h6 className="text-muted small text-uppercase mb-2">Views</h6>
+              <ul className="list-unstyled mb-0">
+                <li className="mb-1">
+                  <Link to="/human" className="text-decoration-none small">
+                    <i className="bi bi-arrow-right me-1" />Human Genomes
+                  </Link>
+                </li>
+                <li className="mb-1">
+                  <Link to="/scom" className="text-decoration-none small">
+                    <i className="bi bi-arrow-right me-1" />SCOM
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div className="col-md-4">
+              <h6 className="text-muted small text-uppercase mb-2">Developer</h6>
+              <ul className="list-unstyled mb-0">
+                <li className="mb-1">
+                  <a href={`${API_BASE}/docs`} className="text-decoration-none small" target="_blank" rel="noopener noreferrer">
+                    <i className="bi bi-arrow-right me-1" />API Docs
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* REFGETSTORES (table of all published stores) */}
+      <h4 className="fw-light mb-3">
+        <i className="bi bi-archive me-2" />
+        RefgetStores
+      </h4>
+      <p className="text-muted small mb-3">
+        All publicly published RefgetStores. Browse any of them in the store explorer (read directly from S3,
+        no server required). Only the jungle additionally has a hosted SeqCol API.
+      </p>
+
+      <div className="table-responsive mb-4">
+        <table className="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th>Description</th>
+              <th className="text-end">Collections</th>
+              <th>Access</th>
+            </tr>
+          </thead>
+          <tbody>
+            {STORES.map((s) => (
+              <tr key={s.slug}>
+                <td className="fw-medium text-nowrap">
+                  {s.name}
+                  {s.api && <span className="badge bg-success ms-2">API</span>}
+                </td>
+                <td className="text-muted small">{s.desc}</td>
+                <td className="text-end">{fmtCount(s.slug)}</td>
+                <td className="text-nowrap small">
+                  <Link to={`/explore-store/overview?url=${encodeURIComponent(storeUrl(s.slug))}`}>
+                    Browse store
+                  </Link>
+                  {s.api && (
+                    <>
+                      {' · '}
+                      <a href={`https://${s.api}`} target="_blank" rel="noopener noreferrer">
+                        API
                       </a>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
+                    </>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Work with any store / API by URL */}
+      <div className="card">
+        <div className="card-header">
+          <h5 className="mb-0">Explore any store or API by URL</h5>
         </div>
-
-        {/* Pangenome Store */}
-        <div className="col-md-6">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">Pangenome (HPRC)</h5>
-            </div>
-            <div className="card-body">
-              <p className="text-muted small mb-3">
-                HPRC haplotype-resolved assemblies. These live in a dedicated
-                RefgetStore (not the seqcol API), so browse them through the store
-                explorer below.
-              </p>
-              <div className="mb-3">
-                <div className="d-flex align-items-center mb-1">
-                  <span className="badge bg-secondary me-2">Store</span>
-                  <strong className="small">Store:</strong>
-                </div>
-                <div className="ms-4">
-                  <CopyableUrl url={pangenomeStoreUrl} />
-                </div>
-                <div className="text-muted small mt-2">
-                  47 HPRC haplotype-resolved assemblies
-                </div>
-              </div>
-
-              <ul className="list-unstyled mb-0">
-                <li>
-                  <Link
-                    to={`/explore-store/overview?url=${encodeURIComponent(pangenomeStoreUrl)}`}
-                    className="text-decoration-none small"
-                  >
-                    <i className="bi bi-arrow-right me-1" />Browse HPRC assemblies
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Work with Any Server */}
-        <div className="col-md-6">
-          <div className="card h-100">
-            <div className="card-header">
-              <h5 className="mb-0">Work with Any SeqCol API</h5>
-            </div>
-            <div className="card-body">
-              <p className="text-muted small mb-3">
-                Explore any Sequence Collections API or RefgetStore by URL.
-              </p>
-
-              <ul className="list-unstyled mb-0">
-                <li className="mb-2">
-                  <Link to="/explore-store" className="text-decoration-none small">
-                    <i className="bi bi-arrow-right me-1" />Explore a Store
-                  </Link>
-                  <span className="text-muted d-block small ms-3">Browse any RefgetStore by URL</span>
-                </li>
-                <li className="mb-2">
-                  <Link to="/explore-api" className="text-decoration-none small">
-                    <i className="bi bi-arrow-right me-1" />Explore an API
-                  </Link>
-                  <span className="text-muted d-block small ms-3">Connect to any SeqCol API server</span>
-                </li>
-                <li>
-                  <Link to="/compliance" className="text-decoration-none small">
-                    <i className="bi bi-arrow-right me-1" />Compliance Testing
-                  </Link>
-                  <span className="text-muted d-block small ms-3">Run GA4GH spec compliance checks</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+        <div className="card-body">
+          <ul className="list-unstyled mb-0">
+            <li className="mb-2">
+              <Link to="/explore-store" className="text-decoration-none small">
+                <i className="bi bi-arrow-right me-1" />Explore a Store
+              </Link>
+              <span className="text-muted d-block small ms-3">Browse any RefgetStore by URL</span>
+            </li>
+            <li className="mb-2">
+              <Link to="/explore-api" className="text-decoration-none small">
+                <i className="bi bi-arrow-right me-1" />Explore an API
+              </Link>
+              <span className="text-muted d-block small ms-3">Connect to any SeqCol API server</span>
+            </li>
+            <li>
+              <Link to="/compliance" className="text-decoration-none small">
+                <i className="bi bi-arrow-right me-1" />Compliance Testing
+              </Link>
+              <span className="text-muted d-block small ms-3">Run GA4GH spec compliance checks</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
