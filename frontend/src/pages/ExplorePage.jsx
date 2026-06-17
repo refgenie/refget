@@ -3,14 +3,38 @@ import { Link } from 'react-router-dom';
 import { API_BASE } from '../utilities.jsx';
 import stores from '../data/stores.json';
 
-const CopyableUrl = ({ url }) => (
-  <code
-    className="small text-muted"
-    style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}
-  >
-    {url}
-  </code>
-);
+const CopyableUrl = ({ url }) => {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
+  return (
+    <span className="d-inline-flex align-items-center" style={{ gap: '0.35rem' }}>
+      <code
+        className="small text-muted"
+        style={{ fontSize: '0.75rem', wordBreak: 'break-all' }}
+      >
+        {url}
+      </code>
+      <button
+        type="button"
+        className="btn btn-sm btn-link p-0 text-muted"
+        style={{ lineHeight: 1 }}
+        onClick={copy}
+        title={copied ? 'Copied!' : 'Copy URL'}
+        aria-label="Copy store URL"
+      >
+        <i className={copied ? 'bi bi-check2' : 'bi bi-clipboard'} />
+      </button>
+    </span>
+  );
+};
 
 // The hero store (the one with a hosted SeqCol API); falls back to the first.
 const heroStore = stores.find((s) => s.hero) || stores[0];
@@ -212,6 +236,7 @@ const ExplorePage = () => {
               <th>Store</th>
               <th>Description</th>
               <th className="text-end">Collections</th>
+              <th>URL</th>
               <th>Access</th>
             </tr>
           </thead>
@@ -224,6 +249,7 @@ const ExplorePage = () => {
                 </td>
                 <td className="text-muted small">{s.description}</td>
                 <td className="text-end">{fmtCount(s.url)}</td>
+                <td><CopyableUrl url={s.url} /></td>
                 <td className="text-nowrap small">
                   <Link to={`/explore-store/overview?url=${encodeURIComponent(s.url)}`}>
                     Browse store
