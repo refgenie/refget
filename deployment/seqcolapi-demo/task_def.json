@@ -16,7 +16,7 @@
       ],
       "command": null,
       "linuxParameters": null,
-      "cpu": 0,
+      "cpu": 32,
       "environment": [
         {
           "name": "REFGET_STORE_URL",
@@ -96,7 +96,7 @@
     "EC2"
   ],
   "networkMode": "bridge",
-  "cpu": "32",
+  "cpu": null,
   "revision": 1,
   "status": "ACTIVE",
   "inferenceAccelerators": null,
