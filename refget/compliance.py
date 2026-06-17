@@ -29,9 +29,19 @@ COMPLIANCE_TIMEOUT = 3  # seconds per request
 # Test data -- loaded from repository fixtures
 # ============================================================
 
-REPO_ROOT = Path(__file__).parent.parent
-_DIGESTS_FILE = REPO_ROOT / "test_fasta" / "test_fasta_digests.json"
-_COMPARISON_DIR = REPO_ROOT / "tests" / "api" / "comparison"
+# The compliance runner is a self-contained *client*: it must carry its own
+# known-answer fixtures so it can be pointed at any server and correctly FAIL
+# servers that don't serve the expected collections. The fixtures are bundled
+# into the installed wheel at refget/compliance_data/ (see pyproject.toml
+# force-include). Fall back to the repo-root source locations for a dev checkout.
+_PKG_DATA = Path(__file__).parent / "compliance_data"
+if (_PKG_DATA / "test_fasta_digests.json").exists():
+    _DIGESTS_FILE = _PKG_DATA / "test_fasta_digests.json"
+    _COMPARISON_DIR = _PKG_DATA / "comparison"
+else:
+    REPO_ROOT = Path(__file__).parent.parent
+    _DIGESTS_FILE = REPO_ROOT / "test_fasta" / "test_fasta_digests.json"
+    _COMPARISON_DIR = REPO_ROOT / "tests" / "api" / "comparison"
 
 # Lazy-loaded — these are only needed when running compliance checks
 DIGEST_DATA = None
@@ -428,14 +438,10 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
 
     Returns list of (name, function, args) tuples.
     """
-    fixtures_available = True
-    try:
-        _load_test_data()
-    except FileNotFoundError:
-        # Compliance fixtures aren't packaged with refget (expected on a
-        # pip-installed deploy). Run only the data-independent structure
-        # checks rather than crashing the whole endpoint.
-        fixtures_available = False
+    # Fixtures are bundled with the package, so this always succeeds. Content
+    # checks are the whole point of compliance — a server that doesn't serve the
+    # expected collections must FAIL them, not have them silently skipped.
+    _load_test_data()
     checks = []
 
     # Structure checks
@@ -444,11 +450,6 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
     for attr in ["lengths", "names", "sequences"]:
         checks.append((f"list_attributes_{attr}", check_list_attributes, [api_root, attr]))
     checks.append(("openapi_available", check_openapi_available, [api_root]))
-
-    # Content checks below require the test fixtures; skip them (rather than
-    # crash) when those fixtures aren't available.
-    if not fixtures_available:
-        return checks
 
     # Collection content checks (per FASTA file)
     for fa_name, bundle in DIGEST_TESTS:

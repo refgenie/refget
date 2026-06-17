@@ -52,6 +52,13 @@ Homepage = "https://github.com/refgenie/refget"
 [tool.hatch.version]
 path = "refget/_version.py"
 
+# Bundle the compliance known-answer fixtures into the installed package so the
+# compliance runner is self-contained on a pip-installed deploy (the source
+# files live at the repo root, outside the refget/ package).
+[tool.hatch.build.targets.wheel.force-include]
+"test_fasta/test_fasta_digests.json" = "refget/compliance_data/test_fasta_digests.json"
+"tests/api/comparison" = "refget/compliance_data/comparison"
+
 [tool.ruff]
 line-length = 99
 exclude = [
