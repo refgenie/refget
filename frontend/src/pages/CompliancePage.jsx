@@ -11,6 +11,14 @@ export const CompliancePage = () => {
   const [error, setError] = useState(null);
   const eventSourceRef = useRef(null);
 
+  // Accept a bare host (e.g. "seqcolapi-demo.databio.org") by defaulting to
+  // https:// when no scheme is given.
+  const normalizeUrl = (raw) => {
+    const t = raw.trim();
+    if (!t) return '';
+    return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+  };
+
   const runCompliance = () => {
     setLoading(true);
     setError(null);
@@ -19,8 +27,11 @@ export const CompliancePage = () => {
     setTotal(0);
     setServerUrl('');
 
-    const params = targetUrl.trim()
-      ? `?target_url=${encodeURIComponent(targetUrl.trim())}`
+    const normalized = normalizeUrl(targetUrl);
+    if (normalized !== targetUrl) setTargetUrl(normalized); // reflect back to the user
+
+    const params = normalized
+      ? `?target_url=${encodeURIComponent(normalized)}`
       : '';
     const url = `${API_BASE}/compliance/stream${params}`;
 
