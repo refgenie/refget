@@ -36,8 +36,10 @@ const CopyableUrl = ({ url }) => {
   );
 };
 
-// The hero store (the one with a hosted SeqCol API); falls back to the first.
+// The hero store (the flagship hosted SeqCol API); falls back to the first.
 const heroStore = stores.find((s) => s.hero) || stores[0];
+// Other (non-hero) stores that also expose a hosted SeqCol API.
+const otherApiStores = stores.filter((s) => s.api && !s.hero);
 
 const ExplorePage = () => {
   const jungleStoreUrl = heroStore.url;
@@ -129,10 +131,12 @@ const ExplorePage = () => {
       {/* SEQCOL API (hero — the one hosted API server, backed by the jungle store) */}
       <h4 className="fw-light mb-3">
         <i className="bi bi-hdd-network me-2" />
-        SeqCol API
+        SeqCol API Servers
       </h4>
       <p className="text-muted small mb-3">
-        The hosted Sequence Collections API, backed by the Reference Genome Jungle store.
+        Hosted Sequence Collections API servers. The flagship is backed by the Reference Genome
+        Jungle store; a second instance backs the Demo store as an always-green GA4GH compliance
+        reference.
       </p>
 
       <div className="card mb-5">
@@ -219,6 +223,49 @@ const ExplorePage = () => {
         </div>
       </div>
 
+      {/* Additional API servers (e.g. the demo / compliance-reference instance) */}
+      {otherApiStores.map((s) => (
+        <div className="card mb-5" key={s.api}>
+          <div className="card-header">
+            <h5 className="mb-0">
+              {s.name}
+              <span className="badge bg-success ms-2">API</span>
+            </h5>
+          </div>
+          <div className="card-body">
+            <p className="text-muted small mb-3">{s.description}</p>
+            <div className="mb-3">
+              <div className="d-flex align-items-center mb-1">
+                <span className="badge bg-success me-2">API</span>
+                <strong className="small">Sequence Collections API:</strong>
+                <span className="ms-2"><CopyableUrl url={s.api} /></span>
+              </div>
+              <div className="d-flex align-items-center mb-1">
+                <span className="badge bg-secondary me-2">Store</span>
+                <strong className="small">Store:</strong>
+                <span className="ms-2"><CopyableUrl url={s.url} /></span>
+              </div>
+              <div className="text-muted small mt-2">{fmtCount(s.url)} collections</div>
+            </div>
+            <div>
+              <a
+                href={`https://${s.api}`}
+                className="btn btn-outline-primary btn-sm me-2"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i className="bi bi-box-arrow-up-right me-1" />
+                Open API
+              </a>
+              <Link to="/compliance" className="btn btn-outline-success btn-sm">
+                <i className="bi bi-check2-circle me-1" />
+                Run compliance
+              </Link>
+            </div>
+          </div>
+        </div>
+      ))}
+
       {/* REFGETSTORES (table of all published stores, from src/data/stores.json) */}
       <h4 className="fw-light mb-3">
         <i className="bi bi-archive me-2" />
@@ -226,7 +273,8 @@ const ExplorePage = () => {
       </h4>
       <p className="text-muted small mb-3">
         All publicly published RefgetStores. Browse any of them in the store explorer (read directly from S3,
-        no server required). Only the jungle additionally has a hosted SeqCol API.
+        no server required). Stores marked <span className="badge bg-success">API</span> also have a hosted
+        SeqCol API.
       </p>
 
       <div className="table-responsive mb-4">

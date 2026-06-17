@@ -33,7 +33,8 @@
   },
   {
     "name": "Demo",
-    "description": "Small test FASTAs for development and CI.",
-    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/demo/"
+    "description": "Small test FASTAs for development and CI; the GA4GH compliance reference (passes all checks).",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/demo/",
+    "api": "seqcolapi-demo.databio.org"
   }
 ]
