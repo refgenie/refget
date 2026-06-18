@@ -42,7 +42,6 @@ from refget.utils import (
     canonical_str,
 )
 
-
 # ---------------------------------------------------------------------------
 # Extraction from file headers
 # ---------------------------------------------------------------------------
@@ -178,9 +177,7 @@ def compute_snlp_digest(names: list[str], lengths: list[int]) -> str:
     return sha512t24u_digest(canonical_str(snlp_digests))
 
 
-def compute_all_digests(
-    names: list[str], lengths: list[int]
-) -> dict[str, str]:
+def compute_all_digests(names: list[str], lengths: list[int]) -> dict[str, str]:
     """Compute NLP and SNLP digests from names and lengths.
 
     Returns:
@@ -247,7 +244,9 @@ def main(argv: list[str] | None = None) -> int:
             continue
 
         if not names:
-            print(f"Warning: {file_path} has no sequence/contig entries in header.", file=sys.stderr)
+            print(
+                f"Warning: {file_path} has no sequence/contig entries in header.", file=sys.stderr
+            )
             errors += 1
             continue
 
@@ -272,7 +271,9 @@ def main(argv: list[str] | None = None) -> int:
 
         print()
         if len(nlp_values) == 1:
-            print("All files share the SAME coordinate system (identical names, lengths, and order).")
+            print(
+                "All files share the SAME coordinate system (identical names, lengths, and order)."
+            )
         elif len(snlp_values) == 1:
             print(
                 "Files have the same coordinate system but DIFFERENT contig ordering "

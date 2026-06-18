@@ -56,9 +56,7 @@ class TestVrsCompute:
     def test_compute_json(self, cli, tmp_path):
         """--json emits a list of VRS dicts."""
         store_path, digest, vcf = _setup_store(cli, tmp_path)
-        result = cli(
-            "vrs", "compute", digest, str(vcf), "--json", "--path", str(store_path)
-        )
+        result = cli("vrs", "compute", digest, str(vcf), "--json", "--path", str(store_path))
         assert result.exit_code == 0, result.stdout
         data = json.loads(result.stdout)
         assert isinstance(data, list)
@@ -71,9 +69,7 @@ class TestVrsCompute:
         """--output writes JSON results to a file."""
         store_path, digest, vcf = _setup_store(cli, tmp_path)
         out = tmp_path / "vrs.json"
-        result = cli(
-            "vrs", "compute", digest, str(vcf), "-o", str(out), "--path", str(store_path)
-        )
+        result = cli("vrs", "compute", digest, str(vcf), "-o", str(out), "--path", str(store_path))
         assert result.exit_code == 0, result.stdout
         assert out.exists()
         data = json.loads(out.read_text())

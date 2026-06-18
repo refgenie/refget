@@ -95,8 +95,7 @@ def compute(
         print_json(results)
     else:
         lines = [
-            f"{r['chrom']}\t{r['pos']}\t{r['ref']}\t{r['alt']}\t{r['vrs_id']}"
-            for r in results
+            f"{r['chrom']}\t{r['pos']}\t{r['ref']}\t{r['alt']}\t{r['vrs_id']}" for r in results
         ]
         if lines:
             print("\n".join(lines))

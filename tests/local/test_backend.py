@@ -170,15 +170,11 @@ class TestRefgetStoreBackend:
         seqcol = backend.get_collection(BASE_DIGEST)
         result = backend.compute_similarities(seqcol)
 
-        entry = next(
-            s for s in result["similarities"] if s["digest"] == BASE_DIGEST
-        )
+        entry = next(s for s in result["similarities"] if s["digest"] == BASE_DIGEST)
         assert "hg38_base" in entry["human_readable_names"]
 
         # A collection with no aliases yields an empty list, not a skipped entry.
-        other = next(
-            s for s in result["similarities"] if s["digest"] == DIFFERENT_NAMES_DIGEST
-        )
+        other = next(s for s in result["similarities"] if s["digest"] == DIFFERENT_NAMES_DIGEST)
         assert other["human_readable_names"] == []
 
 
