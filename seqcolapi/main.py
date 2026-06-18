@@ -294,7 +294,6 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
     @store_app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
     async def store_service_info():
         import json as _json
-        from pathlib import Path as _Path
 
         backend = getattr(store_app.state, "backend", None)
         caps = backend.capabilities() if backend and hasattr(backend, "capabilities") else {}

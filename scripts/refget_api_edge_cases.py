@@ -114,7 +114,7 @@ def main():
             elif status == 501:
                 interp = "Not Implemented"
             else:
-                interp = f"Other"
+                interp = "Other"
 
         print(f"{r['name']:<35} {status:<8} {content:<15} {interp}")
 
