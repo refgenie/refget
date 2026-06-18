@@ -205,7 +205,7 @@ const NetworkGraph = ({
       .attr('class', 'digest-point')
       .attr('cx', (d) => d.x)
       .attr('cy', (d) => d.y)
-      .attr('r', (d) => 6)
+      .attr('r', () => 6)
       .style('fill', (d) => (connectionCount[d.id] > 0 ? 'black' : '#cccccc')) // Gray out isolated nodes
       .style('stroke', 'white')
       .style('stroke-width', 3)

@@ -77,7 +77,7 @@ const AliasPanel = ({ type, availableNamespaces }) => {
         {filtered && (
           <>
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="text-muted small">{filtered.length} aliases in "{namespace}"</span>
+              <span className="text-muted small">{filtered.length} aliases in &quot;{namespace}&quot;</span>
               <input
                 type="search"
                 className="form-control form-control-sm"

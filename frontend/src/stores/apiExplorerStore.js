@@ -21,7 +21,7 @@ const saveRecentApi = (url) => {
   );
 };
 
-export const useApiExplorerStore = create((set, get) => ({
+export const useApiExplorerStore = create((set, _get) => ({
   apiUrl: null,
   serviceInfo: null,
   apiAvailable: false,

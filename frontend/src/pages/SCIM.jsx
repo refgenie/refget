@@ -61,7 +61,7 @@ const SCIM = () => {
     // Parse JSON with error handling
     try {
       parsedComparison = JSON.parse(comparisonStr);
-    } catch (error) {
+    } catch {
       toast.error(
         <span>
           <strong>Error:</strong> Invalid JSON format. Please check your input.

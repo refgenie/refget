@@ -24,7 +24,6 @@ import { APIExplorer } from './pages/APIExplorer.jsx';
 import { APICollections } from './pages/APICollections.jsx';
 import { APICollectionView } from './pages/APICollectionView.jsx';
 import { APICompare } from './pages/APICompare.jsx';
-import { APICompliance } from './pages/APICompliance.jsx';
 
 // Store Explorer pages
 import { StoreExplorer } from './pages/StoreExplorer.jsx';
@@ -48,7 +47,6 @@ import {
   fetchServiceInfo,
   fetchPangenomeLevels,
   fetchAllSeqCols,
-  fetchCollectionLevels,
   fetchComparison,
   fetchAttribute,
 } from './services/fetchData.jsx';

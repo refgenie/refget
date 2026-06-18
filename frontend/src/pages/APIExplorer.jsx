@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApiExplorerStore } from '../stores/apiExplorerStore.js';
 
 const RECENT_APIS_KEY = 'refget-explorer-recent-apis';
-const MAX_RECENT = 5;
 
 const getRecentApis = () => {
   try {

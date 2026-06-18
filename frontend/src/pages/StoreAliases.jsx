@@ -11,26 +11,6 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('');
 
-  const handleLoad = async (e) => {
-    e?.preventDefault();
-    if (!namespace.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await loadAliases(type, namespace.trim());
-      if (!data) {
-        setError(`Namespace "${namespace}" not found.`);
-        setAliases(null);
-      } else {
-        setAliases(data);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleNamespaceClick = (ns) => {
     setNamespace(ns);
     setFilter('');
@@ -104,7 +84,7 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
           <>
             <div className="d-flex justify-content-between align-items-center mb-2">
               <span className="text-muted small">
-                {filtered.length} aliases in "{namespace}"
+                {filtered.length} aliases in &quot;{namespace}&quot;
               </span>
               <input
                 type="search"

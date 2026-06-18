@@ -6,9 +6,7 @@ import { ExplorerNav } from '../components/ExplorerNav.jsx';
 import { CliCommand } from '../components/CliSnippet.jsx';
 import { SequenceTable } from '../components/SequenceTable.jsx';
 import { fetchCollectionLevels, fetchAttribute } from '../services/fetchData.jsx';
-import { CopyableDigest } from '../components/CopyableDigest.jsx';
 import {
-  AttributeValue,
   LinkedAttributeDigest,
 } from '../components/ValuesAndDigests.jsx';
 
@@ -62,7 +60,7 @@ const ExplorerCollection = () => {
             try {
               const related = await fetchAttribute('sorted_name_length_pairs', snlp, apiUrl);
               setRelatedCollections(related[0]?.results?.filter((d) => d !== digest) || []);
-            } catch {}
+            } catch { /* related collections are optional; ignore failures */ }
           }
         }
       } catch (err) {

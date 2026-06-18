@@ -9,7 +9,7 @@ import { fetchCollectionIndex } from '../services/storeService.js';
 const Explorer = () => {
   const { hasStore, hasAPI, storeUrl, apiUrl, storeCollections, probe, probed, loading: probing } =
     useUnifiedStore();
-  const { loadStore, metadata, loadAliases } = useExplorerStore();
+  const { loadStore, loadAliases } = useExplorerStore();
   const [apiCollections, setApiCollections] = useState(null);
   const [aliasMap, setAliasMap] = useState({});
   const [filter, setFilter] = useState('');
@@ -35,7 +35,7 @@ const Explorer = () => {
       if (hasStore && storeUrl) {
         try {
           await loadStore(storeUrl);
-        } catch {}
+        } catch { /* store load is best-effort; ignore failures */ }
         // Try to load collection aliases
         try {
           const storeData = useExplorerStore.getState();
@@ -51,7 +51,7 @@ const Explorer = () => {
             }
           }
           setAliasMap(map);
-        } catch {}
+        } catch { /* aliases are optional; ignore failures */ }
       }
 
       // Load API collection list if available
@@ -59,7 +59,7 @@ const Explorer = () => {
         try {
           const result = await fetchSeqColList(apiUrl);
           setApiCollections(result[0]);
-        } catch {}
+        } catch { /* API list is optional; ignore failures */ }
       }
 
       setLoading(false);

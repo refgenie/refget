@@ -1,13 +1,12 @@
 import { Link, useLoaderData, useParams } from 'react-router-dom';
 import {
   AttributeValue,
-  LinkedAttributeDigest,
 } from '../components/ValuesAndDigests.jsx';
 
 import { API_BASE } from '../utilities.jsx';
 
 // Basic View of a Pangenome object
-const PangenomeView = ({ params }) => {
+const PangenomeView = () => {
   const pangenome = useLoaderData();
   const { digest } = useParams();
 
