@@ -42,7 +42,9 @@ const SequenceTable = ({ sequences, storeUrl, sortable = false }) => {
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
   const paged = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const SortIcon = ({ col }) => {
+  // Plain render helper (not a component) so it isn't re-created as a new
+  // component type on every render.
+  const renderSortIcon = (col) => {
     if (!sortable || sortCol !== col) return null;
     return <i className={`bi bi-caret-${sortAsc ? 'up' : 'down'}-fill ms-1`} />;
   };
@@ -56,13 +58,13 @@ const SequenceTable = ({ sequences, storeUrl, sortable = false }) => {
           <thead>
             <tr>
               <th style={thStyle} onClick={() => handleSort('name')}>
-                Name<SortIcon col="name" />
+                Name{renderSortIcon('name')}
               </th>
               <th className="text-end" style={thStyle} onClick={() => handleSort('length')}>
-                Length<SortIcon col="length" />
+                Length{renderSortIcon('length')}
               </th>
               <th style={thStyle} onClick={() => handleSort('sha512t24u')}>
-                SHA-512/24u<SortIcon col="sha512t24u" />
+                SHA-512/24u{renderSortIcon('sha512t24u')}
               </th>
               <th style={{ width: '1%' }}></th>
             </tr>

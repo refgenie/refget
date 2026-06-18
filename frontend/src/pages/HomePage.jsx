@@ -15,18 +15,8 @@ const HomePage = () => {
   const pangenomes = loaderData[1];
   const name_length_pairs = loaderData[2];
 
-  const PangenomeExamplesList = () => {
-    if (pangenomes && pangenomes.results && pangenomes.results.length > 0) {
-      return (
-        <>
-          <h3>Example Pangenomes:</h3>
-          <PangenomeList pangenomes={pangenomes} />
-        </>
-      );
-    } else {
-      return '';
-    }
-  };
+  const hasPangenomeExamples =
+    pangenomes && pangenomes.results && pangenomes.results.length > 0;
 
   return (
     <div className='home mb-5'>
@@ -89,7 +79,12 @@ const HomePage = () => {
           <Link to='/hprc'>HPRC genomes</Link>
         </li>
       </ul>
-      <PangenomeExamplesList />
+      {hasPangenomeExamples && (
+        <>
+          <h3>Example Pangenomes:</h3>
+          <PangenomeList pangenomes={pangenomes} />
+        </>
+      )}
 
       <h5 className='mt-4'>5. List of name_length_pairs on this server:</h5>
       <p className='text-muted fs-6'>

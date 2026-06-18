@@ -37,7 +37,6 @@ function createWorker() {
 
 // Type-filtered genome picker. Filters across every alias (genome_assembly,
 // name, accession, …) so "hg38", "GRCh38", or "GCF_000001405.39" all find it.
-/* eslint-disable react/prop-types */
 function GenomeSelect({ genomes, selected, onSelect, disabled }) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -116,11 +115,9 @@ function GenomeSelect({ genomes, selected, onSelect, disabled }) {
     </div>
   );
 }
-/* eslint-enable react/prop-types */
 
 // Modal listing a genome's sequence names so the user knows exactly which names
 // their VCF / HGVS must use. Filterable; names are copyable.
-/* eslint-disable react/prop-types */
 function GenomeInspector({ info, onClose }) {
   const [q, setQ] = useState('');
   const filtered = useMemo(() => {
@@ -205,7 +202,6 @@ function GenomeInspector({ info, onClose }) {
     </div>
   );
 }
-/* eslint-enable react/prop-types */
 
 export function VrsConverter() {
   const [storeUrl, setStoreUrl] = useState('');
