@@ -32,6 +32,7 @@ BASE_URL = "https://www.ebi.ac.uk/ena/cram"
 SEQ_ID = "f1f8f4bf413b16ad135722aa4591043e"  # ACGT, length 4
 SEQ_LENGTH = 4
 
+
 def test_case(name, url, headers=None):
     """Run a test case and return results."""
     try:
@@ -44,6 +45,7 @@ def test_case(name, url, headers=None):
     except Exception as e:
         return {"name": name, "error": str(e)}
 
+
 def main():
     print("=" * 70)
     print("Refget Sequence API Edge Case Tests (Issue #107)")
@@ -55,24 +57,24 @@ def main():
         # Baseline
         ("Full sequence (no params)", f"{BASE_URL}/sequence/{SEQ_ID}", None),
         ("Both start=1 and end=3", f"{BASE_URL}/sequence/{SEQ_ID}?start=1&end=3", None),
-
         # Independent parameter tests
         ("start only (start=2)", f"{BASE_URL}/sequence/{SEQ_ID}?start=2", None),
         ("end only (end=2)", f"{BASE_URL}/sequence/{SEQ_ID}?end=2", None),
-
         # Out of bounds end tests
         ("end > length (end=100)", f"{BASE_URL}/sequence/{SEQ_ID}?start=0&end=100", None),
         ("end = length (end=4)", f"{BASE_URL}/sequence/{SEQ_ID}?start=0&end=4", None),
         ("end = length+1 (end=5)", f"{BASE_URL}/sequence/{SEQ_ID}?start=0&end=5", None),
-
         # Out of bounds start tests
         ("start > length (start=100)", f"{BASE_URL}/sequence/{SEQ_ID}?start=100&end=101", None),
         ("start = length (start=4)", f"{BASE_URL}/sequence/{SEQ_ID}?start=4&end=5", None),
-
         # Range header tests
         ("Range: bytes=0-1", f"{BASE_URL}/sequence/{SEQ_ID}", {"Range": "bytes=0-1"}),
         ("Range: bytes=2-99 (end>len)", f"{BASE_URL}/sequence/{SEQ_ID}", {"Range": "bytes=2-99"}),
-        ("Range: bytes=99-100 (start>len)", f"{BASE_URL}/sequence/{SEQ_ID}", {"Range": "bytes=99-100"}),
+        (
+            "Range: bytes=99-100 (start>len)",
+            f"{BASE_URL}/sequence/{SEQ_ID}",
+            {"Range": "bytes=99-100"},
+        ),
     ]
 
     results = []
@@ -102,7 +104,7 @@ def main():
             status = "ERR"
         else:
             status = r["status"]
-            content = f"'{r['content']}'" if r['content'] else "(empty)"
+            content = f"'{r['content']}'" if r["content"] else "(empty)"
             if status == 200:
                 interp = "OK"
             elif status == 206:
@@ -124,6 +126,7 @@ def main():
     print("  - start > length: 416 Range Not Satisfiable (for Range header)")
     print("  - start > length: 400 Bad Request (for query params per spec)")
     print("=" * 70)
+
 
 if __name__ == "__main__":
     main()
