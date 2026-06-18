@@ -39,6 +39,9 @@ const SCIM = () => {
           null,
           2,
         );
+        // Initializing form state from the URL query param is intentional
+        // synchronization with an external source.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setComparisonStr(prettyComparison);
 
         const parsedComparison = JSON.parse(decodedComparisonFromQuery);

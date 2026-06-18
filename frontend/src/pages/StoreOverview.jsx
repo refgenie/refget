@@ -29,6 +29,9 @@ const StoreOverview = () => {
   // Auto-load sequence index (fetchSequenceIndex handles size check internally)
   useEffect(() => {
     if (metadata && !sequenceIndex && !seqLoading) {
+      // Lazy-load the sequence index once metadata arrives; this is a
+      // load-on-mount data fetch, so the setState is intentional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSeqLoading(true);
       loadSequenceIndex()
         .catch(() => {})

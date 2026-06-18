@@ -31,7 +31,6 @@ const SCOM = () => {
     setCustomCollectionName,
     customCollectionJSON,
     setCustomCollectionJSON,
-    customCount,
     setCustomCount,
     similarities,
     setSimilarities,
@@ -70,12 +69,18 @@ const SCOM = () => {
           setCustomCollectionJSON(JSON.stringify(json, null, 2));
           setCustomCollectionName(name || '');
           localStorage.removeItem('scom-prefill');
+          // Prefilling state from the URL/localStorage on navigation is the
+          // intended effect behavior; the !pendingPrefill guard prevents loops.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setPendingPrefill({ json, name });
         } catch (e) {
           console.error('Failed to load prefill data:', e);
         }
       }
     }
+    // Intentionally keyed on searchParams only: this runs once per navigation
+    // and is guarded by !pendingPrefill. The setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Handle digest query parameter - fetch collection and prefill
@@ -103,6 +108,9 @@ const SCOM = () => {
       };
       loadFromDigest();
     }
+    // Intentionally keyed on searchParams only: this runs once per navigation
+    // and is guarded by !pendingPrefill. The setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const selectedCollections = allCollections.filter(
@@ -401,11 +409,15 @@ const SCOM = () => {
       resetSort();
       setIsLoading(false);
     }
-  }, [species, relationship, collections, customCollections, customCount, setCustomCollections, setSelectedCollectionsIndex, setCustomCount, resetSort, setIsLoading, setStoreError]);
+  }, [species, relationship, collections, setCustomCollections, setSelectedCollectionsIndex, setCustomCount, resetSort, setIsLoading, setStoreError]);
 
   // Auto-submit prefilled data (wait for collections to be ready)
   useEffect(() => {
     if (pendingPrefill && !isLoading && collections?.results) {
+      // One-shot auto-submit of prefilled data once collections are ready, then
+      // clear the prefill flag so this doesn't re-run. Both calls update state
+      // intentionally (submission + flag reset), guarded by pendingPrefill.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleAddCustomCollection(JSON.stringify(pendingPrefill.json), pendingPrefill.name || '');
       setPendingPrefill(null);
     }
@@ -429,7 +441,7 @@ const SCOM = () => {
     };
 
     fetchAllSimilarities();
-  }, [selectedCollectionsIndex, customCollections]);
+  }, [selectedCollectionsIndex, customCollections, collections.results.length, setSimilarities]);
 
   const handleSortTable = (column) => {
     sortByColumn(column);

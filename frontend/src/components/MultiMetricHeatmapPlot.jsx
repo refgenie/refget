@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import embed from 'vega-embed';
 
 import { snakeToTitle } from '../utilities';
@@ -6,7 +6,7 @@ import { snakeToTitle } from '../utilities';
 const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_length_pairs', 'names', 'sequences', 'sorted_sequences'] }) => {
   const plotRef = useRef(null);
 
-  const transformData = (similarities, metrics) => {
+  const transformData = useCallback((similarities, metrics) => {
     const transformedData = [];
     
     similarities.forEach(row => {
@@ -23,11 +23,11 @@ const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_leng
     });
     
     return transformedData;
-  };
+  }, []);
 
   const metricCount = metrics.length;
 
-  const heatmapSpec = (similarities, metrics) => {
+  const heatmapSpec = useCallback((similarities, metrics) => {
     const transformedData = transformData(similarities, metrics);
     
     return {
@@ -100,13 +100,14 @@ const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_leng
       width: 'container',
       height: metricCount * 15,
     };
-  };
+  }, [transformData, metricCount]);
 
   useEffect(() => {
-    if (plotRef.current && similarities && metrics.length > 0) {
+    const node = plotRef.current;
+    if (node && similarities && metrics.length > 0) {
       const spec = heatmapSpec(similarities, metrics);
       try {
-        embed(plotRef.current, spec, {
+        embed(node, spec, {
           actions: true,
           config: {
             baseURL: '',
@@ -120,11 +121,11 @@ const MultiMetricHeatmapPlot = ({ similarities, metrics = ['lengths', 'name_leng
     }
 
     return () => {
-      if (plotRef.current) {
-        plotRef.current.innerHTML = '';
+      if (node) {
+        node.innerHTML = '';
       }
     };
-  }, [similarities, metrics]);
+  }, [similarities, metrics, heatmapSpec]);
 
   return <div className='w-100' ref={plotRef} />;
 };

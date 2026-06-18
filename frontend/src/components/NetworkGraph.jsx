@@ -267,7 +267,7 @@ const NetworkGraph = ({
       .style('pointer-events', 'none')
       .style('opacity', (d) => (connectionCount[d.id] > 0 ? 1.0 : 0.7))
       .text((d) => d.shortId);
-  }, [similarities, metric, tension, threshold]);
+  }, [similarities, metric, tension, threshold, selectedCount]);
 
   useEffect(() => {
     // Initial draw

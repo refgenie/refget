@@ -1,19 +1,18 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import embed from 'vega-embed';
 
 import { snakeToTitle } from '../utilities';
 
+const metrics = [
+  'lengths',
+  'sequences',
+  'sorted_sequences',
+  'name_length_pairs',
+  'names',
+];
+
 const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orientation = 'horizontal' }) => {
   const plotRef = useRef(null);
-
-  // const comparedCount = [...new Set(similarities.map((e) => e.comparedSeqcol))].length;
-  const metrics = [
-    'lengths',
-    'sequences',
-    'sorted_sequences',
-    'name_length_pairs',
-    'names',
-  ];
 
   const getPlottedRowCount = (similarities, metrics) => {
     const rowsWithData = new Set();
@@ -29,7 +28,7 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
   };
   const plottedRowCount = getPlottedRowCount(similarities, metrics);
 
-  const stripSpec = (similarities, jitter, pointSize) => {
+  const stripSpec = useCallback((similarities, jitter, pointSize) => {
     const transformedData = similarities.flatMap((item) => {
       return metrics
         .filter((metric) => item[metric] !== undefined)
@@ -608,13 +607,14 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
         };
 
     }
-  };
+  }, [orientation, plottedRowCount]);
 
   useEffect(() => {
-    if (plotRef.current && similarities) {
+    const node = plotRef.current;
+    if (node && similarities) {
       const spec = stripSpec(similarities, jitter, pointSize);
       try {
-        embed(plotRef.current, spec, { actions: true }).catch((error) => {
+        embed(node, spec, { actions: true }).catch((error) => {
           console.error('Embed error after parsing:', error);
         });
       } catch (error) {
@@ -623,11 +623,11 @@ const StripPlot = ({ similarities, jitter = 'none', pointSize = 'normal', orient
     }
 
     return () => {
-      if (plotRef.current) {
-        plotRef.current.innerHTML = '';
+      if (node) {
+        node.innerHTML = '';
       }
     };
-  }, [similarities, jitter, pointSize]);
+  }, [similarities, jitter, pointSize, stripSpec]);
 
   return <div className='w-100' ref={plotRef} />;
 };
