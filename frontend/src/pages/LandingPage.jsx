@@ -175,7 +175,7 @@ const LandingPage = () => {
               Checking coordinate system compatibility?
             </div>
             <div className="col-md-7 ps-3 border-start text-muted">
-              Compare <code>sorted_name_length_pairs</code> to check if "chr1" and "1" map to the same positions.
+              Compare <code>sorted_name_length_pairs</code> to check if &quot;chr1&quot; and &quot;1&quot; map to the same positions.
             </div>
           </div>
 

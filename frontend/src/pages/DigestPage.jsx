@@ -73,8 +73,10 @@ export function DigestPage() {
   const [stats, setStats] = useState(null);
   const workerRef = useRef(null);
 
-  // Load history on mount
+  // Load history on mount: initializing state from an external source
+  // (localStorage) is the intended use of an effect here.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHistory(getHistory());
   }, []);
 
@@ -84,6 +86,9 @@ export function DigestPage() {
     if (key) {
       const stored = loadFromHistory(key);
       if (stored) {
+        // Restoring state from the URL/history is intentional synchronization
+        // with an external source on navigation.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResult(stored.result);
         setFileName(stored.fileName);
       }

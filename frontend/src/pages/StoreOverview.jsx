@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { StoreNav } from '../components/StoreNav.jsx';
 import { RowCodeButton } from '../components/CliSnippet.jsx';
 
 const StoreOverview = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { storeUrl, metadata, sequenceIndex, collections, loading, loadStore, loadSequenceIndex } =
     useExplorerStore();
   const [seqLoading, setSeqLoading] = useState(false);
@@ -30,6 +29,9 @@ const StoreOverview = () => {
   // Auto-load sequence index (fetchSequenceIndex handles size check internally)
   useEffect(() => {
     if (metadata && !sequenceIndex && !seqLoading) {
+      // Lazy-load the sequence index once metadata arrives; this is a
+      // load-on-mount data fetch, so the setState is intentional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSeqLoading(true);
       loadSequenceIndex()
         .catch(() => {})

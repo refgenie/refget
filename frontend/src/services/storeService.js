@@ -124,7 +124,7 @@ export const fetchSequenceIndex = async (baseUrl, { maxBytes } = {}) => {
   const url = `${normalizeUrl(baseUrl)}/sequences.rgsi`;
 
   // Check file size first
-  let totalSize = 0;
+  let totalSize;
   try {
     const head = await fetch(url, { method: 'HEAD' });
     if (!head.ok) {
@@ -136,7 +136,7 @@ export const fetchSequenceIndex = async (baseUrl, { maxBytes } = {}) => {
     if (err.message.includes('not found')) throw err;
     // HEAD failed (CORS?), fall back to full fetch
     const response = await fetchFile(url);
-    if (!response) throw new Error('sequences.rgsi not found');
+    if (!response) throw new Error('sequences.rgsi not found', { cause: err });
     const text = await response.text();
     return { rows: parseSequenceRows(text), partial: false, totalSize: text.length };
   }
