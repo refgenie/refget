@@ -34,6 +34,15 @@ export default [
     },
     rules: {
       'react/jsx-no-target-blank': 'off',
+      // React 19 removed PropTypes from core. Adding PropTypes declarations
+      // would be a regression; runtime prop validation is no longer the
+      // recommended approach (use TypeScript or leave untyped). Disable.
+      'react/prop-types': 'off',
+      // Allow intentionally-unused vars/args via a leading underscore.
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
