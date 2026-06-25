@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { StoreNav } from '../components/StoreNav.jsx';
+
+const PAGE_SIZE = 50;
 
 const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
   const { loadAliases } = useExplorerStore();
@@ -10,6 +12,7 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('');
+  const [page, setPage] = useState(0);
 
   const handleLoad = async (e) => {
     e?.preventDefault();
@@ -34,6 +37,7 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
   const handleNamespaceClick = (ns) => {
     setNamespace(ns);
     setFilter('');
+    setPage(0);
     setError(null);
     setLoading(true);
     loadAliases(type, ns)
@@ -49,14 +53,19 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
       .finally(() => setLoading(false));
   };
 
-  const filtered = aliases
-    ? aliases.filter(
-        (a) =>
-          !filter ||
-          a.alias.toLowerCase().includes(filter.toLowerCase()) ||
-          a.digest.toLowerCase().includes(filter.toLowerCase()),
-      )
-    : null;
+  const filtered = useMemo(() => {
+    if (!aliases) return null;
+    const term = filter.toLowerCase();
+    return aliases.filter(
+      (a) =>
+        !term ||
+        a.alias.toLowerCase().includes(term) ||
+        a.digest.toLowerCase().includes(term),
+    );
+  }, [aliases, filter]);
+
+  const totalPages = filtered ? Math.ceil(filtered.length / PAGE_SIZE) : 0;
+  const paged = filtered ? filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : null;
 
   const linkPrefix =
     type === 'sequences'
@@ -112,7 +121,7 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
                 style={{ maxWidth: '250px' }}
                 placeholder="Filter..."
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={(e) => { setFilter(e.target.value); setPage(0); }}
               />
             </div>
             <div className="table-responsive" style={{ maxHeight: '400px' }}>
@@ -124,8 +133,8 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((a, i) => (
-                    <tr key={`${a.alias}-${i}`}>
+                  {paged.map((a) => (
+                    <tr key={a.alias}>
                       <td>{a.alias}</td>
                       <td className="font-monospace small">
                         {linkPrefix ? (
@@ -143,6 +152,27 @@ const AliasNamespacePanel = ({ type, storeUrlParam, availableNamespaces }) => {
                 </tbody>
               </table>
             </div>
+            {totalPages > 1 && (
+              <nav>
+                <ul className="pagination pagination-sm justify-content-center">
+                  <li className={`page-item ${page === 0 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setPage(page - 1)}>
+                      Previous
+                    </button>
+                  </li>
+                  <li className="page-item disabled">
+                    <span className="page-link">
+                      Page {page + 1} of {totalPages}
+                    </span>
+                  </li>
+                  <li className={`page-item ${page >= totalPages - 1 ? 'disabled' : ''}`}>
+                    <button className="page-link" onClick={() => setPage(page + 1)}>
+                      Next
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            )}
           </>
         )}
       </div>
