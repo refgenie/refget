@@ -1,52 +1,46 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedStore } from '../stores/unifiedStore.js';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { ExplorerNav } from '../components/ExplorerNav.jsx';
+import { PaginationNav } from '../components/PaginationNav.jsx';
+import { PartialLoadBanner } from '../components/PartialLoadBanner.jsx';
+import { usePagedList } from '../hooks/usePagedList.js';
 
-const PAGE_SIZE = 50;
+const aliasFilter = (a, term) =>
+  a.alias.toLowerCase().includes(term) || a.digest.toLowerCase().includes(term);
 
 const AliasPanel = ({ type, availableNamespaces }) => {
   const { loadAliases } = useExplorerStore();
   const [namespace, setNamespace] = useState('');
-  const [aliases, setAliases] = useState(null);
+  const [aliasData, setAliasData] = useState(null); // { rows, partial, totalSize }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('');
-  const [page, setPage] = useState(0);
 
-  const handleNamespaceClick = (ns) => {
-    setNamespace(ns);
-    setFilter('');
-    setPage(0);
+  const { filter, setFilter, page, setPage, paged, filtered, totalPages } =
+    usePagedList(aliasData?.rows, { filterFn: aliasFilter });
+
+  const loadNamespace = (ns, options) => {
     setError(null);
     setLoading(true);
-    loadAliases(type, ns)
+    loadAliases(type, ns, options)
       .then((data) => {
         if (!data) {
           setError(`Namespace "${ns}" not found.`);
-          setAliases(null);
+          setAliasData(null);
         } else {
-          setAliases(data);
+          setAliasData(data);
         }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   };
 
-  const filtered = useMemo(() => {
-    if (!aliases) return null;
-    const term = filter.toLowerCase();
-    return aliases.filter(
-      (a) =>
-        !term ||
-        a.alias.toLowerCase().includes(term) ||
-        a.digest.toLowerCase().includes(term),
-    );
-  }, [aliases, filter]);
-
-  const totalPages = filtered ? Math.ceil(filtered.length / PAGE_SIZE) : 0;
-  const paged = filtered ? filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE) : null;
+  const handleNamespaceClick = (ns) => {
+    setNamespace(ns);
+    setFilter('');
+    loadNamespace(ns);
+  };
 
   const linkPrefix = type === 'collections' ? '/collection/' : null;
 
@@ -82,17 +76,29 @@ const AliasPanel = ({ type, availableNamespaces }) => {
 
         {error && <div className="alert alert-warning small py-2">{error}</div>}
 
-        {filtered && (
+        {aliasData && (
           <>
+            {aliasData.partial && (
+              <PartialLoadBanner
+                totalSize={aliasData.totalSize}
+                loadedCount={aliasData.rows.length}
+                noun="aliases"
+                onLoadAll={() => loadNamespace(namespace, { maxBytes: aliasData.totalSize })}
+                loading={loading}
+              />
+            )}
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="text-muted small">{filtered.length} aliases in &quot;{namespace}&quot;</span>
+              <span className="text-muted small">
+                {filtered.length.toLocaleString()} aliases in &quot;{namespace}&quot;
+                {aliasData.partial && ' (partial)'}
+              </span>
               <input
                 type="search"
                 className="form-control form-control-sm"
                 style={{ maxWidth: '250px' }}
                 placeholder="Filter..."
                 value={filter}
-                onChange={(e) => { setFilter(e.target.value); setPage(0); }}
+                onChange={(e) => setFilter(e.target.value)}
               />
             </div>
             <div className="table-responsive" style={{ maxHeight: '400px' }}>
@@ -105,7 +111,7 @@ const AliasPanel = ({ type, availableNamespaces }) => {
                 </thead>
                 <tbody>
                   {paged.map((a) => (
-                    <tr key={a.alias}>
+                    <tr key={`${a.alias}-${a.digest}`}>
                       <td>{a.alias}</td>
                       <td className="font-monospace small">
                         {linkPrefix ? (
@@ -119,27 +125,7 @@ const AliasPanel = ({ type, availableNamespaces }) => {
                 </tbody>
               </table>
             </div>
-            {totalPages > 1 && (
-              <nav>
-                <ul className="pagination pagination-sm justify-content-center">
-                  <li className={`page-item ${page === 0 ? 'disabled' : ''}`}>
-                    <button className="page-link" onClick={() => setPage(page - 1)}>
-                      Previous
-                    </button>
-                  </li>
-                  <li className="page-item disabled">
-                    <span className="page-link">
-                      Page {page + 1} of {totalPages}
-                    </span>
-                  </li>
-                  <li className={`page-item ${page >= totalPages - 1 ? 'disabled' : ''}`}>
-                    <button className="page-link" onClick={() => setPage(page + 1)}>
-                      Next
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-            )}
+            <PaginationNav page={page} totalPages={totalPages} onChange={setPage} />
           </>
         )}
       </div>
