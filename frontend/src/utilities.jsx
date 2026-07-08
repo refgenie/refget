@@ -20,6 +20,13 @@ const copyToClipboard = async (text) => {
 const snakeToTitle = (str) =>
   str.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
+// Human-readable byte size (e.g. 2.0 MB).
+const formatBytes = (bytes) => {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
 // Unicode-safe base64 encoding
 // Handles all Unicode characters including non-ASCII sequences
 const encodeToBase64 = (str) => {
@@ -57,6 +64,7 @@ export {
   copyToClipboard,
   copyToClipboardIcon,
   snakeToTitle,
+  formatBytes,
   encodeComparison,
   encodeToBase64,
   decodeFromBase64,

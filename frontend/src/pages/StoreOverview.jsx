@@ -3,6 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { StoreNav } from '../components/StoreNav.jsx';
 import { RowCodeButton } from '../components/CliSnippet.jsx';
+import { PaginationNav } from '../components/PaginationNav.jsx';
+import { usePagedList } from '../hooks/usePagedList.js';
 
 const StoreOverview = () => {
   const [searchParams] = useSearchParams();
@@ -38,6 +40,15 @@ const StoreOverview = () => {
         .finally(() => setSeqLoading(false));
     }
   }, [metadata]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Paginate the collections table so large collection indexes don't render
+  // thousands of rows in a single pass.
+  const {
+    paged: pagedCollections,
+    page: collectionsPage,
+    setPage: setCollectionsPage,
+    totalPages: collectionsTotalPages,
+  } = usePagedList(collections, { pageSize: 50 });
 
   if (!metadata && !loading) {
     return (
@@ -196,7 +207,7 @@ const StoreOverview = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {collections.map((col) => (
+                  {pagedCollections.map((col) => (
                     <tr key={col.digest}>
                       <td>
                         <Link
@@ -238,6 +249,11 @@ store.export("${col.digest}")`,
                   ))}
                 </tbody>
               </table>
+              <PaginationNav
+                page={collectionsPage}
+                totalPages={collectionsTotalPages}
+                onChange={setCollectionsPage}
+              />
             </div>
           ) : (
             <p className="text-muted mb-0">

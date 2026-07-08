@@ -99,6 +99,72 @@ const parseSequenceRows = (text) => {
 };
 
 /**
+ * Fetch a newline-delimited list file within a byte budget.
+ *
+ * For files larger than AUTO_LOAD_THRESHOLD, only the first PARTIAL_LOAD_SIZE
+ * bytes are loaded (via an HTTP Range request), the trailing partial line is
+ * discarded, and `partial` is returned true — callers can re-request with
+ * `{ maxBytes: totalSize }` to load the whole file. Falls back to a full fetch
+ * when the server supports neither HEAD nor Range (e.g. CORS restrictions).
+ *
+ * @param {string} url
+ * @param {(text: string) => Array} parse  parses the (possibly truncated) text
+ * @param {object} [opts]
+ * @param {number} [opts.maxBytes]            override the auto/partial byte budget
+ * @param {'throw'|'null'} [opts.onMissing]   behavior on 404/403 (default 'throw')
+ * @returns {Promise<{rows: Array, partial: boolean, totalSize: number} | null>}
+ */
+export const fetchBoundedList = async (url, parse, { maxBytes, onMissing = 'throw' } = {}) => {
+  const missing = () => {
+    if (onMissing === 'null') return null;
+    throw new Error(`${url} not found`);
+  };
+
+  // Resolve the total size up front so we can decide whether to bound the load.
+  let totalSize;
+  try {
+    const head = await fetch(url, { method: 'HEAD' });
+    if (!head.ok) {
+      if (head.status === 404 || head.status === 403) return missing();
+      throw new Error(`HTTP ${head.status} fetching ${url}`);
+    }
+    totalSize = parseInt(head.headers.get('content-length') || '0', 10);
+  } catch (err) {
+    if (err.message.includes('not found')) throw err;
+    // HEAD failed (e.g. CORS) — fall back to a full fetch.
+    const response = await fetchFile(url);
+    if (!response) return missing();
+    const text = await response.text();
+    return { rows: parse(text), partial: false, totalSize: text.length };
+  }
+
+  const limit = maxBytes || (totalSize <= AUTO_LOAD_THRESHOLD ? totalSize : PARTIAL_LOAD_SIZE);
+  const loadFull = limit >= totalSize;
+
+  if (loadFull) {
+    const response = await fetchFile(url);
+    if (!response) return missing();
+    const text = await response.text();
+    return { rows: parse(text), partial: false, totalSize };
+  }
+
+  // Partial load via Range header.
+  const response = await fetch(url, { headers: { Range: `bytes=0-${limit - 1}` } });
+  if (!response.ok && response.status !== 206) {
+    // Server doesn't support Range — fall back to a full fetch.
+    const fullResponse = await fetchFile(url);
+    if (!fullResponse) return missing();
+    const text = await fullResponse.text();
+    return { rows: parse(text), partial: false, totalSize };
+  }
+  const text = await response.text();
+  // Discard the trailing partial line so the parser never sees a truncated row.
+  const lastNewline = text.lastIndexOf('\n');
+  const cleanText = lastNewline > 0 ? text.substring(0, lastNewline) : text;
+  return { rows: parse(cleanText), partial: true, totalSize };
+};
+
+/**
  * Check the size of sequences.rgsi via HEAD request.
  * Returns { url, size } or null if not found.
  */
@@ -115,59 +181,11 @@ export const checkSequenceIndexSize = async (baseUrl) => {
 };
 
 /**
- * Fetch sequences.rgsi — auto-loads if small, otherwise requires explicit call.
- * Returns { rows, partial, totalSize }
- *   partial: true if only a prefix was loaded
- *   totalSize: file size in bytes
+ * Fetch sequences.rgsi — auto-loads if small, otherwise loads a bounded prefix.
+ * Returns { rows, partial, totalSize }.
  */
-export const fetchSequenceIndex = async (baseUrl, { maxBytes } = {}) => {
-  const url = `${normalizeUrl(baseUrl)}/sequences.rgsi`;
-
-  // Check file size first
-  let totalSize;
-  try {
-    const head = await fetch(url, { method: 'HEAD' });
-    if (!head.ok) {
-      if (head.status === 404 || head.status === 403) throw new Error('sequences.rgsi not found');
-      throw new Error(`HTTP ${head.status} fetching ${url}`);
-    }
-    totalSize = parseInt(head.headers.get('content-length') || '0', 10);
-  } catch (err) {
-    if (err.message.includes('not found')) throw err;
-    // HEAD failed (CORS?), fall back to full fetch
-    const response = await fetchFile(url);
-    if (!response) throw new Error('sequences.rgsi not found', { cause: err });
-    const text = await response.text();
-    return { rows: parseSequenceRows(text), partial: false, totalSize: text.length };
-  }
-
-  const limit = maxBytes || (totalSize <= AUTO_LOAD_THRESHOLD ? totalSize : PARTIAL_LOAD_SIZE);
-  const loadFull = limit >= totalSize;
-
-  if (loadFull) {
-    const response = await fetchFile(url);
-    if (!response) throw new Error('sequences.rgsi not found');
-    const text = await response.text();
-    return { rows: parseSequenceRows(text), partial: false, totalSize };
-  }
-
-  // Partial load via Range header
-  const response = await fetch(url, {
-    headers: { Range: `bytes=0-${limit - 1}` },
-  });
-  if (!response.ok && response.status !== 206) {
-    // Server doesn't support Range — fall back to full fetch
-    const fullResponse = await fetchFile(url);
-    if (!fullResponse) throw new Error('sequences.rgsi not found');
-    const text = await fullResponse.text();
-    return { rows: parseSequenceRows(text), partial: false, totalSize };
-  }
-  const text = await response.text();
-  // Discard last partial line
-  const lastNewline = text.lastIndexOf('\n');
-  const cleanText = lastNewline > 0 ? text.substring(0, lastNewline) : text;
-  return { rows: parseSequenceRows(cleanText), partial: true, totalSize };
-};
+export const fetchSequenceIndex = (baseUrl, opts = {}) =>
+  fetchBoundedList(`${normalizeUrl(baseUrl)}/sequences.rgsi`, parseSequenceRows, opts);
 
 /** GET collections.rgci → array of collection summaries. `opts` passes through to fetch(). */
 export const fetchCollectionIndex = async (baseUrl, opts = {}) => {
@@ -199,14 +217,16 @@ export const fetchCollection = async (baseUrl, digest) => {
   };
 };
 
-/** GET aliases/{type}/{namespace}.tsv → [{alias, digest}] */
-export const fetchAliases = async (baseUrl, type, namespace) => {
-  const url = `${normalizeUrl(baseUrl)}/aliases/${type}/${namespace}.tsv`;
-  const response = await fetchFile(url);
-  if (!response) return null;
-  const text = await response.text();
-  return parseAliasTsv(text);
-};
+/**
+ * GET aliases/{type}/{namespace}.tsv — bounded prefix for large namespaces.
+ * Returns { rows: [{alias, digest}], partial, totalSize }, or null if missing.
+ */
+export const fetchAliases = (baseUrl, type, namespace, opts = {}) =>
+  fetchBoundedList(
+    `${normalizeUrl(baseUrl)}/aliases/${type}/${namespace}.tsv`,
+    parseAliasTsv,
+    { ...opts, onMissing: 'null' },
+  );
 
 /** GET collections/{digest}.fhr.json → parsed JSON or null */
 export const fetchFhrMetadata = async (baseUrl, digest) => {

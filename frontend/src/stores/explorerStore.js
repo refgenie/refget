@@ -74,13 +74,17 @@ export const useExplorerStore = create((set, get) => ({
     return data;
   },
 
-  /** Fetch and cache aliases for a type/namespace */
-  loadAliases: async (type, namespace) => {
+  /** Fetch and cache aliases for a type/namespace.
+   *  Cached value is { rows, partial, totalSize } (or null if not found).
+   *  Pass { maxBytes } to load more of a previously partial result. */
+  loadAliases: async (type, namespace, options) => {
     const { storeUrl, aliases } = get();
     const key = `${type}/${namespace}`;
-    if (aliases[key]) return aliases[key];
+    const cached = aliases[key];
+    // Serve the cache unless we're explicitly asked to load more of a partial result.
+    if (cached && !(options?.maxBytes && cached.partial)) return cached;
 
-    const data = await fetchAliases(storeUrl, type, namespace);
+    const data = await fetchAliases(storeUrl, type, namespace, options);
     set({ aliases: { ...get().aliases, [key]: data } });
     return data;
   },

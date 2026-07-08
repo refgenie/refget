@@ -3,8 +3,11 @@ import { Link } from 'react-router-dom';
 import { useUnifiedStore } from '../stores/unifiedStore.js';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { ExplorerNav } from '../components/ExplorerNav.jsx';
+import { PaginationNav } from '../components/PaginationNav.jsx';
 import { fetchSeqColList } from '../services/fetchData.jsx';
 import { fetchCollectionIndex } from '../services/storeService.js';
+
+const PAGE_SIZE = 50;
 
 const Explorer = () => {
   const { hasStore, hasAPI, storeUrl, apiUrl, storeCollections, probe, probed, loading: probing } =
@@ -15,6 +18,7 @@ const Explorer = () => {
   const [filter, setFilter] = useState('');
   const [sortCol, setSortCol] = useState(null);
   const [sortAsc, setSortAsc] = useState(true);
+  const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   // Holds a cache-bypassing re-fetch of the store index when it disagrees with the API.
   const [storeOverride, setStoreOverride] = useState(null);
@@ -159,7 +163,12 @@ const Explorer = () => {
   const handleSort = (col) => {
     if (sortCol === col) setSortAsc(!sortAsc);
     else { setSortCol(col); setSortAsc(true); }
+    setPage(0);
   };
+
+  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
+  const clampedPage = Math.min(page, Math.max(0, totalPages - 1));
+  const paged = sorted.slice(clampedPage * PAGE_SIZE, (clampedPage + 1) * PAGE_SIZE);
 
   if (probing || loading) {
     return (
@@ -188,7 +197,7 @@ const Explorer = () => {
           style={{ maxWidth: '300px' }}
           placeholder="Filter by name or digest..."
           value={filter}
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={(e) => { setFilter(e.target.value); setPage(0); }}
         />
       </div>
 
@@ -222,7 +231,7 @@ const Explorer = () => {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((col) => (
+              {paged.map((col) => (
                 <tr key={col.digest}>
                   <td>
                     {col.names.length > 0
@@ -246,6 +255,7 @@ const Explorer = () => {
               ))}
             </tbody>
           </table>
+          <PaginationNav page={clampedPage} totalPages={totalPages} onChange={setPage} />
         </div>
       ) : (
         <p className="text-muted">No collections found.</p>
