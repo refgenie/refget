@@ -188,12 +188,8 @@ class TestStorePullMaterializes:
         assert add_result.exit_code == 0
         digest = json.loads(add_result.stdout)["digest"]
 
-        cli(
-            "store", "alias", "add", "test", "mygenome", digest, "--path", str(source_store)
-        )
-        cli(
-            "store", "fhr", "set-fields", digest, "--genome", "myorg", "--path", str(source_store)
-        )
+        cli("store", "alias", "add", "test", "mygenome", digest, "--path", str(source_store))
+        cli("store", "fhr", "set-fields", digest, "--genome", "myorg", "--path", str(source_store))
 
         port = _find_free_port()
         proc = _start_http_server(str(source_store), port)
@@ -208,9 +204,7 @@ class TestStorePullMaterializes:
             assert result.exit_code == 0, f"Pull failed: {result.stdout}"
 
             # Alias should have travelled with the collection.
-            alias_result = cli(
-                "store", "alias", "for", digest, "--path", str(local_store)
-            )
+            alias_result = cli("store", "alias", "for", digest, "--path", str(local_store))
             assert alias_result.exit_code == 0
             aliases = json.loads(alias_result.stdout)["aliases"]
             assert ["test", "mygenome"] in aliases

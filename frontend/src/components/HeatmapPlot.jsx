@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import embed from 'vega-embed';
 
 import { snakeToTitle } from '../utilities';
@@ -8,7 +8,7 @@ const HeatmapPlot = ({ similarities, metric }) => {
 
   const selectedCount = [...new Set(similarities.map((e) => e.selectedDigest))].length;
 
-  const heatmapSpec = (similarities, metric) => {
+  const heatmapSpec = useCallback((similarities, metric) => {
     return {
       $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
       data: {
@@ -87,13 +87,14 @@ const HeatmapPlot = ({ similarities, metric }) => {
             ? 22 * selectedCount
             : 13 * selectedCount,
     };
-  };
+  }, [selectedCount]);
 
   useEffect(() => {
-    if (plotRef.current && similarities && metric) {
+    const node = plotRef.current;
+    if (node && similarities && metric) {
       const spec = heatmapSpec(similarities, metric);
       try {
-        embed(plotRef.current, spec, {
+        embed(node, spec, {
           actions: true,
           config: {
             // Force Vega to use relative URLs for gradients
@@ -108,11 +109,11 @@ const HeatmapPlot = ({ similarities, metric }) => {
     }
 
     return () => {
-      if (plotRef.current) {
-        plotRef.current.innerHTML = '';
+      if (node) {
+        node.innerHTML = '';
       }
     };
-  }, [similarities, metric]);
+  }, [similarities, metric, heatmapSpec]);
 
   return <div className='w-100' ref={plotRef} />;
 };

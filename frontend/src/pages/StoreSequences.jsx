@@ -1,16 +1,17 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { StoreNav } from '../components/StoreNav.jsx';
 import { CliCommand } from '../components/CliSnippet.jsx';
+import { PaginationNav } from '../components/PaginationNav.jsx';
+import { PartialLoadBanner } from '../components/PartialLoadBanner.jsx';
+import { usePagedList } from '../hooks/usePagedList.js';
 
-const PAGE_SIZE = 50;
-
-const formatBytes = (bytes) => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
+const seqFilter = (s, term) =>
+  s.name?.toLowerCase().includes(term) ||
+  s.sha512t24u?.toLowerCase().includes(term) ||
+  s.md5?.toLowerCase().includes(term) ||
+  s.description?.toLowerCase().includes(term);
 
 const StoreSequences = () => {
   const [searchParams] = useSearchParams();
@@ -18,14 +19,15 @@ const StoreSequences = () => {
     storeUrl, sequenceIndex, sequenceIndexPartial, sequenceIndexTotalSize,
     metadata, loading, loadStore, loadSequenceIndex,
   } = useExplorerStore();
-  const [filter, setFilter] = useState('');
-  const [sortCol, setSortCol] = useState(null);
-  const [sortAsc, setSortAsc] = useState(true);
-  const [page, setPage] = useState(0);
   const [seqLoading, setSeqLoading] = useState(false);
   const [seqError, setSeqError] = useState(null);
   const [selectedSeq, setSelectedSeq] = useState(null);
   const [seqCodeTab, setSeqCodeTab] = useState('cli');
+
+  const {
+    filter, setFilter, page, setPage,
+    sortCol, sortAsc, handleSort, filtered, paged, totalPages,
+  } = usePagedList(sequenceIndex, { filterFn: seqFilter });
 
   const urlParam = searchParams.get('url');
   const storeUrlParam = `?url=${encodeURIComponent(storeUrl || urlParam)}`;
@@ -60,46 +62,6 @@ const StoreSequences = () => {
     } finally {
       setSeqLoading(false);
     }
-  };
-
-  const filtered = useMemo(() => {
-    if (!sequenceIndex) return [];
-    const term = filter.toLowerCase();
-    return sequenceIndex.filter(
-      (s) =>
-        !term ||
-        s.name?.toLowerCase().includes(term) ||
-        s.sha512t24u?.toLowerCase().includes(term) ||
-        s.md5?.toLowerCase().includes(term) ||
-        s.description?.toLowerCase().includes(term),
-    );
-  }, [sequenceIndex, filter]);
-
-  const sorted = useMemo(() => {
-    if (!sortCol) return filtered;
-    return [...filtered].sort((a, b) => {
-      const va = a[sortCol];
-      const vb = b[sortCol];
-      if (typeof va === 'number' && typeof vb === 'number') {
-        return sortAsc ? va - vb : vb - va;
-      }
-      return sortAsc
-        ? String(va).localeCompare(String(vb))
-        : String(vb).localeCompare(String(va));
-    });
-  }, [filtered, sortCol, sortAsc]);
-
-  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-  const paged = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
-  const handleSort = (col) => {
-    if (sortCol === col) {
-      setSortAsc(!sortAsc);
-    } else {
-      setSortCol(col);
-      setSortAsc(true);
-    }
-    setPage(0);
   };
 
   const SortIcon = ({ col }) => {
@@ -159,21 +121,13 @@ const StoreSequences = () => {
 
       {/* Partial load banner */}
       {sequenceIndexPartial && (
-        <div className="alert alert-warning d-flex justify-content-between align-items-center py-2">
-          <span>
-            <i className="bi bi-exclamation-triangle me-2" />
-            Sequence index is {formatBytes(sequenceIndexTotalSize)} — showing first{' '}
-            {sequenceIndex.length.toLocaleString()} sequences.
-            Sorting and filtering apply only to loaded data.
-          </span>
-          <button
-            className="btn btn-sm btn-warning ms-3"
-            onClick={() => handleLoadMore(sequenceIndexTotalSize)}
-            disabled={seqLoading}
-          >
-            Load all ({formatBytes(sequenceIndexTotalSize)})
-          </button>
-        </div>
+        <PartialLoadBanner
+          totalSize={sequenceIndexTotalSize}
+          loadedCount={sequenceIndex.length}
+          noun="sequences"
+          onLoadAll={() => handleLoadMore(sequenceIndexTotalSize)}
+          loading={seqLoading}
+        />
       )}
 
       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -188,10 +142,7 @@ const StoreSequences = () => {
           style={{ maxWidth: '300px' }}
           placeholder="Filter by name, digest, description..."
           value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value);
-            setPage(0);
-          }}
+          onChange={(e) => setFilter(e.target.value)}
         />
       </div>
 
@@ -307,29 +258,7 @@ store.get("${selectedSeq.sha512t24u}", sequence=True)`
         </>
       )}
 
-      {totalPages > 1 && (
-        <nav>
-          <ul className="pagination pagination-sm justify-content-center">
-            <li className={`page-item ${page === 0 ? 'disabled' : ''}`}>
-              <button className="page-link" onClick={() => setPage(page - 1)}>
-                Previous
-              </button>
-            </li>
-            <li className="page-item disabled">
-              <span className="page-link">
-                Page {page + 1} of {totalPages}
-              </span>
-            </li>
-            <li
-              className={`page-item ${page >= totalPages - 1 ? 'disabled' : ''}`}
-            >
-              <button className="page-link" onClick={() => setPage(page + 1)}>
-                Next
-              </button>
-            </li>
-          </ul>
-        </nav>
-      )}
+      <PaginationNav page={page} totalPages={totalPages} onChange={setPage} />
     </div>
   );
 };

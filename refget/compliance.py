@@ -165,7 +165,9 @@ def check_service_info(api_root):
     assert "seqcol" in data, "service-info must have 'seqcol' section"
     assert "schema" in data["seqcol"], "seqcol section must include 'schema'"
     schema = data["seqcol"]["schema"]
-    assert schema is not None, "seqcol 'schema' must not be null (server must publish its JSON Schema)"
+    assert schema is not None, (
+        "seqcol 'schema' must not be null (server must publish its JSON Schema)"
+    )
     assert "properties" in schema, "schema must have 'properties'"
     assert "lengths" in schema["properties"], "schema must define 'lengths'"
     assert "names" in schema["properties"], "schema must define 'names'"

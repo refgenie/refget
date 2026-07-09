@@ -291,9 +291,7 @@ class TestStoreExport:
         list_result = cli("store", "list", "--sequences", "--path", str(store_path))
         seq_digest = json.loads(list_result.stdout)["sequences"][0]["digest"]
 
-        result = cli(
-            "store", "export", "--seq-digest", seq_digest, "--path", str(store_path)
-        )
+        result = cli("store", "export", "--seq-digest", seq_digest, "--path", str(store_path))
 
         assert result.exit_code == 0, result.stdout
         assert result.stdout.startswith(">")
@@ -317,9 +315,7 @@ class TestStoreRegions:
     def test_regions_fasta(self, cli, tmp_path):
         """Extracts regions as FASTA records."""
         store_path, digest, bed, name = self._setup(cli, tmp_path)
-        result = cli(
-            "store", "regions", digest, "--bed", str(bed), "--path", str(store_path)
-        )
+        result = cli("store", "regions", digest, "--bed", str(bed), "--path", str(store_path))
         assert result.exit_code == 0, result.stdout
         assert result.stdout.startswith(f">{name}:0-3")
 
@@ -341,8 +337,13 @@ class TestStoreRegions:
         """Returns error when BED file does not exist."""
         store_path, digest, _bed, _name = self._setup(cli, tmp_path)
         result = cli(
-            "store", "regions", digest, "--bed", str(tmp_path / "nope.bed"),
-            "--path", str(store_path),
+            "store",
+            "regions",
+            digest,
+            "--bed",
+            str(tmp_path / "nope.bed"),
+            "--path",
+            str(store_path),
         )
         assert result.exit_code != 0
 
@@ -877,9 +878,7 @@ class TestStoreAddBulk:
         (data_dir / "a.fa").write_text(BASE_FASTA.read_text())
         (data_dir / "b.fa").write_text(DIFFERENT_NAMES_FASTA.read_text())
 
-        result = cli(
-            "store", "add", str(data_dir / "*.fa"), "--path", str(store_path)
-        )
+        result = cli("store", "add", str(data_dir / "*.fa"), "--path", str(store_path))
         data = assert_json_output(result, ["results", "count"])
         assert data["count"] == 2
 
@@ -891,9 +890,7 @@ class TestStoreAddBulk:
         manifest = tmp_path / "manifest.txt"
         manifest.write_text(f"{BASE_FASTA}\n{DIFFERENT_NAMES_FASTA}\n")
 
-        result = cli(
-            "store", "add", "--file-list", str(manifest), "--path", str(store_path)
-        )
+        result = cli("store", "add", "--file-list", str(manifest), "--path", str(store_path))
         data = assert_json_output(result, ["results", "count"])
         assert data["count"] == 2
 
@@ -902,9 +899,7 @@ class TestStoreAddBulk:
         store_path = tmp_path / "store"
         cli("store", "init", "--path", str(store_path))
 
-        result = cli(
-            "store", "add", str(BASE_FASTA), "--jobs", "2", "--path", str(store_path)
-        )
+        result = cli("store", "add", str(BASE_FASTA), "--jobs", "2", "--path", str(store_path))
         data = assert_json_output(result, ["results", "count"])
         assert data["count"] == 1
 

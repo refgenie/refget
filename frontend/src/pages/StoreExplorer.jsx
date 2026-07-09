@@ -30,14 +30,6 @@ const StoreExplorer = () => {
   const [localError, setLocalError] = useState(null);
   const recentStores = getRecentStores();
 
-  // Auto-load if URL param provided
-  useEffect(() => {
-    const paramUrl = searchParams.get('url');
-    if (paramUrl && paramUrl !== storeUrl) {
-      handleExplore(paramUrl);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleExplore = async (targetUrl) => {
     const trimmed = (targetUrl || url).trim();
     if (!trimmed) return;
@@ -50,6 +42,19 @@ const StoreExplorer = () => {
       setLocalError(err.message);
     }
   };
+
+  // Auto-load if URL param provided
+  useEffect(() => {
+    const paramUrl = searchParams.get('url');
+    if (paramUrl && paramUrl !== storeUrl) {
+      // Auto-trigger a store load from the URL param on mount; handleExplore
+      // performs an async fetch and only sets state afterward, so this is a
+      // deliberate load-on-mount, not a synchronous cascading render.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleExplore(paramUrl);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();

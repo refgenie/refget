@@ -1,3 +1,8 @@
+// This is the application entry/router module: it intentionally co-locates the
+// route component definitions (Nav, App, ErrorBoundary, ...) with the router and
+// loader setup. It is the render root, not a hot-reloaded component module, so
+// the Fast Refresh "only export components" rule does not meaningfully apply.
+/* eslint-disable react-refresh/only-export-components */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Toaster } from 'react-hot-toast';
@@ -24,7 +29,6 @@ import { APIExplorer } from './pages/APIExplorer.jsx';
 import { APICollections } from './pages/APICollections.jsx';
 import { APICollectionView } from './pages/APICollectionView.jsx';
 import { APICompare } from './pages/APICompare.jsx';
-import { APICompliance } from './pages/APICompliance.jsx';
 
 // Store Explorer pages
 import { StoreExplorer } from './pages/StoreExplorer.jsx';
@@ -48,7 +52,6 @@ import {
   fetchServiceInfo,
   fetchPangenomeLevels,
   fetchAllSeqCols,
-  fetchCollectionLevels,
   fetchComparison,
   fetchAttribute,
 } from './services/fetchData.jsx';
@@ -297,7 +300,9 @@ function ErrorBoundary() {
     error.message?.includes('NetworkError');
   const isNotFound = error.isNotFound || error.message?.includes('not found');
 
-  const CopyableDigest = ({ digest }) => (
+  // Plain render helper (not a component) so it isn't re-created as a new
+  // component type on every render.
+  const renderCopyableDigest = (digest) => (
     <code
       className='user-select-all bg-light px-2 py-1 rounded cursor-pointer'
       style={{ fontSize: '0.85em' }}
@@ -328,11 +333,11 @@ function ErrorBoundary() {
             <div className='mb-3'>
               <div className='mb-2'>
                 <strong>Digest A:</strong>{' '}
-                <CopyableDigest digest={error.digest1} />
+                {renderCopyableDigest(error.digest1)}
               </div>
               <div>
                 <strong>Digest B:</strong>{' '}
-                <CopyableDigest digest={error.digest2} />
+                {renderCopyableDigest(error.digest2)}
               </div>
             </div>
           )}

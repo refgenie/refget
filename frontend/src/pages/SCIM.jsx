@@ -39,6 +39,9 @@ const SCIM = () => {
           null,
           2,
         );
+        // Initializing form state from the URL query param is intentional
+        // synchronization with an external source.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setComparisonStr(prettyComparison);
 
         const parsedComparison = JSON.parse(decodedComparisonFromQuery);
@@ -61,7 +64,7 @@ const SCIM = () => {
     // Parse JSON with error handling
     try {
       parsedComparison = JSON.parse(comparisonStr);
-    } catch (error) {
+    } catch {
       toast.error(
         <span>
           <strong>Error:</strong> Invalid JSON format. Please check your input.

@@ -409,9 +409,7 @@ def _require_backend_method(backend, method_name: str):
 
 def _validate_alias_kind(kind: str) -> str:
     if kind not in ("collection", "sequence"):
-        raise HTTPException(
-            status_code=400, detail="kind must be 'collection' or 'sequence'"
-        )
+        raise HTTPException(status_code=400, detail="kind must be 'collection' or 'sequence'")
     return kind
 
 

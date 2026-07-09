@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useApiExplorerStore } from '../stores/apiExplorerStore.js';
 import { APINav } from '../components/APINav.jsx';
 import { fetchCollectionLevels } from '../services/fetchData.jsx';

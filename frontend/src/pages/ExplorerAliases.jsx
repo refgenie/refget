@@ -1,44 +1,46 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedStore } from '../stores/unifiedStore.js';
 import { useExplorerStore } from '../stores/explorerStore.js';
 import { ExplorerNav } from '../components/ExplorerNav.jsx';
-import { useState } from 'react';
+import { PaginationNav } from '../components/PaginationNav.jsx';
+import { PartialLoadBanner } from '../components/PartialLoadBanner.jsx';
+import { usePagedList } from '../hooks/usePagedList.js';
+
+const aliasFilter = (a, term) =>
+  a.alias.toLowerCase().includes(term) || a.digest.toLowerCase().includes(term);
 
 const AliasPanel = ({ type, availableNamespaces }) => {
   const { loadAliases } = useExplorerStore();
   const [namespace, setNamespace] = useState('');
-  const [aliases, setAliases] = useState(null);
+  const [aliasData, setAliasData] = useState(null); // { rows, partial, totalSize }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('');
 
-  const handleNamespaceClick = (ns) => {
-    setNamespace(ns);
-    setFilter('');
+  const { filter, setFilter, page, setPage, paged, filtered, totalPages } =
+    usePagedList(aliasData?.rows, { filterFn: aliasFilter });
+
+  const loadNamespace = (ns, options) => {
     setError(null);
     setLoading(true);
-    loadAliases(type, ns)
+    loadAliases(type, ns, options)
       .then((data) => {
         if (!data) {
           setError(`Namespace "${ns}" not found.`);
-          setAliases(null);
+          setAliasData(null);
         } else {
-          setAliases(data);
+          setAliasData(data);
         }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   };
 
-  const filtered = aliases
-    ? aliases.filter(
-        (a) =>
-          !filter ||
-          a.alias.toLowerCase().includes(filter.toLowerCase()) ||
-          a.digest.toLowerCase().includes(filter.toLowerCase()),
-      )
-    : null;
+  const handleNamespaceClick = (ns) => {
+    setNamespace(ns);
+    setFilter('');
+    loadNamespace(ns);
+  };
 
   const linkPrefix = type === 'collections' ? '/collection/' : null;
 
@@ -74,10 +76,22 @@ const AliasPanel = ({ type, availableNamespaces }) => {
 
         {error && <div className="alert alert-warning small py-2">{error}</div>}
 
-        {filtered && (
+        {aliasData && (
           <>
+            {aliasData.partial && (
+              <PartialLoadBanner
+                totalSize={aliasData.totalSize}
+                loadedCount={aliasData.rows.length}
+                noun="aliases"
+                onLoadAll={() => loadNamespace(namespace, { maxBytes: aliasData.totalSize })}
+                loading={loading}
+              />
+            )}
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <span className="text-muted small">{filtered.length} aliases in "{namespace}"</span>
+              <span className="text-muted small">
+                {filtered.length.toLocaleString()} aliases in &quot;{namespace}&quot;
+                {aliasData.partial && ' (partial)'}
+              </span>
               <input
                 type="search"
                 className="form-control form-control-sm"
@@ -96,8 +110,8 @@ const AliasPanel = ({ type, availableNamespaces }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((a, i) => (
-                    <tr key={`${a.alias}-${i}`}>
+                  {paged.map((a) => (
+                    <tr key={`${a.alias}-${a.digest}`}>
                       <td>{a.alias}</td>
                       <td className="font-monospace small">
                         {linkPrefix ? (
@@ -111,6 +125,7 @@ const AliasPanel = ({ type, availableNamespaces }) => {
                 </tbody>
               </table>
             </div>
+            <PaginationNav page={page} totalPages={totalPages} onChange={setPage} />
           </>
         )}
       </div>

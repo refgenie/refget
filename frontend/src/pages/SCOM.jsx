@@ -4,7 +4,6 @@ import { useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import {
-  fetchSimilarities,
   fetchSimilaritiesJSON,
   fetchComparison,
   fetchComparisonJSON,
@@ -32,7 +31,6 @@ const SCOM = () => {
     setCustomCollectionName,
     customCollectionJSON,
     setCustomCollectionJSON,
-    customCount,
     setCustomCount,
     similarities,
     setSimilarities,
@@ -50,7 +48,8 @@ const SCOM = () => {
 
   const [stripJitter, setStripJitter] = useState('none');
   const [stripOrientation, setStripOrientation] = useState('horizontal');
-  const [relationship, setRelationship] = useState('oneToMany');
+  // Relationship mode is currently fixed; kept as a value for the conditional UI below.
+  const relationship = 'oneToMany';
   const [isLoading, setIsLoading] = useState(false);
   const [pendingPrefill, setPendingPrefill] = useState(null);
 
@@ -70,12 +69,18 @@ const SCOM = () => {
           setCustomCollectionJSON(JSON.stringify(json, null, 2));
           setCustomCollectionName(name || '');
           localStorage.removeItem('scom-prefill');
+          // Prefilling state from the URL/localStorage on navigation is the
+          // intended effect behavior; the !pendingPrefill guard prevents loops.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setPendingPrefill({ json, name });
         } catch (e) {
           console.error('Failed to load prefill data:', e);
         }
       }
     }
+    // Intentionally keyed on searchParams only: this runs once per navigation
+    // and is guarded by !pendingPrefill. The setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Handle digest query parameter - fetch collection and prefill
@@ -103,6 +108,9 @@ const SCOM = () => {
       };
       loadFromDigest();
     }
+    // Intentionally keyed on searchParams only: this runs once per navigation
+    // and is guarded by !pendingPrefill. The setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const selectedCollections = allCollections.filter(
@@ -313,7 +321,7 @@ const SCOM = () => {
       }
       const encodedComparison = encodeComparison(comparison);
       navigate(`/compare?val=${encodedComparison}`);
-    } catch (error) {
+    } catch {
       setStoreError('Comparison could not be made.');
       toast.error(
         <span>
@@ -327,7 +335,7 @@ const SCOM = () => {
     setStoreError(null);
     try {
       data = JSON.parse(data);
-    } catch (e) {
+    } catch {
       setStoreError('Invalid JSON format. Please check your input.');
       toast.error(
         <span>
@@ -401,11 +409,15 @@ const SCOM = () => {
       resetSort();
       setIsLoading(false);
     }
-  }, [species, relationship, collections, customCollections, customCount, setCustomCollections, setSelectedCollectionsIndex, setCustomCount, resetSort, setIsLoading, setStoreError]);
+  }, [species, relationship, collections, setCustomCollections, setSelectedCollectionsIndex, setCustomCount, resetSort, setIsLoading, setStoreError]);
 
   // Auto-submit prefilled data (wait for collections to be ready)
   useEffect(() => {
     if (pendingPrefill && !isLoading && collections?.results) {
+      // One-shot auto-submit of prefilled data once collections are ready, then
+      // clear the prefill flag so this doesn't re-run. Both calls update state
+      // intentionally (submission + flag reset), guarded by pendingPrefill.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleAddCustomCollection(JSON.stringify(pendingPrefill.json), pendingPrefill.name || '');
       setPendingPrefill(null);
     }
@@ -429,7 +441,7 @@ const SCOM = () => {
     };
 
     fetchAllSimilarities();
-  }, [selectedCollectionsIndex, customCollections]);
+  }, [selectedCollectionsIndex, customCollections, collections.results.length, setSimilarities]);
 
   const handleSortTable = (column) => {
     sortByColumn(column);
@@ -456,7 +468,7 @@ const SCOM = () => {
             <div className='alert alert-light border small'>
               <strong>Step 1:</strong> Get your sequence collection as a canonical SeqCol object (JSON)
               <ul className='mb-2 mt-1'>
-                <li><strong>From a FASTA file:</strong> Use the <a href='/fasta'>FASTA Digester</a> tool, then click "Compare in SCOM"</li>
+                <li><strong>From a FASTA file:</strong> Use the <a href='/fasta'>FASTA Digester</a> tool, then click &quot;Compare in SCOM&quot;</li>
                 <li><strong>From Python:</strong> Run <code>refget fasta seqcol yourfasta.fa</code></li>
                 <li><strong>From the API:</strong> Call <code>/collection/{'{digest}'}</code> with <code>?level=2</code></li>
                 <li><strong>Quick start:</strong> Use the example button to load example data</li>
@@ -588,7 +600,7 @@ const SCOM = () => {
               </select>
             </div>
             <StripPlot
-              similarities={similarities.map(({ raw, ...rest }) => rest)}
+              similarities={similarities.map(({ raw: _raw, ...rest }) => rest)}
               jitter={stripJitter}
               pointSize={
                 relationship === 'oneToMany' || selectedCollections.length <= 1
@@ -601,7 +613,7 @@ const SCOM = () => {
             <div className='d-flex align-items-end justify-content-between mt-5 mb-2'>
               <h5 className='fw-light'>Heatmap</h5>
             </div>
-            <MultiMetricHeatmapPlot similarities={similarities.map(({ raw, ...rest }) => rest)} />
+            <MultiMetricHeatmapPlot similarities={similarities.map(({ raw: _raw, ...rest }) => rest)} />
 
             <div className='d-flex align-items-end justify-content-between'>
               <h5 className='fw-light mt-5'>Seqcol Comparison Summary Table</h5>
