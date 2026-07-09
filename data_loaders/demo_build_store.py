@@ -39,12 +39,17 @@ def main():
 
     for fasta in fasta_files:
         result = store.add_sequence_collection_from_fasta(fasta)
-        # Register the filename (without extension) as a collection alias
+        # Register the filename (without extension) as a collection alias under
+        # the canonical "name" namespace -- the same namespace build.py uses for
+        # every registry store and the one refgenie clients resolve against
+        # (e.g. `genome init --store --namespace name`). Registering it under a
+        # bespoke namespace here would leave the store with no usable `name`
+        # aliases.
         basename = os.path.basename(fasta)
         name = basename.split(".")[0]  # strip .fa, .fasta, .fa.gz, etc.
         meta = result[0] if isinstance(result, tuple) else result
         if meta:
-            store.add_collection_alias("fasta_filename", name, meta.digest)
+            store.add_collection_alias("name", name, meta.digest)
             print(f"  {name} → {meta.digest}")
 
     print(f"Done. Store at: {store_path}")
