@@ -1815,7 +1815,11 @@ def serve(
         None, "--remote", "-r", help="Remote store URL (e.g. s3://bucket/store/)"
     ),
     port: int = typer.Option(8000, "--port", help="Port to serve on"),
-    host: str = typer.Option("0.0.0.0", "--host", help="Host to bind to"),
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Host to bind to (use 0.0.0.0 to expose on your network)",
+    ),
     lazy: bool = typer.Option(
         False,
         "--lazy",
