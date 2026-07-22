@@ -249,13 +249,13 @@ const ExplorePage = () => {
             </div>
             <div>
               <a
-                href={`https://${s.api}`}
+                href={`https://${s.api}/docs`}
                 className="btn btn-outline-primary btn-sm me-2"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <i className="bi bi-box-arrow-up-right me-1" />
-                Open API
+                API docs
               </a>
               <Link to="/compliance" className="btn btn-outline-success btn-sm">
                 <i className="bi bi-check2-circle me-1" />
@@ -305,8 +305,8 @@ const ExplorePage = () => {
                   {s.api && (
                     <>
                       {' · '}
-                      <a href={`https://${s.api}`} target="_blank" rel="noopener noreferrer">
-                        API
+                      <a href={`https://${s.api}/docs`} target="_blank" rel="noopener noreferrer">
+                        API docs
                       </a>
                     </>
                   )}
