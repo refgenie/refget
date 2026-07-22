@@ -59,36 +59,36 @@ import {
 import { copyToClipboard } from './utilities';
 
 import {
+  Link,
   Outlet,
   createBrowserRouter,
   RouterProvider,
   useLoaderData,
   useRouteError,
-  useNavigate,
   useLocation,
 } from 'react-router-dom';
 
 import { API_BASE } from './utilities.jsx';
 
-const NavItem = ({ path, label, location, navigate, isDropdown }) => {
+const NavItem = ({ path, label, location }) => {
   const active = path === '/'
     ? location === ''
     : location.startsWith(path.substring(1));
 
   return (
-    <li className={`nav-item mx-2 my-0 h6 ${isDropdown ? '' : ''}`}>
-      <span
-        onClick={() => navigate(path)}
-        className={`nav-link cursor-pointer ${active ? 'fw-medium text-black' : 'fw-light'}`}
+    <li className='nav-item mx-2 my-0 h6'>
+      <Link
+        to={path}
+        className={`nav-link ${active ? 'fw-medium text-black' : 'fw-light'}`}
+        aria-current={active ? 'page' : undefined}
       >
         {label}
-      </span>
+      </Link>
     </li>
   );
 };
 
 const Nav = () => {
-  const navigate = useNavigate();
   const location = useLocation().pathname.substring(1) || '';
 
   return (
@@ -97,10 +97,9 @@ const Nav = () => {
       aria-label='navbar'
     >
       <div className='container'>
-        <div
-          onClick={() => navigate('/')}
-          className='align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none cursor-pointer'
-          role='button'
+        <Link
+          to='/'
+          className='align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none'
         >
           <img
             src={seqcol_logo}
@@ -108,7 +107,7 @@ const Nav = () => {
             height='40'
           />
           <span className='ms-2'>Refget Sequence Collections</span>
-        </div>
+        </Link>
 
         <button
           className='navbar-toggler'
@@ -127,7 +126,7 @@ const Nav = () => {
           id='navbarSupportedContent'
         >
           <ul className='navbar-nav ms-auto mb-2 mb-sm-0'>
-            <NavItem path="/" label="Home" location={location} navigate={navigate} />
+            <NavItem path="/" label="Home" location={location} />
 
             {/* The Specification - external link */}
             <li className='nav-item mx-2 my-0 h6'>
@@ -154,21 +153,21 @@ const Nav = () => {
             </li>
 
             {/* Explore link */}
-            <NavItem path="/explore" label="Explore" location={location} navigate={navigate} />
+            <NavItem path="/explore" label="Explore" location={location} />
 
             {/* VRS converter */}
-            <NavItem path="/vrs" label="VRS" location={location} navigate={navigate} />
+            <NavItem path="/vrs" label="VRS" location={location} />
 
             {/* GitHub dropdown */}
             <li className='nav-item dropdown mx-2 my-0 h6'>
-              <span
-                className='nav-link cursor-pointer dropdown-toggle fw-light'
-                role='button'
+              <button
+                type='button'
+                className='nav-link dropdown-toggle fw-light btn btn-link'
                 data-bs-toggle='dropdown'
                 aria-expanded='false'
               >
                 GitHub
-              </span>
+              </button>
               <ul className='dropdown-menu dropdown-menu-end'>
                 <li>
                   <a
@@ -291,14 +290,48 @@ const App = () => {
   );
 };
 
+function NotFound() {
+  const { pathname } = useLocation();
+
+  return (
+    <div className='py-4'>
+      <h2 className='fw-light'>Page not found</h2>
+      <p className='text-muted'>
+        There is no page at <code>{pathname}</code>.
+      </p>
+      <p className='text-muted small mb-4'>
+        The address may be mistyped or out of date. This is a problem with the
+        link, not with the API.
+      </p>
+      <Link to='/' className='btn btn-primary me-2'>
+        <i className='bi bi-house me-1' />
+        Home
+      </Link>
+      <Link to='/explore' className='btn btn-outline-primary'>
+        <i className='bi bi-compass me-1' />
+        Explore
+      </Link>
+    </div>
+  );
+}
+
 function ErrorBoundary() {
   const error = useRouteError();
   console.error(error);
 
+  // Router ErrorResponses (thrown by a loader) carry status/statusText rather
+  // than message, so falling back to message alone renders a blank error.
+  const status = error?.status;
+  const message =
+    error?.message ||
+    (status ? `${status} ${error.statusText || ''}`.trim() : '') ||
+    'An unexpected error occurred.';
+
   const isNetworkError =
-    error.message?.includes('Failed to fetch') ||
-    error.message?.includes('NetworkError');
-  const isNotFound = error.isNotFound || error.message?.includes('not found');
+    error?.message?.includes('Failed to fetch') ||
+    error?.message?.includes('NetworkError');
+  const isNotFound =
+    error?.isNotFound || error?.message?.includes('not found') || status === 404;
 
   // Plain render helper (not a component) so it isn't re-created as a new
   // component type on every render.
@@ -315,14 +348,17 @@ function ErrorBoundary() {
 
   return (
     <div className='alert alert-danger' role='alert'>
-      <strong>Error:</strong> {error.message}
+      <strong>Error:</strong> {message}
       <hr />
       {isNetworkError ? (
         <p>
-          Could not connect to the API at{' '}
-          <a href={`${API_BASE}`}>{API_BASE}</a>.
+          Could not connect to the API at <code>{API_BASE}</code>.
           <br />
-          Make sure the server is running and accessible.
+          Make sure the server is running and accessible —{' '}
+          <a href={`${API_BASE}/service-info`} target='_blank' rel='noopener noreferrer'>
+            check its service-info
+          </a>
+          .
         </p>
       ) : isNotFound ? (
         <div>
@@ -342,13 +378,16 @@ function ErrorBoundary() {
             </div>
           )}
           <p className='mb-0'>
-            API: <a href={`${API_BASE}`}>{API_BASE}</a>
+            API: <code>{API_BASE}</code>
           </p>
         </div>
       ) : (
         <p>
-          Is the API service operating correctly at{' '}
-          <a href={`${API_BASE}`}>{API_BASE}</a>?
+          Is the API service operating correctly at <code>{API_BASE}</code>?{' '}
+          <a href={`${API_BASE}/service-info`} target='_blank' rel='noopener noreferrer'>
+            Check its service-info
+          </a>
+          .
         </p>
       )}
       <button
@@ -520,6 +559,15 @@ const router = createBrowserRouter([
       {
         path: '/explore-api/compare',
         element: <APICompare />,
+        errorElement: <ErrorBoundary />,
+      },
+
+      // Catch-all. As a child route this renders inside <App/>, so an unknown
+      // URL keeps the nav and footer instead of short-circuiting to the root
+      // errorElement, which drops both and blames the API.
+      {
+        path: '*',
+        element: <NotFound />,
         errorElement: <ErrorBoundary />,
       },
     ],

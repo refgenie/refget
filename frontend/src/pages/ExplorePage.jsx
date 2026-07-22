@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { API_BASE } from '../utilities.jsx';
 import stores from '../data/stores.json';
 
-const CopyableUrl = ({ url }) => {
+const CopyableUrl = ({ url, label = 'URL' }) => {
   const [copied, setCopied] = useState(false);
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
+      timer.current = setTimeout(() => setCopied(false), 1200);
     } catch {
-      /* clipboard unavailable */
+      toast.error('Failed to copy to clipboard');
     }
   };
   return (
@@ -27,11 +30,14 @@ const CopyableUrl = ({ url }) => {
         className="btn btn-sm btn-link p-0 text-muted"
         style={{ lineHeight: 1 }}
         onClick={copy}
-        title={copied ? 'Copied!' : 'Copy URL'}
-        aria-label="Copy store URL"
+        title={copied ? 'Copied!' : `Copy ${label}`}
+        aria-label={`Copy ${label}`}
       >
         <i className={copied ? 'bi bi-check2' : 'bi bi-clipboard'} />
       </button>
+      <span className="visually-hidden" role="status" aria-live="polite">
+        {copied ? `${label} copied` : ''}
+      </span>
     </span>
   );
 };
@@ -156,12 +162,12 @@ const ExplorePage = () => {
             <div className="d-flex align-items-center mb-1">
               <span className="badge bg-success me-2">API</span>
               <strong className="small">Sequence Collections API:</strong>
-              <span className="ms-2"><CopyableUrl url={heroStore.api} /></span>
+              <span className="ms-2"><CopyableUrl url={heroStore.api} label="API base URL" /></span>
             </div>
             <div className="d-flex align-items-center mb-1">
               <span className="badge bg-secondary me-2">Store</span>
               <strong className="small">Store:</strong>
-              <span className="ms-2"><CopyableUrl url={jungleStoreUrl} /></span>
+              <span className="ms-2"><CopyableUrl url={jungleStoreUrl} label="store URL" /></span>
             </div>
             <div className="text-muted small mt-2">{fmtCount(jungleStoreUrl)} collections</div>
           </div>
@@ -238,18 +244,18 @@ const ExplorePage = () => {
               <div className="d-flex align-items-center mb-1">
                 <span className="badge bg-success me-2">API</span>
                 <strong className="small">Sequence Collections API:</strong>
-                <span className="ms-2"><CopyableUrl url={s.api} /></span>
+                <span className="ms-2"><CopyableUrl url={s.api} label="API base URL" /></span>
               </div>
               <div className="d-flex align-items-center mb-1">
                 <span className="badge bg-secondary me-2">Store</span>
                 <strong className="small">Store:</strong>
-                <span className="ms-2"><CopyableUrl url={s.url} /></span>
+                <span className="ms-2"><CopyableUrl url={s.url} label="store URL" /></span>
               </div>
               <div className="text-muted small mt-2">{fmtCount(s.url)} collections</div>
             </div>
             <div>
               <a
-                href={`https://${s.api}/docs`}
+                href={`${s.api}/docs`}
                 className="btn btn-outline-primary btn-sm me-2"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -297,7 +303,7 @@ const ExplorePage = () => {
                 </td>
                 <td className="text-muted small">{s.description}</td>
                 <td className="text-end">{fmtCount(s.url)}</td>
-                <td><CopyableUrl url={s.url} /></td>
+                <td><CopyableUrl url={s.url} label="store URL" /></td>
                 <td className="text-nowrap small">
                   <Link to={`/explore-store/overview?url=${encodeURIComponent(s.url)}`}>
                     Browse store
@@ -305,7 +311,7 @@ const ExplorePage = () => {
                   {s.api && (
                     <>
                       {' · '}
-                      <a href={`https://${s.api}/docs`} target="_blank" rel="noopener noreferrer">
+                      <a href={`${s.api}/docs`} target="_blank" rel="noopener noreferrer">
                         API docs
                       </a>
                     </>

@@ -91,6 +91,66 @@ def _get_collection_digests(store) -> set:
     return {meta.digest for meta in store.list_collections()["results"]}
 
 
+def _looks_like_spa(directory: Path) -> bool:
+    """Return True if a directory holds a built Store Explorer SPA.
+
+    Distinguishes the Vite build (a mounted React app with ``<div id="root">``
+    and ``/assets/`` bundles) from the seqcolapi API landing page, which also
+    ships an index.html but is not the Explorer.
+    """
+    index = directory / "index.html"
+    if not index.is_file():
+        return False
+    try:
+        html = index.read_text(errors="replace")
+    except OSError:
+        return False
+    return 'id="root"' in html or "/assets/" in html
+
+
+def _find_spa_dir(frontend_dir: Optional[Path]) -> Path:
+    """Locate the built Store Explorer SPA to serve.
+
+    Resolution order:
+        1. ``--frontend-dir`` override (must contain index.html).
+        2. Packaged build at ``seqcolapi.const.STATIC_PATH`` (when the SPA has
+           been bundled into the installed package).
+        3. Repo-relative ``frontend/dist`` for development.
+
+    Auto-discovered candidates must look like the Explorer build (see
+    :func:`_looks_like_spa`) so the seqcolapi API landing page is skipped.
+    """
+    if frontend_dir is not None:
+        resolved = frontend_dir.expanduser().resolve()
+        if not (resolved / "index.html").is_file():
+            print_error(
+                f"--frontend-dir {resolved} does not contain index.html",
+                EXIT_FILE_NOT_FOUND,
+            )
+        return resolved
+
+    candidates: List[Path] = []
+    try:
+        from seqcolapi.const import STATIC_PATH
+
+        candidates.append(Path(STATIC_PATH))
+    except Exception:
+        pass
+    # repos/refget/refget/cli/store.py -> parents[2] == repos/refget
+    candidates.append(Path(__file__).resolve().parents[2] / "frontend" / "dist")
+
+    for candidate in candidates:
+        if _looks_like_spa(candidate):
+            return candidate
+
+    print_error(
+        "Could not locate the RefgetStore Explorer web UI.\n"
+        "Build it (cd frontend && npm install && npm run build), pass "
+        "--frontend-dir <path>, or use --store-only to serve just the files.",
+        EXIT_FILE_NOT_FOUND,
+    )
+
+
 def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[str] = None):
     """
     Load a RefgetStore from local path or remote server.
@@ -1638,6 +1698,116 @@ def crate(
     raise typer.Exit(EXIT_SUCCESS)
 
 
+@app.command()
+def explore(
+    path: Optional[Path] = typer.Argument(
+        None,
+        help="Local store directory to explore (default: from config)",
+    ),
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Host/interface to bind",
+    ),
+    port: int = typer.Option(
+        8080,
+        "--port",
+        "-P",
+        help="Port to serve on (auto-increments if busy)",
+    ),
+    no_browser: bool = typer.Option(
+        False,
+        "--no-browser",
+        help="Do not open a web browser; just print the URLs",
+    ),
+    frontend_dir: Optional[Path] = typer.Option(
+        None,
+        "--frontend-dir",
+        help="Override the Store Explorer SPA build directory",
+    ),
+    store_only: bool = typer.Option(
+        False,
+        "--store-only",
+        help="Serve only the store files (skip the SPA), for a self-hosted UI",
+    ),
+) -> None:
+    """
+    Browse a local RefgetStore in your web browser — no backend, no internet.
+
+    Serves the store's static files and the bundled Store Explorer web UI from a
+    single localhost origin, then opens the Explorer pointed at the local store.
+    Because both are served from the same origin, no CORS is involved. Works
+    against any store directory, including read-only CVMFS mounts and air-gapped
+    servers.
+
+    This command is READ-ONLY: only GET/HEAD are served and no write/control
+    operations are exposed. Use `refget store pull/add/alias` to modify a store.
+
+    Unlike most store commands, this does not require gtars — it is pure static
+    file serving.
+
+    Examples:
+        refget store explore /path/to/refget-store
+        refget store explore /cvmfs/data.example.org/refget-store
+        refget store explore --no-browser --port 9000
+        refget store explore --store-only   # serve just the files for a custom UI
+    """
+    import webbrowser
+    from http.server import ThreadingHTTPServer
+
+    from refget.cli._explore_server import make_explore_handler
+
+    store_path = _get_store_path(path)
+    if not store_path.exists():
+        print_error(f"Store not found at {store_path}", EXIT_FILE_NOT_FOUND)
+    if not (store_path / "rgstore.json").is_file():
+        print_error(
+            f"{store_path} does not look like a RefgetStore (no rgstore.json).",
+            EXIT_FILE_NOT_FOUND,
+        )
+
+    spa_dir = None if store_only else _find_spa_dir(frontend_dir)
+    handler = make_explore_handler(store_path, spa_dir)
+
+    # Bind, auto-incrementing the port if the requested one is already in use.
+    httpd = None
+    chosen_port = port
+    for candidate in range(port, port + 20):
+        try:
+            httpd = ThreadingHTTPServer((host, candidate), handler)
+            chosen_port = candidate
+            break
+        except OSError:
+            continue
+    if httpd is None:
+        print_error(
+            f"Could not bind to {host} on ports {port}-{port + 19} (all in use).",
+            EXIT_FAILURE,
+        )
+
+    base = f"http://{host}:{chosen_port}"
+    store_url = f"{base}/store/"
+    explorer_url = base + "/" if store_only else f"{base}/explore-store/overview?url=/store/"
+
+    typer.echo(f"Serving RefgetStore at {store_path}")
+    if not store_only:
+        typer.echo(f"  Explorer:    {explorer_url}")
+        typer.echo(f"  Web UI root: {base}/")
+    typer.echo(f"  Store files: {store_url}")
+    typer.echo("Press Ctrl-C to stop.")
+
+    if not no_browser:
+        webbrowser.open(explorer_url)
+
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        typer.echo("\nStopping server.")
+    finally:
+        httpd.server_close()
+    raise typer.Exit(EXIT_SUCCESS)
+
+
 @app.command("serve")
 def serve(
     path: Optional[Path] = typer.Option(None, "--path", "-p", help="Local store path"),
@@ -1645,7 +1815,11 @@ def serve(
         None, "--remote", "-r", help="Remote store URL (e.g. s3://bucket/store/)"
     ),
     port: int = typer.Option(8000, "--port", help="Port to serve on"),
-    host: str = typer.Option("0.0.0.0", "--host", help="Host to bind to"),
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Host to bind to (use 0.0.0.0 to expose on your network)",
+    ),
     lazy: bool = typer.Option(
         False,
         "--lazy",
