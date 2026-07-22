@@ -3,7 +3,7 @@
     "name": "Reference Genome Jungle",
     "description": "Human & mouse reference assemblies across many providers (UCSC, Ensembl, GENCODE, NCBI, iGenomes, …).",
     "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/jungle/",
-    "api": "seqcolapi.databio.org",
+    "api": "https://seqcolapi.databio.org",
     "hero": true
   },
   {
@@ -35,6 +35,6 @@
     "name": "Demo",
     "description": "Small test FASTAs for development and CI; the GA4GH compliance reference (passes all checks).",
     "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/demo/",
-    "api": "seqcolapi-demo.databio.org"
+    "api": "https://seqcolapi-demo.databio.org"
   }
 ]
