@@ -179,6 +179,17 @@ const ExplorePage = () => {
             </Link>
           </div>
 
+          {/* The card describes heroStore from stores.json, but the "Browse via
+              API" links below resolve through API_BASE. In production these are
+              the same server; anywhere else, say so rather than silently
+              browsing a different one than the card advertises. */}
+          {API_BASE !== heroStore.api && (
+            <div className="alert alert-warning py-2 small mb-3">
+              This build is connected to <code>{API_BASE}</code>, so the “Browse via API” links
+              below query that server, not the one listed above.
+            </div>
+          )}
+
           <div className="row">
             <div className="col-md-4">
               <h6 className="text-muted small text-uppercase mb-2">Browse via API</h6>
@@ -219,7 +230,7 @@ const ExplorePage = () => {
               <h6 className="text-muted small text-uppercase mb-2">Developer</h6>
               <ul className="list-unstyled mb-0">
                 <li className="mb-1">
-                  <a href={`${API_BASE}/docs`} className="text-decoration-none small" target="_blank" rel="noopener noreferrer">
+                  <a href={`${heroStore.api}/docs`} className="text-decoration-none small" target="_blank" rel="noopener noreferrer">
                     <i className="bi bi-arrow-right me-1" />API Docs
                   </a>
                 </li>
@@ -263,7 +274,10 @@ const ExplorePage = () => {
                 <i className="bi bi-box-arrow-up-right me-1" />
                 API docs
               </a>
-              <Link to="/compliance" className="btn btn-outline-success btn-sm">
+              <Link
+                to={`/compliance?url=${encodeURIComponent(s.api)}`}
+                className="btn btn-outline-success btn-sm"
+              >
                 <i className="bi bi-check2-circle me-1" />
                 Run compliance
               </Link>

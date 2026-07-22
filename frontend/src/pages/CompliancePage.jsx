@@ -1,8 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { API_BASE } from '../utilities.jsx';
 
 export const CompliancePage = () => {
-  const [targetUrl, setTargetUrl] = useState('');
+  // ?url= prefills the target so "Run compliance" from a specific server's
+  // card tests that server rather than dropping back to this one.
+  const [searchParams] = useSearchParams();
+  const [targetUrl, setTargetUrl] = useState(() => searchParams.get('url') || '');
   const [results, setResults] = useState([]);
   const [summary, setSummary] = useState(null);
   const [total, setTotal] = useState(0);
@@ -10,6 +14,12 @@ export const CompliancePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const eventSourceRef = useRef(null);
+  // onerror closes over `summary` from the render that started the run, which
+  // is always null; track completion in a ref so the guard actually works.
+  const doneRef = useRef(false);
+
+  // Close the stream if the user navigates away mid-run.
+  useEffect(() => () => eventSourceRef.current?.close(), []);
 
   // Accept a bare host (e.g. "seqcolapi-demo.databio.org") by defaulting to
   // https:// when no scheme is given.
@@ -26,6 +36,7 @@ export const CompliancePage = () => {
     setSummary(null);
     setTotal(0);
     setServerUrl('');
+    doneRef.current = false;
 
     const normalized = normalizeUrl(targetUrl);
     if (normalized !== targetUrl) setTargetUrl(normalized); // reflect back to the user
@@ -47,6 +58,7 @@ export const CompliancePage = () => {
       } else if (data.type === 'result') {
         setResults((prev) => [...prev, data]);
       } else if (data.type === 'done') {
+        doneRef.current = true;
         setSummary(data);
         setLoading(false);
         es.close();
@@ -54,7 +66,7 @@ export const CompliancePage = () => {
     };
 
     es.onerror = () => {
-      if (!summary) {
+      if (!doneRef.current) {
         setError('Connection lost or server unavailable');
       }
       setLoading(false);

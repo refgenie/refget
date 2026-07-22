@@ -8,8 +8,16 @@ import { usePagedList } from '../hooks/usePagedList.js';
 
 const StoreOverview = () => {
   const [searchParams] = useSearchParams();
-  const { storeUrl, metadata, sequenceIndex, collections, loading, loadStore, loadSequenceIndex } =
-    useExplorerStore();
+  const {
+    storeUrl,
+    metadata,
+    sequenceIndex,
+    collections,
+    loading,
+    error,
+    loadStore,
+    loadSequenceIndex,
+  } = useExplorerStore();
   const [seqLoading, setSeqLoading] = useState(false);
 
   const urlParam = searchParams.get('url');
@@ -49,6 +57,27 @@ const StoreOverview = () => {
     setPage: setCollectionsPage,
     totalPages: collectionsTotalPages,
   } = usePagedList(collections, { pageSize: 50 });
+
+  // loadStore records the failure on the store before rethrowing (the effect's
+  // catch only stops an unhandled rejection), so report the real cause rather
+  // than implying no URL was given.
+  if (!metadata && !loading && error) {
+    return (
+      <div className="alert alert-danger">
+        <strong>Could not load this store.</strong>
+        <div className="small mt-1">{error}</div>
+        {urlParam && (
+          <div className="small mt-1">
+            URL: <code>{urlParam}</code>
+          </div>
+        )}
+        <div className="small mt-2">
+          A store must serve <code>rgstore.json</code> and allow cross-origin reads.{' '}
+          <Link to="/explore-store">Try a different store URL.</Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!metadata && !loading) {
     return (
