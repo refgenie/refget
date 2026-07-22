@@ -136,9 +136,7 @@ def test_range_request_returns_206(populated_store, spa_dir):
 def test_suffix_range_request(populated_store, spa_dir):
     base, stop = _serve(populated_store["path"], spa_dir)
     try:
-        status, body, _ = _request(
-            f"{base}/store/collections.rgci", headers={"Range": "bytes=-8"}
-        )
+        status, body, _ = _request(f"{base}/store/collections.rgci", headers={"Range": "bytes=-8"})
         assert status == 206
         assert len(body) == 8
     finally:
@@ -148,9 +146,7 @@ def test_suffix_range_request(populated_store, spa_dir):
 def test_unsatisfiable_range_returns_416(populated_store, spa_dir):
     base, stop = _serve(populated_store["path"], spa_dir)
     try:
-        status, _, _ = _request(
-            f"{base}/store/rgstore.json", headers={"Range": "bytes=99999999-"}
-        )
+        status, _, _ = _request(f"{base}/store/rgstore.json", headers={"Range": "bytes=99999999-"})
         assert status == 416
     finally:
         stop()
