@@ -1,10 +1,5 @@
-import sys
+"""Compatibility shim: ``python -m seqcolapi`` -> ``python -m refget.seqcolapi``."""
 
-from .main import main
+import runpy
 
-if __name__ == "__main__":
-    try:
-        sys.exit(main())
-    except KeyboardInterrupt:
-        print("Program canceled by user")
-        sys.exit(1)
+runpy.run_module("refget.seqcolapi", run_name="__main__", alter_sys=True)

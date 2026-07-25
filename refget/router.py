@@ -22,8 +22,8 @@ Note that ``setup_backend`` binds the backend to ``app.state``, which
 ``get_backend`` reads back off ``request.app.state`` -- an app-global binding.
 Including this router twice at two prefixes of the same app therefore serves
 the *same* store from both. To serve a store from a sub-path (or to leave room
-for serving several stores), prefer ``refget.app.create_seqcol_app()``, which
-returns a self-contained app to mount.
+for serving several stores), prefer ``refget.seqcolapi.create_seqcol_app()``,
+which returns a self-contained app to mount.
 """
 
 import logging

@@ -23,12 +23,16 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
+# Base install must stay light: no fastapi, no uvicorn, no sqlmodel, no
+# psycopg2. Those are service/database dependencies, gated behind the
+# `seqcolapi` extra and behind the refget.seqcolapi / refget.agents /
+# refget.models module boundaries -- nothing on the `import refget` path
+# touches them.
 dependencies = [
     "gtars>=0.9.0",
     "jsonschema",
     "pyyaml",
     "requests",
-    "sqlmodel",
     "tomli_w",
     "typer>=0.9.0",
 ]
@@ -37,7 +41,11 @@ dependencies = [
 refget = "refget.cli:main"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov>=6.0.0", "fastapi", "httpx"]
+test = ["pytest", "pytest-cov>=6.0.0", "fastapi", "httpx", "sqlmodel"]
+# Everything needed to run the services in refget/seqcolapi/. psycopg2-binary is
+# only used by the PostgreSQL-backed app (refget.seqcolapi.main:app); the
+# store-backed app needs none of it. Splitting it into its own extra is a
+# judgement call left to the maintainer.
 seqcolapi = [
     "fastapi",
     "psycopg2-binary",

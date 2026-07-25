@@ -1,4 +1,4 @@
-"""Tests for the shared store-backed seqcol app factory (refget.app).
+"""Tests for the shared store-backed seqcol app factory (refget.seqcolapi).
 
 Covers the three properties the factory exists to guarantee:
 
@@ -24,8 +24,8 @@ try:
 except ImportError:
     _RUST_BINDINGS_AVAILABLE = False
 
-from refget.app import create_seqcol_app, store_service_info
 from refget.router import create_refget_router, setup_backend
+from refget.seqcolapi import create_seqcol_app, store_service_info
 
 TEST_FASTA_DIR = Path("test_fasta")
 BASE_FASTA = TEST_FASTA_DIR / "base.fa"

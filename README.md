@@ -7,10 +7,11 @@ User-facing documentation is hosted at [refgenie.org/refget](https://refgenie.or
 This repository includes:
 
 1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of refget standards. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
-2. `/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service.
-3. `/deployment`: Server configurations for demo instances and public deployed instances. There are also github workflows (in `.github/workflows`) that deploy the demo server instance from this repository.
-4. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
-5. `/frontend`: a React seqcolapi front-end.
+2. `/refget/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service. It ships in the `refget` wheel, but its dependencies do not: install them with `pip install 'refget[seqcolapi]'`. Nothing on the plain `import refget` path imports this subpackage, so a base install never pays for fastapi/uvicorn/sqlmodel/psycopg2.
+3. `/seqcolapi`: A thin compatibility shim re-exporting `refget.seqcolapi`, kept so existing deployments that run `uvicorn seqcolapi.main:app` (or `:store_app`) keep working. New code should import `refget.seqcolapi`.
+4. `/deployment`: Server configurations for demo instances and public deployed instances. There are also github workflows (in `.github/workflows`) that deploy the demo server instance from this repository.
+5. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
+6. `/frontend`: a React seqcolapi front-end.
 
 
 ## Deploy to AWS ECS

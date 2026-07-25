@@ -7,11 +7,14 @@ Import from submodules:
     from refget.utils import compare_seqcols, validate_seqcol, seqcol_digest
     from refget.clients import SequenceCollectionClient, FastaDrsClient
     from refget.router import create_refget_router
-    from refget.app import create_seqcol_app, create_store_app, prepare_store
+    from refget.seqcolapi import create_seqcol_app, create_store_app, prepare_store
     from refget.agents import RefgetDBAgent
 
-`refget.app` and `refget.router` require the optional `fastapi` dependency, so
-they are not imported eagerly here.
+`refget.seqcolapi` (the API service) and `refget.router` require the optional
+`fastapi` dependency; `refget.agents` and `refget.models` require `sqlmodel`.
+None of them are imported here, and nothing on this base-install path imports
+them, so `pip install refget` never pays for them. Install the service with
+`pip install 'refget[seqcolapi]'`.
 """
 
 from ._version import __version__

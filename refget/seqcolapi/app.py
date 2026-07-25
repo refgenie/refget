@@ -26,16 +26,26 @@ it.
 
 Typical use::
 
-    from refget.app import create_seqcol_app
+    from refget.seqcolapi import create_seqcol_app
 
     app.mount("/seqcol", create_seqcol_app(store_path=store_url, remote=True))
+
+fastapi and starlette are imported at module level here, as ordinary Python.
+That is safe because this module lives inside :mod:`refget.seqcolapi`, which no
+base-install code path imports -- see that package's docstring.
 """
 
 import json
 import logging
 import os
 
-from .const import ALL_VERSIONS, SEQCOL_SCHEMA_PATH, SEQCOL_SPEC_VERSION
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from refget.const import ALL_VERSIONS, SEQCOL_SCHEMA_PATH, SEQCOL_SPEC_VERSION
+from refget.middleware import StoreFreshnessMiddleware
+from refget.router import create_refget_router, setup_backend
+from refget.store import RefgetStore
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,8 +79,6 @@ def prepare_store(
     Returns:
         A ReadonlyRefgetStore suitable for concurrent serving.
     """
-    from .store import RefgetStore
-
     if remote:
         store = RefgetStore.open_remote(cache_dir, store_path)
     else:
@@ -216,10 +224,6 @@ def create_seqcol_app(
     Returns:
         A FastAPI application ready to serve standalone or to ``app.mount()``.
     """
-    from fastapi import FastAPI
-
-    from .router import create_refget_router, setup_backend
-
     if store is None and not defer_backend:
         if store_path is None:
             raise ValueError(
@@ -233,8 +237,6 @@ def create_seqcol_app(
     app = FastAPI(title=title, version=ALL_VERSIONS["refget_version"])
 
     if cors:
-        from fastapi.middleware.cors import CORSMiddleware
-
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["*"],
@@ -261,8 +263,6 @@ def create_seqcol_app(
     if freshness:
         if not store_path:
             raise ValueError("freshness requires `store_path` to poll for rgstore.json")
-        from .middleware import StoreFreshnessMiddleware
-
         app.add_middleware(
             StoreFreshnessMiddleware,
             store_url=store_path,
