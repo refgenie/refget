@@ -24,6 +24,12 @@ Including this router twice at two prefixes of the same app therefore serves
 the *same* store from both. To serve a store from a sub-path (or to leave room
 for serving several stores), prefer ``refget.seqcolapi.create_seqcol_app()``,
 which returns a self-contained app to mount.
+
+This module needs fastapi (``pip install 'refget[seqcolapi]'``) but **no
+database**: its response models come from :mod:`refget.response_models`, not
+from the SQLModel tables in :mod:`refget.models`. Only ``setup_backend(engine=)``
+touches the database, and it imports :class:`refget.agents.RefgetDBAgent`
+inside that branch.
 """
 
 import logging
@@ -33,7 +39,7 @@ from fastapi.responses import StreamingResponse
 
 from .backend import SeqColBackend
 from .examples import *
-from .models import PaginatedDigestList, Similarities
+from .response_models import PaginatedDigestList, Similarities
 
 _LOGGER = logging.getLogger(__name__)
 

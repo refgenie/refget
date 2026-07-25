@@ -7,11 +7,37 @@ User-facing documentation is hosted at [refgenie.org/refget](https://refgenie.or
 This repository includes:
 
 1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of refget standards. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
-2. `/refget/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service. It ships in the `refget` wheel, but its dependencies do not: install them with `pip install 'refget[seqcolapi]'`. Nothing on the plain `import refget` path imports this subpackage, so a base install never pays for fastapi/uvicorn/sqlmodel/psycopg2.
+2. `/refget/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service. It ships in the `refget` wheel, but its dependencies do not — see [Installation](#installation). Nothing on the plain `import refget` path imports this subpackage, so a base install never pays for fastapi/uvicorn/sqlmodel/psycopg2.
 3. `/seqcolapi`: A thin compatibility shim re-exporting `refget.seqcolapi`, kept so existing deployments that run `uvicorn seqcolapi.main:app` (or `:store_app`) keep working. New code should import `refget.seqcolapi`.
 4. `/deployment`: Server configurations for demo instances and public deployed instances. There are also github workflows (in `.github/workflows`) that deploy the demo server instance from this repository.
 5. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
 6. `/frontend`: a React seqcolapi front-end.
+
+
+## Installation
+
+The base install is deliberately light — a client library and CLI, no web
+server and no ORM. Everything heavier is an extra, and the extras compose:
+
+| Install | Adds | Use it for |
+| --- | --- | --- |
+| `pip install refget` | — | The Python library and the `refget` CLI: digests, `RefgetStore`, API clients, compliance. No fastapi, no sqlalchemy. |
+| `pip install 'refget[db]'` | sqlmodel, psycopg2-binary | The SQLModel layer: `refget.models`, `refget.agents.RefgetDBAgent`, `refget admin`. A library capability — you can want the ORM without wanting a server. |
+| `pip install 'refget[seqcolapi]'` | fastapi, uvicorn | **Serving a RefgetStore.** `uvicorn seqcolapi.main:store_app`, `refget store serve`, `refget.seqcolapi.create_seqcol_app`. No database of any kind. |
+| `pip install 'refget[seqcolapi-db]'` | both of the above | **The PostgreSQL-backed service** (`uvicorn seqcolapi.main:app`), i.e. what runs seqcolapi.databio.org. |
+
+The two service extras correspond to the two deployment modes described under
+[Development and deployment: Backend](#development-and-deployment-backend). The
+store-backed mode is the common case and the cheaper one; it needs no database
+dependencies at all.
+
+These boundaries are enforced by module structure, not convention: the
+database code lives in `refget/models.py`, `refget/agents.py` and
+`refget/seqcolapi/dbapp.py`, and nothing else imports them at module level. The
+router's response bodies live in `refget/response_models.py` (plain pydantic)
+precisely so that serving the API does not require an ORM. Importing a module
+without its extra raises an error naming the extra to install, rather than a
+bare `ModuleNotFoundError`. `tests/local/test_import_gating.py` is the tripwire.
 
 
 ## Deploy to AWS ECS
@@ -46,7 +72,7 @@ This starts the test database, runs tests, and cleans up automatically.
 
 ### Store-backed (no database)
 
-The store-backed seqcolapi uses a RefgetStore (local files) instead of PostgreSQL. This is the simplest way to run the API.
+The store-backed seqcolapi uses a RefgetStore (local files) instead of PostgreSQL. This is the simplest way to run the API, and it needs only `pip install 'refget[seqcolapi]'` — fastapi and uvicorn, no sqlmodel, no sqlalchemy, no psycopg2.
 
 For safe concurrent serving, the store is fully loaded and converted to a read-only store (`RefgetStore.into_readonly()`) before serving, so HTTP reads borrow immutably across request threads. The `refget store serve` CLI does this by default; pass `--lazy` to serve directly from the mutable, lazy-loading store instead (single-reader-oriented, not recommended for concurrent production serving).
 
@@ -87,7 +113,7 @@ REFGET_STORE_URL=https://example.com/store uvicorn seqcolapi.main:store_app --po
 
 ### DB-backed (PostgreSQL)
 
-If you need a database-backed instance (e.g., for mutable data, advanced queries), use the DB-backed workflow. In a moment I'll show you how to do these steps individually, but if you're in a hurry, the easy way to get a development API running for testing is to just use my very simple shell script like this (no data persistence, just loads demo data):
+If you need a database-backed instance (e.g., for mutable data, advanced queries), use the DB-backed workflow. This one needs `pip install 'refget[seqcolapi-db]'`. In a moment I'll show you how to do these steps individually, but if you're in a hurry, the easy way to get a development API running for testing is to just use my very simple shell script like this (no data persistence, just loads demo data):
 
 ```console
 bash deployment/demo_up.sh
@@ -244,10 +270,15 @@ interface SeqColResult {
 
 ### Models
 
-The objects and attributes are represented as SQLModel objects in `refget/models.py`. To add a new attribute:
+The database objects and attributes are represented as SQLModel objects in `refget/models.py` (requires `refget[db]`). To add a new attribute:
 
 1. create a new model. This will create a table for that model, etc.
 2. change the function that creates the objects, to populate the new attribute.
+
+HTTP response bodies are *not* defined there. They are plain pydantic models in
+`refget/response_models.py`, so that `refget.router` — and therefore the
+store-backed service — can be imported without an ORM. Put a new response
+schema there unless it genuinely maps to a database table.
 
 ## Example of loading reference fasta datasets:
 

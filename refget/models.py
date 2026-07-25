@@ -1,14 +1,41 @@
+"""SQLModel/SQLAlchemy table definitions for the PostgreSQL-backed refget.
+
+This is the database module. sqlmodel and sqlalchemy are imported at the top of
+the file, in ordinary Python style, because **the module boundary is the
+gate**: nothing on the ``import refget`` path imports ``refget.models``, so a
+base install never loads it and never pays for the ORM. Either you asked for
+the database side of refget and this module loads, or it is never loaded at
+all -- there is no middle state and no function-local imports to maintain.
+
+Plain-pydantic response bodies are deliberately *not* defined here; they live
+in :mod:`refget.response_models` so that :mod:`refget.router` can serve the
+sequence collections API without a database. They are re-exported below, so
+``from refget.models import Similarities`` keeps working.
+"""
+
 import json
 import logging
 from copy import copy
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
-from pydantic import BaseModel, field_serializer, field_validator
-from sqlalchemy.types import TypeDecorator
-from sqlmodel import JSON, Column, Field, Relationship, SQLModel
+from ._deps import require
 
-from .digests import sha512t24u_digest
+# Fail once, here, with something actionable -- not with a bare
+# ModuleNotFoundError from the middle of a table definition.
+require("refget.models (the SQLModel database tables)", "db", "sqlmodel", "sqlalchemy")
+
+from pydantic import field_serializer, field_validator  # noqa: E402
+from sqlalchemy.types import TypeDecorator  # noqa: E402
+from sqlmodel import JSON, Column, Field, Relationship, SQLModel  # noqa: E402
+
+from .digests import sha512t24u_digest  # noqa: E402
+from .response_models import (  # noqa: E402,F401
+    PaginatedDigestList,
+    PaginationResult,
+    ResultsSequenceCollections,
+    Similarities,
+)
 
 if TYPE_CHECKING:
     from gtars.refget import SequenceCollection as gtarsSequenceCollection
@@ -732,36 +759,13 @@ class NameLengthPairsAttr(SQLModel, table=True):
     collection: List["SequenceCollection"] = Relationship(back_populates="name_length_pairs")
 
 
-class PaginationResult(BaseModel):
-    page: int = 0
-    page_size: int = 10
-    total: int
-
-
-class ResultsSequenceCollections(BaseModel):
-    """
-    Sequence collection results with pagination
-    """
-
-    pagination: PaginationResult
-    results: Dict[str, dict]
-
-
-class Similarities(BaseModel):
-    """
-    Model to contain results from similarities calculations
-    """
-
-    similarities: List[Dict[str, Any]]
-    pagination: PaginationResult
-    reference_digest: Optional[str] = None
-
-
-class PaginatedDigestList(BaseModel):
-    """Paginated list of digests, used by list endpoints"""
-
-    pagination: PaginationResult
-    results: List[str]
+# PaginationResult, ResultsSequenceCollections, Similarities and
+# PaginatedDigestList used to be defined here. They are plain pydantic response
+# bodies with no database involvement, and they now live in
+# refget/response_models.py so that refget.router can import them without
+# dragging sqlmodel/sqlalchemy into a store-backed deployment. They are
+# imported at the top of this module, so `from refget.models import
+# Similarities` still works.
 
 
 # This is now a transient attribute, so we don't need to store it in the database.

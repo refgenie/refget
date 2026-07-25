@@ -25,7 +25,7 @@ classifiers = [
 ]
 # Base install must stay light: no fastapi, no uvicorn, no sqlmodel, no
 # psycopg2. Those are service/database dependencies, gated behind the
-# `seqcolapi` extra and behind the refget.seqcolapi / refget.agents /
+# `seqcolapi` / `db` extras and behind the refget.seqcolapi / refget.agents /
 # refget.models module boundaries -- nothing on the `import refget` path
 # touches them.
 dependencies = [
@@ -42,17 +42,33 @@ refget = "refget.cli:main"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-cov>=6.0.0", "fastapi", "httpx", "sqlmodel"]
-# Everything needed to run the services in refget/seqcolapi/. psycopg2-binary is
-# only used by the PostgreSQL-backed app (refget.seqcolapi.main:app); the
-# store-backed app needs none of it. Splitting it into its own extra is a
-# judgement call left to the maintainer.
-seqcolapi = [
-    "fastapi",
-    "psycopg2-binary",
-    "sqlmodel",
-    "uvicorn>=0.30.0",
-    "ubiquerg>=0.6.1",
-]
+
+# There are three axes here, and they compose:
+#
+#   db            the SQLModel/SQLAlchemy layer -- refget.models, refget.agents,
+#                 `refget admin`. Its own extra, not a corner of `seqcolapi`,
+#                 because it is a *library* capability: you can want the ORM
+#                 without wanting a web server.
+#   seqcolapi     the web service -- fastapi + uvicorn, nothing more. This is
+#                 all the RefgetStore-backed deployment needs. No ORM: nothing
+#                 reachable from refget.seqcolapi.app imports sqlmodel (the
+#                 router's response models live in refget/response_models.py,
+#                 and setup_backend imports RefgetDBAgent only in its `engine`
+#                 branch).
+#   seqcolapi-db  the PostgreSQL-backed deployment (seqcolapi.databio.org):
+#                 both of the above. Named rather than left for the user to
+#                 spell as `refget[seqcolapi,db]`, because the two service
+#                 modes are a real deployment choice and should be
+#                 discoverable from the extras list.
+#
+# `seqcolapi` keeps its name and its meaning-for-most-people (run the service),
+# so nobody's existing install line breaks; it just stopped dragging in an ORM
+# that the store-backed app never touches.
+#
+# ubiquerg was listed here and is imported by nothing under refget/ -- dropped.
+db = ["psycopg2-binary", "sqlmodel"]
+seqcolapi = ["fastapi", "uvicorn>=0.30.0"]
+seqcolapi-db = ["refget[db,seqcolapi]"]
 
 [project.urls]
 Homepage = "https://github.com/refgenie/refget"
@@ -94,9 +110,12 @@ select = ["E", "F", "I"]
 ignore = ["F403", "F405", "E501"]
 
 [tool.ruff.lint.per-file-ignores]
-# The dependency gate has to run before the service imports it guards, so those
-# imports are deliberately not at the top of the file.
+# The dependency gate has to run before the imports it guards, so those imports
+# are deliberately not at the top of the file.
 "refget/seqcolapi/__init__.py" = ["E402"]
+"refget/seqcolapi/dbapp.py" = ["E402"]
+"refget/models.py" = ["E402"]
+"refget/agents.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["refget"]

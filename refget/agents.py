@@ -1,22 +1,39 @@
+"""PostgreSQL-backed refget agent.
+
+Like :mod:`refget.models`, this is a database module: sqlmodel and sqlalchemy
+are imported at module level, and the gate is the module boundary -- nothing on
+the ``import refget`` path imports it. ``refget.router.setup_backend`` imports
+:class:`RefgetDBAgent` inside its ``engine is not None`` branch precisely so
+that store-backed deployments never load this file.
+
+Requires ``pip install 'refget[db]'``.
+"""
+
 from __future__ import annotations
 
 import json
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
 
 import requests
-from sqlmodel import Session, SQLModel, create_engine, delete, func, select
 
-if TYPE_CHECKING:
-    import peppy
-from typing import List, Optional
+from ._deps import require
 
-from sqlalchemy import URL
-from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine
-from sqlalchemy.orm import selectinload
+# Fail once, here, with something actionable. Only what this module *imports*
+# is gated: psycopg2 is deliberately not required here, because the driver is
+# resolved by SQLAlchemy at connect time from the URL, and gating on it would
+# reject a caller who supplies an engine for some other database. The `db`
+# extra ships psycopg2-binary regardless, since the default URL RefgetDBAgent
+# builds is a driverless ``postgresql://``.
+require("refget.agents (the PostgreSQL-backed agent)", "db", "sqlmodel", "sqlalchemy")
 
-from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH
-from .models import (
+from sqlalchemy import URL  # noqa: E402
+from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine  # noqa: E402
+from sqlalchemy.orm import selectinload  # noqa: E402
+from sqlmodel import Session, SQLModel, create_engine, delete, func, select  # noqa: E402
+
+from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH  # noqa: E402
+from .models import (  # noqa: E402
     AccessMethod,
     AccessURL,
     CollectionNamesAttr,
@@ -25,20 +42,22 @@ from .models import (
     LengthsAttr,
     NameLengthPairsAttr,
     NamesAttr,
-    PaginationResult,
     Pangenome,
-    ResultsSequenceCollections,
     Sequence,
     SequenceCollection,
     SequencesAttr,
     SortedSequencesAttr,
 )
-from .utils import (
+from .response_models import PaginationResult, ResultsSequenceCollections  # noqa: E402
+from .utils import (  # noqa: E402
     build_pangenome_model,
     calc_jaccard_similarities,
     compare_seqcols,
     fasta_to_seqcol_dict,
 )
+
+if TYPE_CHECKING:
+    import peppy
 
 ATTR_TYPE_MAP = {
     "sequences": SequencesAttr,

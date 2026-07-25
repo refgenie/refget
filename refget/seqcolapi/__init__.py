@@ -1,58 +1,48 @@
 """Sequence Collections API service — the optional, server-side half of refget.
 
-Everything in this subpackage requires the optional service dependencies
-(``pip install 'refget[seqcolapi]'``). They are imported here at module level,
-in ordinary Python style, because **the package boundary is the gate**: nothing
-in ``refget/__init__.py`` — or on any other base-install code path — imports
-``refget.seqcolapi``. Either you asked for the service and the whole subpackage
-loads, or it is never loaded at all. There is no middle state, and no
-function-local imports scattered through the service code to maintain.
+Everything in this subpackage requires the optional web-service dependencies
+(``pip install 'refget[seqcolapi]'``: fastapi and uvicorn). They are imported
+here at module level, in ordinary Python style, because **the package boundary
+is the gate**: nothing in ``refget/__init__.py`` — or on any other base-install
+code path — imports ``refget.seqcolapi``. Either you asked for the service and
+the whole subpackage loads, or it is never loaded at all. There is no middle
+state, and no function-local imports scattered through the service code to
+maintain.
 
-Two applications ship here:
+Two applications ship here, and they do **not** cost the same:
 
-* :mod:`refget.seqcolapi.main` — the PostgreSQL-backed ``app`` that runs
-  seqcolapi.databio.org, plus the ``store_app`` built from the environment.
 * :func:`create_seqcol_app` — the store-backed factory, which returns a
   self-contained, mountable app served out of a
-  :class:`~refget.store.RefgetStore`.
+  :class:`~refget.store.RefgetStore`. Needs ``refget[seqcolapi]`` only. No
+  database, no ORM: nothing it reaches imports sqlmodel.
+* :mod:`refget.seqcolapi.main` — the PostgreSQL-backed ``app`` that runs
+  seqcolapi.databio.org, plus the ``store_app`` built from the environment.
+  Needs ``refget[seqcolapi,db]``, because it goes through
+  :mod:`refget.agents` and :mod:`refget.models`.
 
 Import the package, not its submodules::
 
     from refget.seqcolapi import create_seqcol_app, prepare_store
 
-:mod:`refget.seqcolapi.main` is deliberately *not* imported here: it builds a
-FastAPI app at module scope and, absent ``REFGET_STORE_URL`` /
-``REFGET_STORE_PATH``, connects to PostgreSQL on import. Ask for it by name
-(``uvicorn refget.seqcolapi.main:app``) when you want that.
+:mod:`refget.seqcolapi.main` is deliberately *not* imported here: it reads the
+environment and builds an app at module scope. Ask for it by name
+(``uvicorn refget.seqcolapi.main:store_app``, or ``:app`` for the PostgreSQL
+one) when you want that.
 """
 
+from refget._deps import require
 
-def _gate():
-    """Fail once, here, with something actionable -- not with a bare
-    ModuleNotFoundError from four imports deep.
+# Fail once, here, with something actionable -- not with a bare
+# ModuleNotFoundError from four imports deep.
+#
+# Only fastapi is required. The store-backed app in .app needs no database:
+# refget.router takes its response models from refget.response_models, and
+# setup_backend imports RefgetDBAgent lazily inside its engine branch. The
+# database gate belongs to .main, which is the only module here that imports
+# sqlmodel -- and .main is deliberately not imported by this package.
+require("refget.seqcolapi (the sequence collections service)", "seqcolapi", "fastapi")
 
-    Probes rather than wrapping the imports below, so that a genuine ImportError
-    inside our own service code still surfaces as itself.
-    """
-    missing = []
-    for dep in ("fastapi", "sqlmodel"):  # sqlmodel arrives via refget.router
-        try:
-            __import__(dep)
-        except ImportError:
-            missing.append(dep)
-    if missing:
-        raise ImportError(
-            "refget.seqcolapi requires the optional sequence-collections "
-            f"service dependencies, and {', '.join(missing)} "
-            f"{'is' if len(missing) == 1 else 'are'} not installed.\n"
-            "Install them with:  pip install 'refget[seqcolapi]'"
-        )
-
-
-_gate()
-del _gate
-
-from refget.const import ALL_VERSIONS
+from refget.const import ALL_VERSIONS  # noqa: E402
 
 from .app import (
     DEFAULT_CACHE_DIR,
