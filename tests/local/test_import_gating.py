@@ -10,6 +10,8 @@ already polluted by the rest of the suite.
 import subprocess
 import sys
 
+import pytest
+
 GATED_TOP_LEVEL = ("fastapi", "starlette", "uvicorn", "sqlmodel", "sqlalchemy", "psycopg2")
 
 
@@ -56,15 +58,17 @@ def test_service_subpackage_is_importable_when_deps_are_present():
     assert loaded == "True"
 
 
-def test_missing_service_deps_raise_an_actionable_error():
-    # Simulate a base install by making `fastapi` unimportable.
+@pytest.mark.parametrize("blocked", ["fastapi", "sqlmodel"])
+def test_missing_service_deps_raise_an_actionable_error(blocked):
+    # Simulate a base install by making one gated dependency unimportable.
     message = _run(
         "import sys;"
+        f"blocked = {blocked!r};"
         "sys.meta_path.insert(0, type('Blocker', (), {"
         "  'find_spec': staticmethod("
         "     lambda name, path=None, target=None: "
-        "     (_ for _ in ()).throw(ImportError('blocked')) if name.split('.')[0] == 'fastapi' "
-        "     else None)"
+        "     (_ for _ in ()).throw(ImportError('blocked')) "
+        "     if name.split('.')[0] == blocked else None)"
         "})());"
         "\ntry:\n"
         "    import refget.seqcolapi\n"
@@ -73,3 +77,4 @@ def test_missing_service_deps_raise_an_actionable_error():
     )
     assert "refget[seqcolapi]" in message
     assert "pip install" in message
+    assert blocked in message

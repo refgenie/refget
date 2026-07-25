@@ -93,6 +93,11 @@ exclude = [
 select = ["E", "F", "I"]
 ignore = ["F403", "F405", "E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# The dependency gate has to run before the service imports it guards, so those
+# imports are deliberately not at the top of the file.
+"refget/seqcolapi/__init__.py" = ["E402"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["refget"]
 

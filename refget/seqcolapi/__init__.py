@@ -26,14 +26,31 @@ FastAPI app at module scope and, absent ``REFGET_STORE_URL`` /
 (``uvicorn refget.seqcolapi.main:app``) when you want that.
 """
 
-try:  # The gate. Fail here, once, with something actionable.
-    import fastapi  # noqa: F401
-except ImportError as e:  # pragma: no cover - exercised in a bare venv
-    raise ImportError(
-        "refget.seqcolapi requires the optional sequence-collections service "
-        "dependencies (fastapi, uvicorn, ...), which are not installed.\n"
-        "Install them with:  pip install 'refget[seqcolapi]'"
-    ) from e
+
+def _gate():
+    """Fail once, here, with something actionable -- not with a bare
+    ModuleNotFoundError from four imports deep.
+
+    Probes rather than wrapping the imports below, so that a genuine ImportError
+    inside our own service code still surfaces as itself.
+    """
+    missing = []
+    for dep in ("fastapi", "sqlmodel"):  # sqlmodel arrives via refget.router
+        try:
+            __import__(dep)
+        except ImportError:
+            missing.append(dep)
+    if missing:
+        raise ImportError(
+            "refget.seqcolapi requires the optional sequence-collections "
+            f"service dependencies, and {', '.join(missing)} "
+            f"{'is' if len(missing) == 1 else 'are'} not installed.\n"
+            "Install them with:  pip install 'refget[seqcolapi]'"
+        )
+
+
+_gate()
+del _gate
 
 from refget.const import ALL_VERSIONS
 
