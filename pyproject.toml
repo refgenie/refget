@@ -60,6 +60,19 @@ Homepage = "https://github.com/refgenie/refget"
 [tool.hatch.version]
 path = "refget/_version.py"
 
+# Ship exactly one package: refget/. Stated explicitly rather than left to
+# hatchling's name-based auto-detection, because there is now a second
+# importable top-level directory -- the seqcolapi/ compatibility shim -- which
+# must NOT go in the wheel. The shim exists only for deployments that COPY it
+# out of the repo; the real code is refget/seqcolapi/.
+#
+# refget/seqcolapi/static/ needs no force-include: it lives inside the package
+# directory, and hatchling ships every non-VCS-ignored file it finds there.
+# Verify after touching .gitignore -- an ignore rule that matched, say, *.ico
+# would silently drop package data from the wheel.
+[tool.hatch.build.targets.wheel]
+packages = ["refget"]
+
 # Bundle the compliance known-answer fixtures into the installed package so the
 # compliance runner is self-contained on a pip-installed deploy (the source
 # files live at the repo root, outside the refget/ package).
