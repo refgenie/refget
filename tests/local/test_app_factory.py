@@ -156,7 +156,9 @@ class TestDeferredBackend:
     def test_routes_exist_before_a_store_is_bound(self):
         seqcol = create_seqcol_app(defer_backend=True, store_url="https://a/store/", cors=False)
         assert not hasattr(seqcol.state, "backend")
-        assert "/list/collection" in {r.path for r in seqcol.routes}
+        # Read paths from the OpenAPI schema: `app.routes` nests included routers
+        # differently across starlette versions, but the schema is public API.
+        assert "/list/collection" in seqcol.openapi()["paths"]
         # service-info still answers; it just reports no backend capabilities.
         info = TestClient(seqcol).get("/service-info").json()
         assert info["seqcol"]["refget_store"]["url"] == "https://a/store/"
