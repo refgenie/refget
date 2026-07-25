@@ -180,6 +180,7 @@ def create_seqcol_app(
     freshness: bool | None = None,
     freshness_interval: int = 300,
     cors: bool = True,
+    defer_backend: bool = False,
     title: str = "Sequence Collections API (Store-backed)",
 ):
     """Create a self-contained, mountable seqcol app served from a RefgetStore.
@@ -205,6 +206,12 @@ def create_seqcol_app(
             republished store without a restart. Defaults to ``remote``.
         cors: Add a permissive CORS middleware. Set False when the host app
             already installs one.
+        defer_backend: Build the routes now but do not open or bind a store.
+            The caller must then call ``refget.router.setup_backend(seqcol_app,
+            store=...)`` before the first request. Mounted sub-applications do
+            not receive their own lifespan events, so a host app that wants to
+            open the store on startup rather than at import time has to mount
+            the routes early and bind the backend from *its* lifespan.
 
     Returns:
         A FastAPI application ready to serve standalone or to ``app.mount()``.
@@ -213,9 +220,11 @@ def create_seqcol_app(
 
     from .router import create_refget_router, setup_backend
 
-    if store is None:
+    if store is None and not defer_backend:
         if store_path is None:
-            raise ValueError("create_seqcol_app requires either `store` or `store_path`")
+            raise ValueError(
+                "create_seqcol_app requires `store`, `store_path`, or defer_backend=True"
+            )
         store = prepare_store(store_path, remote=remote, cache_dir=cache_dir)
 
     if store_url is None and remote:
@@ -234,7 +243,8 @@ def create_seqcol_app(
             allow_headers=["*"],
         )
 
-    setup_backend(app, store=store)
+    if store is not None:
+        setup_backend(app, store=store)
     app.include_router(
         create_refget_router(
             sequences=sequences,

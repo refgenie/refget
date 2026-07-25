@@ -10,6 +10,7 @@ Covers the three properties the factory exists to guarantee:
 """
 
 import json
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 import pytest
@@ -147,6 +148,39 @@ class TestMountable:
         host = FastAPI()
         host.mount("/seqcol", _app(store_url="https://a/store/"))
         assert not hasattr(host.state, "backend")
+
+
+class TestDeferredBackend:
+    """A mounted sub-app gets no lifespan events, so the host binds its store."""
+
+    def test_routes_exist_before_a_store_is_bound(self):
+        seqcol = create_seqcol_app(defer_backend=True, store_url="https://a/store/", cors=False)
+        assert not hasattr(seqcol.state, "backend")
+        assert "/list/collection" in {r.path for r in seqcol.routes}
+        # service-info still answers; it just reports no backend capabilities.
+        info = TestClient(seqcol).get("/service-info").json()
+        assert info["seqcol"]["refget_store"]["url"] == "https://a/store/"
+        assert "n_collections" not in info["seqcol"]["refget_store"]
+
+    def test_host_can_bind_the_store_later_from_its_own_lifespan(self):
+        seqcol = create_seqcol_app(defer_backend=True, store_url="https://a/store/", cors=False)
+
+        @asynccontextmanager
+        async def lifespan(app):
+            setup_backend(seqcol, store=_readonly_store())
+            yield
+
+        host = FastAPI(lifespan=lifespan)
+        host.mount("/seqcol", seqcol)
+
+        with TestClient(host) as client:
+            assert client.get("/seqcol/list/collection").status_code == 200
+            caps = client.get("/seqcol/service-info").json()["seqcol"]["refget_store"]
+            assert caps["n_collections"] == 1
+
+    def test_no_store_and_no_defer_is_an_error(self):
+        with pytest.raises(ValueError, match="defer_backend"):
+            create_seqcol_app()
 
 
 class TestComplianceSelfTarget:
