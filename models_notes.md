@@ -49,7 +49,6 @@ Digest is a string, and value is a JSON column, where I put the content of the a
 This is some old deprecated models I had been working on, under different modeling approaches; probably can delete these soon if I don't need to revisit it.
 
 ```python
-
 # DigestedSequenceCollection = create_model(
 # 	'DigestedSequenceCollection', digest=(str, ""),
 # 	__base__= SequenceCollection,
@@ -134,7 +133,6 @@ This is some old deprecated models I had been working on, under different modeli
 
 
 if False:
-
     from pydantic import create_model
     from typing import List
     from sqlmodel import Field, ARRAY, SQLModel, create_engine, Column, Float, Relationship
