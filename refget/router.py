@@ -34,12 +34,19 @@ inside that branch.
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from fastapi.responses import StreamingResponse
+from ._deps import require
 
-from .backend import SeqColBackend
-from .examples import *
-from .response_models import PaginatedDigestList, Similarities
+# This module is a documented entry point in its own right
+# (``from refget.router import create_refget_router``), so it carries its own
+# gate rather than relying on being reached through refget.seqcolapi.
+require("refget.router (the sequence collections router)", "seqcolapi", "fastapi")
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response  # noqa: E402
+from fastapi.responses import StreamingResponse  # noqa: E402
+
+from .backend import SeqColBackend  # noqa: E402
+from .examples import *  # noqa: E402
+from .response_models import PaginatedDigestList, Similarities  # noqa: E402
 
 _LOGGER = logging.getLogger(__name__)
 

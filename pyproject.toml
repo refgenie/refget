@@ -116,6 +116,7 @@ ignore = ["F403", "F405", "E501"]
 "refget/seqcolapi/dbapp.py" = ["E402"]
 "refget/models.py" = ["E402"]
 "refget/agents.py" = ["E402"]
+"refget/router.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["refget"]
