@@ -1846,7 +1846,15 @@ def serve(
     try:
         import uvicorn
     except ImportError:
-        print_error("uvicorn is required: pip install uvicorn", EXIT_FAILURE)
+        # Name the extra, not just the package: fastapi is needed here too, and
+        # `refget[seqcolapi]` is the supported way to ask for both. No `db`
+        # needed -- serving a store touches no ORM.
+        print_error(
+            "Serving requires the optional web-service dependencies "
+            "(fastapi, uvicorn), and uvicorn is not installed.\n"
+            "Install them with:  pip install 'refget[seqcolapi]'",
+            EXIT_FAILURE,
+        )
 
     from refget.backend import RefgetStoreBackend
 
