@@ -1,15 +1,9 @@
 import os
-from platform import python_version
 
-from gtars import __version__ as gtars_version
+# ALL_VERSIONS moved into the distributed `refget` package (refget/const.py) so
+# the shared store-backed app factory can build service-info without seqcolapi,
+# which is not shipped in the refget wheel. Re-exported here for compatibility.
+from refget.const import ALL_VERSIONS  # noqa: F401
 
-from refget._version import __version__ as refget_version
-
-ALL_VERSIONS = {
-    "refget_version": refget_version,
-    "gtars_version": gtars_version,
-    "python_version": python_version(),
-    "seqcol_spec_version": "1.0.0",
-}
 STATIC_DIRNAME = "static"
 STATIC_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), STATIC_DIRNAME)

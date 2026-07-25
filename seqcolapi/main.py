@@ -240,6 +240,11 @@ app.mount("/", StaticFiles(directory=STATIC_PATH), name=STATIC_DIRNAME)
 def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/tmp/seqcol_cache"):
     """Create a seqcolapi FastAPI app backed by a RefgetStore (no database).
 
+    Thin wrapper over ``refget.app.create_seqcol_app``, which owns the shared
+    store-backed wiring (readonly store, backend, router, freshness, GA4GH
+    service-info). Everything seqcolapi adds on top is SCOM, which is not a
+    refget concern, so it is injected through ``service_info_extra``.
+
     Args:
         store_path: Path to store on disk, or S3 URL for remote stores.
         remote: If True, open as a remote (S3) store.
@@ -248,101 +253,31 @@ def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/t
     Returns:
         FastAPI app with store-backed seqcol endpoints.
     """
-    from refget.store import RefgetStore
-
-    if remote:
-        store = RefgetStore.open_remote(cache_dir, store_path)
-    else:
-        store = RefgetStore.on_disk(store_path)
-
-    # Load all collections and convert to a thread-safe ReadonlyRefgetStore so
-    # concurrent HTTP reads borrow immutably (no mutable lazy-loading borrow).
-    store.load_all_collections()
-    store = store.into_readonly()
-
-    store_app = FastAPI(
-        title="Sequence Collections API (Store-backed)",
-        version=ALL_VERSIONS["refget_version"],
-    )
-
-    store_app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    setup_backend(store_app, store=store)
-    router = create_refget_router(
-        sequences=False, pangenomes=False, refget_store_url=store_path if remote else None
-    )
-    store_app.include_router(router)
+    from refget.app import create_seqcol_app
 
     # Load SCOM config: check SCOM_CONFIG_URL env var, then fall back to store convention
     _load_scom_config(store_path, remote)
 
-    if remote:
-        from refget.middleware import StoreFreshnessMiddleware
-
-        store_app.add_middleware(
-            StoreFreshnessMiddleware,
-            store_url=store_path,
-            cache_dir=cache_dir,
-        )
-
-    @store_app.get("/service-info", summary="GA4GH service info", tags=["General endpoints"])
-    async def store_service_info():
-        import json as _json
-
-        backend = getattr(store_app.state, "backend", None)
-        caps = backend.capabilities() if backend and hasattr(backend, "capabilities") else {}
-
-        # Load the seqcol schema (same schema used by the DB-backed app).
-        # Resolve via the installed refget package, not a dev-relative path —
-        # in the deployed image refget lives in site-packages, not ../refget.
-        from refget.const import SEQCOL_SCHEMA_PATH
-
-        try:
-            with open(SEQCOL_SCHEMA_PATH) as _f:
-                schema = _json.load(_f)
-        except Exception:
-            schema = None
-
+    def _scom_block():
+        # Evaluated per request, because _SAMPLE_DIGESTS can be repopulated.
         return {
-            "id": "org.databio.seqcolapi.store",
-            "name": "Sequence collections (store-backed)",
-            "type": {
-                "group": "org.ga4gh",
-                "artifact": "refget-seqcol",
-                "version": ALL_VERSIONS["seqcol_spec_version"],
-            },
-            "description": "Store-backed API providing metadata for collections of reference sequences",
-            "organization": {"name": "Databio Lab", "url": "https://databio.org"},
-            "contactUrl": "https://github.com/refgenie/refget/issues",
-            "version": ALL_VERSIONS,
-            "seqcol": {
-                "schema": schema,
-                "refget_store": {
-                    "enabled": True,
-                    "url": os.environ.get("REFGET_STORE_HTTP_URL", store_path),
-                    **caps,
-                },
-                "aliases": {
-                    "enabled": bool(
-                        caps.get("collection_alias_namespaces")
-                        or caps.get("sequence_alias_namespaces")
-                    )
-                },
-                "fhr_metadata": {"enabled": bool(caps.get("fhr_metadata_collections"))},
-                "scom": {
-                    "enabled": bool(_SAMPLE_DIGESTS),
-                    "species": list(_SAMPLE_DIGESTS.keys()),
-                },
-            },
+            "scom": {
+                "enabled": bool(_SAMPLE_DIGESTS),
+                "species": list(_SAMPLE_DIGESTS.keys()),
+            }
         }
 
-    return store_app
+    return create_seqcol_app(
+        store_path=store_path,
+        remote=remote,
+        cache_dir=cache_dir,
+        # Advertise the store path (REFGET_STORE_HTTP_URL overrides it inside
+        # store_service_info), matching the pre-extraction service-info exactly.
+        store_url=store_path,
+        service_info_id="org.databio.seqcolapi.store",
+        service_info_name="Sequence collections (store-backed)",
+        service_info_extra=_scom_block,
+    )
 
 
 _STORE_URL_ENV = os.environ.get("REFGET_STORE_URL")
