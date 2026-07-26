@@ -175,10 +175,10 @@ If you need to load test data into your server, then you have to install [gtars]
 PYTHONPATH=. python data_loaders/load_demo_seqcols.py
 ```
 
-or:
+or, with the CLI (`refget add-fasta` was replaced by `refget admin load`):
 
 ```
-refget add-fasta -p test_fasta/test_fasta_metadata.csv -r test_fasta
+refget admin load --pep test_fasta/test_fasta_metadata.csv --fa-root test_fasta
 ```
 
 #### Running the seqcolapi API backend
@@ -303,6 +303,9 @@ schema there unless it genuinely maps to a database table.
 
 ## Example of loading reference fasta datasets:
 
+Needs `pip install 'refget[seqcolapi-db]'` and a configured PostgreSQL
+connection (see [DB-backed (PostgreSQL)](#db-backed-postgresql)):
+
 ```
-refget add-fasta -p ref_fasta.csv -r $BRICKYARD/datasets_downloaded/pangenome_fasta/reference_fasta
+refget admin load --pep ref_fasta.csv --fa-root $BRICKYARD/datasets_downloaded/pangenome_fasta/reference_fasta
 ```
