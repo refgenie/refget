@@ -7,7 +7,7 @@ Import from submodules:
     from refget.utils import compare_seqcols, validate_seqcol, seqcol_digest
     from refget.clients import SequenceCollectionClient, FastaDrsClient
     from refget.router import create_refget_router
-    from refget.seqcolapi import create_seqcol_app, create_store_app, prepare_store
+    from refget.seqcolapi import create_seqcol_app, prepare_store
     from refget.agents import RefgetDBAgent
 
 `refget.seqcolapi` (the API service) and `refget.router` require the optional

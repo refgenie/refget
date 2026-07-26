@@ -180,7 +180,7 @@ def store_test_server(tmp_path_factory):
     and runs a store-backed uvicorn server in a background thread.
     No database required.
 
-    Note: We build the app manually (instead of create_store_app) so we can
+    Note: We build the app manually (instead of create_seqcol_app) so we can
     reuse the same store instance that loaded the FASTAs, preserving
     correct array ordering. Opening a new store from the same path
     would lose FASTA-order due to a gtars hash-map ordering issue.

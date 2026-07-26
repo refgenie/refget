@@ -37,7 +37,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # `app` is resolved by __getattr__ below, and `store_app` only exists when the
 # environment names a store -- neither is a module-level binding here.
-__all__ = ["app", "store_app", "create_store_app"]  # noqa: F822
+__all__ = ["app", "store_app", "create_seqcolapi_store_app"]  # noqa: F822
 
 
 def _load_scom_config(store_path: str, remote: bool):
@@ -89,13 +89,22 @@ for key, value in ALL_VERSIONS.items():
     _LOGGER.info(f"{key}: {value}")
 
 
-def create_store_app(store_path: str, remote: bool = False, cache_dir: str = "/tmp/seqcol_cache"):
-    """Create a seqcolapi FastAPI app backed by a RefgetStore (no database).
+def create_seqcolapi_store_app(
+    store_path: str, remote: bool = False, cache_dir: str = "/tmp/seqcol_cache"
+):
+    """Create *the seqcolapi deployment's* store-backed app (no database).
 
-    Thin wrapper over :func:`refget.seqcolapi.create_seqcol_app`, which owns the
-    shared store-backed wiring (readonly store, backend, router, freshness,
-    GA4GH service-info). Everything seqcolapi adds on top is SCOM, which is not
-    a refget concern, so it is injected through ``service_info_extra``.
+    Not to be confused with :func:`refget.seqcolapi.create_seqcol_app`, which is
+    the generic factory. This function is the seqcolapi.databio.org flavour of
+    it: same wiring, but a different service identity
+    (``org.databio.seqcolapi.store`` rather than the generic
+    ``org.ga4gh.seqcol.store``) and an extra SCOM block in ``/service-info``.
+    Everything else -- readonly store, backend, router, freshness, the GA4GH
+    service-info body -- is owned by ``create_seqcol_app``; SCOM is not a refget
+    concern, so it is injected through ``service_info_extra``.
+
+    Renamed from ``create_store_app`` so that the two factories in this package
+    no longer share a name while differing in service identity.
 
     Args:
         store_path: Path to store on disk, or S3 URL for remote stores.
@@ -134,9 +143,9 @@ _STORE_URL_ENV = os.environ.get("REFGET_STORE_URL")
 _STORE_PATH_ENV = os.environ.get("REFGET_STORE_PATH")
 
 if _STORE_URL_ENV:
-    store_app = create_store_app(_STORE_URL_ENV, remote=True)
+    store_app = create_seqcolapi_store_app(_STORE_URL_ENV, remote=True)
 elif _STORE_PATH_ENV:
-    store_app = create_store_app(_STORE_PATH_ENV, remote=False)
+    store_app = create_seqcolapi_store_app(_STORE_PATH_ENV, remote=False)
 
 
 def __getattr__(name):

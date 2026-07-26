@@ -14,11 +14,14 @@ Two applications ship here, and they do **not** cost the same:
 * :func:`create_seqcol_app` — the store-backed factory, which returns a
   self-contained, mountable app served out of a
   :class:`~refget.store.RefgetStore`. Needs ``refget[seqcolapi]`` only. No
-  database, no ORM: nothing it reaches imports sqlmodel.
+  database, no ORM: nothing it reaches imports sqlmodel. This is the only app
+  factory exported here; it is the one to call from your own code.
 * :mod:`refget.seqcolapi.main` — the PostgreSQL-backed ``app`` that runs
-  seqcolapi.databio.org, plus the ``store_app`` built from the environment.
-  Needs ``refget[seqcolapi,db]``, because it goes through
-  :mod:`refget.agents` and :mod:`refget.models`.
+  seqcolapi.databio.org, plus the ``store_app`` built from the environment by
+  :func:`refget.seqcolapi.main.create_seqcolapi_store_app` (``create_seqcol_app``
+  plus seqcolapi's own service identity and SCOM block). ``app`` needs
+  ``refget[seqcolapi,db]``, because it goes through :mod:`refget.agents` and
+  :mod:`refget.models`.
 
 Import the package, not its submodules::
 
@@ -47,7 +50,6 @@ from refget.const import ALL_VERSIONS  # noqa: E402
 from .app import (
     DEFAULT_CACHE_DIR,
     create_seqcol_app,
-    create_store_app,
     load_seqcol_schema,
     prepare_store,
     store_service_info,
@@ -60,7 +62,6 @@ __all__ = [
     "STATIC_DIRNAME",
     "STATIC_PATH",
     "create_seqcol_app",
-    "create_store_app",
     "load_seqcol_schema",
     "prepare_store",
     "store_service_info",

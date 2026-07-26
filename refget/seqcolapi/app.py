@@ -15,14 +15,28 @@ router-scoped one. Including ``create_refget_router()`` twice at two prefixes
 of the same app therefore does **not** give you two stores; both mounts resolve
 through the same ``app.state.backend``. Returning a self-contained
 sub-application instead means each store gets its own ``state.backend``, its
-own service-info and its own freshness policy, so a host app can do::
+own ``/service-info`` route and its own freshness middleware, so a host app can
+do::
 
     host.mount("/jungle", create_seqcol_app(store_path=url_a, remote=True))
     host.mount("/other", create_seqcol_app(store_path=url_b, remote=True))
 
 Serving several stores from one process is not a requirement today, and
 nothing here implements it. The point is only that the shape does not preclude
-it.
+it -- and the shape is not the whole story. Two process-global dicts in
+:mod:`refget.router` are shared by every router and every app in the process:
+
+* ``_ROUTER_CONFIG``, which :func:`refget.router.create_refget_router`
+  overwrites on each call, so it ends up describing whichever router was
+  created last. This app's ``/service-info`` never reads it (it closes over its
+  own arguments instead), but :mod:`refget.seqcolapi.dbapp` and refgenie's
+  server both do, so a process that builds several routers cannot trust it.
+* ``_SAMPLE_DIGESTS``, the SCOM target digests, which are likewise per-process
+  and not per-app.
+
+So: per-mount backend, service-info and freshness, yes. Per-mount *router
+configuration*, no. Genuinely serving several distinct stores from one process
+would have to deal with those two globals first.
 
 Typical use::
 
@@ -288,25 +302,3 @@ def create_seqcol_app(
         )
 
     return app
-
-
-def create_store_app(
-    store_path: str,
-    remote: bool = False,
-    cache_dir: str = DEFAULT_CACHE_DIR,
-    **kwargs,
-):
-    """Create a standalone store-backed seqcol app (no database).
-
-    Thin convenience wrapper around :func:`create_seqcol_app` for serving a
-    single store at the root of its own process.
-
-    Args:
-        store_path: Path to store on disk, or S3/HTTP URL for remote stores.
-        remote: If True, open as a remote store.
-        cache_dir: Local cache directory for remote stores.
-
-    Returns:
-        FastAPI app with store-backed seqcol endpoints at the root.
-    """
-    return create_seqcol_app(store_path=store_path, remote=remote, cache_dir=cache_dir, **kwargs)
