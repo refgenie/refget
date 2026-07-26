@@ -113,8 +113,8 @@ def _find_spa_dir(frontend_dir: Optional[Path]) -> Path:
 
     Resolution order:
         1. ``--frontend-dir`` override (must contain index.html).
-        2. Packaged build at ``seqcolapi.const.STATIC_PATH`` (when the SPA has
-           been bundled into the installed package).
+        2. Packaged build at ``refget.seqcolapi.const.STATIC_PATH`` (when the
+           SPA has been bundled into the installed package).
         3. Repo-relative ``frontend/dist`` for development.
 
     Auto-discovered candidates must look like the Explorer build (see
@@ -131,10 +131,16 @@ def _find_spa_dir(frontend_dir: Optional[Path]) -> Path:
 
     candidates: List[Path] = []
     try:
-        from seqcolapi.const import STATIC_PATH
+        # `refget.seqcolapi`, not the top-level `seqcolapi` shim: the shim is
+        # excluded from the wheel, so importing it silently fails on every
+        # pip-installed environment. Importing the submodule runs the package
+        # gate in refget/seqcolapi/__init__.py, so ImportError is the expected
+        # miss when fastapi is not installed -- and it is the only one we want
+        # to swallow here.
+        from refget.seqcolapi.const import STATIC_PATH
 
         candidates.append(Path(STATIC_PATH))
-    except Exception:
+    except ImportError:
         pass
     # repos/refget/refget/cli/store.py -> parents[2] == repos/refget
     candidates.append(Path(__file__).resolve().parents[2] / "frontend" / "dist")
