@@ -8,7 +8,7 @@ This repository includes:
 
 1. `/refget`: The `refget` Python package, which provides a Python interface to both remote and local use of refget standards. It has clients and functions for both refget sequences and refget sequence collections (seqcol).
 2. `/refget/seqcolapi`: Sequence collections API software, a FastAPI wrapper built on top of the `refget` package. It provides a bare-bones Sequence Collections API service. It ships in the `refget` wheel, but its dependencies do not — see [Installation](#installation). Nothing on the plain `import refget` path imports this subpackage, so a base install never pays for fastapi/uvicorn/sqlmodel/psycopg2.
-3. `/seqcolapi`: A thin compatibility shim re-exporting `refget.seqcolapi`, kept so existing deployments that run `uvicorn seqcolapi.main:app` (or `:store_app`) keep working. New code should import `refget.seqcolapi`.
+3. `/seqcolapi`: A thin compatibility shim re-exporting `refget.seqcolapi`, kept so existing deployments that run `uvicorn seqcolapi.main:app` (or `:store_app`) keep working. **This shim is deliberately excluded from the wheel** — it is importable only from a checkout of this repository (or from a deployment that `COPY`s the directory), never from `pip install refget`. Every instruction below therefore uses `refget.seqcolapi.main`, which works everywhere.
 4. `/deployment`: Server configurations for demo instances and public deployed instances. There are also github workflows (in `.github/workflows`) that deploy the demo server instance from this repository.
 5. `/test_fasta` and `/test_api`: Dummy data and a compliance test, to test external implementations of the Refget Sequence Collections API.
 6. `/frontend`: a React seqcolapi front-end.
@@ -23,8 +23,15 @@ server and no ORM. Everything heavier is an extra, and the extras compose:
 | --- | --- | --- |
 | `pip install refget` | — | The Python library and the `refget` CLI: digests, `RefgetStore`, API clients, compliance. No fastapi, no sqlalchemy. |
 | `pip install 'refget[db]'` | sqlmodel, psycopg2-binary | The SQLModel layer: `refget.models`, `refget.agents.RefgetDBAgent`, `refget admin`. A library capability — you can want the ORM without wanting a server. |
-| `pip install 'refget[seqcolapi]'` | fastapi, uvicorn | **Serving a RefgetStore.** `uvicorn seqcolapi.main:store_app`, `refget store serve`, `refget.seqcolapi.create_seqcol_app`. No database of any kind. |
-| `pip install 'refget[seqcolapi-db]'` | both of the above | **The PostgreSQL-backed service** (`uvicorn seqcolapi.main:app`), i.e. what runs seqcolapi.databio.org. |
+| `pip install 'refget[seqcolapi]'` | fastapi, uvicorn | **Serving a RefgetStore.** `uvicorn refget.seqcolapi.main:store_app`, `refget store serve`, `refget.seqcolapi.create_seqcol_app`. No database of any kind. |
+| `pip install 'refget[seqcolapi-db]'` | both of the above | **The PostgreSQL-backed service** (`uvicorn refget.seqcolapi.main:app`), i.e. what runs seqcolapi.databio.org. |
+
+The importable module path is `refget.seqcolapi.main`, not `seqcolapi.main`. The
+bare `seqcolapi` package in this repository is a compatibility shim that is
+**not** shipped in the wheel; `uvicorn seqcolapi.main:store_app` resolves only
+from a checkout of this repository, and raises
+`ModuleNotFoundError: No module named 'seqcolapi'` in a pip-installed
+environment.
 
 The two service extras correspond to the two deployment modes described under
 [Development and deployment: Backend](#development-and-deployment-backend). The
@@ -78,6 +85,9 @@ For safe concurrent serving, the store is fully loaded and converted to a read-o
 
 #### Quick start
 
+*Requires a checkout of this repository* (the script and the demo FASTA files
+live here):
+
 ```console
 bash deployment/store_demo_up.sh
 ```
@@ -91,16 +101,25 @@ No Docker or database required.
 
 #### Step-by-step
 
-1. Build a store from FASTA files:
+1. Build a store from FASTA files. `data_loaders/` is not part of the wheel, so
+   this step needs a checkout of this repository:
 
 ```console
 python data_loaders/demo_build_store.py test_fasta /tmp/refget_demo_store
 ```
 
-2. Start the store-backed API:
+   From a pip install, build a store with the CLI instead:
 
 ```console
-REFGET_STORE_PATH=/tmp/refget_demo_store uvicorn seqcolapi.main:store_app --reload --port 8100
+refget store init -p /tmp/refget_demo_store
+refget store add -p /tmp/refget_demo_store <your.fa>
+```
+
+2. Start the store-backed API. This works anywhere `refget[seqcolapi]` is
+   installed:
+
+```console
+REFGET_STORE_PATH=/tmp/refget_demo_store uvicorn refget.seqcolapi.main:store_app --reload --port 8100
 ```
 
 #### Remote store
@@ -108,7 +127,7 @@ REFGET_STORE_PATH=/tmp/refget_demo_store uvicorn seqcolapi.main:store_app --relo
 To run against a remote (S3) store:
 
 ```console
-REFGET_STORE_URL=https://example.com/store uvicorn seqcolapi.main:store_app --port 8100
+REFGET_STORE_URL=https://example.com/store uvicorn refget.seqcolapi.main:store_app --port 8100
 ```
 
 ### DB-backed (PostgreSQL)
@@ -167,12 +186,14 @@ refget add-fasta -p test_fasta/test_fasta_metadata.csv -r test_fasta
 Run the demo `seqcolapi` service like this:
 
 ```
-uvicorn seqcolapi.main:app --reload --port 8100
+uvicorn refget.seqcolapi.main:app --reload --port 8100
 ```
 
 #### Running with docker
 
-To build the docker file, first build the image from the root of this repository:
+To build the docker file, first build the image from a checkout of this
+repository (the build context is the `seqcolapi/` compatibility shim, which
+exists only here):
 
 ```
 docker build -f deployment/dockerhub/Dockerfile -t databio/seqcolapi seqcolapi
