@@ -1839,6 +1839,10 @@ def serve(
 ):
     """Serve a seqcol API backed by a RefgetStore (no database required).
 
+    The app is built by :func:`refget.seqcolapi.create_seqcol_app`, the same
+    factory the deployments use, so this serves the same routes they do
+    (including ``/service-info``).
+
     By default the store is fully loaded and converted to a ReadonlyRefgetStore,
     whose methods borrow immutably and are safe to share across request threads
     for concurrent serving. Use --lazy to skip loading and serve from the mutable
@@ -1862,8 +1866,6 @@ def serve(
             EXIT_FAILURE,
         )
 
-    from refget.backend import RefgetStoreBackend
-
     if remote:
         store = _load_store(path=None, remote=remote)
     elif path:
@@ -1871,27 +1873,27 @@ def serve(
     else:
         store = _load_store(None)
 
-    if lazy:
-        backend = RefgetStoreBackend(store)
-    else:
+    if not lazy:
         # Load all collections and convert to a thread-safe readonly store.
         # Sequence endpoints are disabled below, so sequences are not loaded;
         # enabling them later should also pass load_sequences=True here.
-        readonly_store = _into_readonly(store, load_sequences=False)
-        backend = RefgetStoreBackend(readonly_store)
+        store = _into_readonly(store, load_sequences=False)
 
-    from fastapi import FastAPI
+    # Go through the shared factory rather than hand-wiring FastAPI here, so
+    # that this CLI serves exactly what the deployments serve -- including
+    # /service-info, which a hand-rolled app silently omitted. The store is
+    # already open (and possibly already readonly), so it is passed in directly;
+    # freshness polling is off because that is a deployment concern and needs a
+    # store_path to poll.
+    from refget.seqcolapi import create_seqcol_app
 
-    from refget.router import create_refget_router
-
-    app = FastAPI(title="Sequence Collections API (Store-backed)")
-    app.state.backend = backend
-    router = create_refget_router(
+    app = create_seqcol_app(
+        store=store,
+        store_url=remote,
         sequences=False,
         pangenomes=False,
-        refget_store_url=remote,
+        freshness=False,
     )
-    app.include_router(router)
 
     typer.echo(f"Serving store-backed seqcol API on {host}:{port}")
     uvicorn.run(app, host=host, port=port)
