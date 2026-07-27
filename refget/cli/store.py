@@ -341,7 +341,11 @@ def add(
     Outputs JSON. Single explicit path:
         {"digest": "abc...", "fasta": "...", "sequences": 25, "was_new": true}
     Multiple inputs / globs / --file-list / --jobs>1:
-        {"results": [{"digest": "...", "sequences": 25, "was_new": true}, ...], "count": N}
+        {"results": [{"digest": "...", "sequences": 25, "was_new": true}, ...],
+         "count": N, "n_sequences_written": W, "n_sequences_deduped": D,
+         "n_collections_new": C}
+    The n_* fields are per-run ingest counters: W sequences had their bytes
+    written, D were already present by content digest, C collections were new.
     """
     fastas = list(fastas) if fastas else []
 
@@ -390,7 +394,7 @@ def add(
 
     # Bulk path: multiple inputs, globs, directories, --file-list, or --jobs>1.
     try:
-        results = store.add_sequence_collections_from_fastas(
+        report = store.add_sequence_collections_from_fastas(
             fastas,
             file_list=str(file_list) if file_list else None,
             jobs=jobs,
@@ -405,9 +409,15 @@ def add(
         {
             "results": [
                 {"digest": m.digest, "sequences": m.n_sequences, "was_new": new}
-                for (m, new) in results
+                for (m, new) in report.collections
             ],
-            "count": len(results),
+            "count": len(report.collections),
+            # Per-run ingest counters: what THIS run actually added. These are
+            # the numbers a build report should quote -- unlike the
+            # RAM-residency figures reported by `store stats`.
+            "n_sequences_written": report.n_sequences_written,
+            "n_sequences_deduped": report.n_sequences_deduped,
+            "n_collections_new": report.n_collections_new,
         }
     )
     raise typer.Exit(EXIT_SUCCESS)
@@ -1083,12 +1093,17 @@ def stats(
     """
     Display store statistics.
 
-    Outputs the store's stats dict: n_sequences, n_collections,
-    n_collections_loaded, and storage_mode.
+    Outputs the store's stats dict: n_sequences, n_sequences_in_memory,
+    n_collections, n_collections_in_memory, and storage_mode.
+
+    The *_in_memory values are a snapshot of current RAM residency, NOT a
+    record of what any import run added. n_sequences_in_memory is structurally
+    always 0 for a disk-backed store. For per-run ingest counts, use the
+    n_sequences_written / n_collections_new fields emitted by `store add`.
 
     Example output:
-        {"n_sequences": 75, "n_collections": 3, "n_collections_loaded": 0,
-         "storage_mode": "Encoded"}
+        {"n_sequences": 75, "n_sequences_in_memory": 0, "n_collections": 3,
+         "n_collections_in_memory": 0, "storage_mode": "Encoded"}
     """
     store = _load_store(path, remote=remote)
 
