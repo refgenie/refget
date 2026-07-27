@@ -5,6 +5,7 @@ import { StoreNav } from '../components/StoreNav.jsx';
 import { RowCodeButton } from '../components/CliSnippet.jsx';
 import { PaginationNav } from '../components/PaginationNav.jsx';
 import { usePagedList } from '../hooks/usePagedList.js';
+import { buildCollectionAliasMap, preferredAlias } from '../services/aliases.js';
 
 const StoreOverview = () => {
   const [searchParams] = useSearchParams();
@@ -17,8 +18,10 @@ const StoreOverview = () => {
     error,
     loadStore,
     loadSequenceIndex,
+    loadAliases,
   } = useExplorerStore();
   const [seqLoading, setSeqLoading] = useState(false);
+  const [aliasMap, setAliasMap] = useState({});
 
   const urlParam = searchParams.get('url');
 
@@ -47,6 +50,19 @@ const StoreOverview = () => {
         .catch(() => {})
         .finally(() => setSeqLoading(false));
     }
+  }, [metadata]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Collections have no name of their own, so the label column is populated
+  // from the store's collection-alias namespaces. Guarded against races when
+  // switching stores: a slow load must not overwrite a newer one.
+  useEffect(() => {
+    const namespaces = metadata?.collection_alias_namespaces || [];
+    if (namespaces.length === 0) return;
+    let cancelled = false;
+    buildCollectionAliasMap(namespaces, loadAliases)
+      .then((map) => { if (!cancelled) setAliasMap(map); })
+      .catch(() => { /* aliases are optional; the table renders without them */ });
+    return () => { cancelled = true; };
   }, [metadata]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Paginate the collections table so large collection indexes don't render
@@ -230,14 +246,22 @@ const StoreOverview = () => {
               <table className="table table-sm table-hover mb-0">
                 <thead>
                   <tr>
+                    <th>Alias</th>
                     <th>Digest</th>
                     <th className="text-end">Sequences</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pagedCollections.map((col) => (
+                  {pagedCollections.map((col) => {
+                    const { primary, all } = preferredAlias(aliasMap[col.digest]);
+                    return (
                     <tr key={col.digest}>
+                      <td>
+                        {primary
+                          ? <span title={all.length > 1 ? all.join('\n') : undefined}>{primary}</span>
+                          : <span className="text-muted">-</span>}
+                      </td>
                       <td>
                         <Link
                           to={`/explore-store/collection/${col.digest}${storeUrlParam}`}
@@ -275,7 +299,8 @@ store.export("${col.digest}")`,
                         />
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
               <PaginationNav

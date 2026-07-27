@@ -6,6 +6,7 @@ import { ExplorerNav } from '../components/ExplorerNav.jsx';
 import { PaginationNav } from '../components/PaginationNav.jsx';
 import { fetchSeqColList } from '../services/fetchData.jsx';
 import { fetchCollectionIndex } from '../services/storeService.js';
+import { buildCollectionAliasMap, preferredAlias } from '../services/aliases.js';
 
 const PAGE_SIZE = 50;
 
@@ -44,17 +45,7 @@ const Explorer = () => {
         try {
           const storeData = useExplorerStore.getState();
           const namespaces = storeData.metadata?.collection_alias_namespaces || [];
-          const map = {};
-          for (const ns of namespaces) {
-            const aliases = await loadAliases('collections', ns).catch(() => null);
-            if (aliases?.rows) {
-              aliases.rows.forEach((a) => {
-                if (!map[a.digest]) map[a.digest] = [];
-                map[a.digest].push(a.alias);
-              });
-            }
-          }
-          setAliasMap(map);
+          setAliasMap(await buildCollectionAliasMap(namespaces, loadAliases));
         } catch { /* aliases are optional; ignore failures */ }
       }
 
@@ -108,7 +99,7 @@ const Explorer = () => {
         byDigest.set(col.digest, {
           digest: col.digest,
           n_sequences: col.n_sequences,
-          names: aliasMap[col.digest] || [],
+          aliases: aliasMap[col.digest] || [],
           source: 'store',
         });
       });
@@ -121,7 +112,7 @@ const Explorer = () => {
           byDigest.set(digest, {
             digest,
             n_sequences: null,
-            names: aliasMap[digest] || [],
+            aliases: aliasMap[digest] || [],
             source: 'api',
           });
         }
@@ -137,7 +128,7 @@ const Explorer = () => {
     return collections.filter(
       (c) =>
         c.digest.toLowerCase().includes(term) ||
-        c.names.some((n) => n.toLowerCase().includes(term)),
+        c.aliases.some((a) => a.alias.toLowerCase().includes(term)),
     );
   }, [collections, filter]);
 
@@ -145,9 +136,9 @@ const Explorer = () => {
     if (!sortCol) return filtered;
     return [...filtered].sort((a, b) => {
       let va, vb;
-      if (sortCol === 'name') {
-        va = (a.names[0] || '').toLowerCase();
-        vb = (b.names[0] || '').toLowerCase();
+      if (sortCol === 'alias') {
+        va = (preferredAlias(a.aliases).primary || '').toLowerCase();
+        vb = (preferredAlias(b.aliases).primary || '').toLowerCase();
       } else if (sortCol === 'n_sequences') {
         va = a.n_sequences ?? -1;
         vb = b.n_sequences ?? -1;
@@ -195,7 +186,7 @@ const Explorer = () => {
           type="search"
           className="form-control form-control-sm"
           style={{ maxWidth: '300px' }}
-          placeholder="Filter by name or digest..."
+          placeholder="Filter by alias or digest..."
           value={filter}
           onChange={(e) => { setFilter(e.target.value); setPage(0); }}
         />
@@ -214,9 +205,9 @@ const Explorer = () => {
           <table className="table table-sm table-hover">
             <thead>
               <tr>
-                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>
-                  Name
-                  {sortCol === 'name' && <i className={`bi bi-caret-${sortAsc ? 'up' : 'down'}-fill ms-1`} />}
+                <th style={{ cursor: 'pointer' }} onClick={() => handleSort('alias')}>
+                  Alias
+                  {sortCol === 'alias' && <i className={`bi bi-caret-${sortAsc ? 'up' : 'down'}-fill ms-1`} />}
                 </th>
                 <th style={{ cursor: 'pointer' }} onClick={() => handleSort('digest')}>
                   Digest
@@ -231,11 +222,13 @@ const Explorer = () => {
               </tr>
             </thead>
             <tbody>
-              {paged.map((col) => (
+              {paged.map((col) => {
+                const { primary, all } = preferredAlias(col.aliases);
+                return (
                 <tr key={col.digest}>
                   <td>
-                    {col.names.length > 0
-                      ? [...new Set(col.names)].join(', ')
+                    {primary
+                      ? <span title={all.length > 1 ? all.join('\n') : undefined}>{primary}</span>
                       : <span className="text-muted">-</span>}
                   </td>
                   <td>
@@ -252,7 +245,8 @@ const Explorer = () => {
                     </td>
                   )}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           <PaginationNav page={clampedPage} totalPages={totalPages} onChange={setPage} />
