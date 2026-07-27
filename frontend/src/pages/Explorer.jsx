@@ -47,8 +47,8 @@ const Explorer = () => {
           const map = {};
           for (const ns of namespaces) {
             const aliases = await loadAliases('collections', ns).catch(() => null);
-            if (aliases) {
-              aliases.forEach((a) => {
+            if (aliases?.rows) {
+              aliases.rows.forEach((a) => {
                 if (!map[a.digest]) map[a.digest] = [];
                 map[a.digest].push(a.alias);
               });
