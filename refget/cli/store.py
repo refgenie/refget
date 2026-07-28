@@ -411,9 +411,13 @@ def add(
         {
             "results": [
                 {"digest": m.digest, "sequences": m.n_sequences, "was_new": new}
-                for (m, new) in results
+                for (m, new) in results.collections
             ],
-            "count": len(results),
+            "count": len(results.collections),
+            # Per-run ingest counters carried by the ImportReport.
+            "n_collections_new": results.n_collections_new,
+            "n_sequences_written": results.n_sequences_written,
+            "n_sequences_deduped": results.n_sequences_deduped,
         }
     )
     raise typer.Exit(EXIT_SUCCESS)
@@ -1090,11 +1094,17 @@ def stats(
     Display store statistics.
 
     Outputs the store's stats dict: n_sequences, n_collections,
-    n_collections_loaded, and storage_mode.
+    n_collections_in_memory, n_sequences_in_memory, logical_sequence_bytes,
+    and storage_mode.
+
+    The `*_in_memory` fields are RAM-residency gauges, not ingest counts --
+    they report how much is loaded right now, so they are typically 0 for a
+    disk-backed store. For what a build actually wrote, see the ImportReport
+    returned by an import.
 
     Example output:
-        {"n_sequences": 75, "n_collections": 3, "n_collections_loaded": 0,
-         "storage_mode": "Encoded"}
+        {"n_sequences": 75, "n_collections": 3, "n_collections_in_memory": 0,
+         "n_sequences_in_memory": 0, "storage_mode": "Encoded"}
     """
     store = _load_store(path, remote=remote)
 
