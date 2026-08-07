@@ -347,7 +347,11 @@ def add(
     Outputs JSON. Single explicit path:
         {"digest": "abc...", "fasta": "...", "sequences": 25, "was_new": true}
     Multiple inputs / globs / --file-list / --jobs>1:
-        {"results": [{"digest": "...", "sequences": 25, "was_new": true}, ...], "count": N}
+        {"results": [{"digest": "...", "sequences": 25, "was_new": true}, ...],
+         "count": N, "n_sequences_written": W, "n_sequences_deduped": D,
+         "n_collections_new": C}
+    The n_* fields are per-run ingest counters: W sequences had their bytes
+    written, D were already present by content digest, C collections were new.
     """
     fastas = list(fastas) if fastas else []
 
@@ -396,7 +400,7 @@ def add(
 
     # Bulk path: multiple inputs, globs, directories, --file-list, or --jobs>1.
     try:
-        results = store.add_sequence_collections_from_fastas(
+        report = store.add_sequence_collections_from_fastas(
             fastas,
             file_list=str(file_list) if file_list else None,
             jobs=jobs,
@@ -411,13 +415,15 @@ def add(
         {
             "results": [
                 {"digest": m.digest, "sequences": m.n_sequences, "was_new": new}
-                for (m, new) in results.collections
+                for (m, new) in report.collections
             ],
-            "count": len(results.collections),
-            # Per-run ingest counters carried by the ImportReport.
-            "n_collections_new": results.n_collections_new,
-            "n_sequences_written": results.n_sequences_written,
-            "n_sequences_deduped": results.n_sequences_deduped,
+            "count": len(report.collections),
+            # Per-run ingest counters: what THIS run actually added. These are
+            # the numbers a build report should quote -- unlike the
+            # RAM-residency figures reported by `store stats`.
+            "n_sequences_written": report.n_sequences_written,
+            "n_sequences_deduped": report.n_sequences_deduped,
+            "n_collections_new": report.n_collections_new,
         }
     )
     raise typer.Exit(EXIT_SUCCESS)

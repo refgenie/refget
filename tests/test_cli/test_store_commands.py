@@ -864,8 +864,37 @@ class TestStoreAddBulk:
             "--path",
             str(store_path),
         )
-        data = assert_json_output(result, ["results", "count"])
+        data = assert_json_output(
+            result,
+            [
+                "results",
+                "count",
+                "n_sequences_written",
+                "n_sequences_deduped",
+                "n_collections_new",
+            ],
+        )
         assert data["count"] == 2
+        # Per-run ingest counters, not the RAM-residency numbers from `stats`.
+        assert data["n_collections_new"] == 2
+        assert data["n_sequences_written"] > 0
+        assert data["n_sequences_written"] + data["n_sequences_deduped"] == sum(
+            r["sequences"] for r in data["results"]
+        )
+
+    def test_add_bulk_reimport_writes_nothing(self, cli, tmp_path):
+        """Re-importing the same FASTAs adds no collections and writes no bytes."""
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+
+        args = ("store", "add", str(BASE_FASTA), str(DIFFERENT_NAMES_FASTA), "--path", str(store_path))
+        cli(*args)
+        result = cli(*args)
+
+        data = assert_json_output(result, ["count", "n_sequences_written", "n_collections_new"])
+        assert data["count"] == 2
+        assert data["n_collections_new"] == 0
+        assert data["n_sequences_written"] == 0
 
     def test_add_glob(self, cli, tmp_path):
         """A glob pattern is expanded by gtars and imported."""
