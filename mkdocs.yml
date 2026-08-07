@@ -10,7 +10,9 @@ nav:
     - "Tutorial": tutorial.md
   - Reference:
     - Support: https://github.com/refgenie/refget/issues
-    - Changelog: changelog.md
+    # The changelog lives in the refgenie-docs repo, at
+    # src/content/docs/refget/reference/changelog.md
+    - Changelog: https://refgenie.org/refget/reference/changelog/
 
 theme: databio
 

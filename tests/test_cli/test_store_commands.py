@@ -887,7 +887,14 @@ class TestStoreAddBulk:
         store_path = tmp_path / "store"
         cli("store", "init", "--path", str(store_path))
 
-        args = ("store", "add", str(BASE_FASTA), str(DIFFERENT_NAMES_FASTA), "--path", str(store_path))
+        args = (
+            "store",
+            "add",
+            str(BASE_FASTA),
+            str(DIFFERENT_NAMES_FASTA),
+            "--path",
+            str(store_path),
+        )
         cli(*args)
         result = cli(*args)
 

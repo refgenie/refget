@@ -42,6 +42,7 @@ class AccessionsAttr(SQLModel, table=True):
     value: list = Field(sa_column=Column(JSON), default_factory=list)
     collection: List["SequenceCollection"] = Relationship(back_populates="accessions")
 
+
 class SequenceCollection(SQLModel, table=True):
     # ... existing fields ...
     accessions_digest: str = Field(foreign_key="accessionsattr.digest")
@@ -106,6 +107,7 @@ class MetadataAttr(SQLModel, table=True):
     id: str = Field(primary_key=True)
     value: dict = Field(sa_column=Column(JSON))
     collection: List["SequenceCollection"] = Relationship(back_populates="metadata")
+
 
 class SequenceCollection(SQLModel, table=True):
     # ... existing fields ...

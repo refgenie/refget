@@ -35,7 +35,7 @@ docker run --rm -d --name refget-postgres -p 127.0.0.1:5432:5432 \
   echo "Postgres is up - continuing"
 
 echo "Running uvicorn API service..."
-uvicorn seqcolapi.main:app --reload --port 8100 &
+uvicorn refget.seqcolapi.main:app --reload --port 8100 &
 PID=$!
 
 echo "Loading demo sequence collections..."

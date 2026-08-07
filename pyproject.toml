@@ -23,12 +23,16 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
 ]
+# Base install must stay light: no fastapi, no uvicorn, no sqlmodel, no
+# psycopg2. Those are service/database dependencies, gated behind the
+# `seqcolapi` / `db` extras and behind the refget.seqcolapi / refget.agents /
+# refget.models module boundaries -- nothing on the `import refget` path
+# touches them.
 dependencies = [
     "gtars>=0.9.0",
     "jsonschema",
     "pyyaml",
     "requests",
-    "sqlmodel",
     "tomli_w",
     "typer>=0.9.0",
 ]
@@ -37,20 +41,53 @@ dependencies = [
 refget = "refget.cli:main"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-cov>=6.0.0", "fastapi", "httpx"]
-seqcolapi = [
-    "fastapi",
-    "psycopg2-binary",
-    "sqlmodel",
-    "uvicorn>=0.30.0",
-    "ubiquerg>=0.6.1",
-]
+test = ["pytest", "pytest-cov>=6.0.0", "fastapi", "httpx", "sqlmodel"]
+
+# There are three axes here, and they compose:
+#
+#   db            the SQLModel/SQLAlchemy layer -- refget.models, refget.agents,
+#                 `refget admin`. Its own extra, not a corner of `seqcolapi`,
+#                 because it is a *library* capability: you can want the ORM
+#                 without wanting a web server.
+#   seqcolapi     the web service -- fastapi + uvicorn, nothing more. This is
+#                 all the RefgetStore-backed deployment needs. No ORM: nothing
+#                 reachable from refget.seqcolapi.app imports sqlmodel (the
+#                 router's response models live in refget/response_models.py,
+#                 and setup_backend imports RefgetDBAgent only in its `engine`
+#                 branch).
+#   seqcolapi-db  the PostgreSQL-backed deployment (seqcolapi.databio.org):
+#                 both of the above. Named rather than left for the user to
+#                 spell as `refget[seqcolapi,db]`, because the two service
+#                 modes are a real deployment choice and should be
+#                 discoverable from the extras list.
+#
+# `seqcolapi` keeps its name and its meaning-for-most-people (run the service),
+# so nobody's existing install line breaks; it just stopped dragging in an ORM
+# that the store-backed app never touches.
+#
+# ubiquerg was listed here and is imported by nothing under refget/ -- dropped.
+db = ["psycopg2-binary", "sqlmodel"]
+seqcolapi = ["fastapi", "uvicorn>=0.30.0"]
+seqcolapi-db = ["refget[db,seqcolapi]"]
 
 [project.urls]
 Homepage = "https://github.com/refgenie/refget"
 
 [tool.hatch.version]
 path = "refget/_version.py"
+
+# Ship exactly one package: refget/. Stated explicitly rather than left to
+# hatchling's name-based auto-detection, because there is now a second
+# importable top-level directory -- the seqcolapi/ compatibility shim -- which
+# must NOT go in the wheel. The shim exists only for deployments that COPY it
+# out of the repo; the real code is refget/seqcolapi/.
+#
+# refget/seqcolapi/static/ needs no force-include: it lives inside the package
+# directory, and hatchling ships every non-VCS-ignored file it finds there.
+# Verify after touching .gitignore -- an ignore rule that matched, say, *.ico
+# would silently drop package data from the wheel.
+[tool.hatch.build.targets.wheel]
+packages = ["refget"]
 
 # Bundle the compliance known-answer fixtures into the installed package so the
 # compliance runner is self-contained on a pip-installed deploy (the source
@@ -71,6 +108,15 @@ exclude = [
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["F403", "F405", "E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# The dependency gate has to run before the imports it guards, so those imports
+# are deliberately not at the top of the file.
+"refget/seqcolapi/__init__.py" = ["E402"]
+"refget/seqcolapi/dbapp.py" = ["E402"]
+"refget/models.py" = ["E402"]
+"refget/agents.py" = ["E402"]
+"refget/router.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["refget"]
