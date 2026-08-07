@@ -17,16 +17,36 @@ setup_backend(app, store=readonly_store)  # store backend (no database)
 
 For concurrent serving, ``store`` should be a fully loaded ReadonlyRefgetStore
 (see refget.store), obtained via ``RefgetStore.into_readonly()``.
+
+Note that ``setup_backend`` binds the backend to ``app.state``, which
+``get_backend`` reads back off ``request.app.state`` -- an app-global binding.
+Including this router twice at two prefixes of the same app therefore serves
+the *same* store from both. To serve a store from a sub-path (or to leave room
+for serving several stores), prefer ``refget.seqcolapi.create_seqcol_app()``,
+which returns a self-contained app to mount.
+
+This module needs fastapi (``pip install 'refget[seqcolapi]'``) but **no
+database**: its response models come from :mod:`refget.response_models`, not
+from the SQLModel tables in :mod:`refget.models`. Only ``setup_backend(engine=)``
+touches the database, and it imports :class:`refget.agents.RefgetDBAgent`
+inside that branch.
 """
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
-from fastapi.responses import StreamingResponse
+from ._deps import require
 
-from .backend import SeqColBackend
-from .examples import *
-from .models import PaginatedDigestList, Similarities
+# This module is a documented entry point in its own right
+# (``from refget.router import create_refget_router``), so it carries its own
+# gate rather than relying on being reached through refget.seqcolapi.
+require("refget.router (the sequence collections router)", "seqcolapi", "fastapi")
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response  # noqa: E402
+from fastapi.responses import StreamingResponse  # noqa: E402
+
+from .backend import SeqColBackend  # noqa: E402
+from .examples import *  # noqa: E402
+from .response_models import PaginatedDigestList, Similarities  # noqa: E402
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,6 +94,88 @@ async def get_dbagent(request: Request):
     return dbagent
 
 
+def _self_target_url(request: Request, mount_prefix: str = "") -> str:
+    """Best-effort public base URL of the seqcol service handling this request.
+
+    The compliance runner needs the URL of the *seqcol* service, not of the
+    server root. Two things can put the seqcol API below the root:
+
+    * an ASGI mount or a reverse-proxy root path, which shows up in
+      ``scope["root_path"]`` (so mounting this router's app at ``/seqcol``
+      is handled automatically), and
+    * ``include_router(router, prefix="/seqcol")``, which does not, and so has
+      to be declared via ``create_refget_router(mount_prefix="/seqcol")``.
+    """
+    scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("host", request.url.netloc)
+    root_path = request.scope.get("root_path", "") or ""
+    return f"{scheme}://{host}{root_path.rstrip('/')}{mount_prefix.rstrip('/')}"
+
+
+def _create_compliance_router(mount_prefix: str = "") -> APIRouter:
+    """Build the compliance router, closing over the router's mount prefix."""
+    router = APIRouter()
+
+    @router.get(
+        "/compliance/run",
+        summary="Run compliance checks against a seqcol server",
+        tags=["Compliance"],
+    )
+    def run_compliance_endpoint(
+        request: Request,
+        target_url: str | None = Query(
+            None, description="Target server URL to test (defaults to self)"
+        ),
+    ):
+        """
+        Run GA4GH SeqCol compliance structure tests against a server.
+
+        Only runs structure tests (service-info, list, pagination, collection structure).
+        Content tests that require specific test data are not included.
+
+        If no target_url is provided, tests run against this server.
+        """
+        from .compliance import run_compliance
+
+        if target_url is None:
+            target_url = _self_target_url(request, mount_prefix)
+
+        return run_compliance(target_url)
+
+    @router.get(
+        "/compliance/stream",
+        summary="Stream compliance checks via Server-Sent Events",
+        tags=["Compliance"],
+    )
+    def stream_compliance_endpoint(
+        request: Request,
+        target_url: str | None = Query(
+            None, description="Target server URL to test (defaults to self)"
+        ),
+    ):
+        """
+        Stream compliance check results in real-time via Server-Sent Events.
+
+        Each event contains a JSON object with type "start", "result", or "done".
+        """
+        from .compliance import run_compliance_stream
+
+        if target_url is None:
+            target_url = _self_target_url(request, mount_prefix)
+
+        def event_stream():
+            for data in run_compliance_stream(target_url):
+                yield f"data: {data}\n\n"
+
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    return router
+
+
 def create_refget_router(
     sequences: bool = False,
     collections: bool = True,
@@ -81,6 +183,7 @@ def create_refget_router(
     fasta_drs: bool = False,
     compliance: bool = True,
     refget_store_url: str = None,
+    mount_prefix: str = "",
 ) -> APIRouter:
     """
     Create a FastAPI router for the sequence collection API.
@@ -94,6 +197,11 @@ def create_refget_router(
         pangenomes (bool): Include pangenome endpoints
         fasta_drs (bool): Include FASTA DRS endpoints
         refget_store_url (str): URL of backing RefgetStore (e.g., s3://bucket/store/)
+        mount_prefix (str): The path prefix this router will be included under,
+            when it is included with ``include_router(..., prefix=...)`` rather
+            than mounted as a sub-application. Only used so the compliance
+            endpoints self-target the seqcol service instead of the server root.
+            Leave empty when mounting an app (``scope["root_path"]`` covers it).
 
     Returns:
         (APIRouter): A FastAPI router with the specified endpoints
@@ -122,7 +230,7 @@ def create_refget_router(
         refget_router.include_router(fasta_drs_router, prefix="/fasta")
     if compliance:
         _LOGGER.info("Adding compliance endpoints...")
-        refget_router.include_router(compliance_router)
+        refget_router.include_router(_create_compliance_router(mount_prefix))
     return refget_router
 
 
@@ -675,69 +783,3 @@ async def get_fasta_index(
         }
     except ValueError:
         raise HTTPException(status_code=404, detail="Object not found")
-
-
-compliance_router = APIRouter()
-
-
-@compliance_router.get(
-    "/compliance/run",
-    summary="Run compliance checks against a seqcol server",
-    tags=["Compliance"],
-)
-def run_compliance_endpoint(
-    request: Request,
-    target_url: str | None = Query(
-        None, description="Target server URL to test (defaults to self)"
-    ),
-):
-    """
-    Run GA4GH SeqCol compliance structure tests against a server.
-
-    Only runs structure tests (service-info, list, pagination, collection structure).
-    Content tests that require specific test data are not included.
-
-    If no target_url is provided, tests run against this server.
-    """
-    from .compliance import run_compliance
-
-    if target_url is None:
-        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
-        host = request.headers.get("host", request.url.netloc)
-        target_url = f"{scheme}://{host}"
-
-    return run_compliance(target_url)
-
-
-@compliance_router.get(
-    "/compliance/stream",
-    summary="Stream compliance checks via Server-Sent Events",
-    tags=["Compliance"],
-)
-def stream_compliance_endpoint(
-    request: Request,
-    target_url: str | None = Query(
-        None, description="Target server URL to test (defaults to self)"
-    ),
-):
-    """
-    Stream compliance check results in real-time via Server-Sent Events.
-
-    Each event contains a JSON object with type "start", "result", or "done".
-    """
-    from .compliance import run_compliance_stream
-
-    if target_url is None:
-        scheme = request.headers.get("x-forwarded-proto", request.url.scheme)
-        host = request.headers.get("host", request.url.netloc)
-        target_url = f"{scheme}://{host}"
-
-    def event_stream():
-        for data in run_compliance_stream(target_url):
-            yield f"data: {data}\n\n"
-
-    return StreamingResponse(
-        event_stream(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )

@@ -66,12 +66,14 @@ rsync -a --exclude='.git' --exclude='node_modules' --exclude='__pycache__' \
 echo "Building Docker image from local source..."
 docker build -t "$IMAGE_NAME" -f - "$CONTEXT_DIR" <<DOCKERFILE
 FROM tiangolo/uvicorn-gunicorn:python3.11-slim
+# Mirrors deployment/seqcolapi-store/Dockerfile, but installs the local
+# checkout instead of the dev tarball. The seqcolapi extra pulls fastapi and
+# uvicorn only -- no sqlmodel, no psycopg2 -- and seqcolapi ships inside the
+# wheel as refget/seqcolapi/, so there is nothing to COPY into /app.
 COPY refget /src/refget
-RUN pip install --no-cache-dir /src/refget
+RUN pip install --no-cache-dir "/src/refget[seqcolapi]"
 ${GTARS_INSTALL}
-RUN pip install --no-cache-dir fastapi psycopg2-binary ubiquerg henge
-COPY refget/seqcolapi/ /app/seqcolapi
-CMD ["uvicorn", "seqcolapi.main:store_app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "refget.seqcolapi.main:store_app", "--host", "0.0.0.0", "--port", "80"]
 DOCKERFILE
 
 echo "Starting container..."

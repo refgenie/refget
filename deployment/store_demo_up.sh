@@ -44,7 +44,7 @@ STORE_HTTP_PID=$!
 export REFGET_STORE_HTTP_URL="http://localhost:$STORE_HTTP_PORT"
 
 echo "Running store-backed uvicorn API service..."
-uvicorn seqcolapi.main:store_app --reload --port ${SEQCOLAPI_PORT:-8100} &
+uvicorn refget.seqcolapi.main:store_app --reload --port ${SEQCOLAPI_PORT:-8100} &
 PID=$!
 
 echo ""

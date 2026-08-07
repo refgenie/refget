@@ -1,7 +1,35 @@
 import logging
 import os
+from platform import python_version
 
 _LOGGER = logging.getLogger(__name__)
+
+# Version of the GA4GH sequence collections specification this package implements.
+SEQCOL_SPEC_VERSION = "1.0.0"
+
+
+def _gtars_version() -> str:
+    try:
+        from gtars import __version__ as gtars_version
+
+        return gtars_version
+    except Exception:  # pragma: no cover - gtars is an optional dependency
+        return "not installed"
+
+
+def _all_versions() -> dict:
+    """Version block advertised in GA4GH service-info documents."""
+    from refget._version import __version__ as refget_version
+
+    return {
+        "refget_version": refget_version,
+        "gtars_version": _gtars_version(),
+        "python_version": python_version(),
+        "seqcol_spec_version": SEQCOL_SPEC_VERSION,
+    }
+
+
+ALL_VERSIONS = _all_versions()
 
 
 def _schema_path(name):

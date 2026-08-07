@@ -113,8 +113,8 @@ def _find_spa_dir(frontend_dir: Optional[Path]) -> Path:
 
     Resolution order:
         1. ``--frontend-dir`` override (must contain index.html).
-        2. Packaged build at ``seqcolapi.const.STATIC_PATH`` (when the SPA has
-           been bundled into the installed package).
+        2. Packaged build at ``refget.seqcolapi.const.STATIC_PATH`` (when the
+           SPA has been bundled into the installed package).
         3. Repo-relative ``frontend/dist`` for development.
 
     Auto-discovered candidates must look like the Explorer build (see
@@ -131,10 +131,16 @@ def _find_spa_dir(frontend_dir: Optional[Path]) -> Path:
 
     candidates: List[Path] = []
     try:
-        from seqcolapi.const import STATIC_PATH
+        # `refget.seqcolapi`, not the top-level `seqcolapi` shim: the shim is
+        # excluded from the wheel, so importing it silently fails on every
+        # pip-installed environment. Importing the submodule runs the package
+        # gate in refget/seqcolapi/__init__.py, so ImportError is the expected
+        # miss when fastapi is not installed -- and it is the only one we want
+        # to swallow here.
+        from refget.seqcolapi.const import STATIC_PATH
 
         candidates.append(Path(STATIC_PATH))
-    except Exception:
+    except ImportError:
         pass
     # repos/refget/refget/cli/store.py -> parents[2] == repos/refget
     candidates.append(Path(__file__).resolve().parents[2] / "frontend" / "dist")
@@ -341,7 +347,11 @@ def add(
     Outputs JSON. Single explicit path:
         {"digest": "abc...", "fasta": "...", "sequences": 25, "was_new": true}
     Multiple inputs / globs / --file-list / --jobs>1:
-        {"results": [{"digest": "...", "sequences": 25, "was_new": true}, ...], "count": N}
+        {"results": [{"digest": "...", "sequences": 25, "was_new": true}, ...],
+         "count": N, "n_sequences_written": W, "n_sequences_deduped": D,
+         "n_collections_new": C}
+    The n_* fields are per-run ingest counters: W sequences had their bytes
+    written, D were already present by content digest, C collections were new.
     """
     fastas = list(fastas) if fastas else []
 
@@ -390,7 +400,7 @@ def add(
 
     # Bulk path: multiple inputs, globs, directories, --file-list, or --jobs>1.
     try:
-        results = store.add_sequence_collections_from_fastas(
+        report = store.add_sequence_collections_from_fastas(
             fastas,
             file_list=str(file_list) if file_list else None,
             jobs=jobs,
@@ -405,9 +415,15 @@ def add(
         {
             "results": [
                 {"digest": m.digest, "sequences": m.n_sequences, "was_new": new}
-                for (m, new) in results
+                for (m, new) in report.collections
             ],
-            "count": len(results),
+            "count": len(report.collections),
+            # Per-run ingest counters: what THIS run actually added. These are
+            # the numbers a build report should quote -- unlike the
+            # RAM-residency figures reported by `store stats`.
+            "n_sequences_written": report.n_sequences_written,
+            "n_sequences_deduped": report.n_sequences_deduped,
+            "n_collections_new": report.n_collections_new,
         }
     )
     raise typer.Exit(EXIT_SUCCESS)
@@ -1084,11 +1100,17 @@ def stats(
     Display store statistics.
 
     Outputs the store's stats dict: n_sequences, n_collections,
-    n_collections_loaded, and storage_mode.
+    n_collections_in_memory, n_sequences_in_memory, logical_sequence_bytes,
+    and storage_mode.
+
+    The `*_in_memory` fields are RAM-residency gauges, not ingest counts --
+    they report how much is loaded right now, so they are typically 0 for a
+    disk-backed store. For what a build actually wrote, see the ImportReport
+    returned by an import.
 
     Example output:
-        {"n_sequences": 75, "n_collections": 3, "n_collections_loaded": 0,
-         "storage_mode": "Encoded"}
+        {"n_sequences": 75, "n_collections": 3, "n_collections_in_memory": 0,
+         "n_sequences_in_memory": 0, "storage_mode": "Encoded"}
     """
     store = _load_store(path, remote=remote)
 
@@ -1833,6 +1855,10 @@ def serve(
 ):
     """Serve a seqcol API backed by a RefgetStore (no database required).
 
+    The app is built by :func:`refget.seqcolapi.create_seqcol_app`, the same
+    factory the deployments use, so this serves the same routes they do
+    (including ``/service-info``).
+
     By default the store is fully loaded and converted to a ReadonlyRefgetStore,
     whose methods borrow immutably and are safe to share across request threads
     for concurrent serving. Use --lazy to skip loading and serve from the mutable
@@ -1846,9 +1872,15 @@ def serve(
     try:
         import uvicorn
     except ImportError:
-        print_error("uvicorn is required: pip install uvicorn", EXIT_FAILURE)
-
-    from refget.backend import RefgetStoreBackend
+        # Name the extra, not just the package: fastapi is needed here too, and
+        # `refget[seqcolapi]` is the supported way to ask for both. No `db`
+        # needed -- serving a store touches no ORM.
+        print_error(
+            "Serving requires the optional web-service dependencies "
+            "(fastapi, uvicorn), and uvicorn is not installed.\n"
+            "Install them with:  pip install 'refget[seqcolapi]'",
+            EXIT_FAILURE,
+        )
 
     if remote:
         store = _load_store(path=None, remote=remote)
@@ -1857,27 +1889,27 @@ def serve(
     else:
         store = _load_store(None)
 
-    if lazy:
-        backend = RefgetStoreBackend(store)
-    else:
+    if not lazy:
         # Load all collections and convert to a thread-safe readonly store.
         # Sequence endpoints are disabled below, so sequences are not loaded;
         # enabling them later should also pass load_sequences=True here.
-        readonly_store = _into_readonly(store, load_sequences=False)
-        backend = RefgetStoreBackend(readonly_store)
+        store = _into_readonly(store, load_sequences=False)
 
-    from fastapi import FastAPI
+    # Go through the shared factory rather than hand-wiring FastAPI here, so
+    # that this CLI serves exactly what the deployments serve -- including
+    # /service-info, which a hand-rolled app silently omitted. The store is
+    # already open (and possibly already readonly), so it is passed in directly;
+    # freshness polling is off because that is a deployment concern and needs a
+    # store_path to poll.
+    from refget.seqcolapi import create_seqcol_app
 
-    from refget.router import create_refget_router
-
-    app = FastAPI(title="Sequence Collections API (Store-backed)")
-    app.state.backend = backend
-    router = create_refget_router(
+    app = create_seqcol_app(
+        store=store,
+        store_url=remote,
         sequences=False,
         pangenomes=False,
-        refget_store_url=remote,
+        freshness=False,
     )
-    app.include_router(router)
 
     typer.echo(f"Serving store-backed seqcol API on {host}:{port}")
     uvicorn.run(app, host=host, port=port)
