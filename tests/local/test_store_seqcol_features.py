@@ -5,9 +5,11 @@ Only tests that verify Python-specific behavior beyond what Rust tests cover:
 - Rust/Python parity for compare()
 - Multi-collection attribute search
 - Basic level1/level2 smoke test
+- Multi-collection disk roundtrip preserves per-collection ordering and names
 """
 
 import json
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -100,3 +102,80 @@ def test_shared_attribute_returns_multiple(store_with_two):
     results = store_with_two.find_collections_by_attribute("lengths", lengths_digest)
     assert BASE_DIGEST in results
     assert DIFFERENT_NAMES_DIGEST in results
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+def test_multi_collection_disk_roundtrip_preserves_ordering():
+    """Multi-collection disk roundtrip preserves per-collection names and element ordering.
+
+    Tests the complete PyO3 -> Rust -> disk -> Rust -> PyO3 roundtrip for three
+    collections that share sequences under different names and different orderings.
+    This covers the intersection of the two previously-fixed bugs:
+      1. HashMap ordering (inner map now IndexMap)
+      2. Global name leakage (get_collection() overrides meta.name from name_lookup)
+    """
+    # FASTA A: base ordering — chrX first, then chr1, then chr2
+    fasta_a = ">chrX\nTTGGGGAA\n>chr1\nGGAA\n>chr2\nGCGC\n"
+    # FASTA B: different order — chr1 first, same sequences as A
+    fasta_b = ">chr1\nGGAA\n>chr2\nGCGC\n>chrX\nTTGGGGAA\n"
+    # FASTA C: name swap — chr2 has GGAA, chr1 has GCGC (opposite of A/B)
+    fasta_c = ">chrX\nTTGGGGAA\n>chr2\nGGAA\n>chr1\nGCGC\n"
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+        fasta_a_path = tmpdir / "a.fa"
+        fasta_b_path = tmpdir / "b.fa"
+        fasta_c_path = tmpdir / "c.fa"
+        fasta_a_path.write_text(fasta_a)
+        fasta_b_path.write_text(fasta_b)
+        fasta_c_path.write_text(fasta_c)
+
+        store_path = tmpdir / "store"
+
+        # Build a disk-backed store and load three FASTAs
+        store = RefgetStore.on_disk(str(store_path))
+        meta_a, _ = store.add_sequence_collection_from_fasta(str(fasta_a_path))
+        meta_b, _ = store.add_sequence_collection_from_fasta(str(fasta_b_path))
+        meta_c, _ = store.add_sequence_collection_from_fasta(str(fasta_c_path))
+        digest_a = meta_a.digest
+        digest_b = meta_b.digest
+        digest_c = meta_c.digest
+
+        # Record level2 before write
+        store.load_all_collections()
+        pre_a = store.get_collection_level2(digest_a)
+        pre_b = store.get_collection_level2(digest_b)
+        pre_c = store.get_collection_level2(digest_c)
+
+        # Verify pre-write ordering
+        assert pre_a["names"] == ["chrX", "chr1", "chr2"], f"A names: {pre_a['names']}"
+        assert pre_b["names"] == ["chr1", "chr2", "chrX"], f"B names: {pre_b['names']}"
+        assert pre_c["names"] == ["chrX", "chr2", "chr1"], f"C names: {pre_c['names']}"
+
+        store.write()
+        del store
+
+        # Reopen from disk and verify roundtrip
+        reloaded = RefgetStore.open_local(str(store_path))
+        reloaded.load_all_collections()
+
+        post_a = reloaded.get_collection_level2(digest_a)
+        post_b = reloaded.get_collection_level2(digest_b)
+        post_c = reloaded.get_collection_level2(digest_c)
+
+        assert post_a["names"] == pre_a["names"], f"A names after roundtrip: {post_a['names']}"
+        assert post_b["names"] == pre_b["names"], f"B names after roundtrip: {post_b['names']}"
+        assert post_c["names"] == pre_c["names"], f"C names after roundtrip: {post_c['names']}"
+
+        assert post_a["lengths"] == pre_a["lengths"], "A lengths after roundtrip"
+        assert post_b["lengths"] == pre_b["lengths"], "B lengths after roundtrip"
+        assert post_c["lengths"] == pre_c["lengths"], "C lengths after roundtrip"
+
+        assert post_a["sequences"] == pre_a["sequences"], "A sequences after roundtrip"
+        assert post_b["sequences"] == pre_b["sequences"], "B sequences after roundtrip"
+        assert post_c["sequences"] == pre_c["sequences"], "C sequences after roundtrip"
+
+        # Cross-check: FASTA C chr2=GGAA and A chr1=GGAA should share the same sequence digest
+        assert post_c["sequences"][1] == post_a["sequences"][1], (
+            "C.chr2 and A.chr1 both have GGAA, should share sequence digest"
+        )
