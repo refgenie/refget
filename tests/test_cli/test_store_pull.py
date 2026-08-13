@@ -7,9 +7,7 @@ gtars' open_remote (Rust/PyO3) holds the GIL during HTTP requests, which
 would deadlock a Python-thread-based HTTP server.
 """
 
-import importlib.util
 import json
-import os
 import socket
 import subprocess
 import sys
@@ -17,15 +15,7 @@ import time
 
 import pytest
 
-_conftest_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
-)
-_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
-_conftest = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_conftest)
-
-BASE_FASTA = _conftest.BASE_FASTA
-DIFFERENT_NAMES_FASTA = _conftest.DIFFERENT_NAMES_FASTA
+from tests._test_data import BASE_FASTA, DIFFERENT_NAMES_FASTA
 
 # Skip entire module if gtars is not installed
 pytest.importorskip("gtars")

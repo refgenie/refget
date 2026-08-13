@@ -2,20 +2,11 @@
 
 """Tests for refget vrs CLI commands."""
 
-import importlib.util
 import json
-import os
 
 import pytest
 
-_conftest_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
-)
-_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
-_conftest = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_conftest)
-
-BASE_FASTA = _conftest.BASE_FASTA
+from tests._test_data import BASE_FASTA
 
 pytest.importorskip("gtars")
 

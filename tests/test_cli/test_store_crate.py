@@ -2,19 +2,9 @@
 
 """Tests for refget store crate CLI command."""
 
-import importlib.util
 import json
-import os
 
-_conftest_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
-)
-_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
-_conftest = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_conftest)
-
-BASE_FASTA = _conftest.BASE_FASTA
-assert_json_output = _conftest.assert_json_output
+from tests._test_data import BASE_FASTA, assert_json_output
 
 
 def _init_and_add(cli, tmp_path):

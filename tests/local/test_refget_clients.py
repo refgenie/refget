@@ -8,37 +8,32 @@ For integration tests that test against a real API,
 see tests/integration/test_seqcolapi_client.py
 """
 
+import pytest
+
 from refget.clients import FastaDrsClient, SequenceCollectionClient
 
 
 class TestClientConstruction:
     """Test client class construction"""
 
-    def test_seqcol_client_default_urls(self):
-        """SequenceCollectionClient can be created with default URLs"""
-        client = SequenceCollectionClient()
-        assert isinstance(client, SequenceCollectionClient)
-        assert len(client.urls) > 0
-
-    def test_seqcol_client_custom_urls(self):
-        """SequenceCollectionClient accepts custom URLs"""
-        client = SequenceCollectionClient(urls=["https://example.com"])
-        assert isinstance(client, SequenceCollectionClient)
-        assert client.urls == ["https://example.com"]
+    @pytest.mark.parametrize(
+        "cls,kwargs,expected_url_count",
+        [
+            (SequenceCollectionClient, {}, None),  # default URLs, just check > 0
+            (SequenceCollectionClient, {"urls": ["https://example.com"]}, 1),
+            (FastaDrsClient, {}, None),
+            (FastaDrsClient, {"urls": ["https://example.com/fasta"]}, 1),
+        ],
+    )
+    def test_client_construction(self, cls, kwargs, expected_url_count):
+        client = cls(**kwargs)
+        assert isinstance(client, cls)
+        if expected_url_count is not None:
+            assert len(client.urls) == expected_url_count
+        else:
+            assert len(client.urls) > 0
 
     def test_seqcol_client_strips_trailing_slashes(self):
         """SequenceCollectionClient strips trailing slashes from URLs"""
         client = SequenceCollectionClient(urls=["https://example.com/"])
         assert client.urls == ["https://example.com"]
-
-    def test_fasta_drs_client_default_urls(self):
-        """FastaDrsClient can be created with default URLs"""
-        client = FastaDrsClient()
-        assert isinstance(client, FastaDrsClient)
-        assert len(client.urls) > 0
-
-    def test_fasta_drs_client_custom_urls(self):
-        """FastaDrsClient accepts custom URLs"""
-        client = FastaDrsClient(urls=["https://example.com/fasta"])
-        assert isinstance(client, FastaDrsClient)
-        assert client.urls == ["https://example.com/fasta"]

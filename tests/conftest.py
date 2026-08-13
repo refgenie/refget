@@ -213,13 +213,6 @@ def fa_root():
     )
 
 
-@pytest.fixture
-def fasta_path():
-    return os.path.join(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir), "test_fasta"
-    )
-
-
 def pytest_addoption(parser):
     """Add options for test configuration"""
     parser.addoption("--no-snlp", action="store_true", default=False)

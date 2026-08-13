@@ -37,12 +37,19 @@ BASE_LEVEL2 = TEST_DIGESTS["base.fa"]["level2"]
 DIFFERENT_NAMES_DIGEST = TEST_DIGESTS["different_names.fa"]["top_level_digest"]
 
 
-@pytest.fixture
-def backend():
-    """Create a RefgetStoreBackend with base.fa and different_names.fa loaded."""
+@pytest.fixture(params=["mutable", "readonly"], ids=["mutable", "readonly"])
+def backend(request):
+    """Create a RefgetStoreBackend with base.fa and different_names.fa loaded.
+
+    Parametrized over a mutable RefgetStore and the readonly (load-then-convert)
+    variant, since RefgetStoreBackend must behave identically over both.
+    """
     store = RefgetStore.in_memory()
     store.add_sequence_collection_from_fasta(str(BASE_FASTA))
     store.add_sequence_collection_from_fasta(str(DIFFERENT_NAMES_FASTA))
+    if request.param == "readonly":
+        store.load_all_collections()
+        store = store.into_readonly()
     return RefgetStoreBackend(store)
 
 
@@ -164,7 +171,12 @@ class TestRefgetStoreBackend:
         assumed list_collection_aliases returned dicts/objects with .digest/.alias,
         which raised on every iteration and left human_readable_names empty. The
         reverse get_aliases_for_collection lookup must surface the alias name.
+
+        Alias mutation requires a mutable store, so this only runs against the
+        "mutable" backend parametrization.
         """
+        if not isinstance(backend._store, RefgetStore):
+            pytest.skip("alias mutation requires a mutable RefgetStore")
         backend._store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
 
         seqcol = backend.get_collection(BASE_DIGEST)
@@ -176,61 +188,6 @@ class TestRefgetStoreBackend:
         # A collection with no aliases yields an empty list, not a skipped entry.
         other = next(s for s in result["similarities"] if s["digest"] == DIFFERENT_NAMES_DIGEST)
         assert other["human_readable_names"] == []
-
-
-@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
-class TestReadonlyStoreBackend:
-    """RefgetStoreBackend served from a ReadonlyRefgetStore (the concurrent path).
-
-    Builds a store, loads all collections, converts via into_readonly(), wraps
-    the readonly store in RefgetStoreBackend, and exercises every backend method
-    to prove they all work against ReadonlyRefgetStore.
-    """
-
-    @pytest.fixture
-    def readonly_backend(self):
-        store = RefgetStore.in_memory()
-        store.add_sequence_collection_from_fasta(str(BASE_FASTA))
-        store.add_sequence_collection_from_fasta(str(DIFFERENT_NAMES_FASTA))
-        store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)
-        # Load-then-convert: readonly store cannot lazy-load.
-        store.load_all_collections()
-        readonly = store.into_readonly()
-        # Sanity: the readonly variant is a distinct type.
-        from refget.store import ReadonlyRefgetStore
-
-        assert isinstance(readonly, ReadonlyRefgetStore)
-        return RefgetStoreBackend(readonly)
-
-    def test_satisfies_protocol(self, readonly_backend):
-        assert isinstance(readonly_backend, SeqColBackend)
-
-    def test_get_collection(self, readonly_backend):
-        result = readonly_backend.get_collection(BASE_DIGEST)
-        assert "names" in result and "lengths" in result and "sequences" in result
-
-    def test_get_collection_attribute(self, readonly_backend):
-        names = readonly_backend.get_collection_attribute(BASE_DIGEST, "names")
-        assert isinstance(names, list)
-
-    def test_get_attribute(self, readonly_backend):
-        result = readonly_backend.get_attribute("names", BASE_LEVEL1["names"])
-        assert isinstance(result, list)
-
-    def test_list_collections(self, readonly_backend):
-        result = readonly_backend.list_collections()
-        assert result["pagination"]["total"] >= 2
-
-    def test_capabilities(self, readonly_backend):
-        caps = readonly_backend.capabilities()
-        assert caps["backend_type"] == "refget_store"
-        assert caps["n_collections"] >= 2
-
-    def test_compute_similarities(self, readonly_backend):
-        seqcol = readonly_backend.get_collection(BASE_DIGEST)
-        result = readonly_backend.compute_similarities(seqcol)
-        entry = next(s for s in result["similarities"] if s["digest"] == BASE_DIGEST)
-        assert "hg38_base" in entry["human_readable_names"]
 
 
 @pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
@@ -322,6 +279,15 @@ class TestStoreBackend501:
 @pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
 class TestBackendAliasAndFhr:
     """Backend-level alias resolution and FHR metadata."""
+
+    @pytest.fixture
+    def backend(self):
+        """Local override: alias/FHR mutation requires a mutable store, so this
+        class does not use the module-level parametrized ``backend`` fixture."""
+        store = RefgetStore.in_memory()
+        store.add_sequence_collection_from_fasta(str(BASE_FASTA))
+        store.add_sequence_collection_from_fasta(str(DIFFERENT_NAMES_FASTA))
+        return RefgetStoreBackend(store)
 
     def test_resolve_alias(self, backend):
         backend._store.add_collection_alias("ucsc", "hg38_base", BASE_DIGEST)

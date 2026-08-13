@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import pytest
 
@@ -7,6 +8,19 @@ from refget import InvalidSeqColError
 from refget.models import SequenceCollection
 from refget.utils import compare_seqcols, validate_seqcol
 from tests.conftest import API_TEST_DIR, DEMO_FILES, DIGEST_TESTS
+
+try:
+    from gtars.refget import (  # noqa: F401
+        SequenceCollection as gtarsSequenceCollection,
+    )
+    from gtars.refget import (
+        digest_fasta,
+    )
+
+    _RUST_BINDINGS_AVAILABLE = True
+
+except ImportError:
+    _RUST_BINDINGS_AVAILABLE = False
 
 # Pairs of files to compare, with the "correct" compare response
 COMPARE_TESTS = [
@@ -130,15 +144,13 @@ class TestValidate:
     Test validation
     """
 
-    @pytest.mark.parametrize(["seqcol_obj"], [[seqcol_obj]])
-    def test_validate(self, seqcol_obj):
+    def test_validate(self):
         is_valid = validate_seqcol(seqcol_obj)
         assert is_valid
 
-    @pytest.mark.parametrize(["seqcol_obj"], [[bad_seqcol]])
-    def test_failure(self, seqcol_obj):
+    def test_failure(self):
         with pytest.raises(Exception):
-            validate_seqcol(seqcol_obj)
+            validate_seqcol(bad_seqcol)
 
 
 class TestCollatedAttributeValidation:
@@ -183,3 +195,32 @@ class TestCollatedAttributeValidation:
         # Should not raise an error
         sc = SequenceCollection.from_dict(valid_dict)
         assert sc is not None
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+class TestRustPySequenceCollection:
+    def test_pysequencecollection(self):
+        p = Path("test_fasta/base.fa")
+
+        gtars_digested_seq_col = digest_fasta(p)
+        python_seq_col = SequenceCollection.from_fasta_file(p)
+
+        bridged_seq_col = SequenceCollection.from_PySequenceCollection(
+            gtars_seq_col=gtars_digested_seq_col
+        )
+        assert bridged_seq_col.digest == python_seq_col.digest == gtars_digested_seq_col.digest, (
+            "Top-level digest mismatch!"
+        )
+
+        assert bridged_seq_col.sequences.digest == python_seq_col.sequences.digest
+        assert bridged_seq_col.sequences.value == python_seq_col.sequences.value
+        assert bridged_seq_col.sequences == python_seq_col.sequences
+        assert bridged_seq_col.lengths == python_seq_col.lengths
+        assert bridged_seq_col.names == python_seq_col.names
+        assert bridged_seq_col.sorted_sequences == python_seq_col.sorted_sequences
+        assert bridged_seq_col.sorted_sequences_digest == python_seq_col.sorted_sequences_digest
+        assert bridged_seq_col.name_length_pairs == python_seq_col.name_length_pairs
+        assert (
+            bridged_seq_col.sorted_name_length_pairs_digest
+            == python_seq_col.sorted_name_length_pairs_digest
+        )

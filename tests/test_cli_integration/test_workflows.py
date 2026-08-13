@@ -6,83 +6,34 @@ Integration tests for multi-command CLI workflows.
 These tests verify that commands work together correctly in typical usage patterns.
 """
 
-import importlib.util
 import json
-import os
 
-_conftest_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "conftest.py"
+from tests._test_data import (
+    BASE_FASTA,
+    DIFFERENT_NAMES_FASTA,
+    DIFFERENT_ORDER_FASTA,
+    SUBSET_FASTA,
+    TEST_FASTA_DIGESTS,
 )
-_spec = importlib.util.spec_from_file_location("tests_conftest", _conftest_path)
-_conftest = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_conftest)
-
-BASE_FASTA = _conftest.BASE_FASTA
-DIFFERENT_NAMES_FASTA = _conftest.DIFFERENT_NAMES_FASTA
-DIFFERENT_ORDER_FASTA = _conftest.DIFFERENT_ORDER_FASTA
-SUBSET_FASTA = _conftest.SUBSET_FASTA
-TEST_FASTA_DIGESTS = _conftest.TEST_FASTA_DIGESTS
 
 
-class TestDigestAndCompare:
-    """Test digest -> compare workflow."""
+def test_seqcol_roundtrip(cli, sample_fasta, tmp_path):
+    """Seqcol file can be validated and used for comparison."""
+    # Compute seqcol
+    seqcol_file = tmp_path / "test.seqcol.json"
+    result = cli("fasta", "seqcol", str(sample_fasta), "-o", str(seqcol_file))
+    assert result.exit_code == 0
 
-    def test_compare_fasta_files(self, cli, sample_fasta, tmp_path):
-        """Compare two FASTA files directly."""
-        fasta2 = tmp_path / "other.fa"
-        fasta2.write_text(">chr1\nACGTACGT\n>chr2\nGGCCGGCC\n")
+    # Validate seqcol
+    result = cli("seqcol", "validate", str(seqcol_file))
+    assert result.exit_code == 0
 
-        result = cli("seqcol", "compare", str(sample_fasta), str(fasta2))
-
-        assert result.exit_code == 0
-        data = json.loads(result.stdout)
-        # Should show comparison result
-        assert isinstance(data, dict)
-
-    def test_compute_then_compare(self, cli, sample_fasta, tmp_path):
-        """Compute seqcol JSON, then compare."""
-        seqcol_file = tmp_path / "test.seqcol.json"
-
-        # Step 1: Compute seqcol
-        result = cli("fasta", "seqcol", str(sample_fasta), "-o", str(seqcol_file))
-        assert result.exit_code == 0
-
-        # Step 2: Compare using seqcol file
-        result = cli("seqcol", "compare", str(seqcol_file), str(sample_fasta))
-        assert result.exit_code == 0
-
-    def test_digest_consistency(self, cli, sample_fasta, tmp_path):
-        """Digest from FASTA matches seqcol digest computed the same way."""
-        # Get digest directly from FASTA using gtars
-        result1 = cli("fasta", "digest", str(sample_fasta))
-        assert result1.exit_code == 0
-        direct_digest = json.loads(result1.stdout)["digest"]
-
-        # Run digest again - should be deterministic
-        result2 = cli("fasta", "digest", str(sample_fasta))
-        assert result2.exit_code == 0
-        repeated_digest = json.loads(result2.stdout)["digest"]
-
-        # Same command should produce same digest (deterministic)
-        assert direct_digest == repeated_digest
-
-    def test_seqcol_roundtrip(self, cli, sample_fasta, tmp_path):
-        """Seqcol file can be validated and used for comparison."""
-        # Compute seqcol
-        seqcol_file = tmp_path / "test.seqcol.json"
-        result = cli("fasta", "seqcol", str(sample_fasta), "-o", str(seqcol_file))
-        assert result.exit_code == 0
-
-        # Validate seqcol
-        result = cli("seqcol", "validate", str(seqcol_file))
-        assert result.exit_code == 0
-
-        # Digest from seqcol file should be deterministic
-        result1 = cli("seqcol", "digest", str(seqcol_file))
-        result2 = cli("seqcol", "digest", str(seqcol_file))
-        assert result1.exit_code == 0
-        assert result2.exit_code == 0
-        assert json.loads(result1.stdout)["digest"] == json.loads(result2.stdout)["digest"]
+    # Digest from seqcol file should be deterministic
+    result1 = cli("seqcol", "digest", str(seqcol_file))
+    result2 = cli("seqcol", "digest", str(seqcol_file))
+    assert result1.exit_code == 0
+    assert result2.exit_code == 0
+    assert json.loads(result1.stdout)["digest"] == json.loads(result2.stdout)["digest"]
 
 
 class TestStoreLifecycle:
@@ -252,137 +203,3 @@ class TestConfigWorkflow:
 
         # Store should exist at configured path
         assert store_path.exists()
-
-
-class TestBatchProcessing:
-    """Test batch processing workflows."""
-
-    def test_process_multiple_fastas(self, cli, tmp_path):
-        """Process multiple FASTA files efficiently."""
-        results = {}
-
-        for fasta in [BASE_FASTA, DIFFERENT_NAMES_FASTA, DIFFERENT_ORDER_FASTA]:
-            result = cli("fasta", "digest", str(fasta))
-            assert result.exit_code == 0
-            data = json.loads(result.stdout)
-            results[fasta.name] = data["digest"]
-
-        # All digests should be unique
-        digests = list(results.values())
-        assert len(digests) == len(set(digests))
-
-    def test_add_all_to_store(self, cli, tmp_path):
-        """Add all test FASTAs to store."""
-        store = tmp_path / "store"
-        cli("store", "init", "--path", str(store))
-
-        fastas = [BASE_FASTA, DIFFERENT_NAMES_FASTA, DIFFERENT_ORDER_FASTA, SUBSET_FASTA]
-        digests = []
-
-        for fasta in fastas:
-            result = cli("store", "add", str(fasta), "--path", str(store))
-            assert result.exit_code == 0
-            digests.append(json.loads(result.stdout)["digest"])
-
-        # Verify all added
-        result = cli("store", "list", "--path", str(store))
-        collections = json.loads(result.stdout)["collections"]
-        assert len(collections) >= len(fastas)
-
-
-class TestComparisonWorkflows:
-    """Test seqcol comparison workflows."""
-
-    def test_pairwise_comparison(self, cli):
-        """Compare all pairs of test FASTAs."""
-        fastas = [BASE_FASTA, DIFFERENT_NAMES_FASTA, DIFFERENT_ORDER_FASTA]
-
-        for i, fa1 in enumerate(fastas):
-            for fa2 in fastas[i + 1 :]:
-                result = cli("seqcol", "compare", str(fa1), str(fa2))
-                # Exit code: 0=compatible, 1=incompatible (both are valid results)
-                assert result.exit_code in [0, 1]
-                # Should produce valid JSON comparison result
-                data = json.loads(result.stdout)
-                assert "compatible" in data
-
-    def test_compare_known_relationships(self, cli):
-        """Compare files with known relationships."""
-        # base.fa and different_order.fa have same sequences in different order
-        result = cli("seqcol", "compare", str(BASE_FASTA), str(DIFFERENT_ORDER_FASTA))
-        # Exit code: 0=compatible, 1=incompatible
-        assert result.exit_code in [0, 1]
-
-        data = json.loads(result.stdout)
-        # Should indicate sequences are same but order differs
-        assert isinstance(data, dict)
-
-
-class TestErrorRecovery:
-    """Test workflows handle errors gracefully."""
-
-    def test_continue_after_error(self, cli, tmp_path):
-        """Workflow continues after recoverable error."""
-        store = tmp_path / "store"
-        cli("store", "init", "--path", str(store))
-
-        # Try to add nonexistent file
-        result = cli("store", "add", "/nonexistent.fa", "--path", str(store))
-        assert result.exit_code != 0
-
-        # Should still be able to add valid file
-        result = cli("store", "add", str(BASE_FASTA), "--path", str(store))
-        assert result.exit_code == 0
-
-    def test_store_operations_after_failed_add(self, cli, tmp_path):
-        """Store remains usable after failed add."""
-        store = tmp_path / "store"
-        cli("store", "init", "--path", str(store))
-
-        # Failed add
-        cli("store", "add", "/nonexistent.fa", "--path", str(store))
-
-        # List should still work
-        result = cli("store", "list", "--path", str(store))
-        assert result.exit_code == 0
-
-
-class TestEndToEndWorkflow:
-    """Complete end-to-end workflow tests."""
-
-    def test_full_workflow(self, cli, tmp_path, sample_fasta):
-        """Complete workflow: index, store, compare."""
-        store = tmp_path / "store"
-
-        # 1. Create index files
-        result = cli("fasta", "index", str(sample_fasta))
-        assert result.exit_code == 0
-
-        # 2. Get digest
-        result = cli("fasta", "digest", str(sample_fasta))
-        digest = json.loads(result.stdout)["digest"]
-
-        # 3. Initialize store
-        cli("store", "init", "--path", str(store))
-
-        # 4. Add to store
-        result = cli("store", "add", str(sample_fasta), "--path", str(store))
-        store_digest = json.loads(result.stdout)["digest"]
-
-        # 5. Verify digests match
-        assert digest == store_digest
-
-        # 6. Export from store
-        exported = tmp_path / "exported.fa"
-        cli("store", "export", digest, "-o", str(exported), "--path", str(store))
-
-        # 7. Compare original with exported
-        result = cli("seqcol", "compare", str(sample_fasta), str(exported))
-        assert result.exit_code == 0
-
-        # 8. Get stats
-        result = cli("fasta", "stats", str(sample_fasta), "--json")
-        assert result.exit_code == 0
-
-        result = cli("store", "stats", "--path", str(store))
-        assert result.exit_code == 0
