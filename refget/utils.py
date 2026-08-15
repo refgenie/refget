@@ -18,8 +18,35 @@ from .exceptions import InvalidSeqColError
 _LOGGER = logging.getLogger(__name__)
 
 
+def _reject_floats(item) -> None:
+    """Raise if there's a float anywhere in the item.
+
+    We can't handle floats correctly (see canonical_str), so it's safer to
+    error out than to make a bad digest quietly.
+    """
+    if isinstance(item, float):
+        raise ValueError(
+            f"canonical_str got a float ({item!r}), which it can't digest "
+            "correctly. Convert numbers to int or str first."
+        )
+    if isinstance(item, dict):
+        for v in item.values():
+            _reject_floats(v)
+    elif isinstance(item, (list, tuple)):
+        for v in item:
+            _reject_floats(v)
+
+
 def canonical_str(item: dict) -> bytes:
-    """Convert a dict into a canonical string representation"""
+    """Convert a dict into a canonical string representation.
+
+    This is just json.dumps with sorted keys, not a real RFC-8785 (JCS)
+    implementation. That's fine for seqcol data (strings and normal-sized
+    ints), where the two give the same result. But they differ on floats:
+    json.dumps(1.0) is "1.0", while JCS wants "1". So we reject floats below
+    rather than produce a digest nobody else can reproduce.
+    """
+    _reject_floats(item)
     return json.dumps(
         item, separators=(",", ":"), ensure_ascii=False, allow_nan=False, sort_keys=True
     ).encode()
