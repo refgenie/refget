@@ -2,7 +2,7 @@
 
 ![Run pytests](https://github.com/pepkit/looper/workflows/Run%20pytests/badge.svg)
 
-User-facing documentation is hosted at [refgenie.org/refget](https://refgenie.org/refget/).
+User-facing documentation is hosted at [docs.refgenie.org/refget](https://docs.refgenie.org/refget/).
 
 This repository includes:
 
