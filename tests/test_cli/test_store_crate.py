@@ -4,7 +4,7 @@
 
 import json
 
-from tests._test_data import BASE_FASTA, assert_json_output
+from tests._test_data import BASE_FASTA
 
 
 def _init_and_add(cli, tmp_path):

@@ -14,7 +14,6 @@ from tests._test_data import (
     DIFFERENT_NAMES_FASTA,
     DIFFERENT_ORDER_FASTA,
     SUBSET_FASTA,
-    TEST_FASTA_DIGESTS,
     assert_json_output,
 )
 

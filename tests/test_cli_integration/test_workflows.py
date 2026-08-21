@@ -10,10 +10,7 @@ import json
 
 from tests._test_data import (
     BASE_FASTA,
-    DIFFERENT_NAMES_FASTA,
     DIFFERENT_ORDER_FASTA,
-    SUBSET_FASTA,
-    TEST_FASTA_DIGESTS,
 )
 
 

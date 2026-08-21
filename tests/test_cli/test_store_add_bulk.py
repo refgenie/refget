@@ -2,14 +2,9 @@
 
 """Tests for refget store add (bulk/glob/file-list/namespace)."""
 
-import json
-
 from tests._test_data import (
     BASE_FASTA,
     DIFFERENT_NAMES_FASTA,
-    DIFFERENT_ORDER_FASTA,
-    SAMPLE_FHR_JSON,
-    TEST_FASTA_DIGESTS,
     assert_json_output,
 )
 
