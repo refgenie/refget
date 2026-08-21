@@ -43,7 +43,7 @@ const LandingPage = () => {
         {/* Python Package */}
         <div className="col-md-3">
           <a
-            href="https://refgenie.org/refget/"
+            href="https://docs.refgenie.org/refget/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-decoration-none"

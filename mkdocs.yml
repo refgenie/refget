@@ -12,7 +12,7 @@ nav:
     - Support: https://github.com/refgenie/refget/issues
     # The changelog lives in the refgenie-docs repo, at
     # src/content/docs/refget/reference/changelog.md
-    - Changelog: https://refgenie.org/refget/reference/changelog/
+    - Changelog: https://docs.refgenie.org/refget/reference/changelog/
 
 theme: databio
 

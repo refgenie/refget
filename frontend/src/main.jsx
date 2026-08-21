@@ -143,7 +143,7 @@ const Nav = () => {
             {/* Python Package - external link */}
             <li className='nav-item mx-2 my-0 h6'>
               <a
-                href='https://refgenie.org/refget/'
+                href='https://docs.refgenie.org/refget/'
                 className='nav-link fw-light'
                 target='_blank'
                 rel='noopener noreferrer'
