@@ -489,9 +489,7 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
     checks.append(
         ("transient_attribute_not_served", check_transient_attribute_not_served, [api_root])
     )
-    checks.append(
-        ("multi_attribute_filter_and", check_list_multi_attribute_filter_and, [api_root])
-    )
+    checks.append(("multi_attribute_filter_and", check_list_multi_attribute_filter_and, [api_root]))
 
     # List filter checks (base.fa, filter by each attribute)
     base_name, base_bundle = DIGEST_TESTS[0]

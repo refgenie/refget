@@ -247,12 +247,8 @@ def _add_fasta_pep_to_db(
                 else:
                     # Actually upload
                     cloud_name = loc.get("cloud", "").upper()
-                    access_key = loc.get("access_key") or os.environ.get(
-                        f"{cloud_name}_ACCESS_KEY"
-                    )
-                    secret_key = loc.get("secret_key") or os.environ.get(
-                        f"{cloud_name}_SECRET_KEY"
-                    )
+                    access_key = loc.get("access_key") or os.environ.get(f"{cloud_name}_ACCESS_KEY")
+                    secret_key = loc.get("secret_key") or os.environ.get(f"{cloud_name}_SECRET_KEY")
                     url = _upload_to_s3(
                         fa_path,
                         loc["bucket"],

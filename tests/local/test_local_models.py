@@ -102,8 +102,7 @@ class TestSequenceCollectionModel:
         d = SequenceCollection.from_fasta_file(os.path.join(fa_root, fa_file))
         assert d.digest == fa_digest_bundle["top_level_digest"]
         assert (
-            d.sorted_name_length_pairs_digest
-            == fa_digest_bundle["sorted_name_length_pairs_digest"]
+            d.sorted_name_length_pairs_digest == fa_digest_bundle["sorted_name_length_pairs_digest"]
         )
 
         # Check level1 digests match expected answer

@@ -375,9 +375,7 @@ def add(
     # Single-file fast path: exactly one explicit path that is an existing
     # regular file, no file-list, serial. Globs/directories fall through to
     # the bulk path so gtars can expand them.
-    single = (
-        len(fastas) == 1 and file_list is None and jobs in (0, 1) and Path(fastas[0]).is_file()
-    )
+    single = len(fastas) == 1 and file_list is None and jobs in (0, 1) and Path(fastas[0]).is_file()
 
     if single:
         single_path = Path(fastas[0])

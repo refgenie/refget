@@ -70,9 +70,7 @@ def _load_scom_config(store_path: str, remote: bool):
                     _LOGGER.info(f"SCOM: loaded {len(digests)} target digests for '{species}'")
                 return
             else:
-                _LOGGER.info(
-                    "No SCOM_CONFIG_URL set and no scom_config.json found. SCOM disabled."
-                )
+                _LOGGER.info("No SCOM_CONFIG_URL set and no scom_config.json found. SCOM disabled.")
                 return
 
     try:

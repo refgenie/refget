@@ -541,5 +541,3 @@ class TestStoreErrorHandling:
         result = cli("store", "add", str(BASE_FASTA), "--path", str(nonexistent))
 
         assert result.exit_code != 0
-
-

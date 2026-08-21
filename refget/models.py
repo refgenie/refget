@@ -101,9 +101,7 @@ def create_fasta_drs_object(fasta_file: str, digest: str = None) -> "FastaDrsObj
     from datetime import datetime
 
     if not GTARS_INSTALLED:
-        raise ImportError(
-            "create_fasta_drs_object requires gtars. Install with: pip install gtars"
-        )
+        raise ImportError("create_fasta_drs_object requires gtars. Install with: pip install gtars")
 
     from gtars.refget import digest_fasta
 
@@ -288,9 +286,7 @@ class DrsObject(SQLModel, table=False):
     updated_time: Optional[datetime] = None
     version: Optional[str] = None
     mime_type: Optional[str] = None
-    access_methods: List[AccessMethod] = Field(
-        default_factory=list, sa_column=Column(PydanticJSON)
-    )
+    access_methods: List[AccessMethod] = Field(default_factory=list, sa_column=Column(PydanticJSON))
     description: Optional[str] = None
     aliases: List[str] = Field(default_factory=list, sa_column=Column(JSON))
 
@@ -315,9 +311,7 @@ class DrsObject(SQLModel, table=False):
         """Coerce dicts to AccessMethod objects when loading from JSON."""
         if v is None:
             return []
-        return [
-            AccessMethod.model_validate(item) if isinstance(item, dict) else item for item in v
-        ]
+        return [AccessMethod.model_validate(item) if isinstance(item, dict) else item for item in v]
 
     @field_serializer("access_methods")
     def serialize_access_methods(self, v):

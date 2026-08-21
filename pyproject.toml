@@ -97,7 +97,7 @@ packages = ["refget"]
 "tests/api/comparison" = "refget/compliance_data/comparison"
 
 [tool.ruff]
-line-length = 99
+line-length = 100
 exclude = [
     "array_overlap.py",
     "create_compliance_answers.py",

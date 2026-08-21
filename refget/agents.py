@@ -271,9 +271,7 @@ class SequenceCollectionAgent(object):
                 ]
 
             return ResultsSequenceCollections(
-                pagination=PaginationResult(
-                    page=int(offset / limit), page_size=limit, total=count
-                ),
+                pagination=PaginationResult(page=int(offset / limit), page_size=limit, total=count),
                 results=final_results,
             )
 
@@ -407,9 +405,7 @@ class SequenceCollectionAgent(object):
             drs_obj = FastaDrsObject.from_fasta_file(fasta_file_path, digest=seqcol.digest)
             if self.parent.fasta_drs.url_prefix:
                 url = self.parent.fasta_drs.url_prefix + os.path.basename(fasta_file_path)
-                drs_obj.access_methods = [
-                    AccessMethod(type="https", access_url=AccessURL(url=url))
-                ]
+                drs_obj.access_methods = [AccessMethod(type="https", access_url=AccessURL(url=url))]
             self.parent.fasta_drs.add(drs_obj)
 
         return seqcol

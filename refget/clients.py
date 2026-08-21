@@ -436,9 +436,7 @@ class SequenceCollectionClient(RefgetClient):
         info = self.service_info()
         return info.get("seqcol", {}).get("fasta_drs", {}).get("enabled", False)
 
-    def resolve_alias(
-        self, namespace: str, alias: str, kind: str = "collection"
-    ) -> Optional[dict]:
+    def resolve_alias(self, namespace: str, alias: str, kind: str = "collection") -> Optional[dict]:
         """
         Resolve a namespace:alias to a digest.
 
