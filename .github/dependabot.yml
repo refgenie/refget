@@ -5,15 +5,42 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "dev"
+    groups:
+      all-pip:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      security-fixes:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "npm"
     directory: "/frontend"
     schedule:
       interval: "weekly"
     target-branch: "dev"
+    groups:
+      all-npm:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      security-fixes:
+        applies-to: security-updates
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     target-branch: "dev"
+    groups:
+      all-actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      security-fixes:
+        applies-to: security-updates
+        patterns:
+          - "*"
