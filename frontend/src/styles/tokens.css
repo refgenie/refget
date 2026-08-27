@@ -1,0 +1,143 @@
+/*
+ * Design tokens for the refget Sequence Collections web UI.
+ *
+ * This is the ONLY file under src/styles that may hold raw values (hex colors,
+ * px/rem lengths). Every other stylesheet references these variables, and
+ * `npm run lint:styles` enforces that.
+ *
+ * The palette is carried over from the Bootstrap theme this UI used to ship, so
+ * the port does not read as a different product: primary #0d6efd, page chrome
+ * #eff3f6, muted text #6c757d. The seqcol indigo (#3333cc, taken from the mark
+ * in the logo) is the brand accent used for links and focus rings.
+ *
+ * Colors are RGB triplets rather than hex so one token serves both rgb() and
+ * rgba().
+ */
+
+:root {
+  /* === COLOR === */
+  --color-primary: 13, 110, 253; /* #0d6efd */
+  --color-primary-dark: 10, 88, 202;
+  --color-brand: 51, 51, 204; /* #3333cc, the seqcol mark */
+  --color-brand-light: 102, 102, 204;
+  --color-accent: 13, 110, 253;
+
+  --color-text: 33, 37, 41;
+  --color-text-strong: 0, 0, 0;
+  --color-text-muted: 108, 117, 125; /* #6c757d */
+  --color-text-inverse: 255, 255, 255;
+
+  --color-background: 255, 255, 255;
+  --color-surface: 248, 249, 250; /* #f8f9fa */
+  --color-surface-alt: 239, 243, 246; /* #eff3f6, the old nav bar */
+  --color-border: 222, 226, 230; /* #dee2e6 */
+  --color-border-strong: 173, 181, 189;
+
+  --color-secondary: 108, 117, 125;
+  --color-success: 25, 135, 84;
+  --color-success-surface: 209, 231, 221;
+  --color-warning: 255, 193, 7;
+  --color-warning-dark: 153, 111, 0;
+  --color-warning-surface: 255, 243, 205;
+  --color-danger: 220, 53, 69;
+  --color-danger-surface: 248, 215, 218;
+  --color-info: 13, 202, 240;
+  --color-info-surface: 207, 244, 252;
+
+  /* modal.css falls back to --color-gray-100 for the close-button hover */
+  --color-gray-100: 241, 243, 245;
+
+  /* === SPACING (4px grid) === */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* === TYPOGRAPHY === */
+  --font-family-base: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* === BORDER === */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+  --border-width: 1px;
+  --border-width-thick: 2px;
+
+  /* === SHADOW === */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-focus: 0 0 0 3px rgba(13, 110, 253, 0.25);
+  --shadow-card-hover: 0 8px 16px -6px rgba(0, 0, 0, 0.15);
+
+  /* === LAYOUT === */
+  --layout-max-width: 1140px;
+  --transition-fast: 120ms ease;
+  --transition-base: 180ms ease;
+
+  /* === COMPONENT SIZES === */
+  --control-height: 2.25rem;
+  --control-height-sm: 1.75rem;
+  --dot-size: 0.5rem;
+  --spinner-size: 1.25rem;
+  --spinner-size-sm: 0.875rem;
+  --spinner-width: 2px;
+  --icon-size: 1em;
+  --icon-size-lg: 1.25em;
+  --icon-shift: -0.125em;
+  --progress-height: 0.75rem;
+  --progress-height-sm: 0.5rem;
+  --progress-height-lg: 1.25rem;
+  --suggestions-height: 18rem;
+  --log-panel-height: 14rem;
+  --menu-min-width: 12rem;
+  --menu-z: 30;
+  --tooltip-z: 50;
+  --tooltip-width: 15.5rem;
+  --logo-height: 2.5rem;
+  --footer-logo-width: 12.5rem;
+
+  /* === PAGE-SPECIFIC SURFACES === */
+  --code-block-max-height: 24rem;
+  --scroll-panel-height: 28rem;
+  --dropzone-min-height: 9rem;
+  --plot-min-height: 20rem;
+  --network-height: 32rem;
+  --rotated-header-height: 23rem;
+  --rotated-header-width: 1rem;
+  --rotated-header-shift-x: 0.9rem;
+  --rotated-header-shift-y: 10.9rem;
+  --sequence-name-width: 12rem;
+  --kv-term-width: 5.5rem;
+  --filter-input-width: 18.75rem;
+  --filter-input-width-narrow: 15.5rem;
+  --kv-term-width-wide: 15rem;
+  --lede-measure: 44rem;
+  --guide-measure: 56rem;
+  --landing-glyph-size: 3.75rem;
+}

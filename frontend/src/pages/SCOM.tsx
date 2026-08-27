@@ -1,0 +1,692 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { encodeComparison } from '../utilities';
+import { useLoaderData, useNavigate, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
+
+import {
+  fetchSimilaritiesJSON,
+  fetchComparison,
+  fetchComparisonJSON,
+  fetchCollectionLevels,
+} from '../services/fetchData';
+import { API_BASE } from '../utilities';
+import { MultiMetricHeatmapPlot } from '../components/MultiMetricHeatmapPlot';
+import { StripPlot } from '../components/StripPlot';
+
+import { useSimilaritiesStore } from '../stores/similarities';
+import { Icon } from '../components/common/Icon';
+import { errorMessage } from '../utils/errors';
+import type { CollectionListing, SimilarityRow } from '../types';
+
+
+type Relationship = 'oneToMany' | 'manyToMany';
+
+const SCOM = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const loaderData = useLoaderData() as CollectionListing[] | null;
+  // Memoised: several effects list `collections` as a dependency, and a fresh
+  // fallback object each render would re-fire all of them.
+  const collections = useMemo<CollectionListing>(
+    () =>
+      Array.isArray(loaderData) && loaderData.length >= 1
+        ? loaderData[0]
+        : { results: [] },
+    [loaderData],
+  );
+
+  const {
+    selectedCollectionsIndex,
+    setSelectedCollectionsIndex,
+    customCollections,
+    setCustomCollections,
+    customCollectionName,
+    setCustomCollectionName,
+    customCollectionJSON,
+    setCustomCollectionJSON,
+    setCustomCount,
+    similarities,
+    setSimilarities,
+    getAllCollections,
+    initializeSelectedCollections,
+    sortBy,
+    sortAscending,
+    sortByColumn,
+    resetSort,
+    species,
+    setSpecies,
+    error: storeError,
+    setError: setStoreError,
+  } = useSimilaritiesStore();
+
+  const [stripJitter, setStripJitter] =
+    useState<'none' | 'uniform' | 'normal' | 'bars'>('none');
+  const [stripOrientation, setStripOrientation] =
+    useState<'horizontal' | 'vertical'>('horizontal');
+  // Relationship mode is currently fixed; kept as a value for the conditional UI below.
+  // Only one-to-many is wired up today; the many-to-many branches below are
+  // kept for the comparison matrix that is still to come.
+  const relationship = 'oneToMany' as Relationship;
+  const [isLoading, setIsLoading] = useState(false);
+  const [pendingPrefill, setPendingPrefill] =
+    useState<{ json: unknown; name: string } | null>(null);
+
+  const allCollections = getAllCollections(collections);
+
+  useEffect(() => {
+    initializeSelectedCollections(collections);
+  }, [collections, initializeSelectedCollections]);
+
+  // Handle prefill from digest page - load data
+  useEffect(() => {
+    if (searchParams.get('prefill') === 'true' && !pendingPrefill) {
+      const prefillData = localStorage.getItem('scom-prefill');
+      if (prefillData) {
+        try {
+          const { json, name } = JSON.parse(prefillData);
+          setCustomCollectionJSON(JSON.stringify(json, null, 2));
+          setCustomCollectionName(name || '');
+          localStorage.removeItem('scom-prefill');
+          // Prefilling state from the URL/localStorage on navigation is the
+          // intended effect behavior; the !pendingPrefill guard prevents loops.
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setPendingPrefill({ json, name });
+        } catch (e) {
+          console.error('Failed to load prefill data:', e);
+        }
+      }
+    }
+    // Intentionally keyed on searchParams only: this runs once per navigation
+    // and is guarded by !pendingPrefill. The setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Handle digest query parameter - fetch collection and prefill
+  useEffect(() => {
+    const digestParam = searchParams.get('digest');
+    const nameParam = searchParams.get('name');
+    if (digestParam && !pendingPrefill) {
+      const loadFromDigest = async () => {
+        setIsLoading(true);
+        try {
+          const levels = await fetchCollectionLevels(digestParam, API_BASE);
+          if (levels && levels.length >= 2) {
+            const collectionJson = levels[1]; // level=2 is the canonical format needed for /similarities/
+            setCustomCollectionJSON(JSON.stringify(collectionJson, null, 2));
+            setCustomCollectionName(nameParam || digestParam);
+            setPendingPrefill({ json: collectionJson, name: nameParam || digestParam });
+            toast.success(`Loaded collection ${nameParam || digestParam}`);
+          }
+        } catch (e) {
+          console.error('Failed to load collection from digest:', e);
+          toast.error(`Failed to load collection: ${errorMessage(e)}`);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadFromDigest();
+    }
+    // Intentionally keyed on searchParams only: this runs once per navigation
+    // and is guarded by !pendingPrefill. The setters are stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  const selectedCollections = allCollections.filter(
+    (_, index) => selectedCollectionsIndex[index],
+  );
+
+  const sampleJSON = {
+    "lengths": [249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663, 146364022, 141213431, 135534747, 135006516, 133851895, 115169878, 107349540, 102531392, 90354753, 81195210, 78077248, 59128983, 63025520, 48129895, 51304566, 155270560, 59373566, 16569],
+    "names": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "X",
+      "Y",
+      "MT"
+    ],
+    "sequences": [
+      "SQ.S_KjnFVz-FE7M0W6yoaUDgYxLPc1jyWU",
+      "SQ.9KdcA9ZpY1Cpvxvg8bMSLYDUpsX6GDLO",
+      "SQ.VNBualIltAyi2AI_uXcKU7M9XUOuA7MS",
+      "SQ.iy7Zfceb5_VGtTQzJ-v5JpPbpeifHD_V",
+      "SQ.vbjOdMfHJvTjK_nqvFvpaSKhZillW0SX",
+      "SQ.KqaUhJMW3CDjhoVtBetdEKT1n6hM-7Ek",
+      "SQ.IW78mgV5Cqf6M24hy52hPjyyo5tCCd86",
+      "SQ.tTm7wmhz0G4lpt8wPspcNkAD_qiminj6",
+      "SQ.HBckYGQ4wYG9APHLpjoQ9UUe9v7NxExt",
+      "SQ.-BOZ8Esn8J88qDwNiSEwUr5425UXdiGX",
+      "SQ.XXi2_O1ly-CCOi3HP5TypAw7LtC6niFG",
+      "SQ.105bBysLoDFQHhajooTAUyUkNiZ8LJEH",
+      "SQ.Ewb9qlgTqN6e_XQiRVYpoUfZJHXeiUfH",
+      "SQ.5Ji6FGEKfejK1U6BMScqrdKJK8GqmIGf",
+      "SQ.zIMZb3Ft7RdWa5XYq0PxIlezLY2ccCgt",
+      "SQ.W6wLoIFOn4G7cjopxPxYNk2lcEqhLQFb",
+      "SQ.AjWXsI7AkTK35XW9pgd3UbjpC3MAevlz",
+      "SQ.BTj4BDaaHYoPhD3oY2GdwC_l0uqZ92UD",
+      "SQ.ItRDD47aMoioDCNW_occY5fWKZBKlxCX",
+      "SQ.iy_UbUrvECxFRX5LPTH_KPojdlT7BKsf",
+      "SQ.LpTaNW-hwuY_yARP0rtarCnpCQLkgVCg",
+      "SQ.XOgHwwR3Upfp5sZYk6ZKzvV25a4RBVu8",
+      "SQ.v7noePfnNpK8ghYXEqZ9NukMXW7YeNsm",
+      "SQ.fbS5kAwZUB5-1xVpa7xZ4s_lyDpLPVUo",
+      "SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct"
+    ],
+    "sorted_sequences": [
+      "SQ.-BOZ8Esn8J88qDwNiSEwUr5425UXdiGX",
+      "SQ.105bBysLoDFQHhajooTAUyUkNiZ8LJEH",
+      "SQ.5Ji6FGEKfejK1U6BMScqrdKJK8GqmIGf",
+      "SQ.9KdcA9ZpY1Cpvxvg8bMSLYDUpsX6GDLO",
+      "SQ.AjWXsI7AkTK35XW9pgd3UbjpC3MAevlz",
+      "SQ.BTj4BDaaHYoPhD3oY2GdwC_l0uqZ92UD",
+      "SQ.Ewb9qlgTqN6e_XQiRVYpoUfZJHXeiUfH",
+      "SQ.HBckYGQ4wYG9APHLpjoQ9UUe9v7NxExt",
+      "SQ.IW78mgV5Cqf6M24hy52hPjyyo5tCCd86",
+      "SQ.ItRDD47aMoioDCNW_occY5fWKZBKlxCX",
+      "SQ.KqaUhJMW3CDjhoVtBetdEKT1n6hM-7Ek",
+      "SQ.LpTaNW-hwuY_yARP0rtarCnpCQLkgVCg",
+      "SQ.S_KjnFVz-FE7M0W6yoaUDgYxLPc1jyWU",
+      "SQ.VNBualIltAyi2AI_uXcKU7M9XUOuA7MS",
+      "SQ.W6wLoIFOn4G7cjopxPxYNk2lcEqhLQFb",
+      "SQ.XOgHwwR3Upfp5sZYk6ZKzvV25a4RBVu8",
+      "SQ.XXi2_O1ly-CCOi3HP5TypAw7LtC6niFG",
+      "SQ.fbS5kAwZUB5-1xVpa7xZ4s_lyDpLPVUo",
+      "SQ.iy7Zfceb5_VGtTQzJ-v5JpPbpeifHD_V",
+      "SQ.iy_UbUrvECxFRX5LPTH_KPojdlT7BKsf",
+      "SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct",
+      "SQ.tTm7wmhz0G4lpt8wPspcNkAD_qiminj6",
+      "SQ.v7noePfnNpK8ghYXEqZ9NukMXW7YeNsm",
+      "SQ.vbjOdMfHJvTjK_nqvFvpaSKhZillW0SX",
+      "SQ.zIMZb3Ft7RdWa5XYq0PxIlezLY2ccCgt"
+    ],
+    "name_length_pairs": [
+      {
+        "length": 249250621,
+        "name": "1"
+      },
+      {
+        "length": 243199373,
+        "name": "2"
+      },
+      {
+        "length": 198022430,
+        "name": "3"
+      },
+      {
+        "length": 191154276,
+        "name": "4"
+      },
+      {
+        "length": 180915260,
+        "name": "5"
+      },
+      {
+        "length": 171115067,
+        "name": "6"
+      },
+      {
+        "length": 159138663,
+        "name": "7"
+      },
+      {
+        "length": 146364022,
+        "name": "8"
+      },
+      {
+        "length": 141213431,
+        "name": "9"
+      },
+      {
+        "length": 135534747,
+        "name": "10"
+      },
+      {
+        "length": 135006516,
+        "name": "11"
+      },
+      {
+        "length": 133851895,
+        "name": "12"
+      },
+      {
+        "length": 115169878,
+        "name": "13"
+      },
+      {
+        "length": 107349540,
+        "name": "14"
+      },
+      {
+        "length": 102531392,
+        "name": "15"
+      },
+      {
+        "length": 90354753,
+        "name": "16"
+      },
+      {
+        "length": 81195210,
+        "name": "17"
+      },
+      {
+        "length": 78077248,
+        "name": "18"
+      },
+      {
+        "length": 59128983,
+        "name": "19"
+      },
+      {
+        "length": 63025520,
+        "name": "20"
+      },
+      {
+        "length": 48129895,
+        "name": "21"
+      },
+      {
+        "length": 51304566,
+        "name": "22"
+      },
+      {
+        "length": 155270560,
+        "name": "X"
+      },
+      {
+        "length": 59373566,
+        "name": "Y"
+      },
+      {
+        "length": 16569,
+        "name": "MT"
+      }
+    ]
+  }
+
+  const handleNavigateSCIM = async (similarityRow: SimilarityRow) => {
+    setStoreError(null);
+    try {
+      let comparison;
+      if (similarityRow.custom) {
+        comparison = await fetchComparisonJSON(
+          similarityRow.raw,
+          similarityRow.comparedDigest,
+        );
+      } else {
+        comparison = await fetchComparison(
+          similarityRow.selectedDigest ?? '',
+          similarityRow.comparedDigest,
+        );
+      }
+      const encodedComparison = encodeComparison(comparison);
+      navigate(`/compare?val=${encodedComparison}`);
+    } catch {
+      setStoreError('Comparison could not be made.');
+      toast.error(
+        <span>
+          <strong>Error:</strong> Comparison could not be made.
+        </span>,
+      );
+    }
+  };
+
+  const handleAddCustomCollection = useCallback(async (raw: string, name: string) => {
+    setStoreError(null);
+    let data: unknown;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      setStoreError('Invalid JSON format. Please check your input.');
+      toast.error(
+        <span>
+          <strong>Error:</strong> Invalid JSON format. Please check your input.
+        </span>,
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const result = await fetchSimilaritiesJSON(data, species);
+      if (result?.similarities) {
+        const customDigest = 'Input Seqcol';
+        const flattenedSimilarities = result.similarities.flatMap((
+          s: {
+            digest: string;
+            human_readable_names?: string[];
+            similarities: Record<string, number>;
+          },
+        ) => {
+          const names = (s.human_readable_names ?? []).length > 0
+            ? s.human_readable_names
+            : [s.digest];
+          return (names as string[]).map((humanReadableName: string) => ({
+            selectedDigest: name !== '' ? name : customDigest,
+            comparedDigest: s.digest,
+            comparedAlias: humanReadableName || s.digest,
+            lengths: s.similarities.lengths,
+            name_length_pairs: s.similarities.name_length_pairs,
+            names: s.similarities.names,
+            sequences: s.similarities.sequences,
+            sorted_sequences: s.similarities.sorted_sequences,
+            custom: true,
+            raw: data,
+          }));
+        });
+
+        if (relationship === 'oneToMany') {
+          setCustomCollections([
+            {
+              selectedDigest: name !== '' ? name : customDigest,
+              similarities: flattenedSimilarities,
+            },
+          ]);
+          const serverCollectionCount = collections?.results?.length || 0;
+          setSelectedCollectionsIndex((prev) => [
+            ...prev.slice(0, serverCollectionCount),
+            true,
+          ]);
+        } else {
+          // Add to existing custom collections
+          setCustomCollections((prev) => [
+            ...prev,
+            {
+              selectedDigest: name !== '' ? name : customDigest,
+              similarities: flattenedSimilarities,
+            },
+          ]);
+          setSelectedCollectionsIndex((prev) => [...prev, true]);
+        }
+        setCustomCount((prev) => prev + 1);
+        toast.success('Input processed.');
+      }
+    } catch (e) {
+      console.error('SCOM submission error:', e);
+      console.log('Data that was submitted:', data);
+      setStoreError('Collection is invalid. Please check your input.');
+      toast.error(
+        <span>
+          <strong>Error:</strong> Collection is invalid. Please check your
+          input.
+        </span>,
+      );
+      return;
+    } finally {
+      resetSort();
+      setIsLoading(false);
+    }
+  }, [species, relationship, collections, setCustomCollections, setSelectedCollectionsIndex, setCustomCount, resetSort, setIsLoading, setStoreError]);
+
+  // Auto-submit prefilled data (wait for collections to be ready)
+  useEffect(() => {
+    if (pendingPrefill && !isLoading && collections?.results) {
+      // One-shot auto-submit of prefilled data once collections are ready, then
+      // clear the prefill flag so this doesn't re-run. Both calls update state
+      // intentionally (submission + flag reset), guarded by pendingPrefill.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      handleAddCustomCollection(JSON.stringify(pendingPrefill.json), pendingPrefill.name || '');
+      setPendingPrefill(null);
+    }
+  }, [pendingPrefill, isLoading, collections, handleAddCustomCollection]);
+
+  useEffect(() => {
+    const fetchAllSimilarities = async () => {
+      const allSimilarities: SimilarityRow[] = [];
+
+      for (let i = 0; i < selectedCollectionsIndex.length; i++) {
+        if (!selectedCollectionsIndex[i]) continue;
+
+        const customIndex = i - collections.results.length;
+        const customCollection = customCollections[customIndex];
+        if (customCollection) {
+          allSimilarities.push(...(customCollection.similarities as SimilarityRow[]));
+        }
+      }
+
+      setSimilarities(allSimilarities.length > 0 ? allSimilarities : null);
+    };
+
+    fetchAllSimilarities();
+  }, [selectedCollectionsIndex, customCollections, collections.results.length, setSimilarities]);
+
+  const handleSortTable = (column: string) => {
+    sortByColumn(column);
+  };
+
+  if (!collections) {
+    return <div className="alert alert--warning">Failed to load collection data.</div>;
+  }
+
+  return (
+    <div className='mb-12'>
+      <div>
+        <div>
+          <div className='flex items-end justify-between'>
+            <h4 className='font-light'>Seqcol Comparison Overview Module (SCOM)</h4>
+          </div>
+
+          <div className='mt-2 mb-0 text-muted'>
+            <p className='mb-2'>
+              Compare your sequence collection against all assemblies on the server.
+              This tool shows similarity metrics across multiple reference genomes at once.
+            </p>
+
+            <div className='alert alert--muted border text-sm'>
+              <strong>Step 1:</strong> Get your sequence collection as a canonical SeqCol object (JSON)
+              <ul className='mb-2 mt-1'>
+                <li><strong>From a FASTA file:</strong> Use the <a href='/fasta'>FASTA Digester</a> tool, then click &quot;Compare in SCOM&quot;</li>
+                <li><strong>From Python:</strong> Run <code>refget fasta seqcol yourfasta.fa</code></li>
+                <li><strong>From the API:</strong> Call <code>/collection/{'{digest}'}</code> with <code>?level=2</code></li>
+                <li><strong>Quick start:</strong> Use the example button to load example data</li>
+              </ul>
+              <strong>Step 2:</strong> Paste the SeqCol JSON in the text box below and click Submit
+              <div className='mt-4'>
+                <button
+                  className='btn btn--outline-primary'
+                  disabled={isLoading}
+                  onClick={async () => {
+                    setCustomCollectionJSON(JSON.stringify(sampleJSON, null, 4));
+                    handleAddCustomCollection(
+                      JSON.stringify(sampleJSON),
+                      customCollectionName,
+                    )
+                  }}
+                >
+                  <Icon name="play" className="mr-2" />
+                  Load Example Data
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className='mt-6'>
+            <div
+              className={relationship === 'manyToMany' ? 'w-1/2' : 'w-full'}
+            >
+              <div className='card'>
+                <div className='card__header text-xs flex justify-between'>
+                  <span className='font-bold'>Custom Collection Output</span>
+                  <button
+                    className='btn btn--success btn--xs shadow-sm ml-auto'
+                    disabled={isLoading}
+                    onClick={async () =>
+                      handleAddCustomCollection(
+                        customCollectionJSON,
+                        customCollectionName,
+                      )
+                    }
+                  >
+                    {isLoading ? 'Loading...' : (relationship === 'oneToMany' ? 'Submit' : 'Add')}
+                  </button>
+                </div>
+                <input
+                  id='custom-collection-name'
+                  type='text'
+                  onChange={(e) => setCustomCollectionName(e.target.value)}
+                  placeholder='Name or digest of custom collection (optional)'
+                  className='form-input text-xs border-0 rounded-none border-b z-active'
+                />
+                <div className='flex items-center border-b px-2 py-1 text-xs'>
+                  <span className='text-muted mr-2'>Compare with:</span>
+                  <div className='btn-group'>
+                    <button
+                      type='button'
+                      className={`btn ${species === 'human' ? 'btn--primary' : 'btn--outline-secondary'}`}
+                      onClick={() => setSpecies('human')}
+                    >
+                      Human
+                    </button>
+                    <button
+                      type='button'
+                      className={`btn ${species === 'mouse' ? 'btn--primary' : 'btn--outline-secondary'}`}
+                      onClick={() => setSpecies('mouse')}
+                    >
+                      Mouse
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  id='custom-collection-json'
+                  onChange={(e) => setCustomCollectionJSON(e.target.value)}
+                  value={customCollectionJSON}
+                  placeholder='Paste output from `refget fasta seqcol yourfasta.fa` here.'
+                  className='form-input text-xs border-0 rounded-none rounded-b z-active'
+                  rows={12}
+                />
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {storeError && (
+        <div className='alert alert--danger mt-4 flex justify-between items-center' role='alert'>
+          <div>
+            <Icon name="warning" className="mr-2" />
+            <strong>Error:</strong> {storeError}
+          </div>
+          <button
+            className='btn btn--sm btn--outline-danger'
+            onClick={() => setStoreError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {(similarities && !isLoading) ? (
+        <div>
+          <div>
+            <div className='flex items-start justify-between mt-6 mb-2'>
+              <h5 className='font-light'>Strip Plot</h5>
+              <select
+                className='form-select form-select--sm ml-auto text-xs w-pct-12'
+                aria-label='strip-orientation'
+                value={stripOrientation}
+                onChange={(e) =>
+                  setStripOrientation(e.target.value as 'horizontal' | 'vertical')
+                }
+              >
+                <option value='horizontal'>Horizontal Plot</option>
+                <option value='vertical'>Vertical Plot</option>
+              </select>
+              <select
+                className='form-select form-select--sm ml-1 text-xs w-pct-12'
+                aria-label='strip-jitter'
+                value={stripJitter}
+                onChange={(e) =>
+                  setStripJitter(e.target.value as 'none' | 'uniform' | 'normal' | 'bars')
+                }
+              >
+                <option value='none'>Stacked Points</option>
+                {relationship === 'manyToMany' && (
+                  <option value='uniform'>Uniformly Distributed Points</option>
+                )}
+                {relationship === 'oneToMany' && (
+                  <option value='bars'>Bars</option>
+                )}
+              </select>
+            </div>
+            <StripPlot
+              similarities={similarities.map(({ raw: _raw, ...rest }) => rest)}
+              jitter={stripJitter}
+              pointSize={
+                relationship === 'oneToMany' || selectedCollections.length <= 1
+                  ? 'big'
+                  : 'normal'
+              }
+              orientation={stripOrientation}
+            />
+
+            <div className='flex items-end justify-between mt-12 mb-2'>
+              <h5 className='font-light'>Heatmap</h5>
+            </div>
+            <MultiMetricHeatmapPlot similarities={similarities.map(({ raw: _raw, ...rest }) => rest)} />
+
+            <div className='flex items-end justify-between'>
+              <h5 className='font-light mt-12'>Seqcol Comparison Summary Table</h5>
+              <p className='mb-2 text-muted'>
+                Click on a row to view a detailed 1-1 comparison in SCIM.
+              </p>
+            </div>
+            <div className='rounded shadow-sm border text-xs overflow-x-auto'>
+              <table className='table table--striped table--hover'>
+                <thead>
+                  <tr>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('comparedAlias')}>Compared Seqcol <Icon name={sortBy === 'comparedAlias' ? (sortAscending ? 'sort-up' : 'sort-down') : 'filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('comparedDigest')}>Compared Seqcol Digest <Icon name={sortBy === 'comparedDigest' ? (sortAscending ? 'sort-up' : 'sort-down') : 'filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('lengths')}>Lengths <Icon name={sortBy === 'lengths' ? (sortAscending ? 'sort-up' : 'sort-down') : 'filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('name_length_pairs')}>Name Length Pairs <Icon name={sortBy === 'name_length_pairs' ? (sortAscending ? 'sort-up' : 'sort-down') : 'filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('names')}>Names <Icon name={sortBy === 'names' ? (sortAscending ? 'sort-up' : 'sort-down') : 'filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('sequences')}>Sequences <Icon name={sortBy === 'sequences' ? (sortAscending ? 'sort-up' : 'sort-down') : 'filter'} /></th>
+                    <th className='cursor-pointer text-nowrap' onClick={() => handleSortTable('sorted_sequences')}>Sorted Sequences <Icon name={sortBy === 'sorted_sequences' ? (sortAscending ? 'sort-up' : 'sort-down') : 'filter'} /></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {similarities?.map((row, index) => (
+                    <tr
+                      key={index}
+                      className='cursor-pointer'
+                      onClick={() => handleNavigateSCIM(row)}
+                    >
+                      <td>{row.comparedAlias ? row.comparedAlias : row.comparedDigest}</td>
+                      <td>{row.comparedDigest}</td>
+                      <td>{row.lengths != null ? (Number.isInteger(row.lengths) ? String(row.lengths) : Number(row.lengths).toFixed(3)) : '-'}</td>
+                      <td>{row.name_length_pairs != null ? (Number.isInteger(row.name_length_pairs) ? String(row.name_length_pairs) : Number(row.name_length_pairs).toFixed(3)) : '-'}</td>
+                      <td>{row.names != null ? (Number.isInteger(row.names) ? String(row.names) : Number(row.names).toFixed(3)) : '-'}</td>
+                      <td>{row.sequences != null ? (Number.isInteger(row.sequences) ? String(row.sequences) : Number(row.sequences).toFixed(3)) : '-'}</td>
+                      <td>{row.sorted_sequences != null ? (Number.isInteger(row.sorted_sequences) ? String(row.sorted_sequences) : Number(row.sorted_sequences).toFixed(3)) : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        (selectedCollections.length > 0 || isLoading)  && <p className='mt-6'>Loading...</p>
+      )}
+    </div>
+  );
+};
+
+export { SCOM };

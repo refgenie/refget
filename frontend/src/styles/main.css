@@ -1,0 +1,12 @@
+/*
+ * Single stylesheet entry point. Import order is load-bearing: tokens define
+ * the variables, utilities consume them, components override only where a
+ * utility composition cannot express the rule, and the modal comes last.
+ *
+ * utilities.css and modal.css are verbatim copies from the web-design-style
+ * skill and must not be edited; `npm run lint:styles` verifies this.
+ */
+@import './tokens.css';
+@import './utilities.css';
+@import './components.css';
+@import './modal.css';

@@ -1,15 +1,18 @@
-name: Deploy frontend to Cloudflare
+name: Frontend checks
 
 on:
+  pull_request:
+    paths:
+      - 'frontend/**'
   push:
-    branches: [master]
+    branches: [master, dev]
     paths:
       - 'frontend/**'
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Build and deploy frontend
+  checks:
+    name: Lint, type-check, build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -28,16 +31,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The house Web UI Standard: no Bootstrap or Tailwind, no inline styles,
+      # every class resolves, and the stack matches the shared stack.json.
       - name: Check styles
         run: npm run lint:styles
 
+      - name: Type-check
+        run: npm run type-check
+
+      - name: Lint
+        run: npm run lint
+
       - name: Build
         run: npm run build
-
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: frontend
-          command: deploy
