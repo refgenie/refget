@@ -9,6 +9,7 @@
     "type-check": "tsc -b --noEmit",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "lint:styles": "node scripts/web-style-guard.mjs",
+    "test": "node --test --experimental-strip-types tests/*.test.ts",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -52,7 +52,7 @@ export default [
   {
     // Node-side scripts: the guard and the workflow helpers shipped by the
     // web-design-style skill.
-    files: ['*.config.{js,cjs,mjs}', 'vite.config.ts', 'scripts/**/*.mjs'],
+    files: ['*.config.{js,cjs,mjs}', 'vite.config.ts', 'scripts/**/*.mjs', 'tests/**/*.ts'],
     languageOptions: {
       globals: {
         ...globals.node,
