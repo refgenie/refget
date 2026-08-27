@@ -1,0 +1,129 @@
+import { useCallback, useEffect, useRef } from 'react';
+import embed from 'vega-embed';
+import type { VisualizationSpec } from 'vega-embed';
+import type { SimilarityRow } from '../types';
+import { asSpec, asEmbedOptions } from '../utils/vega';
+
+import { snakeToTitle } from '../utilities';
+
+interface HeatmapPlotProps {
+  similarities: SimilarityRow[];
+  metric: string;
+}
+
+const HeatmapPlot = ({ similarities, metric }: HeatmapPlotProps) => {
+  const plotRef = useRef<HTMLDivElement>(null);
+
+  const selectedCount = [...new Set(similarities.map((e) => e.selectedDigest))].length;
+
+  const heatmapSpec = useCallback((rows: SimilarityRow[], metric: string): VisualizationSpec => {
+    return asSpec({
+      $schema: 'https://vega.github.io/schema/vega-lite/v6.json',
+      data: {
+        values: rows,
+      },
+      mark: {
+        type: 'rect',
+        stroke: '#333',
+        strokeWidth: 1,
+      },
+      encoding: {
+        x: {
+          field: 'comparedDigest',
+          type: 'nominal',
+          title: 'Server Sequence Collections',
+          sort: false,
+          axis: {
+            // labelAngle: -33,
+            // labelLimit: 111,
+            domain: false,
+            labels: false,
+            ticks: false
+          },
+        },
+        y: {
+          field: 'selectedDigest',
+          type: 'nominal',
+          title: 'Input',
+          sort: false,
+          axis: {
+            // labelAngle: -33,
+            // labelLimit: 111,
+            domain: false,
+            labels: false,
+            ticks: false
+          },
+        },
+        color: {
+          field: metric,
+          type: 'quantitative',
+          title: 'Jaccard Similarity',
+          scale: {
+            scheme: 'bluepurple',
+            reverse: false,
+            domain: [0, 1],
+          },
+          legend: {
+            format: '.2f'
+          },
+        },
+        tooltip: [
+          { field: 'selectedDigest', title: 'Selected' },
+          { field: 'comparedDigest', title: 'Compared' },
+          { field: metric, title: snakeToTitle(metric), format: '.3f' },
+        ],
+      },
+      config: {
+        legend: {
+          orient: 'bottom',
+          layout: {
+            bottom: {
+              anchor: 'end'
+            }
+          },
+          titleAlign: 'right',
+          titleAnchor: 'end',
+          titlePadding: 2.5,
+          offset: -5,
+        },
+      },
+      width: 'container',
+      height:
+        selectedCount < 10
+          ? 40 * selectedCount
+          : selectedCount < 20
+            ? 22 * selectedCount
+            : 13 * selectedCount,
+    });
+  }, [selectedCount]);
+
+  useEffect(() => {
+    const node = plotRef.current;
+    if (node && similarities && metric) {
+      const spec = heatmapSpec(similarities, metric);
+      try {
+        embed(node, spec, asEmbedOptions({
+          actions: true,
+          config: {
+            // Force Vega to use relative URLs for gradients
+            baseURL: '',
+          },
+        })).catch((error: unknown) => {
+          console.error('Embed error after parsing:', error);
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    return () => {
+      if (node) {
+        node.innerHTML = '';
+      }
+    };
+  }, [similarities, metric, heatmapSpec]);
+
+  return <div className='w-full' ref={plotRef} />;
+};
+
+export { HeatmapPlot };
