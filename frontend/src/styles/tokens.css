@@ -31,6 +31,7 @@
   --color-surface: 248, 249, 250; /* #f8f9fa */
   --color-surface-alt: 239, 243, 246; /* #eff3f6, the old nav bar */
   --color-border: 222, 226, 230; /* #dee2e6 */
+  --color-border-light: 233, 236, 239; /* #e9ecef — subtle rules, card outlines */
   --color-border-strong: 173, 181, 189;
 
   --color-secondary: 108, 117, 125;
@@ -67,7 +68,7 @@
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
+  --font-size-base: 1.0625rem;
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;

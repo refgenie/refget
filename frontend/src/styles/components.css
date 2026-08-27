@@ -70,7 +70,7 @@ a {
   color: rgb(var(--color-primary));
   text-decoration: none;
 }
-a:hover { text-decoration: underline; }
+a:hover { text-decoration: none; color: rgb(var(--color-brand-light)); }
 
 .link-plain { color: inherit; }
 .link-plain:hover { text-decoration: none; }
@@ -520,7 +520,7 @@ a:hover { text-decoration: underline; }
 
 .site-nav {
   background-color: rgb(var(--color-surface-alt));
-  border-bottom: var(--border-width) solid rgb(var(--color-border));
+  border-bottom: var(--border-width) solid rgba(var(--color-text), 0.1);
 }
 .site-nav__inner {
   display: flex;
@@ -591,7 +591,7 @@ a:hover { text-decoration: underline; }
   max-width: var(--layout-max-width);
   margin: var(--space-8) auto 0;
   padding: var(--space-4);
-  border-top: var(--border-width) solid rgb(var(--color-border));
+  border-top: var(--border-width) solid rgba(var(--color-text), 0.1);
 }
 .site-footer__logo { width: var(--footer-logo-width); }
 
@@ -923,7 +923,7 @@ a:hover { text-decoration: underline; }
 /* A rule inside body copy, matching the border token. */
 hr {
   border: 0;
-  border-top: var(--border-width) solid rgb(var(--color-border));
+  border-top: var(--border-width) solid rgba(var(--color-text), 0.1);
 }
 
 /* The radial similarity graph draws into this SVG at whatever width it gets. */
@@ -1020,7 +1020,10 @@ hr {
 }
 .guide__row--head { align-items: end; }
 .guide__ask { padding-right: var(--space-4); }
-.guide__answer { padding-left: var(--space-4); }
+.guide__answer {
+  padding-left: var(--space-4);
+  border-color: rgb(var(--color-border));
+}
 
 @media (min-width: 768px) {
   .guide__row { grid-template-columns: 5fr 7fr; }

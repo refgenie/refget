@@ -96,12 +96,12 @@ const LandingPage = () => {
       </div>
 
       {/* How should I use this? */}
-      <div className="mt-12 pt-6 border-t">
+      <div className="mt-12 pt-6 border-t border-muted">
         <h5 className="text-lg font-light text-center mb-6">How should I use this?</h5>
         <div className="guide">
 
           {/* Header row */}
-          <div className="guide__row guide__row--head pb-2 mb-2 border-b">
+          <div className="guide__row guide__row--head pb-2 mb-2 border-b border-muted">
             <div className="guide__ask">
               <strong className="text-muted text-sm uppercase">Are you...</strong>
             </div>
