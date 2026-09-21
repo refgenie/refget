@@ -20,14 +20,14 @@ from pathlib import Path
 from refget.store import RefgetStore
 
 # Remote store URL (2023 Human Pangenome Reference - 47 haplotype-resolved assemblies)
-REMOTE_URL = "https://refgenie.s3.us-east-1.amazonaws.com/pangenome_refget_store"
+REMOTE_URL = "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/pangenome/"
 
 # Persistent cache directory
 CACHE_DIR = Path.home() / ".refget" / "pangenome_cache"
 
 # Example collection from the pangenome (HG03540.pri.mat.f1_v2)
-EXAMPLE_COLLECTION = "0aHV7I-94paL9Z1H4LNlqsW3WxJhlou5"
-EXAMPLE_SEQ_NAME = "JAGYVX010000006.1 unmasked:primary_assembly HG03540.pri.mat.f1_v2:JAGYVX010000006.1:1:96320881:1"
+EXAMPLE_COLLECTION = "71sPqYAdG9B62MdODjOGBO9n34Oamukl"
+EXAMPLE_SEQ_NAME = "JAGYVX010000006.1"
 
 
 def main():
