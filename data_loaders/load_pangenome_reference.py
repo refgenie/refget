@@ -50,9 +50,6 @@ dbc.pangenome.add_from_fasta_pep(prj, fa_root)
 # dbc.pangenome.get(pangenome_digest, return_format="level4")
 
 
-# from refget.utilities import build_pangenome_model
-# p = build_pangenome_model(demo_results)
-
 # res = dbc.pangenome.add(p)
 
 # res

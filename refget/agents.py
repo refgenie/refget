@@ -50,7 +50,6 @@ from .models import (  # noqa: E402
 )
 from .response_models import PaginationResult, ResultsSequenceCollections  # noqa: E402
 from .utils import (  # noqa: E402
-    build_pangenome_model,
     calc_jaccard_similarities,
     compare_seqcols,
     fasta_to_seqcol_dict,
@@ -619,15 +618,9 @@ class PangenomeAgent(object):
     def add_from_fasta_pep(
         self, pep: "peppy.Project", fa_root: str, update: bool = False
     ) -> Pangenome:
-        # First add in the FASTA files individually, and build a dictionary of the results
-        pangenome_obj = {}
-        for s in pep.samples:
-            file_path = os.path.join(fa_root, s.fasta)
-            _LOGGER.info(f"Fasta to be loaded: Name: {s.sample_name} File path: {file_path}")
-            pangenome_obj[s.sample_name] = self.parent.seqcol.add_from_fasta_file(file_path)
-
-        p = build_pangenome_model(pangenome_obj)
-        return self.add(p)
+        # There is no builder for the database Pangenome model yet. Pangenome digests
+        # are computed by refget.pangenome.
+        raise NotImplementedError("Building a database Pangenome from FASTA is not implemented")
 
     def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
         with Session(self.engine) as session:
