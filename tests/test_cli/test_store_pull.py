@@ -7,6 +7,7 @@ gtars' open_remote (Rust/PyO3) holds the GIL during HTTP requests, which
 would deadlock a Python-thread-based HTTP server.
 """
 
+import hashlib
 import json
 import socket
 import subprocess
@@ -28,10 +29,27 @@ def _find_free_port() -> int:
         return s.getsockname()[1]
 
 
-def _start_http_server(directory: str, port: int) -> subprocess.Popen:
-    """Start an HTTP server as a subprocess serving the given directory."""
+def _start_http_server(
+    directory: str, port: int, *, range_support: bool = False
+) -> subprocess.Popen:
+    """Start a subprocess HTTP server serving a store directory."""
+    if range_support:
+        command = [
+            sys.executable,
+            "-c",
+            (
+                "import sys; from http.server import ThreadingHTTPServer; "
+                "from refget.cli._explore_server import make_explore_handler; "
+                "ThreadingHTTPServer(('127.0.0.1', int(sys.argv[2])), "
+                "make_explore_handler(sys.argv[1], None)).serve_forever()"
+            ),
+            directory,
+            str(port),
+        ]
+    else:
+        command = [sys.executable, "-m", "http.server", str(port), "--directory", directory]
     proc = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(port), "--directory", directory],
+        command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -58,6 +76,13 @@ def _stop_http_server(proc: subprocess.Popen) -> None:
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
+
+
+def _add_text_collection(cli, store_path, fasta_path, contents):
+    fasta_path.write_text(contents)
+    result = cli("store", "add", str(fasta_path), "--path", str(store_path))
+    assert result.exit_code == 0, result.output
+    return json.loads(result.stdout)["digest"]
 
 
 @pytest.fixture
@@ -125,7 +150,7 @@ class TestStorePullBasic:
         assert data["digest"] == digest
 
     def test_pull_creates_local_cache(self, cli, tmp_path, remote_store_server):
-        """After pulling, the .remote_cache directory is created."""
+        """After pulling, a per-origin cache with an origin marker is created."""
         server_url, digest, _ = remote_store_server
         local_store = tmp_path / "cache_store"
         cli("store", "init", "--path", str(local_store))
@@ -135,6 +160,10 @@ class TestStorePullBasic:
         assert result.exit_code == 0
         cache_dir = local_store / ".remote_cache"
         assert cache_dir.exists()
+        origin_caches = [path for path in cache_dir.iterdir() if path.is_dir()]
+        assert len(origin_caches) == 1
+        assert len(origin_caches[0].name) == 16
+        assert (origin_caches[0] / ".origin").read_text().strip() == server_url
 
     def test_pull_quiet_flag(self, cli, tmp_path, remote_store_server):
         """Pull with --quiet suppresses progress output."""
@@ -445,3 +474,206 @@ class TestStorePullMultipleRemotes:
             assert data["source"] == server_url
         finally:
             _stop_http_server(empty_proc)
+
+
+class TestRemoteStoreIntegrity:
+    """Broad remote cache, refresh, and alias integrity scenarios."""
+
+    def test_lazy_remote_reads_cache_only_the_requested_sequence(self, cli, tmp_path):
+        """Inventory and ranges stay metadata-only; whole reads cache one body."""
+        from refget.cli.store import _remote_cache_dir
+
+        source = tmp_path / "lazy_source"
+        assert cli("store", "init", "--path", str(source)).exit_code == 0
+        digest = _add_text_collection(
+            cli, source, tmp_path / "lazy.fa", ">chr1\nACGTACGT\n>chr2\nTTAA\n"
+        )
+        local_listing = cli("store", "list", digest, "--path", str(source))
+        sequence_digest = json.loads(local_listing.stdout)["sequences"][0]["digest"]
+
+        port = _find_free_port()
+        proc = _start_http_server(str(source), port, range_support=True)
+        try:
+            remote_url = f"http://127.0.0.1:{port}"
+            client = tmp_path / "lazy_client"
+            cache_dir = _remote_cache_dir(client, remote_url)
+
+            inventory = cli(
+                "store", "list", "--sequences", "--path", str(client), "--remote", remote_url
+            )
+            assert inventory.exit_code == 0, inventory.output
+            assert len(json.loads(inventory.stdout)["sequences"]) == 2
+            assert list(cache_dir.rglob("*.seq")) == []
+
+            substring = cli(
+                "store", "get", sequence_digest, "--sequence", "--start", "0", "--end", "3",
+                "--path", str(client), "--remote", remote_url,
+            )
+            assert substring.exit_code == 0, substring.output
+            assert substring.stdout.strip() == "ACG"
+            assert list(cache_dir.rglob("*.seq")) == []
+
+            bed = tmp_path / "lazy.bed"
+            bed.write_text("chr2\t0\t2\n")
+            regions = cli(
+                "store", "regions", digest, "--bed", str(bed), "--json",
+                "--path", str(client), "--remote", remote_url,
+            )
+            assert regions.exit_code == 0, regions.output
+            assert json.loads(regions.stdout)[0]["sequence"] == "TT"
+            assert list(cache_dir.rglob("*.seq")) == []
+
+            whole = cli(
+                "store", "get", sequence_digest, "--sequence",
+                "--path", str(client), "--remote", remote_url,
+            )
+            assert whole.exit_code == 0, whole.output
+            assert whole.stdout.strip() == "ACGTACGT"
+            assert len(list(cache_dir.rglob("*.seq"))) == 1
+        finally:
+            _stop_http_server(proc)
+
+    def test_origin_isolation_alias_resolution_and_shared_cache_guard(self, cli, tmp_path):
+        from gtars.refget import RefgetStore
+        from refget.cli.store import _normalize_remote_url
+
+        remote_root = tmp_path / "remotes"
+        store_a = remote_root / "a"
+        store_b = remote_root / "b"
+        assert cli("store", "init", "--path", str(store_a)).exit_code == 0
+        assert cli("store", "init", "--path", str(store_b)).exit_code == 0
+
+        digest_a = _add_text_collection(
+            cli, store_a, tmp_path / "a1.fa", ">chr1\nACGT\n>chr2\nGGCC\n"
+        )
+        digest_a_peer = _add_text_collection(
+            cli, store_a, tmp_path / "a2.fa", ">one\nACGT\n>extra\nTTAA\n"
+        )
+        digest_b = _add_text_collection(
+            cli, store_b, tmp_path / "b.fa", ">other\nCCCC\n"
+        )
+        alias = cli(
+            "store", "alias", "add", "ucsc", "assembly-a", digest_a,
+            "--path", str(store_a),
+        )
+        assert alias.exit_code == 0, alias.output
+
+        port = _find_free_port()
+        proc = _start_http_server(str(remote_root), port)
+        try:
+            url_a = f"http://127.0.0.1:{port}/a/"
+            url_b = f"HTTP://127.0.0.1:{port}/b#ignored"
+            normalized_a = _normalize_remote_url(url_a)
+            normalized_b = _normalize_remote_url(url_b)
+            client_store = tmp_path / "client"
+
+            list_a = cli(
+                "store", "list", "--path", str(client_store), "--remote", url_a
+            )
+            list_b = cli(
+                "store", "list", "--path", str(client_store), "--remote", url_b
+            )
+            assert list_a.exit_code == 0, list_a.output
+            assert list_b.exit_code == 0, list_b.output
+            collections_a = json.loads(list_a.stdout)["collections"]
+            collections_b = json.loads(list_b.stdout)["collections"]
+            assert {row["digest"] for row in collections_a} == {digest_a, digest_a_peer}
+            assert {row["digest"] for row in collections_b} == {digest_b}
+            assert next(row for row in collections_a if row["digest"] == digest_a)["aliases"] == [
+                ["ucsc", "assembly-a"]
+            ]
+
+            match = cli(
+                "store", "match", "ucsc:assembly-a", digest_a_peer,
+                "--path", str(client_store), "--remote", url_a,
+            )
+            assert match.exit_code == 0, match.output
+            assert json.loads(match.stdout)["matches"][0]["names_a"] == ["chr1"]
+
+            cache_root = client_store / ".remote_cache"
+            cache_dirs = sorted(path for path in cache_root.iterdir() if path.is_dir())
+            assert len(cache_dirs) == 2
+            assert all(len(path.name) == 16 for path in cache_dirs)
+            assert {path.name for path in cache_dirs} == {
+                hashlib.sha256(normalized_a.encode()).hexdigest()[:16],
+                hashlib.sha256(normalized_b.encode()).hexdigest()[:16],
+            }
+            assert {(path / ".origin").read_text().strip() for path in cache_dirs} == {
+                normalized_a,
+                normalized_b,
+            }
+
+            shared_cache = tmp_path / "deliberately_shared_cache"
+            RefgetStore.open_remote(str(shared_cache), normalized_a)
+            with pytest.raises(OSError) as error:
+                RefgetStore.open_remote(str(shared_cache), normalized_b)
+            assert normalized_a in str(error.value)
+            assert normalized_b in str(error.value)
+        finally:
+            _stop_http_server(proc)
+
+    def test_manifest_refresh_preserves_payload_and_rejects_missing_alias(self, cli, tmp_path):
+        from refget.cli.store import _remote_cache_dir
+
+        remote_root = tmp_path / "refresh_remote"
+        source_store = remote_root / "store"
+        assert cli("store", "init", "--path", str(source_store)).exit_code == 0
+        digest = _add_text_collection(
+            cli, source_store, tmp_path / "initial.fa", ">chr1\nACGTACGT\n"
+        )
+        local_collection = cli("store", "list", digest, "--path", str(source_store))
+        assert local_collection.exit_code == 0, local_collection.output
+        sequence_digest = json.loads(local_collection.stdout)["sequences"][0]["digest"]
+
+        port = _find_free_port()
+        proc = _start_http_server(str(remote_root), port)
+        try:
+            remote_url = f"http://127.0.0.1:{port}/store"
+            client_store = tmp_path / "refresh_client"
+            prime = cli(
+                "store", "get", sequence_digest, "--sequence",
+                "--path", str(client_store), "--remote", remote_url,
+            )
+            assert prime.exit_code == 0, prime.output
+
+            cache_dir = _remote_cache_dir(client_store, remote_url)
+            payloads = list(cache_dir.rglob("*.seq"))
+            assert payloads
+            preserved_payload = payloads[0]
+            preserved_bytes = preserved_payload.read_bytes()
+
+            alias = cli(
+                "store", "alias", "add", "ucsc", "refreshed", digest,
+                "--path", str(source_store),
+            )
+            assert alias.exit_code == 0, alias.output
+            new_digest = _add_text_collection(
+                cli, source_store, tmp_path / "new.fa", ">new\nTTAA\n"
+            )
+
+            refreshed = cli(
+                "store", "list", "--path", str(client_store), "--remote", remote_url
+            )
+            assert refreshed.exit_code == 0, refreshed.output
+            collections = json.loads(refreshed.stdout)["collections"]
+            assert {row["digest"] for row in collections} == {digest, new_digest}
+            assert next(row for row in collections if row["digest"] == digest)["aliases"] == [
+                ["ucsc", "refreshed"]
+            ]
+            assert preserved_payload.exists()
+            assert preserved_payload.read_bytes() == preserved_bytes
+
+            manifest_path = source_store / "rgstore.json"
+            manifest = json.loads(manifest_path.read_text())
+            manifest.setdefault("collection_alias_namespaces", []).append("missing-ns")
+            manifest["aliases_digest"] = "deliberately-missing-alias-sidecar"
+            manifest_path.write_text(json.dumps(manifest, indent=2))
+
+            corrupt = cli(
+                "store", "list", "--path", str(client_store), "--remote", remote_url
+            )
+            assert corrupt.exit_code != 0
+            assert "missing-ns" in corrupt.output
+            assert remote_url in corrupt.output
+        finally:
+            _stop_http_server(proc)

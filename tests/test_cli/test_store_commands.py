@@ -3,7 +3,9 @@
 """Tests for refget store CLI commands."""
 
 import json
+from types import SimpleNamespace
 
+from refget.cli.store import _list_all_collection_metadata, _resolve_collection_selector
 from tests._test_data import (
     BASE_FASTA,
     DIFFERENT_NAMES_FASTA,
@@ -194,6 +196,29 @@ class TestStoreList:
             assert "digest" in item
             assert isinstance(item["digest"], str)
             assert len(item["digest"]) > 0
+
+    def test_selector_and_inventory_use_bounded_metadata_lookups(self):
+        """Digest selectors avoid scans; a complete inventory uses two calls."""
+        first = SimpleNamespace(digest="first")
+        second = SimpleNamespace(digest="second")
+
+        class StoreDouble:
+            def __init__(self):
+                self.list_calls = []
+
+            def get_collection_metadata(self, digest):
+                return first if digest == "first" else None
+
+            def list_collections(self, *, page, page_size):
+                self.list_calls.append((page, page_size))
+                results = [first] if page_size == 1 else [first, second]
+                return {"results": results, "pagination": {"total": 2}}
+
+        store = StoreDouble()
+        assert _resolve_collection_selector(store, "first") == "first"
+        assert store.list_calls == []
+        assert _list_all_collection_metadata(store, page_size=1) == [first, second]
+        assert store.list_calls == [(0, 1), (0, 2)]
 
 
 class TestStoreGet:

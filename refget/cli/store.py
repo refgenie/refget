@@ -8,6 +8,7 @@ Commands:
     init        - Initialize local store
     add         - Import one or more FASTAs (paths/globs/dirs) to local store
     list        - List collections or sequences in store
+    match       - Match collection-local names by sequence content
     get         - Get collection or sequence by digest
     pull        - Pull collection (sequences + aliases + FHR) from remote
     export      - Export collection as FASTA (by collection, names, BED, or sequence digests)
@@ -18,12 +19,14 @@ Commands:
     fhr         - Manage FHR (FAIR Headers Reference genome) metadata
 """
 
+import hashlib
 import os
 import tempfile
 from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
 from typing import Iterator, List, Optional
+from urllib.parse import urlsplit, urlunsplit
 
 import typer
 
@@ -86,9 +89,65 @@ def _get_store_path(path: Optional[Path]) -> Path:
     return get_store_path()
 
 
-def _get_collection_digests(store) -> set:
-    """Get the set of collection digest strings from a store."""
-    return {meta.digest for meta in store.list_collections()["results"]}
+def _normalize_remote_url(url: str) -> str:
+    """Return the canonical remote URL used for cache identity and access."""
+    parts = urlsplit(url)
+    if not parts.scheme or not parts.hostname:
+        raise ValueError(f"Remote URL must include a scheme and host: {url}")
+
+    credentials = ""
+    if "@" in parts.netloc:
+        credentials = f"{parts.netloc.rsplit('@', 1)[0]}@"
+
+    host = parts.hostname.lower()
+    if ":" in host:
+        host = f"[{host}]"
+    try:
+        port = f":{parts.port}" if parts.port is not None else ""
+    except ValueError as error:
+        raise ValueError(f"Invalid remote URL {url}: {error}") from error
+
+    path = parts.path.rstrip("/")
+    return urlunsplit((parts.scheme.lower(), f"{credentials}{host}{port}", path, parts.query, ""))
+
+
+def _remote_cache_dir(store_path: Path, url: str) -> Path:
+    """Return the stable per-origin cache directory for a remote URL."""
+    normalized = _normalize_remote_url(url)
+    key = hashlib.sha256(normalized.encode()).hexdigest()[:16]
+    return store_path / ".remote_cache" / key
+
+
+def _list_all_collection_metadata(store, page_size: int = 100):
+    """Return every collection metadata record with at most two store calls."""
+    first = store.list_collections(page=0, page_size=page_size)
+    metadata = first["results"]
+    total = first.get("pagination", {}).get("total")
+    if total is None or len(metadata) >= total:
+        return metadata
+    return store.list_collections(page=0, page_size=total)["results"]
+
+
+def _collection_aliases(store, digest: str) -> list[list[str]]:
+    """Return deterministic JSON-ready aliases."""
+    aliases = store.get_aliases_for_collection(digest) or []
+    return [list(pair) for pair in sorted(aliases, key=lambda pair: (pair[0], pair[1]))]
+
+
+def _resolve_collection_selector(store, selector: str) -> str:
+    """Resolve a collection digest or a ``namespace:alias`` selector."""
+    if ":" not in selector:
+        if store.get_collection_metadata(selector) is None:
+            print_error(f"Collection not found: {selector}", EXIT_FAILURE)
+        return selector
+
+    namespace, alias = selector.split(":", 1)
+    if not namespace or not alias:
+        print_error(f"Malformed collection alias: {selector}", EXIT_FAILURE)
+    metadata = store.get_collection_metadata_by_alias(namespace, alias)
+    if metadata is None:
+        print_error(f"Collection alias not found: {selector}", EXIT_FAILURE)
+    return metadata.digest
 
 
 def _looks_like_spa(directory: Path) -> bool:
@@ -174,9 +233,19 @@ def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[
 
     # Remote store takes precedence
     if remote:
-        cache_path = _get_store_path(path) / ".remote_cache"
+        try:
+            normalized_remote = _normalize_remote_url(remote)
+        except ValueError as error:
+            print_error(str(error), EXIT_FAILURE)
+        cache_path = _remote_cache_dir(_get_store_path(path), normalized_remote)
         cache_path.mkdir(parents=True, exist_ok=True)
-        return RefgetStore.open_remote(str(cache_path), remote)
+        try:
+            return RefgetStore.open_remote(str(cache_path), normalized_remote)
+        except (OSError, IOError, ValueError) as error:
+            print_error(
+                f"Failed to open remote {normalized_remote}: {error}",
+                EXIT_FAILURE,
+            )
 
     store_path = _get_store_path(path)
 
@@ -429,11 +498,15 @@ def add(
 
 @app.command("list")
 def list_items(
+    collection: Optional[str] = typer.Argument(
+        None,
+        help="Collection digest or namespace:alias to browse",
+    ),
     sequences: bool = typer.Option(
         False,
         "--sequences",
         "-s",
-        help="List sequences instead of collections",
+        help="List globally deduplicated sequences instead of collections",
     ),
     path: Optional[Path] = typer.Option(
         None,
@@ -449,15 +522,27 @@ def list_items(
     ),
 ) -> None:
     """
-    List collections or sequences in the store.
+    List collections, one collection's local names, or global sequences.
 
-    By default, lists collections. Use --sequences to list individual sequences.
+    With no selector, lists all collections and their aliases. With a collection
+    digest or namespace:alias, lists its chromosome/contig names in FASTA order.
+    Use --sequences for the separate, globally deduplicated sequence inventory.
 
     Outputs JSON:
-        Collections: {"collections": [{"digest": "..."}, ...]}
+        Collections: {"collections": [{"digest": "...", "n_sequences": N,
+                      "aliases": [["namespace", "alias"], ...]}, ...]}
+        Collection:  {"collection": {...}, "sequences": [{"name": "...",
+                      "length": N, "digest": "..."}, ...]}
         Sequences:   {"sequences": [{"digest": "...", "name": "...", "length": N}, ...]}
     """
     store = _load_store(path, remote=remote)
+
+    if collection is not None and sequences:
+        print_error(
+            "A collection selector cannot be combined with --sequences; "
+            "choose collection-local names or the global sequence inventory",
+            EXIT_FAILURE,
+        )
 
     if sequences:
         items = []
@@ -470,16 +555,99 @@ def list_items(
                 }
             )
         print_json({"sequences": items})
-    else:
-        collections = []
-        for meta in store.list_collections()["results"]:
-            collections.append(
-                {
-                    "digest": meta.digest,
-                }
+    elif collection is not None:
+        digest = _resolve_collection_selector(store, collection)
+        try:
+            level2 = store.get_collection_level2(digest)
+        except (OSError, IOError, ValueError) as error:
+            print_error(f"Failed to read collection {digest}: {error}", EXIT_FAILURE)
+            return
+
+        names = level2.get("names", [])
+        lengths = level2.get("lengths", [])
+        sequence_digests = level2.get("sequences", [])
+        if not (len(names) == len(lengths) == len(sequence_digests)):
+            print_error(
+                f"Collection {digest} is corrupt: names, lengths, and sequences "
+                "have different lengths",
+                EXIT_FAILURE,
             )
+        print_json(
+            {
+                "collection": {
+                    "digest": digest,
+                    "n_sequences": len(names),
+                    "aliases": _collection_aliases(store, digest),
+                },
+                "sequences": [
+                    {
+                        "name": name,
+                        "length": length,
+                        "digest": sequence_digest.removeprefix("SQ."),
+                    }
+                    for name, length, sequence_digest in zip(
+                        names, lengths, sequence_digests
+                    )
+                ],
+            }
+        )
+    else:
+        collections = [
+            {
+                "digest": meta.digest,
+                "n_sequences": meta.n_sequences,
+                "aliases": _collection_aliases(store, meta.digest),
+            }
+            for meta in _list_all_collection_metadata(store)
+        ]
+        collections.sort(key=lambda item: item["digest"])
         print_json({"collections": collections})
 
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@app.command("match")
+def match_collections(
+    collection_a: str = typer.Argument(help="Collection digest or namespace:alias"),
+    collection_b: str = typer.Argument(help="Collection digest or namespace:alias"),
+    include_unmatched: bool = typer.Option(
+        False,
+        "--include-unmatched",
+        help="Include sequences found in only one collection",
+    ),
+    path: Optional[Path] = typer.Option(
+        None, "--path", "-p", help="Store path (default: from config)"
+    ),
+    remote: Optional[str] = typer.Option(
+        None, "--remote", "-r", help="Remote store URL (overrides --path)"
+    ),
+) -> None:
+    """Match chromosome/contig names between collections by sequence content.
+
+    This is the canonical CLI for translating collection-local FASTA names.
+    Results are ordered by the original FASTA order and preserve one-to-many
+    mappings when identical content appears under multiple names.
+
+    Outputs JSON with collection_a and collection_b identifiers plus matches,
+    a_only, and b_only arrays. Each sequence row has digest, length, names_a,
+    and names_b; digest is the bare sha512t24u value.
+    """
+    store = _load_store(path, remote=remote)
+    digest_a = _resolve_collection_selector(store, collection_a)
+    digest_b = _resolve_collection_selector(store, collection_b)
+    try:
+        result = store.match_sequence_names(digest_a, digest_b)
+    except (KeyError, OSError, IOError, ValueError) as error:
+        print_error(f"Failed to match collections: {error}", EXIT_FAILURE)
+        return
+
+    if not include_unmatched:
+        result = {
+            "collection_a": result["collection_a"],
+            "collection_b": result["collection_b"],
+            "matches": result["matches"],
+        }
+    print_json(result)
     raise typer.Exit(EXIT_SUCCESS)
 
 
@@ -542,9 +710,6 @@ def get(
     store = _load_store(path, remote=remote)
 
     if sequence:
-        # Sequence retrieval mode — load sequence data
-        store.load_all_collections()
-        store.load_all_sequences()
         seq_data = None
 
         if name is not None:
@@ -730,37 +895,38 @@ def pull(
 
     # Open the local destination as a writable on-disk store so imports persist.
     store_path = _get_store_path(path)
-    cache_path = store_path / ".remote_cache"
-    cache_path.mkdir(parents=True, exist_ok=True)
     local_store = RefgetStore.on_disk(str(store_path))
     local_store.set_quiet(quiet)
-    local_collections = _get_collection_digests(local_store)
 
     # Open each remote store once (lazy metadata fetch), reused across digests.
     remote_stores: dict = {}
 
     def _get_remote(url: str):
-        if url not in remote_stores:
-            rs = RefgetStore.open_remote(str(cache_path), url)
+        normalized_url = _normalize_remote_url(url)
+        if normalized_url not in remote_stores:
+            cache_path = _remote_cache_dir(store_path, normalized_url)
+            cache_path.mkdir(parents=True, exist_ok=True)
+            rs = RefgetStore.open_remote(str(cache_path), normalized_url)
             rs.set_quiet(quiet)
-            remote_stores[url] = rs
-        return remote_stores[url]
+            remote_stores[normalized_url] = rs
+        return remote_stores[normalized_url]
 
     results = []
     for dig in digests:
         # Check if already in local store
-        if dig in local_collections:
+        if local_store.get_collection_metadata(dig) is not None:
             results.append({"digest": dig, "status": "already_local", "source": "local"})
             continue
 
         # Try remote stores in order
         pulled = False
+        failures = []
         for remote_url in remote_urls:
             try:
                 remote_store = _get_remote(remote_url)
 
                 # Check if collection exists on remote
-                if dig not in _get_collection_digests(remote_store):
+                if remote_store.get_collection_metadata(dig) is None:
                     continue  # Try next remote
 
                 # Materialize the collection's sequences into the remote's local
@@ -780,10 +946,7 @@ def pull(
                 # are no-ops if the remote advertises none.
                 alias_result = {}
                 fhr_result = {}
-                try:
-                    alias_result = remote_store.pull_aliases(strategy=alias_strategy)
-                except Exception:
-                    pass
+                alias_result = remote_store.pull_aliases(strategy=alias_strategy)
                 try:
                     fhr_result = remote_store.pull_fhr(strategy=alias_strategy)
                 except Exception:
@@ -791,7 +954,6 @@ def pull(
 
                 # Import the full collection (sequences + aliases + FHR).
                 local_store.import_collection(remote_store, dig)
-                local_collections.add(dig)
                 results.append(
                     {
                         "digest": dig,
@@ -806,6 +968,7 @@ def pull(
 
             except Exception as e:
                 # Try next remote
+                failures.append({"remote": remote_url, "error": str(e)})
                 if not quiet:
                     import sys
 
@@ -813,13 +976,14 @@ def pull(
                 continue
 
         if not pulled:
-            results.append(
-                {
-                    "digest": dig,
-                    "status": "not_found",
-                    "tried": remote_urls,
-                }
-            )
+            result = {
+                "digest": dig,
+                "status": "not_found",
+                "tried": remote_urls,
+            }
+            if failures:
+                result["errors"] = failures
+            results.append(result)
 
     # Persist all imported collections (with their aliases + FHR) to disk.
     # import_collection carries each collection's aliases and FHR metadata
@@ -909,15 +1073,12 @@ def export(
 
     by_digest = bool(seq_digests)
 
-    if by_digest:
-        # Ad-hoc cross-collection export: sequence digests only, no collection load.
-        store.load_all_sequences()
-    else:
+    # Both export paths lazily load only the sequences they need.
+    if not by_digest:
         if digest is None:
             print_error("Provide a collection digest, or use --seq-digest", EXIT_FAILURE)
-        # Ensure collection and sequence data are loaded (required for export)
+        # Ensure the collection exists, for a clean error message.
         _ensure_collection_loaded(store, digest)
-        store.load_all_sequences()
 
     def _do_export(output_path: str) -> None:
         """Perform the actual export to a file path."""
@@ -998,7 +1159,6 @@ def regions(
 
     store = _load_store(path, remote=remote)
     _ensure_collection_loaded(store, digest)
-    store.load_all_sequences()
 
     retrieved = store.substrings_from_regions(digest, str(bed.resolve()))
 

@@ -115,6 +115,11 @@ refget store init -p /tmp/refget_demo_store
 refget store add -p /tmp/refget_demo_store <your.fa>
 ```
 
+Use `refget store list` to browse collections and collection-local sequence
+names, and `refget store match` to translate chromosome names between stored
+collections. See the [Refget CLI reference](https://docs.refgenie.org/refget/reference/cli/)
+for selectors, examples, and output schemas.
+
 2. Start the store-backed API. This works anywhere `refget[seqcolapi]` is
    installed:
 
