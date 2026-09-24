@@ -1,4 +1,5 @@
 name = "refget"
+workers_dev = false
 compatibility_date = "2025-06-01"
 
 # Static-only SPA served by Workers Static Assets (no Worker script).
