@@ -102,6 +102,7 @@ exclude = [
     "array_overlap.py",
     "create_compliance_answers.py",
     "data_loaders",
+    "docs",
     "interactive_tests.py",
 ]
 
