@@ -171,7 +171,7 @@ docker run --rm --name refget-postgres -p 127.0.0.1:5432:5432 \
   -e POSTGRES_USER \
   -e POSTGRES_DB \
   -e POSTGRES_HOST \
-  postgres:17.0
+  pgvector/pgvector:pg18
 ```
 
 If you need to load test data into your server, then you have to install [gtars](https://docs.bedbase.org/gtars/) (with `pip install gtars`), a Python package for computing GA4GH digests. You can then load test data like this:

@@ -22,8 +22,8 @@ case "$1" in
             -e POSTGRES_PASSWORD="$DB_PASS" \
             -e POSTGRES_DB="$DB_NAME" \
             -p "${DB_PORT}:5432" \
-            --tmpfs /var/lib/postgresql/data \
-            postgres:17
+            --tmpfs /var/lib/postgresql \
+            pgvector/pgvector:pg18
 
         echo "Waiting for database to be ready..."
 

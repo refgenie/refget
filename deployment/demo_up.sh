@@ -25,7 +25,7 @@ docker run --rm -d --name refget-postgres -p 127.0.0.1:5432:5432 \
   -e POSTGRES_USER \
   -e POSTGRES_DB \
   -e POSTGRES_HOST \
-  postgres:17.0
+  pgvector/pgvector:pg18
   
   # Wait for the postgres container to be ready
   until docker exec refget-postgres pg_isready -U $POSTGRES_USER; do
