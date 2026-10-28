@@ -111,7 +111,7 @@ for f in 2023_hprc_draft/*.fa.gz; do
 refget store init -p refget_store2
 
 ```
-for f in /media/nsheff/t5/pangeome_fasta//*.fa.gz; do
+for f in /media/nsheff/passport4/pangenome_fasta/*.fa.gz; do
  refget store add "$f" -p refget_store2; done
 ```
 
