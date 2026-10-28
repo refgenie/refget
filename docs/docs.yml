@@ -1,0 +1,60 @@
+# Nav and renderers for this repo's docs on https://docs.refgenie.org/refget/
+# (built by databio/doc-hubs, hubs/refgenie). Pages not listed here are
+# still published, just not in the sidebar.
+site_name: Refget
+nav:
+  - Getting started:
+      - Introduction: README.md
+      - Getting started tutorial: using-services/getting-started.py
+      - What are refget digests?: digests-explained.md
+      - What is RefgetStore?: refgetstore-explained.md
+      - How RefgetStore defers loading: lazy-loading-explained.md
+      - The readonly store and concurrency: readonly-store-explained.md
+      - How FASTA import works: fasta-import-explained.md
+      - Names, aliases, and identifiers: names-and-aliases-explained.md
+      - Understanding FHR metadata: fhr-metadata-explained.md
+      - The reference genome jungle: genome-collections-explained.md
+      - HGVS parsing & VRS conversion: hgvs-explained.md
+      - What is RefgetTranscripts (reftx)?: reftx-explained.md
+  - Using refget services:
+      - Computing digests: using-services/digests.ipynb
+      - Python SequenceClient: using-services/sequence-client.ipynb
+      - Python SequenceCollectionClient: using-services/seqcol-client.ipynb
+  - Using RefgetStore:
+      - RefgetStore tutorial: using-services/refgetstore.py
+      - Seqcol operations: using-services/seqcol-operations.py
+      - Working with aliases: using-services/aliases.py
+      - FHR metadata headers: using-services/fhr-metadata.py
+      - Exploring the reference genome jungle: using-services/genome-store.py
+      - Explore a store in your browser: using-services/explore-store.md
+      - Building an SSHash index: using-services/refgetstore-to-sshash.md
+  - Hosting refget services:
+      - RefgetStore integration with refgenie: hosting-services/refgetstore-integration.md
+      - Serving a RefgetStore concurrently: hosting-services/howto-serve-refgetstore.md
+      - Adding a FastAPI router: hosting-services/fastapi_router.md
+      - RefgetDB Agent: hosting-services/agent.ipynb
+      - Compliance testing: hosting-services/compliance.md
+  - Reference:
+      - CLI: reference/cli.md
+      - CLI Configuration: reference/configuration.md
+      - REST API: https://seqcolapi.databio.org/docs
+      - Python API: reference/reference_docs.md
+      - Data models: reference/models.md
+      - RefgetStore format: reference/refgetstore-format.md
+      - RefgetStore retrieval flows: reference/refgetstore-retrieval-flows.md
+      - RefgetStore encoding: reference/encoding-comparison.md
+      - HGVS parsing API: hgvs-reference.md
+      - RefgetTranscripts (reftx) reference: reftx-reference.md
+      - Changelog: reference/changelog.md
+renderers:
+  - hub-notebooks:
+      include:
+        - using-services/*.ipynb
+        - using-services/*.py
+        - hosting-services/agent.ipynb
+      execute: false
+  - hub-python-api:
+      package_root: ..
+      packages: [refget]
+      include: [reference/reference_docs.md, reference/models.md]
+      docstring_style: google
