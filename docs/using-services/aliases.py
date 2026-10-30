@@ -2,14 +2,14 @@
 # # Working with Aliases
 #
 # Aliases let you refer to sequences and collections using identifiers from
-# external registries — like INSDC accessions or Ensembl stable IDs — instead
+# external registries — like RefSeq or GenBank accessions — instead
 # of refget digests. Each alias lives in a **namespace** that identifies the
-# registry or authority that assigned it (e.g., "insdc", "ensembl", "genbank").
+# registry or authority that assigned it (e.g., "refseq", "genbank").
 #
 # **Aliases vs. sequence names:** Sequence *names* (like "chr1") come from FASTA
 # headers and are scoped to a single collection — the same name appears in many
 # different assemblies. Aliases, by contrast, are *globally unique* identifiers
-# assigned by a registry. An INSDC accession like "NC_000001.11" refers to exactly
+# assigned by a registry. A RefSeq accession like "NC_000001.11" refers to exactly
 # one sequence worldwide. For a deeper discussion, see
 # [Names, Aliases, and Identifiers](../names-and-aliases-explained.md).
 #
@@ -66,10 +66,10 @@ for name, digest in digest_map.items():
 # sequence digest. A single sequence can have aliases in multiple registries.
 
 # %%
-# Add INSDC RefSeq accessions for each sequence
-store.add_sequence_alias("insdc", "NC_000001.11", digest_map["chr1"])
-store.add_sequence_alias("insdc", "NC_000002.12", digest_map["chr2"])
-store.add_sequence_alias("insdc", "NC_012920.1", digest_map["chrM"])
+# Add RefSeq accessions for each sequence
+store.add_sequence_alias("refseq", "NC_000001.11", digest_map["chr1"])
+store.add_sequence_alias("refseq", "NC_000002.12", digest_map["chr2"])
+store.add_sequence_alias("refseq", "NC_012920.1", digest_map["chrM"])
 
 # Add GenBank accessions for the same sequences
 store.add_sequence_alias("genbank", "CM000663.2", digest_map["chr1"])
@@ -90,8 +90,8 @@ print("Added 6 aliases across 2 registries")
 # This returns a `SequenceRecord` (or `None` if the alias does not exist).
 
 # %%
-# Look up a sequence by its INSDC accession
-record = store.get_sequence_by_alias("insdc", "NC_000001.11")
+# Look up a sequence by its RefSeq accession
+record = store.get_sequence_by_alias("refseq", "NC_000001.11")
 if record:
     print(f"Name: {record.metadata.name}")
     print(f"Length: {record.metadata.length} bp")
@@ -103,7 +103,7 @@ if record2:
     print(f"\nJ01415.2 -> {record2.metadata.name} ({record2.metadata.length} bp)")
 
 # Non-existent alias returns None
-missing = store.get_sequence_by_alias("insdc", "NC_999999.1")
+missing = store.get_sequence_by_alias("refseq", "NC_999999.1")
 print(f"\nNon-existent alias: {missing}")
 
 # %% [markdown] output
@@ -132,7 +132,7 @@ for namespace, alias in aliases:
 # %% [markdown] output
 # ```
 # Aliases for chr1 (Blf3ILywY3YsZmFcjBssmHEPN0dDWP_V):
-#   insdc/NC_000001.11
+#   refseq/NC_000001.11
 #   genbank/CM000663.2
 # ```
 
@@ -179,27 +179,27 @@ for namespace, alias in coll_aliases:
 # to import the file into a namespace.
 
 # %%
-# Create a TSV alias file with Ensembl identifiers
-tsv_path = os.path.join(temp_dir, "ensembl_aliases.tsv")
+# Create a TSV alias file with RefSeq accessions
+tsv_path = os.path.join(temp_dir, "refseq_aliases.tsv")
 with open(tsv_path, "w") as f:
-    f.write("# Ensembl release 112 sequence identifiers\n")
-    f.write(f"1\t{digest_map['chr1']}\n")
-    f.write(f"2\t{digest_map['chr2']}\n")
-    f.write(f"MT\t{digest_map['chrM']}\n")
+    f.write("# RefSeq accessions for example sequences\n")
+    f.write(f"NC_000001.11\t{digest_map['chr1']}\n")
+    f.write(f"NC_000002.12\t{digest_map['chr2']}\n")
+    f.write(f"NC_012920.1\t{digest_map['chrM']}\n")
 
-# Load the TSV into the "ensembl" namespace
-count = store.load_sequence_aliases("ensembl", tsv_path)
-print(f"Loaded {count} aliases into 'ensembl' namespace")
+# Load the TSV into the "refseq" namespace
+count = store.load_sequence_aliases("refseq", tsv_path)
+print(f"Loaded {count} aliases into 'refseq' namespace")
 
 # Verify one of the loaded aliases
-record = store.get_sequence_by_alias("ensembl", "2")
+record = store.get_sequence_by_alias("refseq", "NC_000002.12")
 if record:
-    print(f"ensembl/2 -> {record.metadata.name} ({record.metadata.length} bp)")
+    print(f"refseq/NC_000002.12 -> {record.metadata.name} ({record.metadata.length} bp)")
 
 # %% [markdown] output
 # ```
-# Loaded 3 aliases into 'ensembl' namespace
-# ensembl/2 -> chr2 (32 bp)
+# Loaded 3 aliases into 'refseq' namespace
+# refseq/NC_000002.12 -> chr2 (32 bp)
 # ```
 
 # %% [markdown]
@@ -236,22 +236,17 @@ for ns in coll_namespaces:
 
 # %% [markdown] output
 # ```
-# Sequence alias namespaces: ['ensembl', 'insdc', 'genbank']
-#
-#   ensembl/
-#     1
-#     2
-#     MT
-#
-#   insdc/
-#     NC_000001.11
-#     NC_012920.1
-#     NC_000002.12
+# Sequence alias namespaces: ['genbank', 'refseq']
 #
 #   genbank/
 #     CM000664.2
 #     J01415.2
 #     CM000663.2
+#
+#   refseq/
+#     NC_000001.11
+#     NC_012920.1
+#     NC_000002.12
 #
 # Collection alias namespaces: ['ncbi', 'ucsc']
 #
@@ -270,16 +265,16 @@ for ns in coll_namespaces:
 
 # %%
 # Remove a sequence alias
-removed = store.remove_sequence_alias("ensembl", "MT")
-print(f"Removed ensembl/MT: {removed}")
+removed = store.remove_sequence_alias("refseq", "NC_012920.1")
+print(f"Removed refseq/NC_012920.1: {removed}")
 
 # Confirm it's gone
-missing = store.get_sequence_by_alias("ensembl", "MT")
-print(f"ensembl/MT after removal: {missing}")
+missing = store.get_sequence_by_alias("refseq", "NC_012920.1")
+print(f"refseq/NC_012920.1 after removal: {missing}")
 
 # Removing a non-existent alias returns False
-not_found = store.remove_sequence_alias("ensembl", "99")
-print(f"Removed ensembl/99 (non-existent): {not_found}")
+not_found = store.remove_sequence_alias("refseq", "NC_999999.1")
+print(f"Removed refseq/NC_999999.1 (non-existent): {not_found}")
 
 # Remove a collection alias
 removed_coll = store.remove_collection_alias("ncbi", "GRCh38")
@@ -287,9 +282,9 @@ print(f"\nRemoved ncbi/GRCh38: {removed_coll}")
 
 # %% [markdown] output
 # ```
-# Removed ensembl/MT: True
-# ensembl/MT after removal: None
-# Removed ensembl/99 (non-existent): False
+# Removed refseq/NC_012920.1: True
+# refseq/NC_012920.1 after removal: None
+# Removed refseq/NC_999999.1 (non-existent): False
 #
 # Removed ncbi/GRCh38: True
 # ```
@@ -312,14 +307,14 @@ disk_meta, _ = disk_store.add_sequence_collection_from_fasta(fasta_path)
 # Add aliases
 seq_digest = list(disk_store.list_sequences())[0].sha512t24u
 disk_store.add_collection_alias("ncbi", "GRCh38", disk_meta.digest)
-disk_store.add_sequence_alias("insdc", "NC_000001.11", seq_digest)
+disk_store.add_sequence_alias("refseq", "NC_000001.11", seq_digest)
 
 # Reopen the store and verify aliases survived
 reopened = RefgetStore.open_local(store_path)
 coll = reopened.get_collection_by_alias("ncbi", "GRCh38")
 print(f"Persisted collection alias resolved: {coll is not None}")
 
-seq = reopened.get_sequence_by_alias("insdc", "NC_000001.11")
+seq = reopened.get_sequence_by_alias("refseq", "NC_000001.11")
 print(f"Persisted sequence alias resolved: {seq is not None}")
 
 # %% [markdown] output

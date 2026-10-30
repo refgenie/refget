@@ -1,6 +1,6 @@
 # Names, Aliases, and Identifiers
 
-RefgetStore uses three distinct systems for identifying sequences and collections. Each solves a different problem, operates at a different scope, and exists for a different reason. Understanding the differences -- and why all three are necessary -- is key to working effectively with RefgetStore.
+RefgetStore uses three distinct systems for identifying sequences and collections. Each solves a different problem, operates at a different scope, and exists for a different reason. Understanding the differences is key to working effectively with RefgetStore.
 
 ## The identification problem in genomics
 
@@ -14,41 +14,39 @@ These three kinds of identifiers -- local names, registry-assigned accessions, a
 
 ## Three levels of identification
 
-### Level 1: Refget digests (content-addressed, computed)
+### Most universal identifiers: Refget digests (content-addressed, computed)
 
-At the foundation of RefgetStore sits the refget digest. Every sequence gets one. Every collection gets one. They are computed from content using the GA4GH algorithm (SHA-512, truncated to 24 bytes, base64url-encoded), and they are globally unique by mathematical guarantee -- not by convention, not by policy, but by the properties of cryptographic hashing.
+At the foundation of RefgetStore sits the refget digest. Every sequence gets one. Every collection gets one. They are computed from content using the GA4GH algorithm (SHA-512, truncated to 24 bytes, base64url-encoded), and they are globally unique not by convention or policy, but by definition through cryptographic hashing.
 
-Digests are the canonical identifiers in RefgetStore. They are what the store uses internally to organize files on disk, to deduplicate sequences across assemblies, and to enable content-addressable retrieval. When you call `store.get_sequence(digest)`, you are using the most fundamental form of identification the system offers.
+Digests are the canonical identifiers in RefgetStore. They are what the store uses internally to organize files on disk, to deduplicate sequences across assemblies, and to enable content-addressable retrieval. When you call `store.get_sequence(digest)`, you are using the most fundamental form of identification the system offers. For a deeper treatment of how digests are computed and what they encode, see [What are refget digests?](digests-explained.md).
 
 The strength of digests is their universality. The weakness is their opacity. No human can look at `EjrJJS1FmLaytz_EHgNvVZ8owSU7kbNb` and know it represents human chromosome 1. That is where the other two identification systems come in.
 
-For a deeper treatment of how digests are computed and what they encode, see [What are refget digests?](digests-explained.md).
+### Mid-range identifiers: Identifiers or aliases assigned by authority
 
-### Level 2: Registry identifiers / Aliases (assigned by authorities, globally unique)
+Between the raw universality of digests and the local ambiguity of names sits a middle layer: identifiers assigned by authoritative registries. INSDC assigns accessions like "NC_000001.11". GenBank assigns "CM000663.2". These are all unique *within their respective registries*. Although these are often treated as true globally unique identifiers, and in many practical cases work that way, they do not have the guarantees that the computed identifiers have. Unscrupulous or careless people can easily name a different sequence with one of these identifiers and post it somewhere. That's why RefgetStore doesn't rely on them. But despite this weakness, they're still useful, so while RefgetStore won't use these as the canonical identifier for sequences in the database, it *will* allow you to use them for lookups.
 
-Between the raw universality of digests and the local ambiguity of names sits a middle layer: identifiers assigned by authoritative registries. INSDC assigns accessions like "NC_000001.11". GenBank assigns "CM000663.2". Ensembl assigns "1" (within its own namespace). These are all globally unique *within their respective registries* and each refers to exactly one sequence worldwide.
-
-In RefgetStore, these are called **aliases**, and they are organized by **namespace** -- a string identifying which registry or authority assigned the identifier. An alias is the combination of a namespace and an identifier: `insdc/NC_000001.11`, `genbank/CM000663.2`, `ensembl/1`.
+In RefgetStore, these are called **aliases**, and they are organized by **namespace** -- a string identifying which registry or authority assigned the identifier. An alias is the combination of a namespace and an identifier: `refseq/NC_000001.11`, `genbank/CM000663.2`, *etc*.
 
 Aliases must be explicitly registered in the store. They are not computed or discovered automatically. You add them with calls like:
 
 ```python
-store.add_sequence_alias("insdc", "NC_000001.11", digest)
+store.add_sequence_alias("refseq", "NC_000001.11", digest)
 store.add_collection_alias("ncbi", "GRCh38", collection_digest)
 ```
 
 And you resolve them with:
 
 ```python
-record = store.get_sequence_by_alias("insdc", "NC_000001.11")
+record = store.get_sequence_by_alias("refseq", "NC_000001.11")
 coll = store.get_collection_by_alias("ncbi", "GRCh38")
 ```
 
-A single sequence can have aliases in many registries. The same underlying sequence (same digest) might be known as `insdc/NC_000001.11`, `genbank/CM000663.2`, and `ensembl/1`. These are three different names for the same thing, each assigned by a different authority.
+A single sequence can have aliases in many registries. The same underlying sequence (same digest) might be known as `refseq/NC_000001.11` and `genbank/CM000663.2`. These are two different names for the same thing, each assigned by a different authority.
 
-### Level 3: Sequence names (local identifiers, collection-scoped)
+### Local identifiers: Sequence names (local identifiers, collection-scoped)
 
-At the most local level are **sequence names** -- the identifiers that come from FASTA headers. When you load a FASTA file into RefgetStore, the header lines (`>chr1`, `>chrX`, `>scaffold_123`) become the names of sequences within that collection. These are stored automatically as part of the collection metadata.
+At the most local level are **sequence names** -- the identifiers often found in FASTA headers. When you load a FASTA file into RefgetStore, the header lines (`>chr1`, `>chrX`, `>scaffold_123`) become the names of sequences within that collection. These are stored automatically as part of the collection metadata.
 
 Sequence names are scoped to a single collection. The name "chr1" is meaningless without knowing which collection you are referring to, so looking up a sequence by name always requires the collection digest as context:
 
@@ -65,8 +63,8 @@ This is fundamentally different from alias lookup, which needs only a namespace 
 | Origin | FASTA headers (automatic) | Registered explicitly |
 | Scope | Collection-scoped | Global (within namespace) |
 | Uniqueness | Not unique across assemblies | Unique within registry |
-| Example | "chr1" | "insdc/NC_000001.11" |
-| Lookup | `get_sequence_by_name(collection, "chr1")` | `get_sequence_by_alias("insdc", "NC_000001.11")` |
+| Example | "chr1" | "refseq/NC_000001.11" |
+| Lookup | `get_sequence_by_name(collection, "chr1")` | `get_sequence_by_alias("refseq", "NC_000001.11")` |
 
 ## Why all three are necessary
 
@@ -92,7 +90,7 @@ The namespace string is free-form -- you can use any string that identifies your
 
 | Namespace | Authority | Example identifier |
 |-----------|-----------|-------------------|
-| `insdc` | International Nucleotide Sequence Database Collaboration (NCBI/ENA/DDBJ) | `NC_000001.11` |
+| `insdc` | International Nucleotide Sequence Database Collaboration (NCBI/ENA/DDBJ) | `CM000663.2` |
 | `genbank` | GenBank | `CM000663.2` |
 | `refseq` | NCBI RefSeq | `NC_000001.11` |
 | `ensembl` | Ensembl | `1` or `ENSG00000139618` |
@@ -103,7 +101,7 @@ Using widely recognized namespace strings makes alias data easier to share and i
 
 ## Collections have the same structure
 
-Everything described above applies to collections as well as sequences. A collection (like a genome assembly) has:
+Collections also have digests and aliases, though not names. A collection (like a genome assembly) has:
 
 - A **digest**, computed from the digests of its component arrays (names, lengths, sequences). This is determined automatically when the collection is created.
 
@@ -123,7 +121,7 @@ Collection aliases tend to feel more intuitive than sequence aliases, because as
 | What you know | Method | Scope |
 |---|---|---|
 | Sequence digest | `get_sequence(digest)` | Global |
-| Registry + identifier | `get_sequence_by_alias("insdc", "NC_000001.11")` | Global |
+| Registry + identifier | `get_sequence_by_alias("refseq", "NC_000001.11")` | Global |
 | Collection + name | `get_sequence_by_name(collection_digest, "chr1")` | Collection-scoped |
 | Collection alias | `get_collection_by_alias("ncbi", "GRCh38")` | Global |
 

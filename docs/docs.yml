@@ -23,6 +23,9 @@ nav:
   - Using RefgetStore:
       - RefgetStore tutorial: using-services/refgetstore.py
       - Seqcol operations: using-services/seqcol-operations.py
+      - Matching by sequences: using-services/sorted-sequences.py
+      - Retrieving subsequences by digest: using-services/subsequences-by-digest.py
+      - Coordinate system matching: using-services/coordinate-system-digests.py
       - Working with aliases: using-services/aliases.py
       - FHR metadata headers: using-services/fhr-metadata.py
       - Exploring the reference genome jungle: using-services/genome-store.py
