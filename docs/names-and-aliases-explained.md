@@ -78,7 +78,7 @@ It might seem redundant to have three identification systems. But each fills a g
 
 ## Why namespaces exist
 
-Namespaces prevent collisions between registries. Without them, the identifier "1" could refer to Ensembl's chromosome 1 or some other registry's sequence labeled "1". By pairing each identifier with its namespace (`ensembl/1` vs. `ucsc/chr1`), RefgetStore keeps them distinct.
+Namespaces prevent collisions between registries. The same string can be assigned by two authorities to two different things: `GRCh38` is NCBI's name for the human reference assembly, and a lab can use the same label for its own modified copy. By pairing each identifier with its namespace (`ncbi/GRCh38` vs. `mylab/GRCh38`), RefgetStore keeps them distinct.
 
 Different registries can -- and do -- assign different identifiers to the same sequence. INSDC calls human chromosome 1 "NC_000001.11" while GenBank calls it "CM000663.2". Both point to the same underlying sequence with the same refget digest. Namespaces make this many-to-one mapping explicit: multiple aliases across multiple namespaces can all resolve to a single digest.
 
@@ -93,8 +93,8 @@ The namespace string is free-form -- you can use any string that identifies your
 | `insdc` | International Nucleotide Sequence Database Collaboration (NCBI/ENA/DDBJ) | `CM000663.2` |
 | `genbank` | GenBank | `CM000663.2` |
 | `refseq` | NCBI RefSeq | `NC_000001.11` |
-| `ensembl` | Ensembl | `1` or `ENSG00000139618` |
-| `ucsc` | UCSC Genome Browser | `chr1`, `hg38` |
+| `ensembl` | Ensembl | `ENST00000380152.8` |
+| `ucsc` | UCSC Genome Browser | `hg38` |
 | `ncbi` | NCBI (for assembly names) | `GRCh38` |
 
 Using widely recognized namespace strings makes alias data easier to share and interpret across tools and teams.
