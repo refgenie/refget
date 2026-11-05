@@ -88,6 +88,16 @@ const parseRgci = (text: string): CollectionSummary[] => {
   }));
 };
 
+/**
+ * Fetch options for files a store rewrites in place: rgstore.json, the indexes,
+ * alias lists and FHR sidecars. S3 sends no Cache-Control header, so a browser
+ * would otherwise reuse its copy for hours after the store changes. `no-cache`
+ * asks the server every time; an unchanged file costs one 304 response.
+ * Content-addressed files (collections/<digest>.rgsi, sequence data) never
+ * change and keep the default.
+ */
+const REVALIDATE: RequestInit = { cache: 'no-cache' };
+
 /** Fetch with error handling. `opts` is passed through to fetch() (e.g. { cache: 'reload' }). */
 const fetchFile = async (url: string, opts: RequestInit = {}): Promise<Response | null> => {
   const response = await fetch(url, opts);
@@ -101,7 +111,7 @@ const fetchFile = async (url: string, opts: RequestInit = {}): Promise<Response 
 /** GET rgstore.json → parsed JSON */
 export const fetchStoreMetadata = async (baseUrl: string): Promise<StoreMetadata> => {
   const url = `${normalizeUrl(baseUrl)}/rgstore.json`;
-  const response = await fetchFile(url);
+  const response = await fetchFile(url, REVALIDATE);
   if (!response) throw new Error('rgstore.json not found at this URL');
   return response.json();
 };
@@ -143,7 +153,7 @@ export const fetchBoundedList = async <T>(
   // Resolve the total size up front so we can decide whether to bound the load.
   let totalSize: number;
   try {
-    const head = await fetch(url, { method: 'HEAD' });
+    const head = await fetch(url, { ...REVALIDATE, method: 'HEAD' });
     if (!head.ok) {
       if (head.status === 404 || head.status === 403) return missing();
       throw new Error(`HTTP ${head.status} fetching ${url}`);
@@ -152,7 +162,7 @@ export const fetchBoundedList = async <T>(
   } catch (err) {
     if (err instanceof Error && errorMessage(err).includes('not found')) throw err;
     // HEAD failed (e.g. CORS) — fall back to a full fetch.
-    const response = await fetchFile(url);
+    const response = await fetchFile(url, REVALIDATE);
     if (!response) return missing();
     const text = await response.text();
     return { rows: parse(text), partial: false, totalSize: text.length };
@@ -162,17 +172,20 @@ export const fetchBoundedList = async <T>(
   const loadFull = limit >= totalSize;
 
   if (loadFull) {
-    const response = await fetchFile(url);
+    const response = await fetchFile(url, REVALIDATE);
     if (!response) return missing();
     const text = await response.text();
     return { rows: parse(text), partial: false, totalSize };
   }
 
   // Partial load via Range header.
-  const response = await fetch(url, { headers: { Range: `bytes=0-${limit - 1}` } });
+  const response = await fetch(url, {
+    ...REVALIDATE,
+    headers: { Range: `bytes=0-${limit - 1}` },
+  });
   if (!response.ok && response.status !== 206) {
     // Server doesn't support Range — fall back to a full fetch.
-    const fullResponse = await fetchFile(url);
+    const fullResponse = await fetchFile(url, REVALIDATE);
     if (!fullResponse) return missing();
     const text = await fullResponse.text();
     return { rows: parse(text), partial: false, totalSize };
@@ -193,7 +206,7 @@ export const checkSequenceIndexSize = async (
 ): Promise<{ url: string; size: number } | null> => {
   const url = `${normalizeUrl(baseUrl)}/sequences.rgsi`;
   try {
-    const response = await fetch(url, { method: 'HEAD' });
+    const response = await fetch(url, { ...REVALIDATE, method: 'HEAD' });
     if (!response.ok) return null;
     const size = parseInt(response.headers.get('content-length') || '0', 10);
     return { url, size };
@@ -215,7 +228,7 @@ export const fetchCollectionIndex = async (
   opts: RequestInit = {},
 ): Promise<CollectionSummary[] | null> => {
   const url = `${normalizeUrl(baseUrl)}/collections.rgci`;
-  const response = await fetchFile(url, opts);
+  const response = await fetchFile(url, { ...REVALIDATE, ...opts });
   if (!response) return null; // No collection index available
   const text = await response.text();
   return parseRgci(text);
@@ -267,7 +280,7 @@ export const fetchFhrMetadata = async (
   digest: string,
 ): Promise<Record<string, unknown> | null> => {
   const url = `${normalizeUrl(baseUrl)}/collections/${digest}.fhr.json`;
-  const response = await fetchFile(url);
+  const response = await fetchFile(url, REVALIDATE);
   if (!response) return null;
   return response.json();
 };

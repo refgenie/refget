@@ -30,6 +30,8 @@ export interface ExplorerState {
   fhrMetadata: Record<string, Record<string, unknown> | null>;
   loading: boolean;
   error: string | null;
+  /** Bumped by refresh(); store pages remount on it so their local state resets. */
+  version: number;
   setStoreUrl: (url: string | null) => void;
   loadStore: (url: string) => Promise<void>;
   loadSequenceIndex: (options?: BoundedListOptions) => Promise<SequenceRow[] | null>;
@@ -40,6 +42,8 @@ export interface ExplorerState {
     options?: BoundedListOptions,
   ) => Promise<BoundedList<AliasRow> | null>;
   loadFhrMetadata: (digest: string) => Promise<Record<string, unknown> | null>;
+  /** Re-read the current store from its server and start every page fresh. */
+  refresh: () => Promise<void>;
   reset: () => void;
 }
 
@@ -61,6 +65,7 @@ export const useExplorerStore = create<ExplorerState>()((set, get) => ({
   fhrMetadata: {},
   loading: false,
   error: null,
+  version: 0,
 
   setStoreUrl: (url) => set({ storeUrl: url }),
 
@@ -140,6 +145,17 @@ export const useExplorerStore = create<ExplorerState>()((set, get) => ({
     const data = await fetchFhrMetadata(requireStoreUrl(storeUrl), digest);
     set({ fhrMetadata: { ...get().fhrMetadata, [digest]: data } });
     return data;
+  },
+
+  /** Reload the current store and drop everything cached from it. loadStore
+   *  clears the in-memory caches and revalidates its files with the server;
+   *  bumping `version` afterwards remounts the store pages (StorePage), so
+   *  data a page holds in its own state is fetched again too. */
+  refresh: async () => {
+    const { storeUrl } = get();
+    if (!storeUrl) return;
+    await get().loadStore(storeUrl);
+    set({ version: get().version + 1 });
   },
 
   /** Reset store state */

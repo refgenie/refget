@@ -197,7 +197,7 @@ async function prepareStore(baseUrl: string) {
   // n_sequences per collection (first two columns of the collection index).
   const nSeq = new Map();
   try {
-    const rgci = await (await fetchOk(`${base}/${collIndexName}`)).text();
+    const rgci = await (await fetchOk(`${base}/${collIndexName}`, REVALIDATE)).text();
     for (const line of rgci.split("\n")) {
       if (!line || line.charCodeAt(0) === 35 /* '#' */) continue;
       const c = line.split("\t");
@@ -213,7 +213,7 @@ async function prepareStore(baseUrl: string) {
   for (const ns of namespaces) {
     let txt;
     try {
-      txt = await (await fetchOk(`${base}/aliases/collections/${ns}.tsv`)).text();
+      txt = await (await fetchOk(`${base}/aliases/collections/${ns}.tsv`, REVALIDATE)).text();
     } catch {
       continue; // namespace file not served
     }
@@ -855,11 +855,16 @@ function isEncodedAlphabet(alphabet: string) {
   return a === "dna2bit" || a === "dna3bit" || a === "dnaio" || a === "dnaiupac";
 }
 
-async function fetchOk(url: string) {
-  const resp = await fetch(url);
+// Manifest, indexes and alias lists change in place; S3 sends no Cache-Control,
+// so ask the server every time (an unchanged file is a 304). Content-addressed
+// files use the default.
+const REVALIDATE: RequestInit = { cache: "no-cache" };
+
+async function fetchOk(url: string, init: RequestInit = {}) {
+  const resp = await fetch(url, init);
   if (!resp.ok) throw new Error(`fetch ${url} → HTTP ${resp.status}`);
   return resp;
 }
 async function fetchJson(url: string) {
-  return (await fetchOk(url)).json();
+  return (await fetchOk(url, REVALIDATE)).json();
 }

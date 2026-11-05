@@ -34,6 +34,7 @@ import { StoreOverview } from './pages/StoreOverview';
 import { StoreSequences } from './pages/StoreSequences';
 import { StoreCollection } from './pages/StoreCollection';
 import { StoreAliases } from './pages/StoreAliases';
+import { StorePage } from './components/StorePage';
 
 // Site-specific pages
 import { PangenomeView } from './pages/PangenomeView';
@@ -536,22 +537,22 @@ const router = createBrowserRouter([
       },
       {
         path: '/explore-store/overview',
-        element: <StoreOverview />,
+        element: <StorePage><StoreOverview /></StorePage>,
         errorElement: <ErrorBoundary />,
       },
       {
         path: '/explore-store/sequences',
-        element: <StoreSequences />,
+        element: <StorePage><StoreSequences /></StorePage>,
         errorElement: <ErrorBoundary />,
       },
       {
         path: '/explore-store/collection/:digest',
-        element: <StoreCollection />,
+        element: <StorePage><StoreCollection /></StorePage>,
         errorElement: <ErrorBoundary />,
       },
       {
         path: '/explore-store/aliases',
-        element: <StoreAliases />,
+        element: <StorePage><StoreAliases /></StorePage>,
         errorElement: <ErrorBoundary />,
       },
 

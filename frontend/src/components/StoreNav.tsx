@@ -25,7 +25,7 @@ interface SnippetGroup {
 const StoreNav = ({ active, storeUrlParam, collectionDigest }: StoreNavProps) => {
   const [showCode, setShowCode] = useState(false);
   const [codeTab, setCodeTab] = useState<'cli' | 'python'>('cli');
-  const { storeUrl } = useExplorerStore();
+  const { storeUrl, loading, refresh } = useExplorerStore();
 
   const remote = storeUrl || new URLSearchParams(storeUrlParam).get('url') || '';
 
@@ -149,6 +149,15 @@ store.chrom_sizes("${collectionDigest}")`,
           RefgetStore Explorer
         </h4>
         <div>
+          <button
+            className="btn btn--sm btn--outline-secondary mr-2"
+            onClick={() => refresh().catch(() => {})}
+            disabled={loading || !storeUrl}
+            title="Reload this store's files from the server"
+          >
+            <Icon name="refresh" className="mr-1" />
+            Refresh
+          </button>
           <button
             className="btn btn--sm btn--outline-secondary mr-2"
             onClick={() => setShowCode(true)}

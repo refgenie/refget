@@ -52,7 +52,7 @@ const ExplorePage = () => {
     let cancelled = false;
     stores.forEach(async (s) => {
       try {
-        const res = await fetch(`${s.url}collections.rgci`);
+        const res = await fetch(`${s.url}collections.rgci`, { cache: 'no-cache' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         const n = text.split('\n').filter((l) => l && !l.startsWith('#')).length;
