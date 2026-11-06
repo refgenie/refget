@@ -32,6 +32,8 @@ touches the database, and it imports :class:`refget.agents.RefgetDBAgent`
 inside that branch.
 """
 
+import functools
+import json
 import logging
 
 from ._deps import require
@@ -45,6 +47,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response 
 from fastapi.responses import StreamingResponse  # noqa: E402
 
 from .backend import SeqColBackend  # noqa: E402
+from .const import LIST_FILTER_ATTRS, SEQCOL_SCHEMA_PATH  # noqa: E402
 from .examples import *  # noqa: E402
 from .response_models import PaginatedDigestList, Similarities  # noqa: E402
 
@@ -444,6 +447,21 @@ async def compare_1_digest(
     return result
 
 
+@functools.cache
+def _schema_list_attrs() -> frozenset[str]:
+    """Attributes /list/collection must accept as filters.
+
+    Spec section 3.4: any attribute in the schema except passthru ones.
+    """
+    try:
+        with open(SEQCOL_SCHEMA_PATH) as f:
+            schema = json.load(f)
+    except (OSError, ValueError):
+        return frozenset(LIST_FILTER_ATTRS)
+    passthru = set(schema.get("ga4gh", {}).get("passthru", []))
+    return frozenset(set(schema.get("properties", {})) - passthru) | set(LIST_FILTER_ATTRS)
+
+
 @seqcol_router.get(
     "/list/collection",
     summary="List sequence collections on the server",
@@ -451,12 +469,16 @@ async def compare_1_digest(
     response_model=PaginatedDigestList,
 )
 async def list_collections_by_offset(
+    request: Request,
     page_size: int = Query(100, description="Number of results per page"),
     page: int = Query(0, description="Page number (0-indexed)"),
     names: str | None = Query(None, description="Filter by names attribute digest"),
     lengths: str | None = Query(None, description="Filter by lengths attribute digest"),
     sequences: str | None = Query(None, description="Filter by sequences attribute digest"),
     name_length_pairs: str | None = Query(None, description="Filter by name_length_pairs digest"),
+    sorted_name_length_pairs: str | None = Query(
+        None, description="Filter by sorted_name_length_pairs digest"
+    ),
     sorted_sequences: str | None = Query(None, description="Filter by sorted_sequences digest"),
     backend=Depends(get_backend),
 ):
@@ -468,10 +490,27 @@ async def list_collections_by_offset(
             "lengths": lengths,
             "sequences": sequences,
             "name_length_pairs": name_length_pairs,
+            "sorted_name_length_pairs": sorted_name_length_pairs,
             "sorted_sequences": sorted_sequences,
         }.items()
         if v is not None
     }
+
+    # FastAPI drops query parameters it was not told about, which would turn a
+    # filter on any other attribute into an unfiltered list. Reject them instead.
+    allowed = _schema_list_attrs()
+    other = set(request.query_params) - {"page", "page_size"} - filters.keys()
+    unknown = sorted(other - allowed)
+    if unknown:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown filter attribute(s): {', '.join(unknown)}. "
+            f"Collections can be filtered by: {', '.join(sorted(allowed))}",
+        )
+    if other:
+        # Schema attributes that no backend stores a digest for (e.g. accessions):
+        # no collection carries them, so nothing can match.
+        return {"results": [], "pagination": {"page": page, "page_size": page_size, "total": 0}}
 
     try:
         res = backend.list_collections(page=page, page_size=page_size, filters=filters or None)

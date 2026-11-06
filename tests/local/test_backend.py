@@ -22,6 +22,7 @@ try:
 except ImportError:
     _RUST_BINDINGS_AVAILABLE = False
 
+from refget.const import LIST_FILTER_ATTRS
 from refget.router import create_refget_router
 
 TEST_FASTA_DIR = Path("test_fasta")
@@ -403,3 +404,83 @@ class TestAliasFhrEndpoints:
             assert fhr["genome"] == "Test organism"
         finally:
             clients_mod.requests.get = orig_get
+
+
+@pytest.mark.skipif(not _RUST_BINDINGS_AVAILABLE, reason="gtars is not installed")
+class TestListCollectionFilters:
+    """GET /list/collection filters by every stored attribute and rejects unknown ones.
+
+    Regression: the route did not declare sorted_name_length_pairs, so FastAPI
+    dropped it and the "filtered" list came back unfiltered.
+    """
+
+    @pytest.fixture(scope="class")
+    def list_client(self):
+        app = FastAPI()
+        router = create_refget_router(sequences=False, collections=True, pangenomes=False)
+        app.include_router(router, prefix="/seqcol")
+        store = RefgetStore.in_memory()
+        for fa_name in TEST_DIGESTS:
+            store.add_sequence_collection_from_fasta(str(TEST_FASTA_DIR / fa_name))
+        app.state.backend = RefgetStoreBackend(store)
+        return TestClient(app)
+
+    @pytest.mark.parametrize("attr", LIST_FILTER_ATTRS)
+    def test_filter_returns_only_matches(self, list_client, attr):
+        digest = BASE_LEVEL1[attr]
+        expected = {
+            b["top_level_digest"] for b in TEST_DIGESTS.values() if b["level1"][attr] == digest
+        }
+        r = list_client.get("/seqcol/list/collection", params={attr: digest})
+        assert r.status_code == 200
+        data = r.json()
+        assert set(data["results"]) == expected
+        assert data["pagination"]["total"] == len(expected)
+        assert len(expected) < len(TEST_DIGESTS)
+
+    def test_sorted_name_length_pairs_groups_coordinate_systems(self, list_client):
+        """base, different_order and swap_wo_coords share one coordinate system."""
+        r = list_client.get(
+            "/seqcol/list/collection",
+            params={"sorted_name_length_pairs": BASE_LEVEL1["sorted_name_length_pairs"]},
+        )
+        assert set(r.json()["results"]) == {
+            TEST_DIGESTS[f]["top_level_digest"]
+            for f in ["base.fa", "different_order.fa", "swap_wo_coords.fa"]
+        }
+
+    def test_filters_combine_with_and(self, list_client):
+        r = list_client.get(
+            "/seqcol/list/collection",
+            params={
+                "sorted_name_length_pairs": BASE_LEVEL1["sorted_name_length_pairs"],
+                "names": BASE_LEVEL1["names"],
+            },
+        )
+        assert r.json()["results"] == [BASE_DIGEST]
+
+    def test_filter_pages(self, list_client):
+        params = {"sequences": BASE_LEVEL1["sequences"], "page_size": 1}
+        pages = [
+            list_client.get("/seqcol/list/collection", params={**params, "page": p}).json()
+            for p in range(2)
+        ]
+        assert all(len(p["results"]) == 1 for p in pages)
+        assert pages[0]["results"] != pages[1]["results"]
+        assert pages[0]["pagination"]["total"] > 1
+
+    def test_unknown_filter_is_rejected(self, list_client):
+        r = list_client.get("/seqcol/list/collection", params={"bogus": "abc"})
+        assert r.status_code == 400
+        assert "bogus" in r.json()["detail"]
+
+    def test_unstored_schema_attribute_matches_nothing(self, list_client):
+        """accessions is in the schema, but no collection stores it."""
+        r = list_client.get("/seqcol/list/collection", params={"accessions": "abc"})
+        assert r.status_code == 200
+        assert r.json() == {"results": [], "pagination": {"page": 0, "page_size": 100, "total": 0}}
+
+    def test_paging_params_are_not_filters(self, list_client):
+        r = list_client.get("/seqcol/list/collection", params={"page": 0, "page_size": 2})
+        assert r.status_code == 200
+        assert r.json()["pagination"]["total"] == len(TEST_DIGESTS)

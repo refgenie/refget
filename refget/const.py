@@ -67,6 +67,18 @@ DEFAULT_TRANSIENT_ATTRS = ["sorted_name_length_pairs"]
 # These attributes are NOT digested - they appear the same in level1 and level2
 DEFAULT_PASSTHRU_ATTRS = []
 
+# Attributes whose level 1 digest both backends store per collection, so
+# /list/collection can filter on them. Includes the transient
+# sorted_name_length_pairs: the spec lets /list filter on transient attributes.
+LIST_FILTER_ATTRS = [
+    "names",
+    "lengths",
+    "sequences",
+    "name_length_pairs",
+    "sorted_name_length_pairs",
+    "sorted_sequences",
+]
+
 
 GTARS_INSTALLED = False
 try:

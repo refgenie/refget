@@ -25,6 +25,10 @@ _LOGGER = logging.getLogger(__name__)
 
 COMPLIANCE_TIMEOUT = 3  # seconds per request
 
+# Attributes the list filter checks cover: the required ones, plus the transient
+# sorted_name_length_pairs, which spec sections 3.4 and 4.5 say /list must filter on.
+LIST_FILTER_CHECK_ATTRS = ["lengths", "names", "sequences", "sorted_name_length_pairs"]
+
 # ============================================================
 # Test data -- loaded from repository fixtures
 # ============================================================
@@ -319,18 +323,32 @@ def check_transient_attribute_not_served(api_root):
 
 
 def check_list_filter_by_attribute(api_root, fa_name, bundle, attr_name):
-    """List collections filtered by attribute digest returns the expected collection."""
+    """Filtering by an attribute digest returns the collections that share it, and only those."""
     attr_digest = bundle["level1"][attr_name]
-    top_digest = bundle["top_level_digest"]
     res = requests.get(
         f"{api_root}/list/collection?{attr_name}={attr_digest}", timeout=COMPLIANCE_TIMEOUT
     )
     assert res.status_code == 200, f"List filter returned HTTP {res.status_code}"
     data = res.json()
     assert "results" in data, "Filtered list missing 'results'"
-    assert top_digest in data["results"], (
-        f"Collection {top_digest} not in results when filtering by {attr_name}={attr_digest} for {fa_name}. "
-        f"Got {len(data['results'])} results: {data['results'][:5]}"
+    results = set(data["results"])
+    for other_name, other in DIGEST_TESTS:
+        shares = other["level1"][attr_name] == attr_digest
+        returned = other["top_level_digest"] in results
+        assert returned or not shares, (
+            f"Collection {other['top_level_digest']} ({other_name}) not in results when "
+            f"filtering by {attr_name}={attr_digest} from {fa_name}. "
+            f"Got {len(results)} results: {sorted(results)[:5]}"
+        )
+        assert shares or not returned, (
+            f"Collection {other['top_level_digest']} ({other_name}) has a different {attr_name} "
+            f"but was returned when filtering by {attr_name}={attr_digest}; "
+            f"the server seems to ignore the {attr_name} filter"
+        )
+    unfiltered = requests.get(f"{api_root}/list/collection", timeout=COMPLIANCE_TIMEOUT).json()
+    assert data["pagination"]["total"] < unfiltered["pagination"]["total"], (
+        f"Filtering by {attr_name} returned all {unfiltered['pagination']['total']} collections; "
+        f"the server seems to ignore the {attr_name} filter"
     )
 
 
@@ -493,7 +511,7 @@ def build_checks(api_root: str) -> list[tuple[str, callable, list]]:
 
     # List filter checks (base.fa, filter by each attribute)
     base_name, base_bundle = DIGEST_TESTS[0]
-    for attr in ["lengths", "names", "sequences"]:
+    for attr in LIST_FILTER_CHECK_ATTRS:
         checks.append(
             (
                 f"list_filter_{attr}",

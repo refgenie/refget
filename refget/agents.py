@@ -32,7 +32,12 @@ from sqlalchemy.engine import Engine as SqlalchemyDatabaseEngine  # noqa: E402
 from sqlalchemy.orm import selectinload  # noqa: E402
 from sqlmodel import Session, SQLModel, create_engine, delete, func, select  # noqa: E402
 
-from .const import _LOGGER, DEFAULT_INHERENT_ATTRS, SEQCOL_SCHEMA_PATH  # noqa: E402
+from .const import (  # noqa: E402
+    _LOGGER,
+    DEFAULT_INHERENT_ATTRS,
+    LIST_FILTER_ATTRS,
+    SEQCOL_SCHEMA_PATH,
+)
 from .models import (  # noqa: E402
     AccessMethod,
     AccessURL,
@@ -475,7 +480,13 @@ class SequenceCollectionAgent(object):
 
     def list_by_offset(self, limit: int = 50, offset: int = 0) -> dict:
         with Session(self.engine) as session:
-            list_stmt = select(SequenceCollection).offset(offset).limit(limit)
+            # Order by digest so pages are stable (and match the store backend).
+            list_stmt = (
+                select(SequenceCollection)
+                .order_by(SequenceCollection.digest)
+                .offset(offset)
+                .limit(limit)
+            )
             cnt_stmt = select(func.count(SequenceCollection.digest))
             cnt_res = session.exec(cnt_stmt)
             list_res = session.exec(list_stmt)
@@ -505,8 +516,8 @@ class SequenceCollectionAgent(object):
 
             # Chain .where() for each filter (creates AND logic)
             for attr_name, attr_digest in filters.items():
-                # Validate attribute exists to prevent SQL injection
-                if attr_name not in ATTR_TYPE_MAP:
+                # Only attributes with a <attr>_digest column; also guards the getattr
+                if attr_name not in LIST_FILTER_ATTRS:
                     raise ValueError(f"Unknown attribute: {attr_name}")
 
                 # Build WHERE condition dynamically
@@ -514,8 +525,8 @@ class SequenceCollectionAgent(object):
                 list_stmt = list_stmt.where(digest_column == attr_digest)
                 cnt_stmt = cnt_stmt.where(digest_column == attr_digest)
 
-            # Add pagination
-            list_stmt = list_stmt.offset(offset).limit(limit)
+            # Add pagination, ordered by digest so pages are stable
+            list_stmt = list_stmt.order_by(SequenceCollection.digest).offset(offset).limit(limit)
 
             # Execute queries
             cnt_res = session.exec(cnt_stmt)

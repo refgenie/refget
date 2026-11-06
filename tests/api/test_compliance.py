@@ -87,7 +87,7 @@ class TestAPI:
 
     # ---- List/filter checks ----
 
-    @pytest.mark.parametrize("attr_name", ["lengths", "names", "sequences"])
+    @pytest.mark.parametrize("attr_name", compliance.LIST_FILTER_CHECK_ATTRS)
     def test_list_filter_by_attribute(self, api_root, attr_name):
         fa_name, bundle = DIGEST_TESTS[0]
         check_list_filter_by_attribute(api_root, fa_name, bundle, attr_name)
