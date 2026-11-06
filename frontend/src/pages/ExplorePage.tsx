@@ -2,10 +2,34 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { API_BASE } from '../utilities';
-import stores from '../data/stores.json';
+import storeList from '../data/stores.json';
+import howItFits from '../assets/how-it-fits.svg';
 import { Icon } from '../components/common/Icon';
 
-const CopyableUrl = ({ url, label = 'URL' }: { url: string; label?: string }) => {
+/** A published RefgetStore and what is available for it (src/data/stores.json). */
+interface StoreEntry {
+  name: string;
+  description: string;
+  /** Store base URL (the S3 prefix holding rgstore.json). */
+  url: string;
+  /** SeqCol API server backed by this store, if one is hosted. */
+  api?: string;
+  /** refgenie serves assets for genomes from this store. */
+  refgenie?: boolean;
+  /** Pages of this site built for this store's data. */
+  views?: { label: string; to: string }[];
+}
+
+const stores: StoreEntry[] = storeList;
+
+const REFGENIE_GENOMES_URL = 'https://api.refgenie.org/genomes';
+
+// The Jungle views (/jungle, /human, /scom) query this build's API_BASE. In
+// production that is the Jungle store's API; anywhere else, say so.
+const jungle = stores.find((s) => s.views?.some((v) => v.to === '/jungle'));
+const viewsUseOtherApi = Boolean(jungle?.api && jungle.api !== API_BASE);
+
+const CopyUrlButton = ({ url, label }: { url: string; label: string }) => {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -19,13 +43,12 @@ const CopyableUrl = ({ url, label = 'URL' }: { url: string; label?: string }) =>
     }
   };
   return (
-    <span className="inline-flex items-center gap-1">
-      <code className="code text-xs text-muted text-break">{url}</code>
+    <>
       <button
         type="button"
-        className="btn--link text-muted"
+        className="btn--link text-muted ml-2"
         onClick={copy}
-        title={copied ? 'Copied!' : `Copy ${label}`}
+        title={copied ? 'Copied!' : `Copy ${label}: ${url}`}
         aria-label={`Copy ${label}`}
       >
         <Icon name={copied ? 'check' : 'clipboard'} />
@@ -33,18 +56,13 @@ const CopyableUrl = ({ url, label = 'URL' }: { url: string; label?: string }) =>
       <span className="sr-only" role="status" aria-live="polite">
         {copied ? `${label} copied` : ''}
       </span>
-    </span>
+    </>
   );
 };
 
-// The hero store (the flagship hosted SeqCol API); falls back to the first.
-const heroStore = stores.find((s) => s.hero) || stores[0];
-// Other (non-hero) stores that also expose a hosted SeqCol API.
-const otherApiStores = stores.filter((s) => s.api && !s.hero);
+const None = () => <span className="text-muted">—</span>;
 
 const ExplorePage = () => {
-  const jungleStoreUrl = heroStore.url;
-
   // Live collection counts per store, from each store's public collections.rgci.
   // url -> count, null on error, absent while loading.
   const [counts, setCounts] = useState<Record<string, number | null>>({});
@@ -75,6 +93,100 @@ const ExplorePage = () => {
 
   return (
     <div className="mb-12">
+      {/* REFERENCE STORES: the main catalog, one row per published store */}
+      <h4 className="font-light mb-4">
+        <Icon name="archive" className="mr-2" />
+        Reference stores
+      </h4>
+      <div className="explore__intro mb-4">
+        <p className="text-muted text-sm mb-0">
+          Each store is a published set of reference genomes. <strong>Browse</strong> opens a store
+          right here, read straight from its files. Some stores also have an <strong>API</strong>, a
+          web service that follows the GA4GH Sequence Collections standard, and{' '}
+          <strong>refgenie</strong> serves ready-built assets (aligner indexes, annotations) for
+          genomes from some stores. <strong>Views</strong> are pages on this site made for one store.
+        </p>
+        <img
+          src={howItFits}
+          className="explore__figure"
+          alt="Everything is built on a store: a SeqCol API server is a store with an API on top; a refgenie server is a store with refgenie serving an API and assets on top."
+        />
+      </div>
+
+      {viewsUseOtherApi && (
+        <div className="alert alert--warning py-2 text-sm mb-4">
+          This build is connected to <code>{API_BASE}</code>, so the Jungle views query that
+          server, not <code>{jungle?.api}</code>.
+        </div>
+      )}
+
+      <div className="table-wrap mb-12">
+        <table className="table table--sm align-middle">
+          <thead>
+            <tr>
+              <th>Store</th>
+              <th className="text-right">Collections</th>
+              <th>Browse</th>
+              <th>API</th>
+              <th>refgenie</th>
+              <th>Views</th>
+            </tr>
+          </thead>
+          <tbody>
+            {stores.map((s) => (
+              <tr key={s.url}>
+                <td>
+                  <div className="text-nowrap">
+                    <Link
+                      to={`/explore-store/overview?url=${encodeURIComponent(s.url)}`}
+                      className="no-underline"
+                    >
+                      <strong>{s.name}</strong>
+                    </Link>
+                    <CopyUrlButton url={s.url} label={`${s.name} store URL`} />
+                  </div>
+                  <div className="text-muted">{s.description}</div>
+                </td>
+                <td className="text-right">{fmtCount(s.url)}</td>
+                <td className="text-nowrap text-sm">
+                  <Link to={`/explore-store/overview?url=${encodeURIComponent(s.url)}`}>Browse</Link>
+                </td>
+                <td className="text-nowrap text-sm">
+                  {s.api ? (
+                    <Link to={`/explore-api/collections?url=${encodeURIComponent(s.api)}`} title={s.api}>
+                      API
+                    </Link>
+                  ) : (
+                    <None />
+                  )}
+                </td>
+                <td className="text-nowrap text-sm">
+                  {s.refgenie ? (
+                    <a href={REFGENIE_GENOMES_URL} target="_blank" rel="noopener noreferrer">
+                      refgenie <Icon name="external" />
+                    </a>
+                  ) : (
+                    <None />
+                  )}
+                </td>
+                <td className="text-sm">
+                  {s.views?.length ? (
+                    s.views.map((v, i) => (
+                      <span key={v.to} className="text-nowrap">
+                        {i > 0 && ' · '}
+                        <Link to={v.to}>{v.label}</Link>
+                      </span>
+                    ))
+                  ) : (
+                    <None />
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       {/* LOCAL TOOLS */}
       <h4 className="font-light mb-4">
         <Icon name="tools" className="mr-2" />
@@ -128,209 +240,6 @@ const ExplorePage = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* SEQCOL API (hero — the one hosted API server, backed by the jungle store) */}
-      <h4 className="font-light mb-4">
-        <Icon name="network" className="mr-2" />
-        SeqCol API Servers
-      </h4>
-      <p className="text-muted text-sm mb-4">
-        Hosted Sequence Collections API servers. The flagship is backed by the Reference Genome
-        Jungle store; a second instance backs the Demo store as an always-green GA4GH compliance
-        reference.
-      </p>
-
-      <div className="card mb-12">
-        <div className="card__header">
-          <h5 className="mb-0">
-            {heroStore.name}
-            <span className="badge badge--success ml-2">API</span>
-          </h5>
-        </div>
-        <div className="card__body">
-          <p className="text-muted text-sm mb-4">
-            A curated collection of human (GRCh38/hg19/hg18) and mouse (mm39 and earlier) reference assemblies
-            from many authorities — UCSC, Ensembl, GENCODE, NCBI, iGenomes, refgenie, ENA, DDBJ, and others —
-            so you can compare how the same genome is represented across providers.
-          </p>
-          <div className="mb-4">
-            <div className="flex items-center mb-1">
-              <span className="badge badge--success mr-2">API</span>
-              <strong className="text-sm">Sequence Collections API:</strong>
-              <span className="ml-2"><CopyableUrl url={heroStore.api ?? ''} label="API base URL" /></span>
-            </div>
-            <div className="flex items-center mb-1">
-              <span className="badge badge--secondary mr-2">Store</span>
-              <strong className="text-sm">Store:</strong>
-              <span className="ml-2"><CopyableUrl url={jungleStoreUrl} label="store URL" /></span>
-            </div>
-            <div className="text-muted text-sm mt-2">{fmtCount(jungleStoreUrl)} collections</div>
-          </div>
-
-          <div className="mb-4">
-            <Link to="/jungle" className="btn btn--outline-primary">
-              <Icon name="tree" className="mr-2" />
-              Browse with Provenance
-            </Link>
-          </div>
-
-          {/* The card describes heroStore from stores.json, but the "Browse via
-              API" links below resolve through API_BASE. In production these are
-              the same server; anywhere else, say so rather than silently
-              browsing a different one than the card advertises. */}
-          {API_BASE !== heroStore.api && (
-            <div className="alert alert--warning py-2 text-sm mb-4">
-              This build is connected to <code>{API_BASE}</code>, so the “Browse via API” links
-              below query that server, not the one listed above.
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h6 className="text-muted text-sm uppercase mb-2">Browse via API</h6>
-              <ul className="list-unstyled mb-0">
-                <li className="mb-1">
-                  <Link to="/collections" className="no-underline text-sm">
-                    <Icon name="arrow-right" className="mr-1" />Collections
-                  </Link>
-                </li>
-                <li className="mb-1">
-                  <Link to="/sequences" className="no-underline text-sm">
-                    <Icon name="arrow-right" className="mr-1" />Sequences
-                  </Link>
-                </li>
-                <li className="mb-1">
-                  <Link to="/aliases" className="no-underline text-sm">
-                    <Icon name="arrow-right" className="mr-1" />Aliases
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h6 className="text-muted text-sm uppercase mb-2">Views</h6>
-              <ul className="list-unstyled mb-0">
-                <li className="mb-1">
-                  <Link to="/human" className="no-underline text-sm">
-                    <Icon name="arrow-right" className="mr-1" />Human Genomes
-                  </Link>
-                </li>
-                <li className="mb-1">
-                  <Link to="/scom" className="no-underline text-sm">
-                    <Icon name="arrow-right" className="mr-1" />SCOM
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h6 className="text-muted text-sm uppercase mb-2">Developer</h6>
-              <ul className="list-unstyled mb-0">
-                <li className="mb-1">
-                  <a href={`${heroStore.api}/docs`} className="no-underline text-sm" target="_blank" rel="noopener noreferrer">
-                    <Icon name="arrow-right" className="mr-1" />API Docs
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Additional API servers (e.g. the demo / compliance-reference instance) */}
-      {otherApiStores.map((s) => (
-        <div className="card mb-12" key={s.api}>
-          <div className="card__header">
-            <h5 className="mb-0">
-              {s.name}
-              <span className="badge badge--success ml-2">API</span>
-            </h5>
-          </div>
-          <div className="card__body">
-            <p className="text-muted text-sm mb-4">{s.description}</p>
-            <div className="mb-4">
-              <div className="flex items-center mb-1">
-                <span className="badge badge--success mr-2">API</span>
-                <strong className="text-sm">Sequence Collections API:</strong>
-                <span className="ml-2"><CopyableUrl url={s.api ?? ''} label="API base URL" /></span>
-              </div>
-              <div className="flex items-center mb-1">
-                <span className="badge badge--secondary mr-2">Store</span>
-                <strong className="text-sm">Store:</strong>
-                <span className="ml-2"><CopyableUrl url={s.url} label="store URL" /></span>
-              </div>
-              <div className="text-muted text-sm mt-2">{fmtCount(s.url)} collections</div>
-            </div>
-            <div>
-              <a
-                href={`${s.api}/docs`}
-                className="btn btn--outline-primary btn--sm mr-2"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Icon name="external" className="mr-1" />
-                API docs
-              </a>
-              <Link
-                to={`/compliance?url=${encodeURIComponent(s.api ?? '')}`}
-                className="btn btn--outline-success btn--sm"
-              >
-                <Icon name="check-circle" className="mr-1" />
-                Run compliance
-              </Link>
-            </div>
-          </div>
-        </div>
-      ))}
-
-      {/* REFGETSTORES (table of all published stores, from src/data/stores.json) */}
-      <h4 className="font-light mb-4">
-        <Icon name="archive" className="mr-2" />
-        RefgetStores
-      </h4>
-      <p className="text-muted text-sm mb-4">
-        All publicly published RefgetStores. Browse any of them in the store explorer (read directly from S3,
-        no server required). Stores marked <span className="badge badge--success">API</span> also have a hosted
-        SeqCol API.
-      </p>
-
-      <div className="table-wrap mb-6">
-        <table className="table table--sm align-middle">
-          <thead>
-            <tr>
-              <th>Store</th>
-              <th>Description</th>
-              <th className="text-right">Collections</th>
-              <th>URL</th>
-              <th>Access</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stores.map((s) => (
-              <tr key={s.url}>
-                <td className="font-medium text-nowrap">
-                  {s.name}
-                  {s.api && <span className="badge badge--success ml-2">API</span>}
-                </td>
-                <td className="text-muted text-sm">{s.description}</td>
-                <td className="text-right">{fmtCount(s.url)}</td>
-                <td><CopyableUrl url={s.url} label="store URL" /></td>
-                <td className="text-nowrap text-sm">
-                  <Link to={`/explore-store/overview?url=${encodeURIComponent(s.url)}`}>
-                    Browse store
-                  </Link>
-                  {s.api && (
-                    <>
-                      {' · '}
-                      <a href={`${s.api}/docs`} target="_blank" rel="noopener noreferrer">
-                        API docs
-                      </a>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       {/* Work with any store / API by URL */}

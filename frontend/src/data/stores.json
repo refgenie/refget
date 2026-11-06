@@ -4,7 +4,12 @@
     "description": "Human & mouse reference assemblies across many providers (UCSC, Ensembl, GENCODE, NCBI, iGenomes, …).",
     "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/jungle/",
     "api": "https://seqcolapi.databio.org",
-    "hero": true
+    "refgenie": true,
+    "views": [
+      { "label": "Provenance", "to": "/jungle" },
+      { "label": "Human genomes", "to": "/human" },
+      { "label": "SCOM", "to": "/scom" }
+    ]
   },
   {
     "name": "Pangenome (HPRC)",
@@ -24,7 +29,8 @@
   {
     "name": "VGP",
     "description": "Vertebrate Genomes Project assemblies.",
-    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vgp/"
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vgp/",
+    "refgenie": true
   },
   {
     "name": "VRS",
@@ -32,9 +38,29 @@
     "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/vrs/"
   },
   {
+    "name": "Legacy refgenie",
+    "description": "The genomes served by the legacy refgenomes.databio.org refgenie server (hg38, mm10, rn6, dm6, …).",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/legacy/",
+    "refgenie": true
+  },
+  {
+    "name": "Plant references",
+    "description": "Plant, algal and protist reference genomes from the lab's plant-genome collection.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/plantref/",
+    "refgenie": true
+  },
+  {
+    "name": "Decoys",
+    "description": "Prealignment decoy sequences, used to catch reads before the main alignment.",
+    "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/decoys/"
+  },
+  {
     "name": "Demo",
     "description": "Small test FASTAs for development and CI; the GA4GH compliance reference (passes all checks).",
     "url": "https://refgenie.s3.us-east-1.amazonaws.com/refget-store/demo/",
-    "api": "https://seqcolapi-demo.databio.org"
+    "api": "https://seqcolapi-demo.databio.org",
+    "views": [
+      { "label": "Compliance", "to": "/compliance?url=https%3A%2F%2Fseqcolapi-demo.databio.org" }
+    ]
   }
 ]

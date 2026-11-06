@@ -71,6 +71,10 @@ import {
 import type { LoaderFunctionArgs } from 'react-router-dom';
 
 import { API_BASE } from './utilities';
+import storeList from './data/stores.json';
+
+// The store this site's API serves, for the footer ("the Jungle API").
+const apiStore = storeList.find((s) => 'api' in s && s.api === API_BASE);
 import { Icon } from './components/common/Icon';
 
 interface NavItemProps {
@@ -274,7 +278,9 @@ const App = () => {
               </div>
               <div className='flex flex-row mt-1 items-center gap-1'>
                 <span className='dot dot--ok' />
-                Connected to {API_BASE}
+                {apiStore
+                  ? `Connected to the ${apiStore.name} API (${API_BASE.replace(/^https?:\/\//, '')})`
+                  : `Connected to ${API_BASE}`}
               </div>
             </>
           ) : (

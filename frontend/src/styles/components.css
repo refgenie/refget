@@ -998,14 +998,26 @@ hr {
   gap: var(--space-2);
   height: var(--landing-glyph-size);
 }
+/* Explore page: intro text beside the "built on a store" figure. */
+.explore__intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-6);
+}
+.explore__intro > p {
+  flex: 1 1 var(--explore-intro-min);
+}
+.explore__figure {
+  flex: 0 1 var(--explore-figure-width);
+  width: var(--explore-figure-width);
+  max-width: 100%;
+  height: auto;
+}
 .landing__glyph {
   width: var(--landing-glyph-size);
   height: var(--landing-glyph-size);
   margin-inline: auto;
-}
-.landing__emoji {
-  height: var(--landing-glyph-size);
-  line-height: var(--landing-glyph-size);
 }
 
 /* "Are you… / Then…" two-column guide. */

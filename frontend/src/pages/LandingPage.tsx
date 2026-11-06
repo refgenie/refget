@@ -20,7 +20,7 @@ const LandingPage = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* The Specification */}
         <div>
           <a
@@ -72,27 +72,13 @@ const LandingPage = () => {
                 <Icon name="play" className="landing__glyph text-primary-fg mb-4 block" />
                 <h4 className="card__title">Try it Live</h4>
                 <p className="card__text text-muted">
-                  Browse sequence collections on this server.
+                  Browse the reference stores: genomes, their APIs and refgenie assets.
                 </p>
               </div>
             </div>
           </Link>
         </div>
 
-        {/* The Jungle */}
-        <div>
-          <Link to="/jungle" className="no-underline">
-            <div className="card h-full text-center border-0 shadow-sm card--hover">
-              <div className="card__body py-12">
-                <span className="landing__emoji text-4xl mb-4 block">🧬</span>
-                <h4 className="card__title">The Jungle</h4>
-                <p className="card__text text-muted">
-                  100+ reference genomes with provenance.
-                </p>
-              </div>
-            </div>
-          </Link>
-        </div>
       </div>
 
       {/* How should I use this? */}
