@@ -109,7 +109,7 @@ const ExplorePage = () => {
         <img
           src={howItFits}
           className="explore__figure"
-          alt="Everything is built on a store: a SeqCol API server is a store with an API on top; a refgenie server is a store with refgenie serving an API and assets on top."
+          alt="Everything is built on a store. The store explorer runs in your browser and reads a store's files directly, so it needs no server. A SeqCol API server is a store with an API on top. A refgenie server is a store with refgenie serving an API and assets on top."
         />
       </div>
 
