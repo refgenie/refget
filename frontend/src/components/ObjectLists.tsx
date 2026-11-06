@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useLoaderData } from 'react-router-dom';
+import { useExplorerApi } from '../hooks/useExplorerApi';
+import { attributePath, collectionPath } from '../utils/explorerLinks';
 
 interface Listing {
   results?: string[];
@@ -9,6 +11,7 @@ interface Listing {
 const CollectionList = ({ collections }: { collections?: Listing }) => {
   const loaderData = useLoaderData() as Listing[];
   const seqColList = collections || loaderData[0];
+  const apiUrl = useExplorerApi();
 
   return (
     <>
@@ -17,7 +20,7 @@ const CollectionList = ({ collections }: { collections?: Listing }) => {
           {seqColList.results?.map((seqCol) => (
             <li key={seqCol}>
               Collection:{' '}
-              <Link to={`/collection/${seqCol}`} className='font-mono'>
+              <Link to={collectionPath(seqCol, apiUrl)} className='font-mono'>
                 {seqCol}
               </Link>
             </li>
@@ -37,6 +40,7 @@ const AttributeList = ({
 }) => {
   const loaderData = useLoaderData() as Listing[];
   const attrList = attributeDigests || loaderData[0];
+  const apiUrl = useExplorerApi();
 
   return (
     <>
@@ -45,7 +49,7 @@ const AttributeList = ({
           {attrList.results?.map((attr) => (
             <li key={attr}>
               Attribute:{' '}
-              <Link to={`/attribute/${attributeName}/${attr}`}>{attr}</Link>
+              <Link to={attributePath(attributeName, attr, apiUrl)}>{attr}</Link>
             </li>
           ))}
         </ul>

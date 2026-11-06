@@ -6,6 +6,7 @@ import { ReportCard } from '../components/ReportCard';
 
 import { API_BASE, encodeToBase64 } from '../utilities';
 import { Icon } from '../components/common/Icon';
+import { useExplorerApi } from '../hooks/useExplorerApi';
 import type { ComparisonResult } from '../types';
 
 // Component to display the comparison between two collections
@@ -102,6 +103,8 @@ const LinkToLocalComparison = ({ comparison }: { comparison: ComparisonResult })
 const ComparisonView = ({ paramComparison }: { paramComparison?: ComparisonResult | null }) => {
   const loaderData = useLoaderData() as ComparisonResult | null;
   const comparison = paramComparison || loaderData;
+  // In the API Explorer, the API being explored; elsewhere, this site's API.
+  const apiBase = (useExplorerApi() || API_BASE).replace(/\/+$/, '');
 
   if (!comparison || !comparison.digests || !comparison.array_elements) {
     return (
@@ -113,7 +116,7 @@ const ComparisonView = ({ paramComparison }: { paramComparison?: ComparisonResul
 
   const comp_str = JSON.stringify(comparison, null, 2);
 
-  const api_url = `${API_BASE}/comparison/${comparison.digests.a}/${comparison.digests.b}`;
+  const api_url = `${apiBase}/comparison/${comparison.digests.a}/${comparison.digests.b}`;
 
   // Do some analysis for interpretation
 

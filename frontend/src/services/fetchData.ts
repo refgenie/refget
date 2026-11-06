@@ -1,6 +1,7 @@
 import { API_BASE } from '../utilities';
 import type {
   ComparisonResult,
+  PagedResult,
   SeqColLevel1,
   SeqColLevel2,
   ServiceInfo,
@@ -84,29 +85,18 @@ export const fetchPangenomeLevels = async (digest: string) => {
   );
 };
 
-export const fetchSeqColList = async (baseUrl: string | null, opts: RequestInit = {}) => {
+/** One page of the collection list from a SeqCol API (API_BASE if none given). */
+export const fetchCollectionPage = async (
+  baseUrl: string | null,
+  page: number,
+  pageSize: number,
+  opts: RequestInit = {},
+): Promise<PagedResult<string>> => {
   const base = (baseUrl || API_BASE).replace(/\/+$/, '');
-  const fetchRequired = async (url: string) => {
-    const response = await fetch(url, opts);
-    await checkResponse(response, url);
-    return response.json();
-  };
-
-  const fetchOptional = async (url: string) => {
-    try {
-      const response = await fetch(url, opts);
-      if (!response.ok) return null;
-      return response.json();
-    } catch {
-      return null;
-    }
-  };
-
-  return Promise.all([
-    fetchRequired(`${base}/list/collection?page_size=10&page=0`),
-    fetchOptional(`${base}/list/pangenome?page_size=5`),
-    fetchRequired(`${base}/list/attributes/name_length_pairs?page_size=5`),
-  ]);
+  const url = `${base}/list/collection?page_size=${pageSize}&page=${page}`;
+  const response = await fetch(url, opts);
+  await checkResponse(response, url);
+  return response.json();
 };
 
 export const fetchAllSeqCols = async (baseUrl?: string | null) => {

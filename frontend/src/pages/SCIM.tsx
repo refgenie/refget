@@ -4,6 +4,7 @@ import { useSearchParams, useLoaderData } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { API_BASE, encodeToBase64, decodeFromBase64 } from '../utilities';
+import { useExplorerApi } from '../hooks/useExplorerApi';
 import { ComparisonView } from './ComparisonView';
 import { Icon } from '../components/common/Icon';
 
@@ -12,8 +13,20 @@ import { Icon } from '../components/common/Icon';
 // Which will then show a ComparisonView component with the parsed comparison
 // data.
 
+/** This page's URL with ?val= set (or removed), keeping other params such as
+ *  the API Explorer's ?url=. */
+const urlWithVal = (val: string | null): string => {
+  const params = new URLSearchParams(window.location.search);
+  if (val) params.set('val', val);
+  else params.delete('val');
+  const query = params.toString();
+  return query ? `${window.location.pathname}?${query}` : window.location.pathname;
+};
+
 const SCIM = () => {
   const loaderData = useLoaderData();
+  // In the API Explorer, the API being explored; elsewhere, this site's API.
+  const apiBase = (useExplorerApi() || API_BASE).replace(/\/+$/, '');
   const [comparison, setComparison] = useState(loaderData);
   const [comparisonStr, setComparisonStr] = useState(
     loaderData ? JSON.stringify(loaderData, null, 2) : '',
@@ -91,17 +104,13 @@ const SCIM = () => {
 
     // update the query param to base64 encoded string
     const base64encodedComparison = encodeToBase64(comparisonStr);
-    window.history.pushState(
-      {},
-      '',
-      `${window.location.pathname}?val=${base64encodedComparison}`,
-    );
+    window.history.pushState({}, '', urlWithVal(base64encodedComparison));
   };
 
   const clearComparison = () => {
     setComparisonStr('');
     setComparison(null);
-    window.history.pushState({}, '', `${window.location.pathname}`);
+    window.history.pushState({}, '', urlWithVal(null));
   };
 
   const loadExample = () => {
@@ -119,11 +128,7 @@ const SCIM = () => {
     setComparison(JSON.parse(decodedComparison));
 
     // Update URL
-    window.history.pushState(
-      {},
-      '',
-      `${window.location.pathname}?val=${exampleData}`,
-    );
+    window.history.pushState({}, '', urlWithVal(exampleData));
   };
 
   return (
@@ -142,7 +147,7 @@ const SCIM = () => {
           <ul className='mb-2 mt-2'>
             <li>
               <strong>Via API:</strong> Call the <code>/comparison/{'{digest1}'}/{'{digest2}'}</code> endpoint
-              on any SeqCol API server (e.g., <a href={`${API_BASE}/docs#/Sequence%20collections/compare_2_digests_comparison__digest1___digest2__get`} target="_blank" rel="noopener noreferrer">see API docs</a>)
+              on any SeqCol API server (e.g., <a href={`${apiBase}/docs#/Sequence%20collections/compare_2_digests_comparison__digest1___digest2__get`} target="_blank" rel="noopener noreferrer">see API docs</a>)
             </li>
             <li>
               <strong>Via Python:</strong> Use <code>seqcol.compare(digest1, digest2)</code> from the refget package

@@ -4,6 +4,8 @@ import {
   copyToClipboardIcon,
   copyToClipboard,
 } from '../utilities';
+import { useExplorerApi } from '../hooks/useExplorerApi';
+import { attributePath, collectionPath } from '../utils/explorerLinks';
 
 interface AttributeValueProps {
   /** A level-2 attribute value: an array of items, a scalar, or null. */
@@ -42,16 +44,26 @@ const LinkedAttributeDigest = ({
   attribute,
   digest,
   clipboard = true,
-}: DigestLinkProps & { attribute: string }) => {
+  transient = false,
+}: DigestLinkProps & {
+  attribute: string;
+  /** A transient attribute has no /attribute page, so show the digest unlinked. */
+  transient?: boolean;
+}) => {
+  const apiUrl = useExplorerApi();
   return (
     <>
       <img src={barcodeIcon} alt='Barcode' width='30' className='mx-1' />
-      <Link
-        to={`/attribute/${attribute}/${digest}`}
-        className='font-mono text-sm'
-      >
-        {digest}
-      </Link>
+      {transient ? (
+        <span className='font-mono text-sm'>{digest}</span>
+      ) : (
+        <Link
+          to={attributePath(attribute, digest, apiUrl)}
+          className='font-mono text-sm'
+        >
+          {digest}
+        </Link>
+      )}
       {clipboard ? (
         <img
           role='button'
@@ -69,10 +81,11 @@ const LinkedAttributeDigest = ({
 };
 
 const LinkedCollectionDigest = ({ digest, clipboard = true }: DigestLinkProps) => {
+  const apiUrl = useExplorerApi();
   return (
     <>
       <img src={barcodeIcon} alt='Barcode' width='30' className='mx-1' />
-      <Link to={`/collection/${digest}`} className='font-mono text-sm'>
+      <Link to={collectionPath(digest, apiUrl)} className='font-mono text-sm'>
         {digest}
       </Link>
       {clipboard ? (

@@ -475,10 +475,12 @@ const router = createBrowserRouter([
         path: '/attribute/:attribute/:digest',
         element: <AttributeView />,
         errorElement: <ErrorBoundary />,
-        loader: ({ params }: LoaderFunctionArgs) => {
+        // ?url= names the API the API Explorer is browsing; default API_BASE.
+        loader: ({ params, request }: LoaderFunctionArgs) => {
           return fetchAttribute(
             requireParam(params.attribute, 'attribute'),
             requireParam(params.digest, 'digest'),
+            new URL(request.url).searchParams.get('url'),
           );
         },
       },

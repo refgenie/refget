@@ -10,11 +10,13 @@ import {
 } from '../components/ValuesAndDigests';
 import { Icon } from '../components/common/Icon';
 import { errorMessage } from '../utils/errors';
+import { ExplorerApiContext } from '../hooks/useExplorerApi';
+import { transientAttributes } from '../utils/explorerLinks';
 
 const APICollectionView = () => {
   const { digest } = useParams();
   const [searchParams] = useSearchParams();
-  const { apiUrl, probeApi } = useApiExplorerStore();
+  const { apiUrl, serviceInfo, probeApi } = useApiExplorerStore();
   // fetchCollectionLevels resolves to [level1, level2, uncollated].
   const [collection, setCollection] =
     useState<[SeqColLevel1, SeqColLevel2, SeqColLevel2] | null>(null);
@@ -77,6 +79,7 @@ const APICollectionView = () => {
   const level2 = collection[1];
   const uncollated = collection[2];
   const base = effectiveUrl?.replace(/\/+$/, '') || '';
+  const transient = transientAttributes(serviceInfo);
 
   const attributeViews = Object.keys(level2).map((attribute) => (
     <div key={attribute}>
@@ -84,7 +87,11 @@ const APICollectionView = () => {
       <div className="kv">
         <div className="kv__term text-muted">Digest:</div>
         <div className="kv__value">
-          <LinkedAttributeDigest attribute={attribute} digest={level1[attribute] ?? ''} />
+          <LinkedAttributeDigest
+            attribute={attribute}
+            digest={level1[attribute] ?? ''}
+            transient={transient.includes(attribute)}
+          />
         </div>
       </div>
       <div className="kv">
@@ -103,7 +110,7 @@ const APICollectionView = () => {
       <h4 className="font-light">Sequence Collection: {digest}</h4>
 
       <h5 className="mt-6 pt-2">Attribute View</h5>
-      {attributeViews}
+      <ExplorerApiContext value={effectiveUrl}>{attributeViews}</ExplorerApiContext>
 
       <h5 className="mt-6 pt-2">Raw View</h5>
       <div className="flex flex-col gap-4">
