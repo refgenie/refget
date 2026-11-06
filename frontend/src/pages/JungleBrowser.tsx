@@ -192,7 +192,7 @@ const JungleBrowser = () => {
                     <Link
                       to={`/scom?digest=${ref.digest}&name=${encodeURIComponent(ref.name)}`}
                       className="btn btn--outline-secondary btn--sm"
-                      title="Compare with SCOM"
+                      title="Find matching genomes"
                     >
                       <Icon name="arrow-left-right" />
                     </Link>

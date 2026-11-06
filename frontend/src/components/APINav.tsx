@@ -22,7 +22,7 @@ const APINav = ({ active }: APINavProps) => {
 
   const items: NavTab[] = [
     { key: 'collections', label: 'Collections', path: '/explore-api/collections', icon: 'collection' },
-    { key: 'compare', label: 'Compare (SCIM)', path: '/explore-api/compare', icon: 'collapse' },
+    { key: 'compare', label: 'Compare two collections', path: '/explore-api/compare', icon: 'collapse' },
   ];
 
   return (

@@ -130,7 +130,7 @@ const SCIM = () => {
     <div className='mb-12'>
       <div>
         <h4 className='font-light'>
-          Seqcol Comparison Interpretation Module (SCIM)
+          Compare two collections <span className='text-muted'>(SCIM)</span>
         </h4>
         <p className='mt-4 mb-1 text-muted'>
           This tool visualizes the output of a sequence collection comparison,

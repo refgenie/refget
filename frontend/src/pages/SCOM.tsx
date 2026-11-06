@@ -481,7 +481,7 @@ const SCOM = () => {
       <div>
         <div>
           <div className='flex items-end justify-between'>
-            <h4 className='font-light'>Seqcol Comparison Overview Module (SCOM)</h4>
+            <h4 className='font-light'>Find matching genomes <span className='text-muted'>(SCOM)</span></h4>
           </div>
 
           <div className='mt-2 mb-0 text-muted'>
@@ -493,7 +493,7 @@ const SCOM = () => {
             <div className='alert alert--muted border text-sm'>
               <strong>Step 1:</strong> Get your sequence collection as a canonical SeqCol object (JSON)
               <ul className='mb-2 mt-1'>
-                <li><strong>From a FASTA file:</strong> Use the <a href='/fasta'>FASTA Digester</a> tool, then click &quot;Compare in SCOM&quot;</li>
+                <li><strong>From a FASTA file:</strong> Use the <a href='/fasta'>FASTA Digester</a> tool, then click &quot;Find matching genomes&quot;</li>
                 <li><strong>From Python:</strong> Run <code>refget fasta seqcol yourfasta.fa</code></li>
                 <li><strong>From the API:</strong> Call <code>/collection/{'{digest}'}</code> with <code>?level=2</code></li>
                 <li><strong>Quick start:</strong> Use the example button to load example data</li>
@@ -645,7 +645,7 @@ const SCOM = () => {
             <div className='flex items-end justify-between'>
               <h5 className='font-light mt-12'>Seqcol Comparison Summary Table</h5>
               <p className='mb-2 text-muted'>
-                Click on a row to view a detailed 1-1 comparison in SCIM.
+                Click on a row to compare the two collections in detail.
               </p>
             </div>
             <div className='rounded shadow-sm border text-xs overflow-x-auto'>

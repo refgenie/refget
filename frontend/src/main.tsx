@@ -100,9 +100,8 @@ const NavItem = ({ path, label, location }: NavItemProps) => {
 
 const Nav = () => {
   const location = useLocation().pathname.substring(1) || '';
-  // Bootstrap's collapse and dropdown plugins are gone; both are React state now.
+  // Bootstrap's collapse plugin is gone; the mobile menu is React state now.
   const [menuOpen, setMenuOpen] = useState(false);
-  const [ghOpen, setGhOpen] = useState(false);
 
   return (
     <nav className='site-nav' aria-label='navbar'>
@@ -159,41 +158,16 @@ const Nav = () => {
           {/* VRS converter */}
           <NavItem path='/vrs' label='VRS' location={location} />
 
-          {/* GitHub dropdown */}
-          <li className='dropdown'>
-            <button
-              type='button'
+          {/* This site's source code; the spec and docs links above cover the rest */}
+          <li>
+            <a
+              href='https://github.com/refgenie/refget'
               className='site-nav__link'
-              aria-expanded={ghOpen}
-              onClick={() => setGhOpen((open) => !open)}
-              onBlur={() => setGhOpen(false)}
+              target='_blank'
+              rel='noopener noreferrer'
             >
-              GitHub <Icon name='caret-down' />
-            </button>
-            {ghOpen && (
-              <ul className='dropdown__menu'>
-                <li>
-                  <a
-                    href='https://github.com/ga4gh/refget'
-                    className='dropdown__item'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                  >
-                    <Icon name='file-text' />Specification
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href='https://github.com/refgenie/refget'
-                    className='dropdown__item'
-                    target='_blank'
-                    rel='noopener noreferrer'
-                  >
-                    <Icon name='code' />Python Package
-                  </a>
-                </li>
-              </ul>
-            )}
+              GitHub <Icon name='external' />
+            </a>
           </li>
         </ul>
       </div>

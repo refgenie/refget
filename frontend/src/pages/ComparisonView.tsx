@@ -210,7 +210,7 @@ const ComparisonView = ({ paramComparison }: { paramComparison?: ComparisonResul
           {comparison.digests.b === 'POSTed seqcol' ? (
             <>
               <span className='font-mono text-sm ml-1'>
-                POSTed seqcol <Link to='/scom'>(Custom SCOM Input)</Link>
+                POSTed seqcol <Link to='/scom'>(your input to Find matching genomes)</Link>
               </span>
             </>
             ) : <LinkedCollectionDigest digest={comparison.digests.b}/>}

@@ -36,10 +36,10 @@ export default function SeqColResult({
           <button
             className="btn btn--outline-primary"
             onClick={onCompare}
-            title="Compare with database"
+            title="Compare against the genomes on the server"
           >
             <Icon name="arrow-left-right" className="mr-1" />
-            Compare
+            Find matching genomes
           </button>
           <button
             className="btn btn--outline-secondary"

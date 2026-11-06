@@ -122,7 +122,7 @@ const LandingPage = () => {
               Comparing your reference against known genomes?
             </div>
             <div className="guide__answer border-l text-muted">
-              Use <Link to="/scom">SCOM</Link> to compare your local reference against human, mouse, and other genomes on the server.
+              Use <Link to="/scom">Find matching genomes</Link> to compare your local reference against human, mouse, and other genomes on the server.
             </div>
           </div>
 
@@ -142,7 +142,7 @@ const LandingPage = () => {
               Have comparison output to interpret?
             </div>
             <div className="guide__answer border-l text-muted">
-              Use <Link to="/compare">SCIM</Link> to get a human-friendly interpretation of comparison results.
+              Use <Link to="/compare">Compare two collections</Link> to get a human-friendly interpretation of comparison results.
             </div>
           </div>
 

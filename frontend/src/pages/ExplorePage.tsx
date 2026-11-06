@@ -231,11 +231,11 @@ const ExplorePage = () => {
               <h6 className="card__title">
                 <Link to="/compare" className="no-underline">
                   <Icon name="arrow-right" className="mr-2" />
-                  Compare (SCIM)
+                  Compare two collections
                 </Link>
               </h6>
               <p className="card__text text-muted text-sm mb-0">
-                Interpret and visualize sequence collection comparisons.
+                See how two genomes differ: names, lengths and sequences.
               </p>
             </div>
           </div>

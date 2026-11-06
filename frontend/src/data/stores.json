@@ -8,7 +8,7 @@
     "views": [
       { "label": "Provenance", "to": "/jungle" },
       { "label": "Human genomes", "to": "/human" },
-      { "label": "SCOM", "to": "/scom" }
+      { "label": "Find matching genomes", "to": "/scom" }
     ]
   },
   {
