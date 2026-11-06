@@ -24,12 +24,13 @@ const APICollectionView = () => {
   const [openPanel, setOpenPanel] = useState<string | null>('level1');
 
   const urlParam = searchParams.get('url');
-  const effectiveUrl = apiUrl || urlParam;
+  // The API named in the URL wins over one probed earlier in the session.
+  const effectiveUrl = urlParam || apiUrl;
 
   useEffect(() => {
     const init = async () => {
       try {
-        if (urlParam && !apiUrl) {
+        if (urlParam && urlParam.replace(/\/+$/, '') !== apiUrl) {
           await probeApi(urlParam);
         }
         const result = await fetchCollectionLevels(digest ?? '', effectiveUrl);

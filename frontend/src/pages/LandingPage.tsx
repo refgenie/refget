@@ -102,7 +102,7 @@ const LandingPage = () => {
               Publishing data aligned to a reference?
             </div>
             <div className="guide__answer border-l text-muted">
-              Publish the unambiguous refget digest to identify the reference you used. Use the <Link to="/fasta">FASTA Digester</Link> or <Link to="/collections">browse known references</Link>.
+              Publish the unambiguous refget digest to identify the reference you used. Use the <Link to="/fasta">FASTA Digester</Link> or <Link to="/explore">browse known references</Link>.
             </div>
           </div>
 

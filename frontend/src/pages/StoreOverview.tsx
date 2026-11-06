@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useExplorerStore } from '../stores/explorerStore';
 import { StoreNav } from '../components/StoreNav';
@@ -7,7 +7,15 @@ import { PaginationNav } from '../components/PaginationNav';
 import { usePagedList } from '../hooks/usePagedList';
 import { buildCollectionAliasMap, preferredAlias } from '../services/aliases';
 import { Icon } from '../components/common/Icon';
-import type { CollectionAliasMap } from '../types';
+import type { CollectionAliasMap, CollectionSummary } from '../types';
+
+/** A collections-table row: the index entry plus its preferred alias and all
+ *  its aliases (one "namespace: alias" per line), so the table can sort and
+ *  filter on them. */
+type CollectionRow = CollectionSummary & { alias: string; allAliases: string };
+
+const collectionFilter = (c: CollectionRow, term: string) =>
+  c.digest.toLowerCase().includes(term) || c.allAliases.toLowerCase().includes(term);
 
 const StoreOverview = () => {
   const [searchParams] = useSearchParams();
@@ -67,14 +75,33 @@ const StoreOverview = () => {
     return () => { cancelled = true; };
   }, [metadata]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Paginate the collections table so large collection indexes don't render
-  // thousands of rows in a single pass.
+  const collectionRows = useMemo<CollectionRow[]>(
+    () =>
+      (collections ?? []).map((c) => {
+        const { primary, all } = preferredAlias(aliasMap[c.digest]);
+        return { ...c, alias: primary ?? '', allAliases: all.join('\n') };
+      }),
+    [collections, aliasMap],
+  );
+
+  // Filter, sort and paginate the collections table, so large collection
+  // indexes don't render thousands of rows in a single pass.
   const {
+    filter: collectionsFilter,
+    setFilter: setCollectionsFilter,
+    filtered: filteredCollections,
     paged: pagedCollections,
     page: collectionsPage,
     setPage: setCollectionsPage,
     totalPages: collectionsTotalPages,
-  } = usePagedList(collections, { pageSize: 50 });
+    sortCol,
+    sortAsc,
+    handleSort,
+  } = usePagedList(collectionRows, { pageSize: 50, filterFn: collectionFilter });
+
+  // Plain render helper (not a component) so it isn't re-created on every render.
+  const renderSortIcon = (col: string) =>
+    sortCol === col ? <Icon name={sortAsc ? 'caret-up' : 'caret-down'} className="ml-1" /> : null;
 
   // loadStore records the failure on the store before rethrowing (the effect's
   // catch only stops an unhandled rejection), so report the real cause rather
@@ -241,7 +268,22 @@ const StoreOverview = () => {
           <h6 className="mb-0">
             <Icon name="collection" className="mr-2" />
             Collections{collections?.length ? ` (${collections.length.toLocaleString()})` : ''}
+            {collectionsFilter && (
+              <span className="text-muted text-sm font-normal ml-2">
+                {filteredCollections.length.toLocaleString()} matching
+              </span>
+            )}
           </h6>
+          {collections && collections.length > 0 && (
+            <input
+              type="search"
+              className="form-input form-input--sm filter-input"
+              placeholder="Filter by alias or digest..."
+              aria-label="Filter collections by alias or digest"
+              value={collectionsFilter}
+              onChange={(e) => setCollectionsFilter(e.target.value)}
+            />
+          )}
         </div>
         <div className="card__body">
           {collections && collections.length > 0 ? (
@@ -249,20 +291,26 @@ const StoreOverview = () => {
               <table className="table table--sm table--hover mb-0">
                 <thead>
                   <tr>
-                    <th>Alias</th>
-                    <th>Digest</th>
-                    <th className="text-right">Sequences</th>
+                    <th className="cursor-pointer" onClick={() => handleSort('alias')}>
+                      Alias{renderSortIcon('alias')}
+                    </th>
+                    <th className="cursor-pointer" onClick={() => handleSort('digest')}>
+                      Digest{renderSortIcon('digest')}
+                    </th>
+                    <th className="cursor-pointer text-right" onClick={() => handleSort('n_sequences')}>
+                      Sequences{renderSortIcon('n_sequences')}
+                    </th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {pagedCollections.map((col) => {
-                    const { primary, all } = preferredAlias(aliasMap[col.digest]);
+                    const { alias: primary, allAliases: all } = col;
                     return (
                     <tr key={col.digest}>
                       <td>
                         {primary
-                          ? <span title={all.length > 1 ? all.join('\n') : undefined}>{primary}</span>
+                          ? <span title={all.includes('\n') ? all : undefined}>{primary}</span>
                           : <span className="text-muted">-</span>}
                       </td>
                       <td>

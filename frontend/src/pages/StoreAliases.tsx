@@ -164,8 +164,10 @@ const StoreAliases = () => {
   const urlParam = searchParams.get('url');
   const storeUrlParam = `?url=${encodeURIComponent(storeUrl || urlParam || '')}`;
 
+  // Load the store named in the URL unless it is the one already loaded; a
+  // different store may be loaded from earlier in the session.
   useEffect(() => {
-    if (urlParam && !metadata && !loading) {
+    if (urlParam && (urlParam !== storeUrl || !metadata) && !loading) {
       loadStore(urlParam).catch(() => {});
     }
   }, [urlParam]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -202,7 +202,8 @@ const StoreSequences = () => {
   // Auto-load on mount — fetchSequenceIndex handles the size check internally
   useEffect(() => {
     const init = async () => {
-      if (urlParam && !metadata && !loading) {
+      // A different store may be loaded from earlier in the session.
+      if (urlParam && (urlParam !== storeUrl || !metadata) && !loading) {
         await loadStore(urlParam).catch(() => {});
       }
       if (!sequenceIndex && !seqLoading) {

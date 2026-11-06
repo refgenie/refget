@@ -17,10 +17,7 @@ import seqcol_logo from './assets/seqcol_logo.svg';
 // Unified Explorer pages
 import { LandingPage } from './pages/LandingPage';
 import { ExplorePage } from './pages/ExplorePage';
-import { Explorer } from './pages/Explorer';
-import { ExplorerCollection } from './pages/ExplorerCollection';
-import { ExplorerSequences } from './pages/ExplorerSequences';
-import { ExplorerAliases } from './pages/ExplorerAliases';
+import { LegacyRedirect } from './pages/LegacyRedirect';
 
 // API Explorer pages
 import { APIExplorer } from './pages/APIExplorer';
@@ -442,27 +439,11 @@ const router = createBrowserRouter([
         errorElement: <ErrorBoundary />,
       },
 
-      // Unified Explorer
-      {
-        path: '/collections',
-        element: <Explorer />,
-        errorElement: <ErrorBoundary />,
-      },
-      {
-        path: '/collection/:digest',
-        element: <ExplorerCollection />,
-        errorElement: <ErrorBoundary />,
-      },
-      {
-        path: '/sequences',
-        element: <ExplorerSequences />,
-        errorElement: <ErrorBoundary />,
-      },
-      {
-        path: '/aliases',
-        element: <ExplorerAliases />,
-        errorElement: <ErrorBoundary />,
-      },
+      // Old explorer addresses, forwarded to the Store Explorer
+      { path: '/collections', element: <LegacyRedirect page="collections" /> },
+      { path: '/collection/:digest', element: <LegacyRedirect page="collection" /> },
+      { path: '/sequences', element: <LegacyRedirect page="sequences" /> },
+      { path: '/aliases', element: <LegacyRedirect page="aliases" /> },
 
       // Shared tools (standalone)
       {

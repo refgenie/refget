@@ -1,24 +1,34 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useExplorerStore } from '../stores/explorerStore';
 import { StoreNav } from '../components/StoreNav';
-import { CliCommand } from '../components/CliSnippet';
+import { SequenceTable } from '../components/SequenceTable';
 import { Icon } from '../components/common/Icon';
 import { errorMessage } from '../utils/errors';
-import { BaseModal } from '../components/common/BaseModal';
-import type { CollectionDetail, SequenceRow } from '../types';
+import { buildCollectionAliasMap, preferredAlias } from '../services/aliases';
+import type { CollectionAliasMap, CollectionDetail } from '../types';
+
+/** How many same-coordinate collections to list before summarizing the rest. */
+const MAX_RELATED = 20;
 
 const StoreCollection = () => {
   const { digest } = useParams();
   const [searchParams] = useSearchParams();
-  const { storeUrl, metadata, loadStore, loadCollection, loadFhrMetadata, loading } =
-    useExplorerStore();
+  const {
+    storeUrl,
+    metadata,
+    collections,
+    loadStore,
+    loadCollection,
+    loadFhrMetadata,
+    loadAliases,
+    loading,
+  } = useExplorerStore();
   const [collection, setCollection] = useState<CollectionDetail | null>(null);
   const [fhr, setFhr] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingCol, setLoadingCol] = useState(true);
-  const [selectedSeq, setSelectedSeq] = useState<SequenceRow | null>(null);
-  const [seqCodeTab, setSeqCodeTab] = useState<'cli' | 'python'>('cli');
+  const [aliasMap, setAliasMap] = useState<CollectionAliasMap>({});
 
   const urlParam = searchParams.get('url');
   const storeUrlParam = `?url=${encodeURIComponent(storeUrl || urlParam || '')}`;
@@ -26,8 +36,9 @@ const StoreCollection = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        // Ensure store is loaded
-        if (!metadata && urlParam) {
+        // Load the store named in the URL unless it is the one already loaded;
+        // a different store may be loaded from earlier in the session.
+        if (urlParam && (urlParam !== storeUrl || !metadata)) {
           await loadStore(urlParam);
         }
         const col = await loadCollection(digest ?? '');
@@ -42,6 +53,28 @@ const StoreCollection = () => {
     };
     load();
   }, [digest, urlParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Collections in this store with the same coordinate system: the same
+  // sequence names and lengths in any order. The store index already carries
+  // each collection's sorted_name_length_pairs digest, so no server is needed.
+  const related = useMemo(() => {
+    const snlp = collections?.find((c) => c.digest === digest)?.sorted_name_length_pairs_digest;
+    if (!snlp || !collections) return [];
+    return collections.filter(
+      (c) => c.sorted_name_length_pairs_digest === snlp && c.digest !== digest,
+    );
+  }, [collections, digest]);
+
+  // Label related collections with their aliases, loaded only when there are any.
+  useEffect(() => {
+    const namespaces = metadata?.collection_alias_namespaces || [];
+    if (related.length === 0 || namespaces.length === 0) return;
+    let cancelled = false;
+    buildCollectionAliasMap(namespaces, loadAliases)
+      .then((map) => { if (!cancelled) setAliasMap(map); })
+      .catch(() => { /* aliases are optional; the list renders without them */ });
+    return () => { cancelled = true; };
+  }, [metadata, related.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!metadata && !loading && !loadingCol) {
     return (
@@ -132,6 +165,46 @@ const StoreCollection = () => {
         )}
       </div>
 
+      {/* Related collections, from the store index */}
+      {related.length > 0 && (
+        <div className="card mb-4">
+          <div className="card__header">
+            <h6 className="mb-0">
+              <Icon name="diagram" className="mr-2" />
+              Same coordinate system ({related.length.toLocaleString()})
+            </h6>
+          </div>
+          <div className="card__body">
+            <p className="text-muted text-sm mb-2">
+              Other collections in this store with the same sequence names and lengths, in any
+              order (the same <code>sorted_name_length_pairs</code> digest). Their sequences may
+              still differ.
+            </p>
+            <ul className="mb-0">
+              {related.slice(0, MAX_RELATED).map((c) => {
+                const { primary } = preferredAlias(aliasMap[c.digest]);
+                return (
+                  <li key={c.digest}>
+                    <Link
+                      to={`/explore-store/collection/${c.digest}${storeUrlParam}`}
+                      className="font-mono text-sm"
+                    >
+                      {c.digest}
+                    </Link>
+                    {primary && <span className="text-muted text-sm ml-2">{primary}</span>}
+                  </li>
+                );
+              })}
+              {related.length > MAX_RELATED && (
+                <li className="text-muted">
+                  and {(related.length - MAX_RELATED).toLocaleString()} more
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* Collection metadata from ## headers */}
       {Object.keys(colMeta).length > 0 && (
         <div className="card mb-4">
@@ -181,103 +254,9 @@ const StoreCollection = () => {
           <h6 className="mb-0">Sequences in this collection</h6>
         </div>
         <div className="card__body p-0">
-          <div className="table-wrap">
-            <table className="table table--sm table--hover mb-0">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th className="text-right">Length</th>
-                  <th>SHA-512/24u</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sequences.map((seq: SequenceRow, i: number) => (
-                  <tr
-                    key={`${seq.sha512t24u}-${i}`}
-                    className="table__row--clickable"
-                    onClick={() => setSelectedSeq(seq)}
-                  >
-                    <td>{seq.name}</td>
-                    <td className="text-right font-mono">
-                      {seq.length.toLocaleString()}
-                    </td>
-                    <td className="font-mono text-sm">{seq.sha512t24u}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <SequenceTable sequences={sequences} storeUrl={storeUrl || urlParam} sortable />
         </div>
       </div>
-
-      {/* Sequence detail modal */}
-      {selectedSeq && (
-        <BaseModal
-          isOpen
-          onClose={() => setSelectedSeq(null)}
-          title={selectedSeq.name ?? 'Sequence'}
-          size="lg"
-        >
-          <table className="table table--sm mb-6">
-            <tbody>
-              <tr>
-                <td className="text-muted">Length</td>
-                <td className="font-mono">{selectedSeq.length.toLocaleString()}</td>
-              </tr>
-              <tr>
-                <td className="text-muted">Alphabet</td>
-                <td><span className="badge badge--secondary">{selectedSeq.alphabet}</span></td>
-              </tr>
-              <tr>
-                <td className="text-muted">SHA-512/24u</td>
-                <td className="font-mono text-sm">{selectedSeq.sha512t24u}</td>
-              </tr>
-              <tr>
-                <td className="text-muted">MD5</td>
-                <td className="font-mono text-sm">{selectedSeq.md5}</td>
-              </tr>
-              {selectedSeq.description && (
-                <tr>
-                  <td className="text-muted">Description</td>
-                  <td className="text-sm">{selectedSeq.description}</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          <h6 className="text-muted mb-2">Code</h6>
-          <ul className="tabs tabs--pills mb-4">
-            <li>
-              <button
-                className={`tab ${seqCodeTab === 'cli' ? 'tab--active' : ''}`}
-                onClick={() => setSeqCodeTab('cli')}
-              >
-                <Icon name="terminal" className="mr-1" />
-                CLI
-              </button>
-            </li>
-            <li>
-              <button
-                className={`tab ${seqCodeTab === 'python' ? 'tab--active' : ''}`}
-                onClick={() => setSeqCodeTab('python')}
-              >
-                <Icon name="python" className="mr-1" />
-                Python
-              </button>
-            </li>
-          </ul>
-          <small className="text-muted block mb-1">Get sequence</small>
-          <CliCommand command={seqCodeTab === 'cli'
-            ? `refget store get --sequence \\
-    ${selectedSeq.sha512t24u} \\
-    --remote ${storeUrl || urlParam}`
-            : `import refget
-
-  store = refget.RefgetStore("${storeUrl || urlParam}")
-  store.get("${selectedSeq.sha512t24u}", sequence=True)`
-          } />
-        </BaseModal>
-      )}
     </div>
   );
 };
