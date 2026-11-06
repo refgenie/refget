@@ -22,7 +22,7 @@ interface StoreEntry {
 
 const stores: StoreEntry[] = storeList;
 
-const REFGENIE_GENOMES_URL = 'https://api.refgenie.org/genomes';
+const REFGENIE_GENOMES_URL = 'https://refgenie.org/genomes';
 
 // The Jungle views (/jungle, /human, /scom) query this build's API_BASE. In
 // production that is the Jungle store's API; anywhere else, say so.
