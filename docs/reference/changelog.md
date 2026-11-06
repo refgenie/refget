@@ -3,7 +3,45 @@
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 
-## [Unreleased]
+## [0.13.0] - 2026-11-06
+
+### Added
+
+- **`refget store match A B`** matches sequence names between two collections
+  in a store by sequence content, for example `chr1` in one and `1` in the
+  other. It prints JSON, keeps the original FASTA order and one-to-many
+  matches, and `--include-unmatched` adds the sequences found in only one
+  collection.
+- `refget store list` and `refget store match` accept a collection as
+  `namespace:alias` as well as by digest.
+- `/list/collection` can filter by `sorted_name_length_pairs`, which finds the
+  collections with the same coordinate system (the same names and lengths, in
+  any order).
+
+### Changed
+
+- **`/list/collection` rejects unknown filters.** A query parameter that is not
+  a schema attribute now gets HTTP 400 naming it. Before, the server silently
+  ignored it and returned every collection. Filtering by a schema attribute no
+  backend stores (`accessions`) returns an empty list.
+- The PostgreSQL backend orders `/list/collection` results by digest, so pages
+  are stable and match the store backend.
+- The compliance check's list-filter test now fails a server that ignores the
+  filter, and it covers `sorted_name_length_pairs`.
+- `canonical_str` raises `ValueError` on floats instead of returning a digest
+  no other implementation would reproduce (`json.dumps` writes `1.0` where
+  RFC 8785 wants `1`).
+- Stores opened with `--remote` get their own local cache folder per remote
+  URL, so two remotes never share cached files. Invalid remote URLs are
+  rejected with a clear error.
+- `refget store list --sequences` lists every sequence in a remote store.
+- `refget store add --mode` and `refget store list --sequences` print a clear
+  error instead of a traceback when gtars refuses.
+- **Requires gtars 0.11.2 or newer** (was 0.9.0). `refget store match` needs
+  gtars 0.11, and 0.11.2 reads IUPAC ambiguity codes in encoded stores
+  correctly.
+
+## [0.12.0] - 2026-08-07
 
 ### Added
 
