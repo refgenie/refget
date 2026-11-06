@@ -436,10 +436,12 @@ def add(
     if mode is not None:
         from refget.store import StorageMode
 
-        if mode == StorageModeChoice.raw:
-            store.set_encoding_mode(StorageMode.Raw)
-        else:
-            store.set_encoding_mode(StorageMode.Encoded)
+        new_mode = StorageMode.Raw if mode == StorageModeChoice.raw else StorageMode.Encoded
+        try:
+            store.set_encoding_mode(new_mode)
+        except ValueError as e:
+            print_error(f"Cannot switch storage mode: {e}", EXIT_FAILURE)
+            return
 
     # Single-file fast path: exactly one explicit path that is an existing
     # regular file, no file-list, serial. Globs/directories fall through to
@@ -545,8 +547,13 @@ def list_items(
         )
 
     if sequences:
+        try:
+            all_sequences = store.list_sequences()
+        except (OSError, IOError) as e:
+            print_error(f"Failed to load sequence index: {e}", EXIT_FAILURE)
+            return
         items = []
-        for meta in store.list_sequences():
+        for meta in all_sequences:
             items.append(
                 {
                     "digest": meta.sha512t24u,
@@ -936,10 +943,9 @@ def pull(
                 remote_store.load_collection(dig)
                 level2 = remote_store.get_collection_level2(dig)
                 for seq_digest in level2.get("sequences", []):
-                    # level2 sequences are refget IDs ("SQ.<sha512t24u>");
-                    # load_sequence wants the bare digest.
-                    bare = seq_digest.split(".", 1)[1] if "." in seq_digest else seq_digest
-                    remote_store.load_sequence(bare)
+                    # level2 sequences are refget IDs ("SQ.<sha512t24u>"),
+                    # which load_sequence accepts as-is.
+                    remote_store.load_sequence(seq_digest)
 
                 # Fetch the remote's alias + FHR sidecars into the remote store
                 # so import_collection carries them to the local store. These

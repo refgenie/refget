@@ -29,7 +29,7 @@ classifiers = [
 # refget.models module boundaries -- nothing on the `import refget` path
 # touches them.
 dependencies = [
-    "gtars>=0.10.0",
+    "gtars>=0.11.2",
     "jsonschema",
     "pyyaml",
     "requests",
