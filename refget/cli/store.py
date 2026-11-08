@@ -21,11 +21,10 @@ Commands:
 
 import hashlib
 import os
-import tempfile
-from contextlib import contextmanager
+import sys
 from enum import Enum
 from pathlib import Path
-from typing import Iterator, List, Optional
+from typing import List, Optional
 from urllib.parse import urlsplit, urlunsplit
 
 import typer
@@ -37,6 +36,7 @@ from refget.cli.output import (
     EXIT_SUCCESS,
     check_dependency,
     print_error,
+    print_info,
     print_json,
 )
 
@@ -46,18 +46,6 @@ class StorageModeChoice(str, Enum):
 
     encoded = "encoded"
     raw = "raw"
-
-
-@contextmanager
-def _temp_file_path(suffix: str = ".fa") -> Iterator[str]:
-    """Context manager that yields a temp file path and cleans up on exit."""
-    fd, path = tempfile.mkstemp(suffix=suffix)
-    os.close(fd)
-    try:
-        yield path
-    finally:
-        if os.path.exists(path):
-            os.unlink(path)
 
 
 app = typer.Typer(
@@ -1009,38 +997,69 @@ def pull(
     raise typer.Exit(EXIT_SUCCESS)
 
 
+class MoleculeChoice(str, Enum):
+    """Molecule filter choices for export."""
+
+    dna = "dna"
+    protein = "protein"
+
+
+EXPORT_LABEL_HELP = (
+    "FASTA label template. Fields: {seq} sequence digest (SQ.…, the default); "
+    "{seq:NS} sequence alias in namespace NS; {col} collection digest; "
+    "{col:NS} collection alias in namespace NS; {name} sequence name. "
+    "Other text is copied as-is. A single field may drop its braces. "
+    "Examples: -l name (>chr1); -l '{col:ucsc}/{name}' (>hg38/chr1); "
+    "-l seq:refseq (>NC_000001.11); -l '{col:pansn}#{name}' (>HG002#1#chr1)."
+)
+
+
 @app.command()
 def export(
-    digest: Optional[str] = typer.Argument(
+    collections: Optional[List[str]] = typer.Argument(
         None,
-        help="Collection digest to export (omit when using --seq-digest)",
+        help="Collection(s) to export: digests or namespace:alias selectors",
     ),
     output: Optional[Path] = typer.Option(
         None,
         "--output",
         "-o",
-        help="Output FASTA file path (default: stdout)",
+        help="Output FASTA file path; '.gz' compresses (default: stdout)",
+    ),
+    all_sequences: bool = typer.Option(
+        False,
+        "--all",
+        "-a",
+        help="Export every sequence in the store: all collections, plus sequences in no collection",
+    ),
+    label: str = typer.Option(
+        "{seq}",
+        "--label",
+        "-l",
+        help=EXPORT_LABEL_HELP,
+    ),
+    molecule: Optional[MoleculeChoice] = typer.Option(
+        None,
+        "--molecule",
+        help="Export only sequences of this molecule type",
     ),
     bed: Optional[Path] = typer.Option(
         None,
         "--bed",
         "-b",
-        help="BED file for region extraction",
+        help="BED file for region extraction (one collection)",
     ),
     names: Optional[List[str]] = typer.Option(
         None,
         "--name",
         "-n",
-        help="Sequence names to include (can be repeated)",
+        help="Sequence names to include from each collection (can be repeated)",
     ),
     seq_digests: Optional[List[str]] = typer.Option(
         None,
         "--seq-digest",
         "-S",
-        help=(
-            "Export ad-hoc by SEQUENCE (sha512t24u) digest, bypassing collections "
-            "(repeatable). When given, the collection digest argument is ignored."
-        ),
+        help="Export by SEQUENCE digest, without collections (repeatable)",
     ),
     path: Optional[Path] = typer.Option(
         None,
@@ -1058,61 +1077,96 @@ def export(
         80,
         "--line-width",
         "-w",
-        help="FASTA line width (default: 80)",
+        help="FASTA line width; 0 writes each sequence on one line (default: 80)",
     ),
 ) -> None:
     """
-    Export sequences as a FASTA file.
+    Export sequences as FASTA, streaming to stdout or a file.
 
-    Four export modes:
-        - Full collection      (digest)
-        - Subset by names       (digest --name chr1 --name chr2)
-        - Regions from BED file (digest --bed regions.bed)
-        - Ad-hoc by sequence digest, bypassing collections
-          (--seq-digest <sha512t24u> --seq-digest ...). The --seq-digest mode
-          takes SEQUENCE digests, not a collection digest, and ignores the
-          collection digest argument.
+    Pick the records with exactly one selection:
+        - collections           (DIGEST_OR_NS:ALIAS ..., optionally --name)
+        - every sequence        (--all)
+        - sequence digests      (--seq-digest SQ... --seq-digest ...)
+        - BED regions           (DIGEST --bed regions.bed)
 
-    If no output file is specified, exports to stdout.
+    Pick the labels with -l/--label (default {seq}). A label repeated for the
+    same sequence is written once; a label repeated for different sequences
+    is an error, reported before any output.
+
+    Examples:
+        refget store export ucsc:hg38 -l name > hg38.fa
+        refget store export --all | makeblastdb -in - -dbtype nucl -out store
+        refget store export --all -l '{col:ucsc}/{name}'
     """
+    collections = list(collections or [])
+    seq_digests = list(seq_digests or [])
+    n_selections = sum([bool(collections), all_sequences, bool(seq_digests)])
+    if n_selections != 1:
+        print_error(
+            "Choose exactly one selection: collection(s), --all, or --seq-digest",
+            EXIT_FAILURE,
+        )
+    if names and not collections:
+        print_error("--name only applies when exporting collections", EXIT_FAILURE)
+    if bed is not None:
+        if len(collections) != 1:
+            print_error("--bed needs exactly one collection", EXIT_FAILURE)
+        if names:
+            print_error("--bed cannot be combined with --name", EXIT_FAILURE)
+        if not bed.exists():
+            print_error(f"BED file not found: {bed}", EXIT_FILE_NOT_FOUND)
+
     store = _load_store(path, remote=remote)
+    digests = [_resolve_collection_selector(store, c) for c in collections]
+    for d in digests:
+        _ensure_collection_loaded(store, d)
 
-    by_digest = bool(seq_digests)
+    output_path = "-" if output is None else str(output.resolve())
+    if output is None:
+        # Python and Rust buffer stdout separately; flush ours first.
+        sys.stdout.flush()
 
-    # Both export paths lazily load only the sequences they need.
-    if not by_digest:
-        if digest is None:
-            print_error("Provide a collection digest, or use --seq-digest", EXIT_FAILURE)
-        # Ensure the collection exists, for a clean error message.
-        _ensure_collection_loaded(store, digest)
-
-    def _do_export(output_path: str) -> None:
-        """Perform the actual export to a file path."""
-        if by_digest:
-            store.export_fasta_by_digests(list(seq_digests), output_path, line_width)
-        elif bed is not None:
-            if not bed.exists():
-                print_error(f"BED file not found: {bed}", EXIT_FILE_NOT_FOUND)
-            store.export_fasta_from_regions(digest, str(bed.resolve()), output_path)
+    try:
+        if bed is not None:
+            summary = store.export_fasta_from_regions(
+                digests[0], str(bed.resolve()), output_path, label=label
+            )
         else:
-            sequence_names = list(names) if names else None
-            store.export_fasta(digest, output_path, sequence_names, line_width)
+            summary = store.export_fasta(
+                output_path,
+                collections=digests or None,
+                names=list(names) if names else None,
+                seq_digests=seq_digests or None,
+                all=all_sequences,
+                label=label,
+                molecule=molecule.value if molecule else None,
+                line_width=line_width,
+            )
+    except BrokenPipeError:
+        # The reader closed the pipe (e.g. `| head`): stop quietly.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        raise typer.Exit(EXIT_SUCCESS)
+    except ValueError as error:
+        print_error(str(error), EXIT_FAILURE)
+    except OSError as error:
+        print_error(str(error), EXIT_FAILURE)
 
     if output is None:
-        # Export to stdout via temp file (context manager handles cleanup)
-        with _temp_file_path(suffix=".fa") as temp_path:
-            _do_export(temp_path)
-            with open(temp_path, "r") as f:
-                print(f.read(), end="")
+        notes = []
+        if summary["n_fallbacks"]:
+            notes.append(f"{summary['n_fallbacks']} label(s) fell back to a digest")
+        if summary["n_deduplicated"]:
+            notes.append(f"{summary['n_deduplicated']} repeated record(s) written once")
+        if notes:
+            print_info("; ".join(notes))
     else:
-        # Export directly to output file
-        output_path = str(output.resolve())
-        _do_export(output_path)
-        result = {"output": output_path, "status": "exported"}
-        if by_digest:
-            result["seq_digests"] = list(seq_digests)
+        result = {"output": output_path, "status": "exported", "label": label, **summary}
+        if all_sequences:
+            result["all"] = True
+        elif seq_digests:
+            result["seq_digests"] = seq_digests
         else:
-            result["digest"] = digest
+            result["collections"] = digests
         print_json(result)
 
     raise typer.Exit(EXIT_SUCCESS)

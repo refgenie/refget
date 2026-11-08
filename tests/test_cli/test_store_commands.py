@@ -245,72 +245,174 @@ class TestStoreGet:
         assert result.exit_code != 0
 
 
+def _run_cli(*args, shell_suffix=None):
+    """Run the CLI in a subprocess.
+
+    Export streams FASTA from Rust straight to file descriptor 1, which
+    CliRunner cannot capture, so stdout tests need a real process.
+    """
+    import shlex
+    import subprocess
+    import sys
+
+    cmd = [sys.executable, "-m", "refget.cli.main", *args]
+    if shell_suffix:
+        line = " ".join(shlex.quote(c) for c in cmd) + " " + shell_suffix
+        return subprocess.run(
+            ["bash", "-o", "pipefail", "-c", line], capture_output=True, text=True
+        )
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+
+def _headers(fasta_text):
+    return [line[1:] for line in fasta_text.splitlines() if line.startswith(">")]
+
+
 class TestStoreExport:
-    """Tests for: refget store export <digest>"""
+    """Tests for: refget store export"""
+
+    def _store(self, cli, tmp_path, *fastas):
+        store_path = tmp_path / "store"
+        cli("store", "init", "--path", str(store_path))
+        digests = []
+        for fasta in fastas or (BASE_FASTA,):
+            add_result = cli("store", "add", str(fasta), "--path", str(store_path))
+            digests.append(json.loads(add_result.stdout)["digest"])
+        return store_path, digests
 
     def test_exports_fasta(self, cli, tmp_path):
-        """Exports collection as FASTA."""
-        store_path = tmp_path / "store"
+        """Exports a collection to a file, labeled by digest, with summary counts."""
+        store_path, (digest,) = self._store(cli, tmp_path)
         output = tmp_path / "exported.fa"
-
-        cli("store", "init", "--path", str(store_path))
-        add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
-        digest = json.loads(add_result.stdout)["digest"]
 
         result = cli("store", "export", digest, "-o", str(output), "--path", str(store_path))
 
-        assert result.exit_code == 0
-        assert output.exists()
-        content = output.read_text()
-        assert content.startswith(">")
+        assert result.exit_code == 0, result.stdout
+        report = json.loads(result.stdout)
+        assert report["n_records"] == 3
+        assert report["collections"] == [digest]
+        assert all(h.startswith("SQ.") for h in _headers(output.read_text()))
 
-    def test_export_to_stdout(self, cli, tmp_path):
-        """Exports to stdout when no output file specified."""
-        store_path = tmp_path / "store"
+    def test_stdout_matches_output_file(self, cli, tmp_path):
+        """Streaming to stdout writes the same bytes as --output."""
+        store_path, (digest,) = self._store(cli, tmp_path)
+        output = tmp_path / "exported.fa"
+        cli("store", "export", digest, "-l", "name", "-o", str(output), "--path", str(store_path))
 
-        cli("store", "init", "--path", str(store_path))
-        add_result = cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
-        digest = json.loads(add_result.stdout)["digest"]
+        proc = _run_cli("store", "export", digest, "-l", "name", "--path", str(store_path))
 
-        result = cli("store", "export", digest, "--path", str(store_path))
+        assert proc.returncode == 0, proc.stderr
+        assert proc.stdout == output.read_text()
+        assert _headers(proc.stdout) == ["chrX", "chr1", "chr2"]
 
-        assert result.exit_code == 0
-        assert ">" in result.stdout  # FASTA format
+    def test_label_use_cases(self, cli, tmp_path):
+        """The documented label examples produce the documented headers."""
+        store_path, (base, renamed) = self._store(cli, tmp_path, BASE_FASTA, DIFFERENT_NAMES_FASTA)
+        cli("store", "alias", "add", "ucsc", "hg38", base, "--path", str(store_path))
+        cli("store", "alias", "add", "ensembl", "GRCh38", renamed, "--path", str(store_path))
+        p = ["--path", str(store_path)]
+
+        # -l name on a namespace:alias selector
+        proc = _run_cli("store", "export", "ucsc:hg38", "-l", "name", *p)
+        assert _headers(proc.stdout) == ["chrX", "chr1", "chr2"], proc.stderr
+
+        # --all covers `store list --sequences`, each sequence once
+        listed = json.loads(cli("store", "list", "--sequences", *p).stdout)["sequences"]
+        proc = _run_cli("store", "export", "--all", *p)
+        assert sorted(_headers(proc.stdout)) == sorted(f"SQ.{s['digest']}" for s in listed)
+
+        # once per genome, qualified by the collection alias
+        proc = _run_cli("store", "export", "--all", "-l", "{col:ucsc}/{name}", *p)
+        headers = _headers(proc.stdout)
+        assert "hg38/chr1" in headers
+        assert f"{renamed}/1" in headers  # no ucsc alias: falls back to the digest
+        assert len(headers) == 6
+        assert "fell back" in proc.stderr
+
+        # bare names across genomes that share sequences under different names
+        proc = _run_cli("store", "export", "--all", "-l", "name", *p)
+        assert proc.returncode == 0
+        assert len(_headers(proc.stdout)) == 6
+
+    def test_bad_flags_error_without_fasta(self, cli, tmp_path):
+        """Conflicting selections, bad templates and unknown namespaces error cleanly."""
+        store_path, (digest,) = self._store(cli, tmp_path)
+        p = ["--path", str(store_path)]
+        cases = [
+            (["--all", digest], "exactly one selection"),
+            (["--all", "--seq-digest", "x"], "exactly one selection"),
+            ([], "exactly one selection"),
+            (["--all", "--name", "chr1"], "--name"),
+            ([digest, "-l", "{nope}"], "unknown field"),
+            ([digest, "-l", "seq:nope"], "namespace"),
+        ]
+        for args, needle in cases:
+            proc = _run_cli("store", "export", *args, *p)
+            assert proc.returncode != 0, args
+            assert proc.stdout == "", args
+            assert needle in proc.stderr, (args, proc.stderr)
+            assert "Traceback" not in proc.stderr
+
+    def test_broken_pipe_exits_quietly(self, cli, tmp_path):
+        """`export | head -1` exits 0 with no traceback."""
+        big = tmp_path / "big.fa"
+        big.write_text(">big\n" + "ACGT" * 2_000_000 + "\n")
+        store_path, (digest,) = self._store(cli, tmp_path, big)
+
+        proc = _run_cli("store", "export", digest, "--path", str(store_path), shell_suffix="| head -1")
+
+        assert proc.returncode == 0, proc.stderr
+        assert proc.stdout.startswith(">SQ.")
+        assert "Traceback" not in proc.stderr
 
     def test_export_nonexistent_digest(self, cli, tmp_path):
         """Returns error for nonexistent digest."""
-        store_path = tmp_path / "store"
+        store_path, _ = self._store(cli, tmp_path)
         output = tmp_path / "exported.fa"
 
-        cli("store", "init", "--path", str(store_path))
-
         result = cli(
-            "store",
-            "export",
-            "nonexistent_digest_123",
-            "-o",
-            str(output),
-            "--path",
-            str(store_path),
+            "store", "export", "nonexistent_digest_123", "-o", str(output), "--path", str(store_path)
         )
 
         assert result.exit_code != 0
 
     def test_export_by_seq_digest(self, cli, tmp_path):
-        """Exports ad-hoc by sequence digest, bypassing the collection."""
-        store_path = tmp_path / "store"
-
-        cli("store", "init", "--path", str(store_path))
-        cli("store", "add", str(BASE_FASTA), "--path", str(store_path))
-
-        # Find a sequence digest in the store.
+        """Exports by sequence digest; the label is that digest as a refget ID."""
+        store_path, _ = self._store(cli, tmp_path)
         list_result = cli("store", "list", "--sequences", "--path", str(store_path))
         seq_digest = json.loads(list_result.stdout)["sequences"][0]["digest"]
 
-        result = cli("store", "export", "--seq-digest", seq_digest, "--path", str(store_path))
+        proc = _run_cli("store", "export", "--seq-digest", seq_digest, "--path", str(store_path))
 
-        assert result.exit_code == 0, result.stdout
-        assert result.stdout.startswith(">")
+        assert proc.returncode == 0, proc.stderr
+        assert _headers(proc.stdout) == [f"SQ.{seq_digest}"]
+
+    def test_remote_all_does_not_cache_sequences(self, cli, tmp_path):
+        """A remote --all export streams sequences without writing them to the cache."""
+        import functools
+        import http.server
+        import threading
+
+        served, (digest,) = self._store(cli, tmp_path)
+        handler = functools.partial(
+            http.server.SimpleHTTPRequestHandler, directory=str(served)
+        )
+        handler.log_message = lambda *a, **k: None
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            url = f"http://127.0.0.1:{server.server_address[1]}/"
+            local = tmp_path / "local"
+            proc = _run_cli("store", "export", "--remote", url, "--all", "--path", str(local))
+        finally:
+            server.shutdown()
+
+        assert proc.returncode == 0, proc.stderr
+        assert len(_headers(proc.stdout)) == 3
+        cache = local / ".remote_cache"
+        assert cache.exists()
+        assert list(cache.rglob("*.seq")) == []
 
 
 class TestStoreRegions:

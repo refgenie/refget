@@ -218,13 +218,18 @@ print(f"\nCollection digest: {collection_digest}")
 
 # %% [markdown]
 # ### Export specific sequences by digest
+#
+# `export_fasta()` chooses records with one of `collections`, `seq_digests`
+# or `all=True`, and labels them with a `label` template. The default label,
+# `{seq}`, is the sequence's refget ID (`SQ.` plus its digest). Other fields
+# are `{name}`, `{col}`, and aliases such as `{col:ucsc}` or `{seq:refseq}`.
 
 # %%
 # Get digests of sequences to export (records is a list of SequenceMetadata)
 digests = [m.sha512t24u for m in records[:2]]
 
 output_path = os.path.join(temp_dir, "exported.fa")
-store.export_fasta_by_digests(digests, output_path, line_width=60)
+store.export_fasta(output_path, seq_digests=digests, line_width=60)
 
 print("Exported FASTA:")
 with open(output_path) as f:
@@ -232,10 +237,11 @@ with open(output_path) as f:
 
 # %% [markdown] output
 # ```
+# exported 2/2 records (0.00 GB)
 # Exported FASTA:
-# >chr2
+# >SQ.8zS0M3VBpV7-TNdB7RjfpMbC8hrz6SbH
 # GGGGAAAATTTTCCCC
-# >chr1
+# >SQ.EjrJJS1FmLaytz_EHgNvVZ8owSU7kbNb
 # ATGCATGCATGCAGTCGTAGCNNNATGCATGC
 # ```
 
@@ -247,11 +253,11 @@ with open(output_path) as f:
 # %%
 # Export all sequences from a collection
 all_output = os.path.join(temp_dir, "all_seqs.fa")
-store.export_fasta(collection_digest, all_output, None, None)  # None = all sequences, default line width
+store.export_fasta(all_output, collections=collection_digest, label="name")
 
 # Export only specific sequences by name
 subset_output = os.path.join(temp_dir, "subset.fa")
-store.export_fasta(collection_digest, subset_output, ["chr1"], None)
+store.export_fasta(subset_output, collections=collection_digest, names=["chr1"], label="name")
 
 print("All sequences:")
 with open(all_output) as f:
@@ -263,6 +269,8 @@ with open(subset_output) as f:
 
 # %% [markdown] output
 # ```
+# exported 2/2 records (0.00 GB)
+# exported 1/1 records (0.00 GB)
 # All sequences:
 # >chr1
 # ATGCATGCATGCAGTCGTAGCNNNATGCATGC
@@ -482,7 +490,7 @@ for seq in sequences:
 
 # %%
 output_fasta = os.path.join(temp_dir, "regions.fa")
-store.export_fasta_from_regions(collection_digest, bed_path, output_fasta)
+store.export_fasta_from_regions(collection_digest, bed_path, output_fasta, label="name")
 
 print(f"Exported to: {output_fasta}")
 with open(output_fasta) as f:
@@ -620,7 +628,9 @@ for seq in remote_regions:
 
 # Export to FASTA
 remote_regions_fasta = os.path.join(temp_dir, "remote_regions.fa")
-remote_store.export_fasta_from_regions(EXAMPLE_COLLECTION, remote_bed_path, remote_regions_fasta)
+remote_store.export_fasta_from_regions(
+    EXAMPLE_COLLECTION, remote_bed_path, remote_regions_fasta, label="name"
+)
 print(f"\nExported to {remote_regions_fasta}")
 
 # %% [markdown] output
