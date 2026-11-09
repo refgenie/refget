@@ -53,8 +53,8 @@ def cli(runner):
     """
     from refget.cli import app
 
-    def invoke(*args):
-        return runner.invoke(app, list(args))
+    def invoke(*args, input=None):
+        return runner.invoke(app, list(args), input=input)
 
     return invoke
 
@@ -298,3 +298,9 @@ def pytest_collection_modifyitems(config, items):
                     and "TestStoreCompliance" not in item.nodeid
                 ):
                     item.add_marker(skip_service)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_refget_cache(tmp_path_factory, monkeypatch):
+    """Remote stores cache under REFGET_CACHE_DIR; keep tests out of ~/.cache/refget."""
+    monkeypatch.setenv("REFGET_CACHE_DIR", str(tmp_path_factory.mktemp("refget-cache")))

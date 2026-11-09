@@ -43,7 +43,17 @@ Note that `is_loaded` reports whether the record holds bytes in memory, not whet
 
 For a local store, the index files are already on disk and reading them is cheap, so both are parsed at open time. For a remote store the same files must be fetched over the network, and the sequence index is by far the larger of the two: `sequences.rgsi` carries one line per sequence, which reaches tens of megabytes for a store holding thousands of assemblies.
 
-`open_remote()` re-fetches `rgstore.json` on every call, so it always sees the current manifest even if a local cache from an earlier session already exists. It keeps a per-origin cache directory (keyed off the remote URL) under `<store>/.remote_cache/<hash>/`, marked with a `.origin` file so a cache can't accidentally be reused against a different remote. Opening a remote store fetches, up front:
+`open_remote()` re-fetches `rgstore.json` on every call, so it always sees the current manifest even if a local cache from an earlier session already exists. Remote stores share one cache root (by default `REFGET_CACHE_DIR`, else `~/.cache/refget`):
+
+```
+<cache root>/
+  sequences/<tag>/<d0d1>/<digest>.seq  downloaded sequences, shared by every remote
+  remotes/<key>/                       metadata of one remote (key: 16 hex of sha256 of the URL)
+    .origin  rgstore.json  sequences.rgsi  collections.rgci  collections/  aliases/  fhr/
+  tmp/                                 files being written, renamed into sequences/ when done
+```
+
+Each remote's folder is marked with a `.origin` file, so it can't accidentally be reused against a different remote. Opening a remote store fetches, up front and in parallel:
 
 - `rgstore.json`, the refreshed manifest
 - `collections.rgci`, the collection index, which yields one Stub collection record per collection
@@ -51,7 +61,19 @@ For a local store, the index files are already on disk and reading them is cheap
 
 `sequences.rgsi` is left alone. It is downloaded the first time a sequence-level operation actually needs it -- either a whole-sequence read (`load_sequence`, `get_sequence_by_name`, ...), which also caches the sequence, or a substring read. Until then the store knows every collection that exists, can list and filter them, and can serve level 1 attribute digests, all without having transferred a sequence index or a single base.
 
-Because the manifest is refreshed on every open, the cache is also where changes get reconciled: if the collection index, sequence index, alias, or FHR digest recorded in the new manifest differs from what the cache last saw, the corresponding cached index/artifact is invalidated and re-fetched. Cached `.seq` sequence payloads are left alone by this invalidation -- content-addressed by digest, they don't go stale.
+Because the manifest is refreshed on every open, the cache is also where changes get reconciled. Each cached metadata file stays valid while the manifest field that covers it is unchanged:
+
+| Files | Valid while unchanged |
+|---|---|
+| `sequences.rgsi` | `sequences_digest` |
+| `collections.rgci` | `collections_digest` |
+| `collections/*.rgsi` | `collections_digest` and `sequences_digest` |
+| `aliases/` | `aliases_digest` |
+| `fhr/` | `fhr_digest` |
+
+A field missing from the manifest means "can't tell", so its files are fetched again on every open. A change of storage mode or sequence path template clears the remote's whole folder. After downloading `sequences.rgsi` or `collections.rgci`, its sha256 is compared with the manifest; a mismatch is fetched once more (the store may have been republished between the two requests), then reported as an error. There is no time-based expiry.
+
+Cached `.seq` files are never invalidated: they are named by digest and by how they are packed (`<tag>` is the alphabet, or `raw` or `zstd`), so they can't go stale, and two remotes holding the same sequence share one file. A file reaches `sequences/` only after its length and digest have been checked, so an interrupted download leaves nothing half-written there, and running it again fetches only the sequences still missing.
 
 ```python
 from refget.store import RefgetStore

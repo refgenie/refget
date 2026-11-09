@@ -19,13 +19,11 @@ Commands:
     fhr         - Manage FHR (FAIR Headers Reference genome) metadata
 """
 
-import hashlib
 import os
 import sys
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional
-from urllib.parse import urlsplit, urlunsplit
 
 import typer
 
@@ -66,8 +64,15 @@ fhr_app = typer.Typer(
     no_args_is_help=True,
 )
 
+cache_app = typer.Typer(
+    name="cache",
+    help="Inspect and clear the shared cache of remote stores",
+    no_args_is_help=True,
+)
+
 app.add_typer(alias_app, name="alias")
 app.add_typer(fhr_app, name="fhr")
+app.add_typer(cache_app, name="cache")
 
 
 def _get_store_path(path: Optional[Path]) -> Path:
@@ -77,33 +82,28 @@ def _get_store_path(path: Optional[Path]) -> Path:
     return get_store_path()
 
 
-def _normalize_remote_url(url: str) -> str:
-    """Return the canonical remote URL used for cache identity and access."""
-    parts = urlsplit(url)
-    if not parts.scheme or not parts.hostname:
-        raise ValueError(f"Remote URL must include a scheme and host: {url}")
-
-    credentials = ""
-    if "@" in parts.netloc:
-        credentials = f"{parts.netloc.rsplit('@', 1)[0]}@"
-
-    host = parts.hostname.lower()
-    if ":" in host:
-        host = f"[{host}]"
-    try:
-        port = f":{parts.port}" if parts.port is not None else ""
-    except ValueError as error:
-        raise ValueError(f"Invalid remote URL {url}: {error}") from error
-
-    path = parts.path.rstrip("/")
-    return urlunsplit((parts.scheme.lower(), f"{credentials}{host}{port}", path, parts.query, ""))
+CACHE_DIR_HELP = (
+    "Cache root for remote stores, shared by every remote "
+    "(default: REFGET_CACHE_DIR, else ~/.cache/refget)"
+)
 
 
-def _remote_cache_dir(store_path: Path, url: str) -> Path:
-    """Return the stable per-origin cache directory for a remote URL."""
-    normalized = _normalize_remote_url(url)
-    key = hashlib.sha256(normalized.encode()).hexdigest()[:16]
-    return store_path / ".remote_cache" / key
+def _cache_root(cache_dir: Optional[Path]) -> Path:
+    """The shared cache root: --cache-dir, else gtars' default."""
+    if cache_dir is not None:
+        return cache_dir.expanduser().resolve()
+    from gtars.refget import default_cache_dir
+
+    return Path(default_cache_dir())
+
+
+def _open_remote(url: str, cache_dir: Optional[Path] = None, fetch_jobs: int = 32):
+    """Open a remote store over the shared cache (gtars normalizes the URL)."""
+    from refget.store import RefgetStore
+
+    root = _cache_root(cache_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    return RefgetStore.open_remote(str(root), url, fetch_jobs=fetch_jobs)
 
 
 def _list_all_collection_metadata(store, page_size: int = 100):
@@ -204,7 +204,13 @@ def _find_spa_dir(frontend_dir: Optional[Path]) -> Path:
     )
 
 
-def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[str] = None):
+def _load_store(
+    path: Optional[Path],
+    must_exist: bool = True,
+    remote: Optional[str] = None,
+    cache_dir: Optional[Path] = None,
+    fetch: Optional[dict] = None,
+):
     """
     Load a RefgetStore from local path or remote server.
 
@@ -212,6 +218,8 @@ def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[
         path: Optional path override (uses config if None)
         must_exist: If True, error if store doesn't exist
         remote: Optional remote store URL (overrides path)
+        cache_dir: Cache root for remote stores (default: gtars' shared root)
+        fetch: Optional {"fetch_jobs": N} for remote stores
 
     Returns:
         RefgetStore instance
@@ -222,18 +230,9 @@ def _load_store(path: Optional[Path], must_exist: bool = True, remote: Optional[
     # Remote store takes precedence
     if remote:
         try:
-            normalized_remote = _normalize_remote_url(remote)
-        except ValueError as error:
-            print_error(str(error), EXIT_FAILURE)
-        cache_path = _remote_cache_dir(_get_store_path(path), normalized_remote)
-        cache_path.mkdir(parents=True, exist_ok=True)
-        try:
-            return RefgetStore.open_remote(str(cache_path), normalized_remote)
+            return _open_remote(remote, cache_dir, **(fetch or {}))
         except (OSError, IOError, ValueError) as error:
-            print_error(
-                f"Failed to open remote {normalized_remote}: {error}",
-                EXIT_FAILURE,
-            )
+            print_error(f"Failed to open remote {remote}: {error}", EXIT_FAILURE)
 
     store_path = _get_store_path(path)
 
@@ -823,12 +822,14 @@ def pull(
         "-r",
         help="Remote store URL (default: try configured remote_stores)",
     ),
+    cache_dir: Optional[Path] = typer.Option(None, "--cache-dir", help=CACHE_DIR_HELP),
     alias_strategy: str = typer.Option(
         "keep-ours",
         "--alias-strategy",
         help="Conflict strategy when fetching alias/FHR sidecars from the remote: "
         "keep-ours, keep-theirs, or notify",
     ),
+    fetch_jobs: int = typer.Option(32, "--fetch-jobs", help="Parallel HTTP requests (remote stores)"),
     quiet: bool = typer.Option(
         False,
         "--quiet",
@@ -842,9 +843,11 @@ def pull(
     Each requested collection is imported in full via import_collection,
     which materializes the collection's sequences, aliases, and FHR metadata
     into the local on-disk store. Pull always materializes the collection into
-    the local store (there is no lazy mode). Before importing, the remote's
-    alias and FHR sidecars are fetched (using --alias-strategy to resolve
-    conflicts) so they travel with the collection.
+    the local store (there is no lazy mode). All sequences from one remote
+    download at once, in parallel, into the shared cache (see --cache-dir),
+    and are hard-linked into the store where possible. Before importing, the
+    remote's alias and FHR sidecars are fetched (using --alias-strategy to
+    resolve conflicts) so they travel with the collection.
 
     Resolution order (if --remote not specified):
         1. Check local store (already cached?)
@@ -895,89 +898,79 @@ def pull(
 
     # Open each remote store once (lazy metadata fetch), reused across digests.
     remote_stores: dict = {}
+    failures: dict = {}
 
     def _get_remote(url: str):
-        normalized_url = _normalize_remote_url(url)
-        if normalized_url not in remote_stores:
-            cache_path = _remote_cache_dir(store_path, normalized_url)
-            cache_path.mkdir(parents=True, exist_ok=True)
-            rs = RefgetStore.open_remote(str(cache_path), normalized_url)
+        if url not in remote_stores:
+            rs = _open_remote(url, cache_dir, fetch_jobs=fetch_jobs)
             rs.set_quiet(quiet)
-            remote_stores[normalized_url] = rs
-        return remote_stores[normalized_url]
+            remote_stores[url] = rs
+        return remote_stores[url]
+
+    def _fail(dig: str, url: str, error: Exception) -> None:
+        failures.setdefault(dig, []).append({"remote": url, "error": str(error)})
+        if not quiet:
+            print(f"Failed to pull from {url}: {error}", file=sys.stderr)
+
+    # Phase 1: find which remote has each requested collection.
+    results_by_digest: dict = {}
+    by_remote: dict = {}
+    for dig in digests:
+        if local_store.get_collection_metadata(dig) is not None:
+            results_by_digest[dig] = {"digest": dig, "status": "already_local", "source": "local"}
+            continue
+        for remote_url in remote_urls:
+            try:
+                if _get_remote(remote_url).get_collection_metadata(dig) is not None:
+                    by_remote.setdefault(remote_url, []).append(dig)
+                    break
+            except Exception as e:
+                _fail(dig, remote_url, e)
+
+    # Phase 2: per remote, download every sequence of its collections at once
+    # (parallel, into the shared cache), then the alias and FHR sidecars.
+    # Phase 3: import each collection; .seq files are hard-linked from the cache.
+    for remote_url, digs in by_remote.items():
+        remote_store = _get_remote(remote_url)
+        try:
+            remote_store.load_collections(digs)
+            seq_digests: list = []
+            for dig in digs:
+                seq_digests.extend(remote_store.get_collection_level2(dig).get("sequences", []))
+            fetch = remote_store.cache_sequences(sorted(set(seq_digests)), progress=not quiet)
+            alias_result = remote_store.pull_aliases(strategy=alias_strategy)
+        except Exception as e:
+            for dig in digs:
+                _fail(dig, remote_url, e)
+            continue
+        for dig in digs:
+            try:
+                try:
+                    fhr_result = remote_store.pull_fhr(dig, strategy=alias_strategy)
+                except Exception:
+                    fhr_result = {}
+                local_store.import_collection(remote_store, dig)
+            except Exception as e:
+                _fail(dig, remote_url, e)
+                continue
+            results_by_digest[dig] = {
+                "digest": dig,
+                "status": "pulled",
+                "source": remote_url,
+                "aliases": alias_result,
+                "fhr": fhr_result,
+                "fetch": fetch,
+            }
 
     results = []
     for dig in digests:
-        # Check if already in local store
-        if local_store.get_collection_metadata(dig) is not None:
-            results.append({"digest": dig, "status": "already_local", "source": "local"})
+        if dig in results_by_digest:
+            results.append(results_by_digest[dig])
             continue
-
-        # Try remote stores in order
-        pulled = False
-        failures = []
-        for remote_url in remote_urls:
-            try:
-                remote_store = _get_remote(remote_url)
-
-                # Check if collection exists on remote
-                if remote_store.get_collection_metadata(dig) is None:
-                    continue  # Try next remote
-
-                # Materialize the collection's sequences into the remote's local
-                # cache so import_collection can copy the .seq files. Remote
-                # stores lazy-load, so the sequence bytes aren't present until
-                # explicitly loaded.
-                remote_store.load_collection(dig)
-                level2 = remote_store.get_collection_level2(dig)
-                for seq_digest in level2.get("sequences", []):
-                    # level2 sequences are refget IDs ("SQ.<sha512t24u>"),
-                    # which load_sequence accepts as-is.
-                    remote_store.load_sequence(seq_digest)
-
-                # Fetch the remote's alias + FHR sidecars into the remote store
-                # so import_collection carries them to the local store. These
-                # are no-ops if the remote advertises none.
-                alias_result = {}
-                fhr_result = {}
-                alias_result = remote_store.pull_aliases(strategy=alias_strategy)
-                try:
-                    fhr_result = remote_store.pull_fhr(strategy=alias_strategy)
-                except Exception:
-                    pass
-
-                # Import the full collection (sequences + aliases + FHR).
-                local_store.import_collection(remote_store, dig)
-                results.append(
-                    {
-                        "digest": dig,
-                        "status": "pulled",
-                        "source": remote_url,
-                        "aliases": alias_result,
-                        "fhr": fhr_result,
-                    }
-                )
-                pulled = True
-                break  # Success, don't try other remotes
-
-            except Exception as e:
-                # Try next remote
-                failures.append({"remote": remote_url, "error": str(e)})
-                if not quiet:
-                    import sys
-
-                    print(f"Failed to pull from {remote_url}: {e}", file=sys.stderr)
-                continue
-
-        if not pulled:
-            result = {
-                "digest": dig,
-                "status": "not_found",
-                "tried": remote_urls,
-            }
-            if failures:
-                result["errors"] = failures
-            results.append(result)
+        result = {"digest": dig, "status": "not_found", "tried": remote_urls}
+        if dig in failures:
+            result["errors"] = failures[dig]
+        results.append(result)
 
     # Persist all imported collections (with their aliases + FHR) to disk.
     # import_collection carries each collection's aliases and FHR metadata
@@ -1073,12 +1066,20 @@ def export(
         "-r",
         help="Remote store URL (overrides --path)",
     ),
+    cache_dir: Optional[Path] = typer.Option(None, "--cache-dir", help=CACHE_DIR_HELP),
     line_width: int = typer.Option(
         80,
         "--line-width",
         "-w",
         help="FASTA line width; 0 writes each sequence on one line (default: 80)",
     ),
+    resume: bool = typer.Option(
+        False,
+        "--resume",
+        help="Write downloaded sequences to the cache, so rerunning the same command "
+        "downloads only the sequences still missing (remote stores)",
+    ),
+    fetch_jobs: int = typer.Option(32, "--fetch-jobs", help="Parallel HTTP requests (remote stores)"),
 ) -> None:
     """
     Export sequences as FASTA, streaming to stdout or a file.
@@ -1097,6 +1098,14 @@ def export(
         refget store export ucsc:hg38 -l name > hg38.fa
         refget store export --all | makeblastdb -in - -dbtype nucl -out store
         refget store export --all -l '{col:ucsc}/{name}'
+        refget store export --remote https://refgenie.s3.us-east-1.amazonaws.com/refget-store/jungle/ \\
+            name:hg38-refgenie -l name --resume > hg38.fa
+
+    For a faster native BLAST database build, use `refget blast build`.
+
+    Remote stores download sequences in parallel. With --resume or
+    --cache-dir, downloaded sequences stay in the cache, so an interrupted
+    export picks up where it stopped.
     """
     collections = list(collections or [])
     seq_digests = list(seq_digests or [])
@@ -1116,7 +1125,12 @@ def export(
         if not bed.exists():
             print_error(f"BED file not found: {bed}", EXIT_FILE_NOT_FOUND)
 
-    store = _load_store(path, remote=remote)
+    store = _load_store(
+        path,
+        remote=remote,
+        cache_dir=cache_dir,
+        fetch={"fetch_jobs": fetch_jobs},
+    )
     digests = [_resolve_collection_selector(store, c) for c in collections]
     for d in digests:
         _ensure_collection_loaded(store, d)
@@ -1141,6 +1155,7 @@ def export(
                 label=label,
                 molecule=molecule.value if molecule else None,
                 line_width=line_width,
+                write_cache=bool(remote) and (resume or cache_dir is not None),
             )
     except BrokenPipeError:
         # The reader closed the pipe (e.g. `| head`): stop quietly.
@@ -2131,4 +2146,69 @@ def serve(
 
     typer.echo(f"Serving store-backed seqcol API on {host}:{port}")
     uvicorn.run(app, host=host, port=port)
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+# ============================================================================
+# Cache commands
+# ============================================================================
+
+
+def _human_bytes(n: int) -> str:
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if n < 1000 or unit == "TB":
+            return f"{n:.0f} {unit}" if unit == "B" else f"{n:.2f} {unit}"
+        n /= 1000
+    return f"{n} B"
+
+
+@cache_app.command("info")
+def cache_info_cmd(
+    cache_dir: Optional[Path] = typer.Option(None, "--cache-dir", help=CACHE_DIR_HELP),
+    as_json: bool = typer.Option(False, "--json", help="Print JSON instead of a table"),
+) -> None:
+    """
+    Show what the shared cache holds: downloaded sequences and each remote's
+    metadata.
+    """
+    check_dependency("gtars", "store", "store")
+    from gtars.refget import cache_info
+
+    root = _cache_root(cache_dir)
+    info = cache_info(str(root))
+    if as_json:
+        print_json(info)
+        raise typer.Exit(EXIT_SUCCESS)
+    rows = [
+        ("Cache root", info["root"]),
+        ("Sequences", f"{info['sequence_files']} files, {_human_bytes(info['sequence_bytes'])}"),
+    ]
+    width = max(len(k) for k, _ in rows)
+    for k, v in rows:
+        print(f"{k:<{width}}  {v}")
+    print(f"Remotes ({len(info['remotes'])}):")
+    for r in info["remotes"]:
+        print(f"  {r['url']}  {_human_bytes(r['bytes'])}")
+    raise typer.Exit(EXIT_SUCCESS)
+
+
+@cache_app.command("clear")
+def cache_clear_cmd(
+    cache_dir: Optional[Path] = typer.Option(None, "--cache-dir", help=CACHE_DIR_HELP),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Do not ask for confirmation"),
+) -> None:
+    """
+    Delete everything in the shared cache: sequences and remote metadata.
+    """
+    check_dependency("gtars", "store", "store")
+    from gtars.refget import clear_cache
+
+    root = _cache_root(cache_dir)
+    if not yes and not typer.confirm(f"Delete everything in {root}?"):
+        raise typer.Exit(EXIT_FAILURE)
+    try:
+        freed = clear_cache(str(root))
+    except OSError as error:
+        print_error(str(error), EXIT_FAILURE)
+    print_json({"cache_dir": str(root), "bytes_freed": freed})
     raise typer.Exit(EXIT_SUCCESS)

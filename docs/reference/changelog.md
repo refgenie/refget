@@ -5,6 +5,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- **`refget blast`**: build BLAST nucleotide databases straight from a
+  RefgetStore (`build`, `verify`, `view`, `nstats`), search a store (`search`),
+  and find where sequences come from (`report`, `origin`, `reps`). It runs
+  `gtars blast`, so the commands, flags, help and exit codes are the same, and
+  takes the store from `-p/--path` or `-r/--remote`. `search` and `origin` run
+  rgblastn in process with no BLAST+ install; `--engine blastn --db BASE` runs
+  BLAST+ on a database you built.
+
 ### Changed
 
 - **`refget store export` streams, and labels records by digest by default.**
@@ -18,7 +28,17 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - With `--output`, the JSON result includes `n_records`, `n_bases`,
   `n_fallbacks` and `n_deduplicated`.
 - Exporting from a remote store no longer saves the downloaded sequences into
-  the local cache. Use `refget store pull` for a local copy.
+  the local cache, unless you add `--resume` or `--cache-dir`.
+- **Remote stores share one download cache** (`REFGET_CACHE_DIR`, else
+  `~/.cache/refget`) instead of `<store>/.remote_cache/`. Two remotes that hold
+  the same sequence download it once. Old `.remote_cache` folders are no longer
+  read; delete them by hand.
+- **Remote downloads are parallel.** `refget store export` and `refget store
+  pull` download many sequences (and 8 MiB ranges of big ones) at once, retry
+  transient failures, and check every sequence against its digest. Remote
+  servers must support HTTP range requests. `pull`
+  downloads all sequences from a remote in one batch and hard-links them into
+  the store.
 
 ### Added
 
@@ -29,6 +49,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   is an error, reported before any output.
 - `--molecule dna|protein` keeps one molecule type.
 - `refget store export ... | head` exits quietly when the reader stops early.
+- `--cache-dir` and `--fetch-jobs` on `refget store export` and `refget store
+  pull`, and `--resume` on `export`. With `--output`, export's JSON includes
+  `fetch` counters.
+- `refget store cache info` and `refget store cache clear` (deletes everything
+  in the cache).
 
 ## [0.13.0] - 2026-11-06
 

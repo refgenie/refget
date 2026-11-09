@@ -29,7 +29,7 @@ refget seqcol compare genome1.fa genome2.fa
 
 ## Command Groups
 
-The CLI is organized into five command groups:
+The CLI is organized into six command groups:
 
 | Group | Description |
 |-------|-------------|
@@ -37,6 +37,7 @@ The CLI is organized into five command groups:
 | `refget fasta` | FASTA file utilities |
 | `refget store` | RefgetStore operations |
 | `refget seqcol` | Sequence collection API |
+| `refget blast` | BLAST databases built straight from a store |
 | `refget admin` | Admin/database operations |
 
 ---
@@ -284,7 +285,9 @@ The .rgci file contains collection metadata in RefgetStore format.
 
 ## Store Commands
 
-Manage a local RefgetStore for storing and retrieving sequences. See [What is RefgetStore?](../refgetstore-explained.md) for the concepts and [RefgetStore file format](refgetstore-format.md) for the on-disk layout. The direct store subcommands are `init`, `add`, `list`, `match`, `get`, `pull`, `export`, `regions`, `chrom-sizes`, `stats`, `remove`, `crate`, `explore`, and `serve`, plus the `alias` and `fhr` command groups documented below. Most commands accept `--path PATH` to select a local store (default: from config); where noted, they also accept `--remote URL` to read directly from a remote store instead.
+Manage a local RefgetStore for storing and retrieving sequences. See [What is RefgetStore?](../refgetstore-explained.md) for the concepts and [RefgetStore file format](refgetstore-format.md) for the on-disk layout. The direct store subcommands are `init`, `add`, `list`, `match`, `get`, `pull`, `export`, `regions`, `chrom-sizes`, `stats`, `remove`, `crate`, `explore`, and `serve`, plus the `alias`, `fhr` and `cache` command groups documented below. Most commands accept `--path PATH` to select a local store (default: from config); where noted, they also accept `--remote URL` to read directly from a remote store instead.
+
+Remote stores download into one cache that all remote stores share: `REFGET_CACHE_DIR`, else `$XDG_CACHE_HOME/refget`, else `~/.cache/refget`. `store pull`, `store export` and `store cache` take `--cache-dir DIR` to use another root. See [Remote fetch options](#remote-fetch-options) and [store cache](#store-cache).
 
 ### store init
 
@@ -533,10 +536,10 @@ refget store get abc123 --remote https://example.com/store
 Pull collections from a remote store into the local store.
 
 ```bash
-refget store pull [DIGEST] [--file FILE] [--remote URL] [--path PATH] [--alias-strategy STRATEGY] [--quiet]
+refget store pull [DIGEST] [--file FILE] [--remote URL] [--path PATH] [--alias-strategy STRATEGY] [--cache-dir DIR] [--fetch-jobs N] [--quiet]
 ```
 
-Each requested collection is imported in full: sequences, aliases, and FHR metadata are all materialized into the local on-disk store. There is no lazy pull mode -- for on-demand access to a remote store without copying it locally, open it with `--remote` on the read commands instead. Before importing, the remote's alias and FHR sidecars are fetched (using `--alias-strategy` to resolve conflicts) so they travel with the collection.
+Each requested collection is imported in full: sequences, aliases, and FHR metadata are all materialized into the local on-disk store. There is no lazy pull mode -- for on-demand access to a remote store without copying it locally, open it with `--remote` on the read commands instead. All sequences of the requested collections on one remote download at once, in parallel, into the shared cache, and are hard-linked into the store where the file system allows (so a pull does not double disk use). Before importing, the remote's alias and FHR sidecars are fetched (using `--alias-strategy` to resolve conflicts) so they travel with the collection.
 
 **Arguments:**
 
@@ -548,6 +551,7 @@ Each requested collection is imported in full: sequences, aliases, and FHR metad
 - `--path, -p`: Local store path (default: from config)
 - `--remote, --server, -r`: Remote store URL. If omitted, resolution tries, in order: (1) the local store, (2) configured `remote_stores`, then (3) configured `seqcol_servers` (discovered via service-info).
 - `--alias-strategy`: Conflict strategy when fetching alias/FHR sidecars from the remote: `keep-ours`, `keep-theirs`, or `notify` (default: `keep-ours`)
+- `--cache-dir`, `--fetch-jobs`: see [Remote fetch options](#remote-fetch-options)
 - `--quiet, -q`: Suppress progress output
 
 **Examples:**
@@ -558,10 +562,10 @@ refget store pull --file digests.txt --remote https://example.com/store
 
 ### store export
 
-Export sequences as FASTA. The output streams one sequence at a time, so memory stays flat even for a whole store, and it goes to stdout unless you give `--output`. That means you can pipe a store straight into tools that read FASTA.
+Export sequences as FASTA. The output streams in order while sequences are read ahead in parallel within a memory budget, so memory stays flat even for a whole store, and it goes to stdout unless you give `--output`. That means you can pipe a store straight into tools that read FASTA.
 
 ```bash
-refget store export [COLLECTION ...] [--all] [--seq-digest DIGEST] [--bed BED] [--name NAME] [-l LABEL] [--molecule dna|protein] [-o OUTPUT] [--path PATH] [--remote URL] [--line-width N]
+refget store export [COLLECTION ...] [--all] [--seq-digest DIGEST] [--bed BED] [--name NAME] [-l LABEL] [--molecule dna|protein] [-o OUTPUT] [--path PATH] [--remote URL] [--line-width N] [--cache-dir DIR] [--resume] [--fetch-jobs N]
 ```
 
 **Choose which records to write** (pick exactly one):
@@ -599,10 +603,18 @@ How labels behave:
 - `--seq-digest, -S`: Sequence digests to export (repeatable)
 - `--bed, -b`: BED file of regions, for one collection
 - `--path, -p`: Store path (default: from config)
-- `--remote, -r`: Remote store URL (overrides `--path`). Exported sequences are not saved to the local cache; use `refget store pull` for a local copy.
+- `--remote, -r`: Remote store URL (overrides `--path`). By default, exported sequences are not saved to the cache; add `--resume` (or `--cache-dir`) to keep them.
 - `--line-width, -w`: FASTA line width; `0` puts each sequence on one line (default: 80)
+- `--resume`, `--cache-dir`, `--fetch-jobs`: see [Remote fetch options](#remote-fetch-options)
 
-With `--output`, the command prints a JSON summary (`n_records`, `n_bases`, `n_fallbacks`, `n_deduplicated`). When streaming to stdout, it writes only FASTA there.
+With `--output`, the command prints a JSON summary (`n_records`, `n_bases`, `n_fallbacks`, `n_deduplicated`, and `fetch`, the network and cache counters). When streaming to stdout, it writes only FASTA there. For a remote store it also prints, on stderr, a `network:` line with the bytes, requests, retries, speed and cache hits.
+
+A long remote export that stops partway can be rerun with `--resume` and downloads only the sequences still missing:
+
+```bash
+refget store export --remote https://refgenie.s3.us-east-1.amazonaws.com/refget-store/jungle/ \
+  name:hg38-refgenie -l name --resume > hg38.fa
+```
 
 **Examples:**
 ```bash
@@ -630,7 +642,13 @@ refget store export --seq-digest SQ.xyz123... --seq-digest SQ.xyz456... -o seqs.
 
 #### Recipe: build a BLAST database from a store
 
-BLAST can read FASTA from stdin, so no FASTA file ever touches the disk:
+The fast route is `refget blast build`, which writes the database straight from the store without a FASTA step:
+
+```bash
+refget blast build --remote https://example.com/store --all --out store
+```
+
+To use stock `makeblastdb` instead, BLAST can read FASTA from stdin, so no FASTA file ever touches the disk:
 
 ```bash
 refget store export --remote https://example.com/store --all --molecule dna \
@@ -638,6 +656,18 @@ refget store export --remote https://example.com/store --all --molecule dna \
 ```
 
 Each sequence goes in once, under its refget ID, and `-parse_seqids` keeps those IDs as written. A BLAST hit therefore names the matching sequence digest (for example `SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct`), which you can pass back to `refget store export --seq-digest`. To keep genome and chromosome names in the hits instead, use `-l '{col:NS}/{name}'`.
+
+#### Remote fetch options
+
+Remote stores download over many connections at once. These flags are shared by `refget store export` and `refget store pull`, and by `gtars refget export`:
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--cache-dir DIR` | the shared cache root | Cache root. Giving it also writes downloaded sequences there. |
+| `--resume` | off | Write downloaded sequences to the cache (the default root, unless `--cache-dir` is given), so rerunning the same command downloads only the sequences still missing. (`export` only; `pull` always caches.) |
+| `--fetch-jobs N` | 32 | Parallel HTTP requests. |
+
+Sequence files over 8 MiB download as parallel 8 MiB ranges, so the server must support HTTP range requests; a server that answers a ranged request with the whole file (HTTP 200) is refused. Every sequence that comes over the network is checked against its digest before it is used or cached, and reaches the cache only when complete. Transient failures (timeouts, HTTP 429/5xx, short bodies) are retried with backoff. HTTP 404 and 410 count as "not found", and 403 as "not found or access denied" (S3 answers 403 for a missing file when listing is denied).
 
 ### store regions
 
@@ -789,6 +819,28 @@ Serves the store's static files and the bundled Store Explorer single-page app f
 refget store explore /path/to/refget-store
 refget store explore --no-browser --port 9000
 ```
+
+### store cache
+
+Inspect and clear the shared download cache of remote stores.
+
+```bash
+refget store cache info [--cache-dir DIR] [--json]
+refget store cache clear [--cache-dir DIR] [--yes]
+```
+
+`info` shows the cache root, the downloaded sequences and their size, and each remote's metadata folder (`--json` prints JSON instead of a table). `clear` deletes everything in the cache, sequences and remote metadata, and prints the bytes freed. It asks before deleting unless you pass `--yes`.
+
+The cache layout:
+
+```
+<cache root>/
+  sequences/<tag>/<d0d1>/<digest>.seq  downloaded sequences, shared by every remote
+  remotes/<key>/                       one folder of metadata per remote URL
+  tmp/                                 files being written, renamed into sequences/ when done
+```
+
+Old per-store caches in `<store>/.remote_cache/` are no longer used; delete them by hand.
 
 ### store serve
 
@@ -1050,6 +1102,103 @@ refget seqcol info [--server URL]
 ```
 
 Returns service info including supported algorithms and features.
+
+---
+
+## BLAST Commands
+
+`refget blast` builds [BLAST](https://blast.ncbi.nlm.nih.gov/) nucleotide databases directly from a RefgetStore, much faster than `makeblastdb`, searches a store, and reports where sequences come from. It runs [`gtars blast`](https://docs.refgenie.org/gtars/) (it needs a `gtars` release that includes `gtars.blast`), so the commands, flags, help, output and exit codes are the same. `refget blast VERB --help` lists a verb's flags.
+
+For `build`, `verify`, `nstats`, `search`, `origin` and `reps`, the store comes from `-p/--path` (default: the configured store), `-r/--remote URL` or `--store`. `search` and `origin` with `--db` search that database instead and take no store.
+
+Choose collections with `--all` or one of `--collection`, `--collections-file`, `--namespace` and `--taxon`. A collection is a digest, `NAMESPACE:ALIAS` or a bare alias. Results and hits go to stdout; progress lines and messages go to stderr.
+
+A remote store's selected sequences are pulled into the local cache first and read from there. They stay in the cache, so running a command again downloads only what is missing. Remote stores take `--cache-dir`, `--resume` and `--fetch-jobs`.
+
+Exit codes: `0` success, `1` failure, `2` usage error or no BLAST engine, `130` interrupted. `search` exits with the search engine's own status.
+
+### blast build
+
+Build a database.
+
+```bash
+refget blast build --out hg38 --collection ucsc:hg38
+refget blast build --out demo -r https://refgenie.s3.us-east-1.amazonaws.com/refget-store/demo/ --all
+```
+
+Options include `--out BASE`, the selection flags, `--title`, `--taxid-map FILE`, `--max-file-size`, `--threads`, `--budget-mb`, `--on-oversize skip|fail`, `--dry-run`, `--force`, `--no-space-check`, `-q/--quiet` and `-v/--verbose`. Rebuilding over an existing database needs `--force`.
+
+### blast verify
+
+Check a database against its store: every id resolves and every md5 matches. Exits 1 when anything failed.
+
+```bash
+refget blast verify --db hg38
+```
+
+### blast view
+
+Write subset views (`.nal` + `.bsl`) of a database without a rebuild. No store is needed. `--per-collection` writes one view per collection; `--name NAME` with selection flags writes one view of the selection.
+
+```bash
+refget blast view --db all --per-collection
+refget blast view --db all --name human --taxon 9606
+```
+
+Other options: `--out-dir DIR`, `--title` and `--full-db-stats`.
+
+### blast nstats
+
+Count N bases per collection, to choose `--max-n-fraction`. Prints a table.
+
+```bash
+refget blast nstats --all
+```
+
+### blast search
+
+Search the selection with rgblastn, in process, with no database and no BLAST+ install. Engine arguments go after `--`. Without `-out` the hits go to stdout; with `-out FILE` the run metadata goes to `FILE.meta.json` (or to `--meta FILE`).
+
+```bash
+refget blast search -p ./store --collection ucsc:hg38 -- -query q.fa -outfmt 6
+refget blast search -p ./store --all -- -query q.fa -out hits.tsv
+refget blast search --engine blastn --db hg38 -- -query q.fa -outfmt 6
+```
+
+rgblastn covers tasks `megablast`, `blastn` and `blastn-short` with `-outfmt 6`, and refuses other blastn options by name. For those, `--engine blastn --db BASE` runs BLAST+ `blastn` (from `--blastn PATH` or the `PATH`) on a database you built; choose collections when you build it. Without BLAST+, that command exits 2 and says how to install it.
+
+Options: the selection flags, `--engine rgblastn|blastn`, `--db BASE`, `--blastn PATH`, `--no-extra-fields`, `--meta FILE`, `--quiet` and the fetch flags. For `-outfmt 6` and `7`, the columns `report` needs are appended unless you pass `--no-extra-fields`.
+
+### blast report
+
+Turn search hits into the best hit per genome, grouped by species, one line per query.
+
+```bash
+refget blast report hits.tsv --query q.fa
+refget blast report hits.tsv --db hg38 --format json --output report.json
+```
+
+The report reads `HITS.meta.json`, which `search` writes: the database it names, else the store and collections. `--db` names the database directly. Options: `--format tsv|json`, `--output FILE`, `--detail FILE`, `--detail-top N`, `--taxdump DIR`, `--group-rank RANK`, `--tie-percent P`, `--min-pident`, `--min-qcov`, `--max-evalue`, `--max-target-seqs`, `--fields`, `--meta FILE` and `--query FILE`.
+
+### blast origin
+
+Answer "where did these sequences come from": search one representative assembly per species, then the rest of each species that matched, and print the report.
+
+```bash
+refget blast origin -p ./store --all --query q.fa
+refget blast origin -p ./store --all --query q.fa -- -evalue 1e-10
+refget blast origin --engine blastn --db hg38 --query q.fa
+```
+
+Options: the selection, engine and fetch flags of `search`, the output and filter flags of `report`, and `--exhaustive`, `--staged`, `--fanout-percent`, `--rep COLLECTION`, `--rep-namespace NS`, `--keep-hits DIR` and `--quiet`. With `--engine blastn`, origin runs one search of the whole database.
+
+### blast reps
+
+Show the representative of each species and the predicted cost of a staged search. Nothing is searched. Prints a table.
+
+```bash
+refget blast reps -p ./store --all
+```
 
 ---
 

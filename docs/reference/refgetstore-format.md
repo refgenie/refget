@@ -294,28 +294,26 @@ tar -czf refget-store.tar.gz /path/to/refget-store/
 ```
 
 ### Remote Distribution
-Host on any static file server or object storage:
+Host on object storage or any static file server that supports HTTP range requests (sequence files over 8 MiB download as parallel 8 MiB ranges):
 ```bash
 # S3
 aws s3 sync /path/to/refget-store/ s3://bucket/refget-store/
 
-# HTTP server
-python -m http.server -d /path/to/refget-store/
+# HTTP server with range support
+npx http-server /path/to/refget-store/ -p 8200
 ```
 
 Remote access provides lazy loading (only downloading sequences when requested), user-controlled caching (you specify where cached data is stored), bandwidth efficiency (only transferring needed data), and selective downloads (skipping sequences you don't need). See the [RefgetStore tutorial](../using-services/refgetstore.py) for Python API examples of connecting to remote stores.
 
 ## Cache Directory
 
-When a remote store is accessed, a local cache directory mirrors the remote store structure. The cache location is user-specified (not automatic), giving explicit control over disk usage and placement.
-
-The cache directory has the same on-disk layout as any RefgetStore:
+When a remote store is accessed, downloads go to one cache root shared by every remote store (`REFGET_CACHE_DIR`, else `$XDG_CACHE_HOME/refget`, else `~/.cache/refget`; `--cache-dir` on `refget store pull`, `export` and `cache` picks another). Sequences live in `sequences/`, shared by every remote, and each remote's metadata in its own folder under `remotes/`:
 
 - `rgstore.json` is re-downloaded on *every* connection, not just the first, so a client always evaluates the remote's current manifest. It is marked with a `.origin` file recording which remote URL it belongs to, so a cache directory cannot silently be reused against a different remote.
 - `collections.rgci` and every alias namespace the manifest declares (`aliases/sequences/<ns>.tsv`, `aliases/collections/<ns>.tsv`) are fetched alongside the manifest. A cached index or alias file is only re-fetched when the manifest's corresponding digest (`collections_digest`, `aliases_digest`, ...) changes from what the cache last saw.
 - `sequences.rgsi` is deferred: it is downloaded the first time a sequence operation actually needs it, not at connection time. For a large store this file reaches tens of megabytes, and browsing or listing collections does not need it. Use the manifest's `logical_sequence_bytes` to report the store's data size before the sequence index has been fetched.
 - `sequences/` and `collections/` files are downloaded on-demand only when a specific sequence or collection is first accessed; cached `.seq` payloads are content-addressed by digest, so manifest changes never invalidate them.
-- The cache can be shared between processes and is cleaned up by simply deleting the directory
+- The cache can be shared between processes. `refget store cache clear` deletes everything in it.
 
 See [How RefgetStore defers loading](../lazy-loading-explained.md) for the record-level and index-level deferral rules this layout supports.
 

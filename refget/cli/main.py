@@ -10,6 +10,7 @@ import typer
 
 from refget._version import __version__
 from refget.cli.admin import app as admin_app
+from refget.cli import blast
 from refget.cli.config import app as config_app
 from refget.cli.fasta import app as fasta_app
 from refget.cli.seqcol import app as seqcol_app
@@ -28,6 +29,12 @@ app.add_typer(fasta_app, name="fasta", help="FASTA file utilities")
 app.add_typer(store_app, name="store", help="RefgetStore operations")
 app.add_typer(seqcol_app, name="seqcol", help="Sequence collection API")
 app.add_typer(vrs_app, name="vrs", help="VRS allele identifier computation")
+app.command(
+    "blast",
+    help=blast.HELP,
+    add_help_option=False,
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(blast.blast)
 app.add_typer(admin_app, name="admin", help="Admin/database operations")
 
 

@@ -18,10 +18,11 @@ class TestHelpOutput:
         assert "fasta" in result.stdout.lower()
         assert "seqcol" in result.stdout.lower()
         assert "admin" in result.stdout.lower()
+        assert "blast" in result.stdout.lower()
         # Typer typically shows "Usage:" in help
         assert "usage" in result.stdout.lower()
 
-    @pytest.mark.parametrize("cmd", ["fasta", "store", "seqcol", "config", "admin"])
+    @pytest.mark.parametrize("cmd", ["fasta", "store", "seqcol", "config", "admin", "blast"])
     def test_all_subcommands_have_help(self, cli, cmd):
         """All major subcommands show help without error."""
         result = cli(cmd, "--help")

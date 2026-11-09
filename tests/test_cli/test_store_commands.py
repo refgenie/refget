@@ -3,6 +3,7 @@
 """Tests for refget store CLI commands."""
 
 import json
+import os
 from types import SimpleNamespace
 
 from refget.cli.store import _list_all_collection_metadata, _resolve_collection_selector
@@ -245,7 +246,7 @@ class TestStoreGet:
         assert result.exit_code != 0
 
 
-def _run_cli(*args, shell_suffix=None):
+def _run_cli(*args, shell_suffix=None, env=None):
     """Run the CLI in a subprocess.
 
     Export streams FASTA from Rust straight to file descriptor 1, which
@@ -259,9 +260,9 @@ def _run_cli(*args, shell_suffix=None):
     if shell_suffix:
         line = " ".join(shlex.quote(c) for c in cmd) + " " + shell_suffix
         return subprocess.run(
-            ["bash", "-o", "pipefail", "-c", line], capture_output=True, text=True
+            ["bash", "-o", "pipefail", "-c", line], capture_output=True, text=True, env=env
         )
-    return subprocess.run(cmd, capture_output=True, text=True)
+    return subprocess.run(cmd, capture_output=True, text=True, env=env)
 
 
 def _headers(fasta_text):
@@ -403,16 +404,41 @@ class TestStoreExport:
         thread.start()
         try:
             url = f"http://127.0.0.1:{server.server_address[1]}/"
-            local = tmp_path / "local"
-            proc = _run_cli("store", "export", "--remote", url, "--all", "--path", str(local))
+            cache = tmp_path / "cache"
+            env = {**os.environ, "REFGET_CACHE_DIR": str(cache)}
+            proc = _run_cli("store", "export", "--remote", url, "--all", env=env)
+
+            # A plain export writes no sequences to the cache.
+            assert proc.returncode == 0, proc.stderr
+            assert len(_headers(proc.stdout)) == 3
+            assert (cache / "remotes").exists()
+            assert [p for p in (cache / "sequences").rglob("*") if p.is_file()] == []
+            assert [p for p in (cache / "tmp").rglob("*") if p.is_file()] == []
+
+            # --resume twice: the second run downloads no sequence bytes.
+            out = tmp_path / "all.fa"
+            runs = []
+            for _ in range(2):
+                proc = _run_cli(
+                    "store", "export", "--remote", url, "--all", "--resume", "-o", str(out), env=env
+                )
+                assert proc.returncode == 0, proc.stderr
+                runs.append(json.loads(proc.stdout)["fetch"])
+            assert runs[0]["sequences_fetched"] == 3
+            assert runs[1]["cache_hits"] == 3
+            assert runs[1]["bytes_downloaded"] == 0
+            assert len(list((cache / "sequences").rglob("*.seq"))) == 3
+
+            # --cache-dir puts the files in the given folder (and turns cache writes on).
+            other = tmp_path / "other_cache"
+            proc = _run_cli(
+                "store", "export", "--remote", url, "--all", "--cache-dir", str(other), env=env
+            )
+            assert proc.returncode == 0, proc.stderr
+            assert len(list((other / "sequences").rglob("*.seq"))) == 3
+            assert len([p for p in (other / "remotes").iterdir() if p.is_dir()]) == 1
         finally:
             server.shutdown()
-
-        assert proc.returncode == 0, proc.stderr
-        assert len(_headers(proc.stdout)) == 3
-        cache = local / ".remote_cache"
-        assert cache.exists()
-        assert list(cache.rglob("*.seq")) == []
 
 
 class TestStoreRegions:
@@ -666,3 +692,59 @@ class TestStoreErrorHandling:
         result = cli("store", "add", str(BASE_FASTA), "--path", str(nonexistent))
 
         assert result.exit_code != 0
+
+
+class TestStoreCache:
+    """Tests for: refget store cache info / clear"""
+
+    def _fill(self, cli, tmp_path):
+        """Pull one collection from a served store, so the cache has content."""
+        import functools
+        import http.server
+        import threading
+
+        source = tmp_path / "source"
+        cli("store", "init", "--path", str(source))
+        digest = json.loads(cli("store", "add", str(BASE_FASTA), "--path", str(source)).stdout)["digest"]
+        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(source))
+        handler.log_message = lambda *a, **k: None
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        url = f"http://127.0.0.1:{server.server_address[1]}"
+        cache = tmp_path / "cache"
+        try:
+            local = tmp_path / "local"
+            cli("store", "init", "--path", str(local))
+            result = cli(
+                "store", "pull", digest, "--remote", url, "--path", str(local),
+                "--cache-dir", str(cache), "--quiet",
+            )
+            assert result.exit_code == 0, result.output
+        finally:
+            server.shutdown()
+        return cache, url
+
+    def test_info_reports_sequences_and_remotes(self, cli, tmp_path):
+        cache, url = self._fill(cli, tmp_path)
+        result = cli("store", "cache", "info", "--cache-dir", str(cache), "--json")
+        assert result.exit_code == 0, result.output
+        info = json.loads(result.stdout)
+        assert info["sequence_files"] > 0
+        assert [r["url"] for r in info["remotes"]] == [url]
+        table = cli("store", "cache", "info", "--cache-dir", str(cache))
+        assert table.exit_code == 0
+        assert "Sequences" in table.stdout and url in table.stdout
+
+    def test_clear_everything(self, cli, tmp_path):
+        cache, url = self._fill(cli, tmp_path)
+        # Without --yes it asks; answering no keeps everything.
+        result = cli("store", "cache", "clear", "--cache-dir", str(cache), input="n\n")
+        assert result.exit_code != 0
+        info = json.loads(cli("store", "cache", "info", "--cache-dir", str(cache), "--json").stdout)
+        assert info["sequence_files"] > 0
+
+        result = cli("store", "cache", "clear", "--cache-dir", str(cache), "--yes")
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout)["bytes_freed"] > 0
+        info = json.loads(cli("store", "cache", "info", "--cache-dir", str(cache), "--json").stdout)
+        assert info["sequence_files"] == 0 and info["remotes"] == []

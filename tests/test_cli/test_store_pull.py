@@ -7,8 +7,10 @@ gtars' open_remote (Rust/PyO3) holds the GIL during HTTP requests, which
 would deadlock a Python-thread-based HTTP server.
 """
 
+import functools
 import hashlib
 import json
+import os
 import socket
 import subprocess
 import sys
@@ -20,6 +22,19 @@ from tests._test_data import BASE_FASTA, DIFFERENT_NAMES_FASTA
 
 # Skip entire module if gtars is not installed
 pytest.importorskip("gtars")
+
+
+def _with_cache_dir(cli, cache_root, *args):
+    """Run a CLI command with REFGET_CACHE_DIR set to cache_root."""
+    old = os.environ.get("REFGET_CACHE_DIR")
+    os.environ["REFGET_CACHE_DIR"] = str(cache_root)
+    try:
+        return cli(*args)
+    finally:
+        if old is None:
+            del os.environ["REFGET_CACHE_DIR"]
+        else:
+            os.environ["REFGET_CACHE_DIR"] = old
 
 
 def _find_free_port() -> int:
@@ -150,20 +165,25 @@ class TestStorePullBasic:
         assert data["digest"] == digest
 
     def test_pull_creates_local_cache(self, cli, tmp_path, remote_store_server):
-        """After pulling, a per-origin cache with an origin marker is created."""
+        """Pull goes through the shared cache: one origin folder, cached sequences."""
         server_url, digest, _ = remote_store_server
         local_store = tmp_path / "cache_store"
+        cache = tmp_path / "shared_cache"
         cli("store", "init", "--path", str(local_store))
 
-        result = cli("store", "pull", digest, "--server", server_url, "--path", str(local_store))
+        result = cli(
+            "store", "pull", digest, "--server", server_url, "--path", str(local_store),
+            "--cache-dir", str(cache),
+        )
 
-        assert result.exit_code == 0
-        cache_dir = local_store / ".remote_cache"
-        assert cache_dir.exists()
-        origin_caches = [path for path in cache_dir.iterdir() if path.is_dir()]
+        assert result.exit_code == 0, result.output
+        origin_caches = [path for path in (cache / "remotes").iterdir() if path.is_dir()]
         assert len(origin_caches) == 1
         assert len(origin_caches[0].name) == 16
-        assert (origin_caches[0] / ".origin").read_text().strip() == server_url
+        assert (origin_caches[0] / ".origin").read_text().strip() == server_url.rstrip("/")
+        cached = sorted(p.name for p in (cache / "sequences").rglob("*.seq"))
+        stored = sorted(p.name for p in (local_store / "sequences").rglob("*.seq"))
+        assert cached and cached == stored
 
     def test_pull_quiet_flag(self, cli, tmp_path, remote_store_server):
         """Pull with --quiet suppresses progress output."""
@@ -481,7 +501,6 @@ class TestRemoteStoreIntegrity:
 
     def test_lazy_remote_reads_cache_only_the_requested_sequence(self, cli, tmp_path):
         """Inventory and ranges stay metadata-only; whole reads cache one body."""
-        from refget.cli.store import _remote_cache_dir
 
         source = tmp_path / "lazy_source"
         assert cli("store", "init", "--path", str(source)).exit_code == 0
@@ -496,7 +515,9 @@ class TestRemoteStoreIntegrity:
         try:
             remote_url = f"http://127.0.0.1:{port}"
             client = tmp_path / "lazy_client"
-            cache_dir = _remote_cache_dir(client, remote_url)
+            cache_root = tmp_path / "lazy_cache"
+            cache_dir = cache_root / "sequences"
+            cli = functools.partial(_with_cache_dir, cli, cache_root)
 
             inventory = cli(
                 "store", "list", "--sequences", "--path", str(client), "--remote", remote_url
@@ -535,7 +556,6 @@ class TestRemoteStoreIntegrity:
 
     def test_origin_isolation_alias_resolution_and_shared_cache_guard(self, cli, tmp_path):
         from gtars.refget import RefgetStore
-        from refget.cli.store import _normalize_remote_url
 
         remote_root = tmp_path / "remotes"
         store_a = remote_root / "a"
@@ -562,10 +582,13 @@ class TestRemoteStoreIntegrity:
         proc = _start_http_server(str(remote_root), port)
         try:
             url_a = f"http://127.0.0.1:{port}/a/"
-            url_b = f"HTTP://127.0.0.1:{port}/b#ignored"
-            normalized_a = _normalize_remote_url(url_a)
-            normalized_b = _normalize_remote_url(url_b)
+            url_b = f"HTTP://127.0.0.1:{port}/b"
+            # gtars trims trailing slashes and lowercases the scheme and host.
+            normalized_a = f"http://127.0.0.1:{port}/a"
+            normalized_b = f"http://127.0.0.1:{port}/b"
             client_store = tmp_path / "client"
+            cache_root = tmp_path / "client_cache"
+            cli = functools.partial(_with_cache_dir, cli, cache_root)
 
             list_a = cli(
                 "store", "list", "--path", str(client_store), "--remote", url_a
@@ -590,8 +613,7 @@ class TestRemoteStoreIntegrity:
             assert match.exit_code == 0, match.output
             assert json.loads(match.stdout)["matches"][0]["names_a"] == ["chr1"]
 
-            cache_root = client_store / ".remote_cache"
-            cache_dirs = sorted(path for path in cache_root.iterdir() if path.is_dir())
+            cache_dirs = sorted(path for path in (cache_root / "remotes").iterdir() if path.is_dir())
             assert len(cache_dirs) == 2
             assert all(len(path.name) == 16 for path in cache_dirs)
             assert {path.name for path in cache_dirs} == {
@@ -603,17 +625,20 @@ class TestRemoteStoreIntegrity:
                 normalized_b,
             }
 
-            shared_cache = tmp_path / "deliberately_shared_cache"
+            # One cache root serves many origins; a tampered origin folder is refused.
+            shared_cache = tmp_path / "shared_cache"
             RefgetStore.open_remote(str(shared_cache), normalized_a)
+            RefgetStore.open_remote(str(shared_cache), normalized_b)
+            key_a = hashlib.sha256(normalized_a.encode()).hexdigest()[:16]
+            (shared_cache / "remotes" / key_a / ".origin").write_text(normalized_b + "\n")
             with pytest.raises(OSError) as error:
-                RefgetStore.open_remote(str(shared_cache), normalized_b)
+                RefgetStore.open_remote(str(shared_cache), normalized_a)
             assert normalized_a in str(error.value)
             assert normalized_b in str(error.value)
         finally:
             _stop_http_server(proc)
 
     def test_manifest_refresh_preserves_payload_and_rejects_missing_alias(self, cli, tmp_path):
-        from refget.cli.store import _remote_cache_dir
 
         remote_root = tmp_path / "refresh_remote"
         source_store = remote_root / "store"
@@ -630,14 +655,15 @@ class TestRemoteStoreIntegrity:
         try:
             remote_url = f"http://127.0.0.1:{port}/store"
             client_store = tmp_path / "refresh_client"
-            prime = cli(
+            cache_root = tmp_path / "refresh_cache"
+            rcli = functools.partial(_with_cache_dir, cli, cache_root)
+            prime = rcli(
                 "store", "get", sequence_digest, "--sequence",
                 "--path", str(client_store), "--remote", remote_url,
             )
             assert prime.exit_code == 0, prime.output
 
-            cache_dir = _remote_cache_dir(client_store, remote_url)
-            payloads = list(cache_dir.rglob("*.seq"))
+            payloads = list((cache_root / "sequences").rglob("*.seq"))
             assert payloads
             preserved_payload = payloads[0]
             preserved_bytes = preserved_payload.read_bytes()
@@ -651,7 +677,7 @@ class TestRemoteStoreIntegrity:
                 cli, source_store, tmp_path / "new.fa", ">new\nTTAA\n"
             )
 
-            refreshed = cli(
+            refreshed = rcli(
                 "store", "list", "--path", str(client_store), "--remote", remote_url
             )
             assert refreshed.exit_code == 0, refreshed.output
@@ -669,7 +695,7 @@ class TestRemoteStoreIntegrity:
             manifest["aliases_digest"] = "deliberately-missing-alias-sidecar"
             manifest_path.write_text(json.dumps(manifest, indent=2))
 
-            corrupt = cli(
+            corrupt = rcli(
                 "store", "list", "--path", str(client_store), "--remote", remote_url
             )
             assert corrupt.exit_code != 0

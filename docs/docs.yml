@@ -30,6 +30,7 @@ nav:
       - FHR metadata headers: using-services/fhr-metadata.py
       - Exploring the reference genome jungle: using-services/genome-store.py
       - Explore a store in your browser: using-services/explore-store.md
+      - Search a RefgetStore with BLAST: using-services/blast-store.md
       - Building an SSHash index: using-services/refgetstore-to-sshash.md
   - Hosting refget services:
       - RefgetStore integration with refgenie: hosting-services/refgetstore-integration.md
