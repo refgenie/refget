@@ -210,21 +210,68 @@ def calc_jaccard_similarities(A: SeqColDict, B: SeqColDict) -> dict[str, float]:
     return jaccard_similarities
 
 
+def _canonical_number(x):
+    """Integral floats become ints, so 1.0 and 1 compare (and serialize) alike."""
+    if isinstance(x, float) and x.is_integer():
+        return int(x)
+    return x
+
+
+def _normalize_numbers(x):
+    """Recursively apply _canonical_number, leaving bools alone."""
+    if isinstance(x, bool):
+        return x
+    if isinstance(x, float):
+        return _canonical_number(x)
+    if isinstance(x, dict):
+        return {k: _normalize_numbers(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [_normalize_numbers(v) for v in x]
+    return x
+
+
+def _element_key(x):
+    """Hashable key for an array element, equal exactly when gtars' Rust
+    compare_elements (canonical JSON) treats two elements as equal.
+
+    Keys are tagged by kind, so a bool never matches a number (True != 1),
+    while ints and integral floats match (1 == 1.0). Containers such as
+    name_length_pairs dicts are keyed by canonical JSON built the same way.
+    """
+    if isinstance(x, bool):
+        return ("bool", x)
+    if isinstance(x, (int, float)):
+        return ("num", _canonical_number(x))
+    if isinstance(x, str):
+        return ("str", x)
+    if x is None:
+        return ("null",)
+    if isinstance(x, (dict, list, tuple)):
+        return ("json", json.dumps(_normalize_numbers(x), separators=(",", ":"), sort_keys=True))
+    return ("other", x)
+
+
 def _compare_elements(A: list, B: list) -> dict[str, int | bool | None]:
     """
     Compare elements between two arrays. Helper function for individual elements used by workhorse compare_seqcols function
-    """
 
-    A_filtered = list(filter(lambda x: x in B, A))
-    B_filtered = list(filter(lambda x: x in A, B))
-    A_count = len(A_filtered)
-    B_count = len(B_filtered)
+    Matches gtars' Rust compare_elements: filter each array to elements present in
+    the other, count the overlap as the smaller filtered length (so duplicates
+    count), and report order only when at least 2 elements are shared and the
+    filtered arrays are the same length.
+    """
+    A_keys = [_element_key(x) for x in A]
+    B_keys = [_element_key(x) for x in B]
+    A_set = set(A_keys)
+    B_set = set(B_keys)
+    A_filtered = [k for k in A_keys if k in B_set]
+    B_filtered = [k for k in B_keys if k in A_set]
     overlap = min(len(A_filtered), len(B_filtered))  # counts duplicates
 
-    if A_count + B_count < 1:
+    if overlap < 2:
         # order match requires at least 2 matching elements
         order = None
-    elif not (A_count == B_count == overlap):
+    elif len(A_filtered) != len(B_filtered):
         # duplicated matches means order match is undefined
         order = None
     else:

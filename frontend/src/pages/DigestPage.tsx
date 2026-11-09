@@ -1,11 +1,17 @@
 import type { CSSProperties } from 'react';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import FastaDropzone from '../components/digest/FastaDropzone';
 import SeqColResult from '../components/digest/SeqColResult';
 import { Icon } from '../components/common/Icon';
 import type { SeqColDigestResult, SequenceRow } from '../types';
+import {
+  digestFile,
+  isAbortError,
+  type DigestJob,
+  type DigestStats,
+} from '../lib/fastaDigest/fastaDigestClient.ts';
 
 const HISTORY_KEY = 'digest-history';
 const MAX_HISTORY = 20;
@@ -24,20 +30,6 @@ interface DigestProgress {
   totalSize: number;
   percent: number;
 }
-
-/** Timing/throughput counters the worker sends with its result. */
-interface DigestStats {
-  chunks: number;
-  totalBytes: number;
-  elapsedMs: number;
-  avgChunkSize: number;
-}
-
-/**
- * The worker that hashes one file. `fileName` rides along on the instance so
- * the result handler knows which upload it belongs to.
- */
-type DigestWorker = Worker & { fileName?: string };
 
 // Get history list from localStorage
 function getHistory(): HistoryEntry[] {
@@ -85,13 +77,6 @@ function loadFromHistory(digest: string) {
   }
 }
 
-function createWorker(): DigestWorker {
-  return new Worker(
-    new URL('../components/digest/fastaDigestWorker.ts', import.meta.url),
-    { type: 'module' }
-  );
-}
-
 export function DigestPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -102,7 +87,7 @@ export function DigestPage() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [stats, setStats] = useState<DigestStats | null>(null);
-  const workerRef = useRef<DigestWorker | null>(null);
+  const jobRef = useRef<DigestJob | null>(null);
 
   // Load history on mount: initializing state from an external source
   // (localStorage) is the intended use of an effect here.
@@ -129,90 +114,68 @@ export function DigestPage() {
     }
   }, [searchParams]);
 
-  const setupWorker = useCallback(() => {
-    // Terminate existing worker if any
-    if (workerRef.current) {
-      workerRef.current.terminate();
-    }
-
-    const worker = createWorker();
-
-    worker.onmessage = (e: MessageEvent) => {
-      const { type, result, message, bytesProcessed, totalSize, percent, stats: workerStats } = e.data;
-
-      if (type === 'status') {
-        setStatus(message);
-      } else if (type === 'progress') {
-        setProgress({ bytesProcessed, totalSize, percent });
-      } else if (type === 'result') {
-        setResult(result);
-        setStatus(null);
-        setProgress(null);
-        if (workerStats) {
-          setStats(workerStats);
-          if (import.meta.env.DEV) {
-            console.log('[FASTA Digest]', {
-              chunks: workerStats.chunks,
-              avgChunkSize: `${(workerStats.avgChunkSize / 1024).toFixed(1)} KB`,
-              elapsed: `${(workerStats.elapsedMs / 1000).toFixed(1)}s`,
-              throughput: `${(workerStats.totalBytes / workerStats.elapsedMs / 1024).toFixed(1)} MB/s`
-            });
-          }
-        }
-        // Save to localStorage
-        const name = worker.fileName ?? null;
-        saveToHistory(result, name);
-        setHistory(getHistory());
-        // Update URL
-        window.history.pushState({}, '', `${window.location.pathname}?id=${result.digest}`);
-        toast.success(`Computed digest for ${result.n_sequences} sequences`);
-      } else if (type === 'error') {
-        setError(message);
-        setStatus(null);
-        setProgress(null);
-        toast.error(message);
-      } else if (type === 'cancelled') {
-        setStatus(null);
-        setProgress(null);
-        setError('Processing cancelled.');
-      }
-    };
-
-    worker.onerror = (event: ErrorEvent) => {
-      event.preventDefault();
-      setError(event.message || 'Worker crashed unexpectedly');
-      setStatus(null);
-      setProgress(null);
-    };
-
-    workerRef.current = worker;
-    return worker;
-  }, []);
-
-  // Initialize worker on mount
-  useEffect(() => {
-    setupWorker();
-    return () => workerRef.current?.terminate();
-  }, [setupWorker]);
+  // Stop a running digest when the page closes.
+  useEffect(() => () => jobRef.current?.cancel(), []);
 
   const handleFileSelected = (file: File) => {
-    // Cancel and replace any running worker to prevent double-processing
-    const worker = setupWorker();
+    // Cancel and replace any running digest to prevent double-processing
+    jobRef.current?.cancel();
     setFileName(file.name);
     setResult(null);
     setError(null);
     setProgress(null);
     setStats(null);
     setStatus('Starting...');
-    worker.fileName = file.name;
-    worker.postMessage({ file });
+
+    const job = digestFile(file, {
+      onStatus: setStatus,
+      onProgress: (bytesProcessed, totalSize) =>
+        setProgress({
+          bytesProcessed,
+          totalSize,
+          percent: totalSize > 0 ? Math.round((100 * bytesProcessed) / totalSize) : 100,
+        }),
+    });
+    jobRef.current = job;
+    job.done.then(
+      ({ result: digested, stats: digestStats }) => {
+        if (jobRef.current !== job) return;
+        jobRef.current = null;
+        const result = digested as unknown as SeqColDigestResult;
+        setResult(result);
+        setStatus(null);
+        setProgress(null);
+        setStats(digestStats);
+        if (import.meta.env.DEV) {
+          console.log('[FASTA Digest]', {
+            chunks: digestStats.chunks,
+            avgChunkSize: `${(digestStats.avgChunkSize / 1024).toFixed(1)} KB`,
+            elapsed: `${(digestStats.elapsedMs / 1000).toFixed(1)}s`,
+            throughput: `${(digestStats.totalBytes / digestStats.elapsedMs / 1024).toFixed(1)} MB/s`
+          });
+        }
+        // Save to localStorage
+        saveToHistory(result, file.name);
+        setHistory(getHistory());
+        // Update URL
+        window.history.pushState({}, '', `${window.location.pathname}?id=${result.digest}`);
+        toast.success(`Computed digest for ${result.n_sequences} sequences`);
+      },
+      (err: unknown) => {
+        if (jobRef.current !== job || isAbortError(err)) return;
+        jobRef.current = null;
+        const message = err instanceof Error ? err.message : String(err);
+        setError(message);
+        setStatus(null);
+        setProgress(null);
+        toast.error(message);
+      },
+    );
   };
 
   const handleCancel = () => {
-    if (workerRef.current) {
-      workerRef.current.terminate();
-      workerRef.current = null;
-    }
+    jobRef.current?.cancel();
+    jobRef.current = null;
     setStatus(null);
     setProgress(null);
     setError('Processing cancelled.');
@@ -360,7 +323,7 @@ export function DigestPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${fileName.replace(/\.(fa|fasta|fna)(\.gz)?$/i, '')}.rgsi`;
+    a.download = `${fileName.replace(/\.(fa|fasta|fna|fas)(\.b?gz)?$/i, '')}.rgsi`;
     a.click();
     URL.revokeObjectURL(url);
   };

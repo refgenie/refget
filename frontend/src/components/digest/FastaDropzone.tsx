@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import type { ChangeEvent, DragEvent } from 'react';
 import { Icon } from '../common/Icon';
 import { cn } from '../../utils/cn';
+import { FASTA_ACCEPT, looksLikeFasta } from '../../lib/fastaDigest/fastaDigest.ts';
 
 // No max file size - streaming handles any size
 const WARN_FILE_SIZE = 500 * 1024 * 1024; // 500MB - warn but allow
@@ -16,10 +17,8 @@ export default function FastaDropzone({ onFileSelected, disabled }: FastaDropzon
 
   const validateFile = (file: File) => {
     // Check extension
-    const validExts = ['.fa', '.fasta', '.fna', '.fa.gz', '.fasta.gz', '.fna.gz'];
-    const hasValidExt = validExts.some(ext => file.name.toLowerCase().endsWith(ext));
-    if (!hasValidExt) {
-      return 'Please upload a FASTA file (.fa, .fasta, .fna, or gzipped)';
+    if (!looksLikeFasta(file.name)) {
+      return 'Please upload a FASTA file (.fa, .fasta, .fna, or gzipped/bgzipped)';
     }
     return null;
   };
@@ -69,7 +68,7 @@ export default function FastaDropzone({ onFileSelected, disabled }: FastaDropzon
       <input
         className="dropzone__input"
         type="file"
-        accept=".fa,.fasta,.fna,.gz"
+        accept={FASTA_ACCEPT}
         onChange={handleChange}
         disabled={disabled}
         id="fasta-file-input"
