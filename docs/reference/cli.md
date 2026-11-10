@@ -558,43 +558,86 @@ refget store pull --file digests.txt --remote https://example.com/store
 
 ### store export
 
-Export sequences as a FASTA file, in one of four modes.
+Export sequences as FASTA. The output streams one sequence at a time, so memory stays flat even for a whole store, and it goes to stdout unless you give `--output`. That means you can pipe a store straight into tools that read FASTA.
 
 ```bash
-refget store export [DIGEST] [-o OUTPUT] [--bed BED] [--name NAME] [--seq-digest DIGEST] [--path PATH] [--remote URL] [--line-width N]
+refget store export [COLLECTION ...] [--all] [--seq-digest DIGEST] [--bed BED] [--name NAME] [-l LABEL] [--molecule dna|protein] [-o OUTPUT] [--path PATH] [--remote URL] [--line-width N]
 ```
 
-**Modes** (pick one):
+**Choose which records to write** (pick exactly one):
 
-- Full collection: `DIGEST` alone
-- Subset by names: `DIGEST --name chr1 --name chr2`
-- Regions from a BED file: `DIGEST --bed regions.bed`
-- Ad-hoc by *sequence* digest, bypassing collections entirely: `--seq-digest SEQ_DIGEST` (repeatable). This mode takes sequence digests, not a collection digest, and ignores the `DIGEST` argument if one is given.
+- One or more collections: `COLLECTION ...`, each a collection digest or a `namespace:alias` selector such as `ucsc:hg38`. Add `--name chr1 --name chr2` to keep only those names from each collection.
+- Every sequence in the store: `--all`. This covers every collection, plus sequences that are in no collection.
+- Specific sequences: `--seq-digest SQ.xxx` (repeatable). These records have no collection.
+- Regions of one collection: `COLLECTION --bed regions.bed`. Each record's label gets `:start-end` added.
+
+**Choose how records are labeled** with `-l/--label`. A label is a template made of literal text and these fields:
+
+| Field | Gives | Example |
+|---|---|---|
+| `{seq}` | the sequence's refget ID (the default) | `SQ.2YnepKM7OkBoOrKmvHbGqguVfF9amCST` |
+| `{seq:NS}` | the sequence's alias in namespace `NS` | `{seq:refseq}` gives `NC_000001.11` |
+| `{col}` | the collection digest | `I874VV52PMwV0JxIYIWmDlBpwSdcQUGT` |
+| `{col:NS}` | the collection's alias in namespace `NS` | `{col:ucsc}` gives `hg38` |
+| `{name}` | the sequence's name in its collection | `chr1` |
+
+Other text is copied as written, so you pick the separator (`{col:ucsc}/{name}`, or PanSN style `{col:pansn}#{name}`). A template that is just one field can drop the braces: `-l name` means `-l {name}`.
+
+How labels behave:
+
+- If an alias is missing, its field falls back to the digest. A record with no collection gets `{seq}`. The number of fallbacks is reported on stderr.
+- If two records get the same label and hold the same sequence, the sequence is written once. This is why `--all` with the default label writes each sequence exactly once.
+- If two records get the same label but hold different sequences, the export stops with an error before writing anything. Add `{col}` or `{col:NS}` to the label to tell them apart.
 
 **Options:**
 
-- `--output, -o`: Output FASTA file path (default: stdout)
-- `--bed, -b`: BED file for region extraction
-- `--name, -n`: Sequence names to include (repeatable)
-- `--seq-digest, -S`: Export ad-hoc by sequence digest, bypassing collections (repeatable; see modes above)
+- `--output, -o`: Output FASTA path; `.gz` compresses it (default: stdout)
+- `--all, -a`: Export every sequence in the store
+- `--label, -l`: Label template (default: `{seq}`)
+- `--molecule`: Keep only `dna` or `protein` sequences (BLAST needs one type per database)
+- `--name, -n`: Sequence names to keep from each collection (repeatable)
+- `--seq-digest, -S`: Sequence digests to export (repeatable)
+- `--bed, -b`: BED file of regions, for one collection
 - `--path, -p`: Store path (default: from config)
-- `--remote, -r`: Remote store URL (overrides `--path`)
-- `--line-width, -w`: FASTA line width (default: 80)
+- `--remote, -r`: Remote store URL (overrides `--path`). Exported sequences are not saved to the local cache; use `refget store pull` for a local copy.
+- `--line-width, -w`: FASTA line width; `0` puts each sequence on one line (default: 80)
+
+With `--output`, the command prints a JSON summary (`n_records`, `n_bases`, `n_fallbacks`, `n_deduplicated`). When streaming to stdout, it writes only FASTA there.
 
 **Examples:**
 ```bash
-# Export full collection
-refget store export abc123 -o genome.fa
+# An ordinary FASTA with chromosome names, for an aligner
+refget store export ucsc:hg38 -l name > hg38.fa
 
-# Export specific chromosomes
-refget store export abc123 -o subset.fa --name chr1 --name chr2
+# Specific chromosomes, compressed
+refget store export ucsc:hg38 -l name --name chr1 --name chr2 -o subset.fa.gz
 
-# Export regions from BED file
-refget store export abc123 -o regions.fa --bed regions.bed
+# Every sequence once, labeled by digest
+refget store export --all > store.fa
 
-# Export by sequence digest, bypassing collections
-refget store export --seq-digest xyz123... --seq-digest xyz456... -o seqs.fa
+# Every genome's copy, labeled by genome and name (>hg38/chr1)
+refget store export --all -l '{col:ucsc}/{name}' > genomes.fa
+
+# Labeled by RefSeq accession (>NC_000001.11)
+refget store export --all -l seq:refseq > refseq.fa
+
+# Regions from a BED file
+refget store export ucsc:hg38 -l name --bed regions.bed > regions.fa
+
+# Specific sequences by digest
+refget store export --seq-digest SQ.xyz123... --seq-digest SQ.xyz456... -o seqs.fa
 ```
+
+#### Recipe: build a BLAST database from a store
+
+BLAST can read FASTA from stdin, so no FASTA file ever touches the disk:
+
+```bash
+refget store export --remote https://example.com/store --all --molecule dna \
+  | makeblastdb -in - -dbtype nucl -parse_seqids -title store -out store
+```
+
+Each sequence goes in once, under its refget ID, and `-parse_seqids` keeps those IDs as written. A BLAST hit therefore names the matching sequence digest (for example `SQ.k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct`), which you can pass back to `refget store export --seq-digest`. To keep genome and chromosome names in the hits instead, use `-l '{col:NS}/{name}'`.
 
 ### store regions
 

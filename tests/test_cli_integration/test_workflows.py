@@ -110,7 +110,9 @@ class TestStoreLifecycle:
         original_seqcol = json.loads(result.stdout)
 
         # Export
-        result = cli("store", "export", original_digest, "-o", str(exported), "--path", str(store))
+        result = cli(
+            "store", "export", original_digest, "-l", "name", "-o", str(exported), "--path", str(store)
+        )
         assert result.exit_code == 0
         assert exported.exists()
 

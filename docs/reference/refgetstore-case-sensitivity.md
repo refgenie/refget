@@ -6,7 +6,7 @@ RefgetStore fails to properly store and retrieve sequences when running on case-
 
 ## Symptoms
 
-- `export_fasta()` fails with: "File not found locally and no remote source configured"
+- `export_fasta()` fails with: "Sequence data for ... not found locally and no remote source configured"
 - Some sequences are recorded in the index but missing from disk
 - Example: 610 sequences in index, but only 588 sequence files exist
 
