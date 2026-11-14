@@ -19,9 +19,7 @@ def test_list_and_match_contract(cli, tmp_path):
     fasta_b.write_text(">four\nCCCC\n>one\nACGT\n>one_alt\nACGT\n>extra\nTTAA\n")
     digest_a = _add(cli, store_path, fasta_a)
     digest_b = _add(cli, store_path, fasta_b)
-    alias_result = cli(
-        "store", "alias", "add", "ucsc", "test", digest_a, "--path", str(store_path)
-    )
+    alias_result = cli("store", "alias", "add", "ucsc", "test", digest_a, "--path", str(store_path))
     assert alias_result.exit_code == 0, alias_result.output
 
     inventory_result = cli("store", "list", "--path", str(store_path))
@@ -40,9 +38,7 @@ def test_list_and_match_contract(cli, tmp_path):
         "aliases": [],
     }
 
-    collection_result = cli(
-        "store", "list", "ucsc:test", "--path", str(store_path)
-    )
+    collection_result = cli("store", "list", "ucsc:test", "--path", str(store_path))
     assert collection_result.exit_code == 0, collection_result.output
     collection = json.loads(collection_result.stdout)
     assert collection["collection"] == by_digest[digest_a]
@@ -65,9 +61,9 @@ def test_list_and_match_contract(cli, tmp_path):
         row["digest"] for row in collection["sequences"]
     } | {
         row["digest"]
-        for row in json.loads(
-            cli("store", "list", digest_b, "--path", str(store_path)).stdout
-        )["sequences"]
+        for row in json.loads(cli("store", "list", digest_b, "--path", str(store_path)).stdout)[
+            "sequences"
+        ]
     }
 
     match_result = cli(

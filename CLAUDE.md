@@ -41,6 +41,7 @@ The `.py` files use percent format with `# %%` cell markers:
 
 # %%
 import refget
+
 store = refget.load("path/to/store")
 print(store.stats())
 
