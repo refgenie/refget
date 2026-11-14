@@ -16,6 +16,10 @@ updates:
   - package-ecosystem: "npm"
     directory: "/frontend"
     patterns: ["*"]
+    ignore:
+      # typescript-eslint does not support TypeScript 6.1+ yet.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     multi-ecosystem-group: "monthly"
 
   - package-ecosystem: "github-actions"
