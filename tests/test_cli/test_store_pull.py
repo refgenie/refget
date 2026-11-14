@@ -535,6 +535,7 @@ class TestRemoteStoreIntegrity:
 
     def test_origin_isolation_alias_resolution_and_shared_cache_guard(self, cli, tmp_path):
         from gtars.refget import RefgetStore
+
         from refget.cli.store import _normalize_remote_url
 
         remote_root = tmp_path / "remotes"
