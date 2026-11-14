@@ -592,9 +592,7 @@ def list_items(
                         "length": length,
                         "digest": sequence_digest.removeprefix("SQ."),
                     }
-                    for name, length, sequence_digest in zip(
-                        names, lengths, sequence_digests
-                    )
+                    for name, length, sequence_digest in zip(names, lengths, sequence_digests)
                 ],
             }
         )
