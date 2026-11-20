@@ -253,11 +253,11 @@ with open(output_path) as f:
 # %%
 # Export all sequences from a collection
 all_output = os.path.join(temp_dir, "all_seqs.fa")
-store.export_fasta(all_output, collections=collection_digest, label="name")
+store.export_fasta(all_output, collections=collection_digest, label="{name}")
 
 # Export only specific sequences by name
 subset_output = os.path.join(temp_dir, "subset.fa")
-store.export_fasta(subset_output, collections=collection_digest, names=["chr1"], label="name")
+store.export_fasta(subset_output, collections=collection_digest, names=["chr1"], label="{name}")
 
 print("All sequences:")
 with open(all_output) as f:
@@ -490,7 +490,7 @@ for seq in sequences:
 
 # %%
 output_fasta = os.path.join(temp_dir, "regions.fa")
-store.export_fasta_from_regions(collection_digest, bed_path, output_fasta, label="name")
+store.export_fasta_from_regions(collection_digest, bed_path, output_fasta, label="{name}")
 
 print(f"Exported to: {output_fasta}")
 with open(output_fasta) as f:
@@ -629,7 +629,7 @@ for seq in remote_regions:
 # Export to FASTA
 remote_regions_fasta = os.path.join(temp_dir, "remote_regions.fa")
 remote_store.export_fasta_from_regions(
-    EXAMPLE_COLLECTION, remote_bed_path, remote_regions_fasta, label="name"
+    EXAMPLE_COLLECTION, remote_bed_path, remote_regions_fasta, label="{name}"
 )
 print(f"\nExported to {remote_regions_fasta}")
 

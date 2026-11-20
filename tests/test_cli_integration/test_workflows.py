@@ -111,7 +111,15 @@ class TestStoreLifecycle:
 
         # Export
         result = cli(
-            "store", "export", original_digest, "-l", "name", "-o", str(exported), "--path", str(store)
+            "store",
+            "export",
+            original_digest,
+            "-l",
+            "{name}",
+            "-o",
+            str(exported),
+            "--path",
+            str(store),
         )
         assert result.exit_code == 0
         assert exported.exists()

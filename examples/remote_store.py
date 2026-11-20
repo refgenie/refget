@@ -128,7 +128,7 @@ for seq in sequences:
 
 # %%
 output_regions = os.path.join(temp_dir, "regions.fa")
-store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions, label="name")
+store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions, label="{name}")
 
 with open(output_regions) as f:
     for line in f:

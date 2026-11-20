@@ -581,7 +581,7 @@ refget store export [COLLECTION ...] [--all] [--seq-digest DIGEST] [--bed BED] [
 | `{col:NS}` | the collection's alias in namespace `NS` | `{col:ucsc}` gives `hg38` |
 | `{name}` | the sequence's name in its collection | `chr1` |
 
-Other text is copied as written, so you pick the separator (`{col:ucsc}/{name}`, or PanSN style `{col:pansn}#{name}`). A template that is just one field can drop the braces: `-l name` means `-l {name}`.
+Other text is copied as written, so you pick the separator (`{col:ucsc}/{name}`, or PanSN style `{col:pansn}#{name}`).
 
 How labels behave:
 
@@ -607,10 +607,10 @@ With `--output`, the command prints a JSON summary (`n_records`, `n_bases`, `n_f
 **Examples:**
 ```bash
 # An ordinary FASTA with chromosome names, for an aligner
-refget store export ucsc:hg38 -l name > hg38.fa
+refget store export ucsc:hg38 -l '{name}' > hg38.fa
 
 # Specific chromosomes, compressed
-refget store export ucsc:hg38 -l name --name chr1 --name chr2 -o subset.fa.gz
+refget store export ucsc:hg38 -l '{name}' --name chr1 --name chr2 -o subset.fa.gz
 
 # Every sequence once, labeled by digest
 refget store export --all > store.fa
@@ -619,10 +619,10 @@ refget store export --all > store.fa
 refget store export --all -l '{col:ucsc}/{name}' > genomes.fa
 
 # Labeled by RefSeq accession (>NC_000001.11)
-refget store export --all -l seq:refseq > refseq.fa
+refget store export --all -l '{seq:refseq}' > refseq.fa
 
 # Regions from a BED file
-refget store export ucsc:hg38 -l name --bed regions.bed > regions.fa
+refget store export ucsc:hg38 -l '{name}' --bed regions.bed > regions.fa
 
 # Specific sequences by digest
 refget store export --seq-digest SQ.xyz123... --seq-digest SQ.xyz456... -o seqs.fa

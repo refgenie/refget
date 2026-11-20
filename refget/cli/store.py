@@ -1007,8 +1007,8 @@ EXPORT_LABEL_HELP = (
     "{seq:NS} sequence alias in namespace NS; {col} collection digest; "
     "{col:NS} collection alias in namespace NS; {name} sequence name. "
     "Other text is copied as-is. A single field may drop its braces. "
-    "Examples: -l name (>chr1); -l '{col:ucsc}/{name}' (>hg38/chr1); "
-    "-l seq:refseq (>NC_000001.11); -l '{col:pansn}#{name}' (>HG002#1#chr1)."
+    "Examples: -l '{name}' (>chr1); -l '{col:ucsc}/{name}' (>hg38/chr1); "
+    "-l '{seq:refseq}' (>NC_000001.11); -l '{col:pansn}#{name}' (>HG002#1#chr1)."
 )
 
 
@@ -1092,7 +1092,7 @@ def export(
     is an error, reported before any output.
 
     Examples:
-        refget store export ucsc:hg38 -l name > hg38.fa
+        refget store export ucsc:hg38 -l '{name}' > hg38.fa
         refget store export --all | makeblastdb -in - -dbtype nucl -out store
         refget store export --all -l '{col:ucsc}/{name}'
     """

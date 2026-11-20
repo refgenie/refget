@@ -131,7 +131,7 @@ def main():
     # 10. Export BED regions to FASTA with export_fasta_from_regions()
     print(f"\n10. Export BED regions to FASTA with export_fasta_from_regions():")
     output_regions = os.path.join(temp_dir, "regions.fa")
-    store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions, label="name")
+    store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions, label="{name}")
 
     print(f"    Output: {output_regions}")
     with open(output_regions) as f:

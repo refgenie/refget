@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   The FASTA goes to stdout without a temporary file, one sequence at a time,
   so memory stays flat and you can pipe a whole store into a tool such as
   `makeblastdb`. Records are labeled `SQ.<digest>` unless you choose another
-  label with `-l/--label`; pass `-l name` for the old chromosome-name headers.
+  label with `-l/--label`; pass `-l '{name}'` for the old chromosome-name headers.
   FASTA descriptions are no longer written.
 - The positional argument takes several collections, each a digest or a
   `namespace:alias` selector.

@@ -297,9 +297,9 @@ class TestStoreExport:
         """Streaming to stdout writes the same bytes as --output."""
         store_path, (digest,) = self._store(cli, tmp_path)
         output = tmp_path / "exported.fa"
-        cli("store", "export", digest, "-l", "name", "-o", str(output), "--path", str(store_path))
+        cli("store", "export", digest, "-l", "{name}", "-o", str(output), "--path", str(store_path))
 
-        proc = _run_cli("store", "export", digest, "-l", "name", "--path", str(store_path))
+        proc = _run_cli("store", "export", digest, "-l", "{name}", "--path", str(store_path))
 
         assert proc.returncode == 0, proc.stderr
         assert proc.stdout == output.read_text()
@@ -312,8 +312,8 @@ class TestStoreExport:
         cli("store", "alias", "add", "ensembl", "GRCh38", renamed, "--path", str(store_path))
         p = ["--path", str(store_path)]
 
-        # -l name on a namespace:alias selector
-        proc = _run_cli("store", "export", "ucsc:hg38", "-l", "name", *p)
+        # -l {name} on a namespace:alias selector
+        proc = _run_cli("store", "export", "ucsc:hg38", "-l", "{name}", *p)
         assert _headers(proc.stdout) == ["chrX", "chr1", "chr2"], proc.stderr
 
         # --all covers `store list --sequences`, each sequence once
@@ -330,7 +330,7 @@ class TestStoreExport:
         assert "fell back" in proc.stderr
 
         # bare names across genomes that share sequences under different names
-        proc = _run_cli("store", "export", "--all", "-l", "name", *p)
+        proc = _run_cli("store", "export", "--all", "-l", "{name}", *p)
         assert proc.returncode == 0
         assert len(_headers(proc.stdout)) == 6
 
@@ -344,7 +344,7 @@ class TestStoreExport:
             ([], "exactly one selection"),
             (["--all", "--name", "chr1"], "--name"),
             ([digest, "-l", "{nope}"], "unknown field"),
-            ([digest, "-l", "seq:nope"], "namespace"),
+            ([digest, "-l", "{seq:nope}"], "namespace"),
         ]
         for args, needle in cases:
             proc = _run_cli("store", "export", *args, *p)
@@ -359,7 +359,9 @@ class TestStoreExport:
         big.write_text(">big\n" + "ACGT" * 2_000_000 + "\n")
         store_path, (digest,) = self._store(cli, tmp_path, big)
 
-        proc = _run_cli("store", "export", digest, "--path", str(store_path), shell_suffix="| head -1")
+        proc = _run_cli(
+            "store", "export", digest, "--path", str(store_path), shell_suffix="| head -1"
+        )
 
         assert proc.returncode == 0, proc.stderr
         assert proc.stdout.startswith(">SQ.")
@@ -371,7 +373,13 @@ class TestStoreExport:
         output = tmp_path / "exported.fa"
 
         result = cli(
-            "store", "export", "nonexistent_digest_123", "-o", str(output), "--path", str(store_path)
+            "store",
+            "export",
+            "nonexistent_digest_123",
+            "-o",
+            str(output),
+            "--path",
+            str(store_path),
         )
 
         assert result.exit_code != 0
@@ -394,9 +402,7 @@ class TestStoreExport:
         import threading
 
         served, (digest,) = self._store(cli, tmp_path)
-        handler = functools.partial(
-            http.server.SimpleHTTPRequestHandler, directory=str(served)
-        )
+        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(served))
         handler.log_message = lambda *a, **k: None
         server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)

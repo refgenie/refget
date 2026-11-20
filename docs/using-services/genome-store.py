@@ -256,7 +256,7 @@ for row in result["matches"][:5]:
 #
 # `export_fasta()` writes a collection, or a named subset of it, to a FASTA
 # file (or to stdout, with `"-"`). On a remote store it streams what it needs,
-# one sequence at a time, without caching the sequences locally. `label="name"`
+# one sequence at a time, without caching the sequences locally. `label="{name}"`
 # labels each record with its chromosome name; the default, `{seq}`, uses the
 # sequence's refget ID. A whole human genome is over 3 Gbp, so here we export
 # just the mitochondrial genome.
@@ -264,7 +264,7 @@ for row in result["matches"][:5]:
 # %%
 output_path = os.path.join(temp_dir, "hg38_chrM.fa")
 summary = store.export_fasta(
-    output_path, collections=ucsc.digest, names=["chrM"], label="name"
+    output_path, collections=ucsc.digest, names=["chrM"], label="{name}"
 )
 
 print(f"Exported chrM ({summary['n_bases']:,} bp) to: {output_path}")
