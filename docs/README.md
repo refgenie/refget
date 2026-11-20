@@ -119,7 +119,7 @@ refget store init
 refget store add genome.fa
 
 # Export sequences
-refget store export <digest> --output output.fa
+refget store export <digest> -l name --output output.fa
 ```
 
 For a hands-on walkthrough, see the [Getting Started tutorial](using-services/getting-started.py).

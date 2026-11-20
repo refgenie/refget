@@ -85,7 +85,7 @@ def main():
         "d8BGSj_irEbXexaV7pStsWf9mFEZFL-8",
     ]
     print(f"   Exporting {len(digests_to_export)} sequences to: {output_fasta}")
-    store.export_fasta_by_digests(digests_to_export, output_fasta, 80)
+    store.export_fasta(output_fasta, seq_digests=digests_to_export, line_width=80)
 
     with open(output_fasta) as f:
         for i, line in enumerate(f):
@@ -131,7 +131,7 @@ def main():
     # 10. Export BED regions to FASTA with export_fasta_from_regions()
     print(f"\n10. Export BED regions to FASTA with export_fasta_from_regions():")
     output_regions = os.path.join(temp_dir, "regions.fa")
-    store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions)
+    store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions, label="name")
 
     print(f"    Output: {output_regions}")
     with open(output_regions) as f:
@@ -152,7 +152,7 @@ def main():
     print("  - get_sequence(): Lookup by SHA-512/24u or MD5 digest")
     print("  - get_sequence_by_name(): Lookup by collection digest + sequence name")
     print("  - substrings_from_regions(): Batch retrieval from BED file")
-    print("  - export_fasta_by_digests(): Export sequences by digest")
+    print("  - export_fasta(seq_digests=...): Export sequences by digest")
     print("  - export_fasta_from_regions(): Export BED regions to FASTA")
 
 

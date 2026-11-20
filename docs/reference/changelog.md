@@ -3,6 +3,33 @@
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 
+## [Unreleased]
+
+### Changed
+
+- **`refget store export` streams, and labels records by digest by default.**
+  The FASTA goes to stdout without a temporary file, one sequence at a time,
+  so memory stays flat and you can pipe a whole store into a tool such as
+  `makeblastdb`. Records are labeled `SQ.<digest>` unless you choose another
+  label with `-l/--label`; pass `-l name` for the old chromosome-name headers.
+  FASTA descriptions are no longer written.
+- The positional argument takes several collections, each a digest or a
+  `namespace:alias` selector.
+- With `--output`, the JSON result includes `n_records`, `n_bases`,
+  `n_fallbacks` and `n_deduplicated`.
+- Exporting from a remote store no longer saves the downloaded sequences into
+  the local cache. Use `refget store pull` for a local copy.
+
+### Added
+
+- `refget store export --all` exports every sequence in the store.
+- `-l/--label` templates with the fields `{seq}`, `{seq:NS}`, `{col}`,
+  `{col:NS}` and `{name}`, such as `{col:ucsc}/{name}`. A label repeated for
+  the same sequence is written once; a label repeated for different sequences
+  is an error, reported before any output.
+- `--molecule dna|protein` keeps one molecule type.
+- `refget store export ... | head` exits quietly when the reader stops early.
+
 ## [0.13.0] - 2026-11-06
 
 ### Added

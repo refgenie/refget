@@ -83,7 +83,7 @@ digests_to_export = [
     "cPD3x19YSSfB_TzCKAnp1tzjOKlQVu7l",
     "d8BGSj_irEbXexaV7pStsWf9mFEZFL-8",
 ]
-store.export_fasta_by_digests(digests_to_export, output_fasta, 80)
+store.export_fasta(output_fasta, seq_digests=digests_to_export, line_width=80)
 
 with open(output_fasta) as f:
     for i, line in enumerate(f):
@@ -128,7 +128,7 @@ for seq in sequences:
 
 # %%
 output_regions = os.path.join(temp_dir, "regions.fa")
-store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions)
+store.export_fasta_from_regions(EXAMPLE_COLLECTION, bed_path, output_regions, label="name")
 
 with open(output_regions) as f:
     for line in f:

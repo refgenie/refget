@@ -255,18 +255,19 @@ for row in result["matches"][:5]:
 # ## 6. Exporting sequences as FASTA
 #
 # `export_fasta()` writes a collection, or a named subset of it, to a FASTA
-# file. On a remote store it fetches whatever it needs itself -- no separate
-# download step first. A whole human genome is over 3 Gbp, so here we export
+# file (or to stdout, with `"-"`). On a remote store it streams what it needs,
+# one sequence at a time, without caching the sequences locally. `label="name"`
+# labels each record with its chromosome name; the default, `{seq}`, uses the
+# sequence's refget ID. A whole human genome is over 3 Gbp, so here we export
 # just the mitochondrial genome.
 
 # %%
 output_path = os.path.join(temp_dir, "hg38_chrM.fa")
-store.export_fasta(ucsc.digest, output_path, ["chrM"])
+summary = store.export_fasta(
+    output_path, collections=ucsc.digest, names=["chrM"], label="name"
+)
 
-# export_fasta() already fetched chrM into the cache; get_sequence_by_name()
-# here is just to read its length for the printout below, not a requirement.
-chrM = store.get_sequence_by_name(ucsc.digest, "chrM")
-print(f"Exported {chrM.metadata.name} ({chrM.metadata.length:,} bp) to: {output_path}")
+print(f"Exported chrM ({summary['n_bases']:,} bp) to: {output_path}")
 print(f"File size: {os.path.getsize(output_path):,} bytes")
 print("\nFirst 3 lines:")
 with open(output_path) as f:
@@ -277,7 +278,7 @@ with open(output_path) as f:
 
 # %% [markdown] output
 # ```
-# Downloading sequence k3grVkjY-hoWcCUojHw6VU6GE3MZ8Sct...
+# exported 1/1 records (0.00 GB)
 # Exported chrM (16,569 bp) to: /tmp/jungle_tutorial_79aqbeoh/hg38_chrM.fa
 # File size: 16,783 bytes
 #
@@ -288,10 +289,9 @@ with open(output_path) as f:
 # ```
 
 # %% [markdown]
-# Pass `None` instead of a name list to export the whole collection -- on a
-# remote store that fetches every sequence, so make sure that is what you
-# want before running it on a multi-gigabase genome. The optional last
-# argument sets the FASTA line width.
+# Leave out `names` to export the whole collection -- on a remote store that
+# downloads every sequence, so make sure that is what you want before running
+# it on a multi-gigabase genome. `line_width` sets the FASTA line width.
 
 # %% [markdown]
 # <div class="admonition success">
