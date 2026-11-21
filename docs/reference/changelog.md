@@ -5,8 +5,11 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-20
+
 ### Changed
 
+- **Requires gtars 0.12.0.**
 - **`refget store export` streams, and labels records by digest by default.**
   The FASTA goes to stdout without a temporary file, one sequence at a time,
   so memory stays flat and you can pipe a whole store into a tool such as
@@ -29,6 +32,14 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   is an error, reported before any output.
 - `--molecule dna|protein` keeps one molecule type.
 - `refget store export ... | head` exits quietly when the reader stops early.
+
+### Fixed
+
+- Comparing two large collections is much faster: element matching uses
+  sets instead of scanning lists. Results now match gtars' compare exactly.
+  Order is reported only when at least 2 elements are shared, so
+  `a_and_b_same_order` can now be `null` where it was `true`. `1` and `1.0`
+  count as equal, and `true` never matches `1`.
 
 ## [0.13.0] - 2026-11-06
 
