@@ -18,42 +18,45 @@ Without structured metadata, this information is typically scattered across READ
 
 ## The FHR specification
 
-FHR is an open specification developed by the [FAIR-bioHeaders community](https://github.com/FAIR-bioHeaders/FHR-Specification). It defines a JSON schema for genome assembly metadata. RefgetStore implements FHR metadata as sidecar files attached to collection digests.
+FHR is an open specification developed by the [FAIR-bioHeaders community](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification). It defines a JSON schema for genome assembly metadata. RefgetStore implements FHR metadata as sidecar files attached to collection digests.
 
-Key fields in the FHR spec:
+Commonly used fields:
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `schema` | string | URI of the FHR JSON schema |
-| `schemaVersion` | string | Version of the FHR spec being used |
+| `schemaVersion` | number or string | FHR 1 uses the number `1`; FHR 2.0 uses the string `"2.0"` |
 | `genome` | string | Species or organism name |
 | `version` | string | Assembly version (e.g., "GRCh38.p14") |
-| `taxon` | object | Taxonomy info: `name` and `uri` |
-| `masking` | string | Masking type: "soft-masked", "hard-masked", "unmasked" |
+| `taxon` | object | Taxonomy info: `name` and `uri` (an identifiers.org taxonomy URI) |
+| `masking` | string | One of `not-masked`, `hard-masked`, `soft-masked`, `repeat-masked`, `unknown` |
 | `genomeSynonym` | array | Alternative names (e.g., ["hg38"]) |
 | `dateCreated` | string | ISO 8601 date |
-| `license` | string | SPDX license identifier (e.g., "CC0-1.0") |
-| `metadataAuthor` | array | Authors of the metadata record |
-| `sequenceAuthor` | array | Authors/producers of the genome assembly |
-| `scholarlyArticle` | string | DOI or URL of a related publication |
+| `reuseConditions` | string | License and reuse conditions (e.g., "CC0-1.0") |
+| `metadataAuthor` | array | Authors of the metadata record (`name` and `uri`) |
+| `assemblyAuthor` | array | Authors/producers of the genome assembly (`name` and `uri`) |
+| `checksum` | string | Checksum of the FASTA file |
+| `scholarlyArticle` | string | DOI of a related publication, without a resolver prefix (e.g., "10.5281/zenodo.6762550") |
 | `funding` | string | Funding information |
-| `identifier` | object | Cross-reference to an external registry |
+| `identifier` | array | Identifiers as `prefix:accession` strings (e.g., ["insdc.gca:GCA_000001405.29"]) |
 
-Not all fields are required. The minimum useful record typically includes `genome`, `version`, and `taxon`.
+This is not the full list, and the specification is still evolving. See the [FHR specification](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification) for every field and the current rules.
+
+FHR requires `schema`, `schemaVersion`, `genome`, `taxon`, `version`, `metadataAuthor`, `assemblyAuthor`, `dateCreated`, `masking`, and `checksum`. RefgetStore does not enforce this: it accepts partial records, such as one with only `genome`, `version`, and `taxon`. A partial record is still useful, but it will not validate as FHR.
 
 ## How FHR metadata is stored
 
-On-disk RefgetStores persist FHR metadata as JSON sidecar files in the `collections/` directory:
+On-disk RefgetStores persist FHR metadata as JSON sidecar files in the `fhr/` directory:
 
 ```
 my_store/
   collections/
-    Ab1cd.rgci                          ← collection index file
-    NikmJ6xnuvO741NgL-zszh5_p4DsD3nV.rgci
+    NikmJ6xnuvO741NgL-zszh5_p4DsD3nV.rgsi   ← collection file
+  fhr/
     NikmJ6xnuvO741NgL-zszh5_p4DsD3nV.fhr.json   ← FHR sidecar
 ```
 
-The sidecar filename is `<collection_digest>.fhr.json`. When you open a store with `RefgetStore.open_local()`, all sidecar files in the `collections/` directory are loaded automatically. FHR metadata travels with the store: copying a store directory to another machine preserves all attached metadata.
+The sidecar filename is `<collection_digest>.fhr.json`. When you open a store with `RefgetStore.open_local()`, all sidecar files in the `fhr/` directory are loaded automatically. FHR metadata travels with the store: copying a store directory to another machine preserves all attached metadata.
 
 In-memory stores support FHR metadata in memory, but it is not persisted when the store goes out of scope.
 
@@ -78,6 +81,6 @@ Together, these three layers provide complete, machine-readable provenance for t
 ## Learn more
 
 - [FHR Metadata Headers](using-services/fhr-metadata.py) - Hands-on guide: creating, attaching, retrieving, and removing FHR metadata
-- [FHR Specification](https://github.com/FAIR-bioHeaders/FHR-Specification) - The upstream FAIR-bioHeaders specification
+- [FHR Specification](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification) - The upstream FAIR-bioHeaders specification
 - [Names, aliases, and identifiers](names-and-aliases-explained.md) - How aliases complement FHR metadata
-- [RefgetStore file format](reference/refgetstore-format.md) - Technical specification including the `collections/` directory and sidecar file format
+- [RefgetStore file format](reference/refgetstore-format.md) - Technical specification including the `fhr/` directory and sidecar file format

@@ -40,6 +40,9 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   Order is reported only when at least 2 elements are shared, so
   `a_and_b_same_order` can now be `null` where it was `true`. `1` and `1.0`
   count as equal, and `true` never matches `1`.
+- The FHR metadata docs now use the field names from the FHR specification
+  (`assemblyAuthor`, `reuseConditions`, `identifier` as a list) and the `fhr/`
+  sidecar folder (#130).
 
 ## [0.13.0] - 2026-11-06
 
