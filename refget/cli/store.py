@@ -1582,7 +1582,9 @@ def fhr_set_fields(
     digest: str = typer.Argument(help="Collection digest"),
     genome: Optional[str] = typer.Option(None, "--genome", help="Genome name"),
     version: Optional[str] = typer.Option(None, "--version", help="Genome version"),
-    masking: Optional[str] = typer.Option(None, "--masking", help="Masking description"),
+    masking: Optional[str] = typer.Option(
+        None, "--masking", help="not-masked, hard-masked, soft-masked, repeat-masked, or unknown"
+    ),
     genome_synonym: Optional[List[str]] = typer.Option(
         None, "--genome-synonym", help="Genome synonym (repeatable)"
     ),
@@ -1591,10 +1593,10 @@ def fhr_set_fields(
     ),
     documentation: Optional[str] = typer.Option(None, "--documentation", help="Documentation URL"),
     identifier: Optional[List[str]] = typer.Option(
-        None, "--identifier", help="Identifier (repeatable)"
+        None, "--identifier", help="Identifier as prefix:accession (repeatable)"
     ),
     scholarly_article: Optional[str] = typer.Option(
-        None, "--scholarly-article", help="Scholarly article"
+        None, "--scholarly-article", help="DOI of a related article (e.g. 10.1038/nature15393)"
     ),
     funding: Optional[str] = typer.Option(None, "--funding", help="Funding"),
     path: Optional[Path] = typer.Option(None, "--path", "-p", help="Store path"),
@@ -1607,11 +1609,11 @@ def fhr_set_fields(
         "genome": genome,
         "version": version,
         "masking": masking,
-        "genome_synonym": list(genome_synonym) if genome_synonym else None,
-        "voucher_specimen": voucher_specimen,
+        "genomeSynonym": list(genome_synonym) if genome_synonym else None,
+        "voucherSpecimen": voucher_specimen,
         "documentation": documentation,
         "identifier": list(identifier) if identifier else None,
-        "scholarly_article": scholarly_article,
+        "scholarlyArticle": scholarly_article,
         "funding": funding,
     }
     kwargs = {k: v for k, v in fields.items() if v is not None}

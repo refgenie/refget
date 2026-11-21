@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import Counter
 from pathlib import Path
 from typing import Optional, Union
 
@@ -257,8 +258,8 @@ def _compare_elements(A: list, B: list) -> dict[str, int | bool | None]:
 
     Matches gtars' Rust compare_elements: filter each array to elements present in
     the other, count the overlap as the smaller filtered length (so duplicates
-    count), and report order only when at least 2 elements are shared and the
-    filtered arrays are the same length.
+    count), and report order only when at least 2 elements are shared and every
+    shared element appears the same number of times in both arrays.
     """
     A_keys = [_element_key(x) for x in A]
     B_keys = [_element_key(x) for x in B]
@@ -271,8 +272,8 @@ def _compare_elements(A: list, B: list) -> dict[str, int | bool | None]:
     if overlap < 2:
         # order match requires at least 2 matching elements
         order = None
-    elif len(A_filtered) != len(B_filtered):
-        # duplicated matches means order match is undefined
+    elif Counter(A_filtered) != Counter(B_filtered):
+        # unbalanced duplicates means order match is undefined
         order = None
     else:
         order = A_filtered == B_filtered

@@ -38,11 +38,16 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Comparing two large collections is much faster: element matching uses
   sets instead of scanning lists. Results now match gtars' compare exactly.
   Order is reported only when at least 2 elements are shared, so
-  `a_and_b_same_order` can now be `null` where it was `true`. `1` and `1.0`
-  count as equal, and `true` never matches `1`.
+  `a_and_b_same_order` can now be `null` where it was `true`. It is also
+  `null` when a shared element appears a different number of times in each
+  collection, as the spec requires. `1` and `1.0` count as equal, and `true`
+  never matches `1`.
 - The FHR metadata docs now use the field names from the FHR specification
   (`assemblyAuthor`, `reuseConditions`, `identifier` as a list) and the `fhr/`
   sidecar folder (#130).
+- `refget store fhr set-fields` now saves `--genome-synonym`,
+  `--scholarly-article` and `--voucher-specimen` under their FHR names
+  (`genomeSynonym`, `scholarlyArticle`, `voucherSpecimen`).
 
 ## [0.13.0] - 2026-11-06
 

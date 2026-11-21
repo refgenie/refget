@@ -55,13 +55,16 @@ def test_basic(a, b, count, order):
 @pytest.mark.parametrize(
     "a, b, count, order",
     [
-        # Unbalanced duplicates: filtered lengths differ, so order is undefined
+        # Unbalanced duplicates: order is undefined
         (["a", "a"], ["a"], 1, None),
         (["a", "a", "b"], ["a", "b"], 2, None),
+        # Same filtered length, but each element appears a different number of times
+        (["a", "a", "b"], ["a", "b", "b"], 3, None),
+        ([1, 1, 2], [1, 2, 2], 3, None),
+        ([8, 4, 4], [4, 8, 8], 3, None),
         # Balanced duplicates: filtered arrays compared directly
-        (["a", "a", "b"], ["a", "b", "b"], 3, False),
         (["a", "b", "a"], ["a", "b", "a"], 3, True),
-        ([1, 1, 2], [1, 2, 2], 3, False),
+        (["a", "b", "a"], ["b", "a", "a"], 3, False),
     ],
 )
 def test_duplicates(a, b, count, order):
