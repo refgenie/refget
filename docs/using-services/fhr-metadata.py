@@ -2,7 +2,7 @@
 # # FHR Metadata Headers
 #
 # This guide shows how to attach
-# [FAIR Headers Reference genome (FHR)](https://github.com/FAIR-bioHeaders/FHR-Specification)
+# [FAIR Headers Reference genome (FHR)](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification)
 # metadata to sequence collections in RefgetStore. FHR provides a standard way to
 # describe genome assemblies with structured metadata -- species, version, authors,
 # taxonomy, and more -- following the FAIR principles.
@@ -61,7 +61,7 @@ print(f"Collection digest: {collection_digest}")
 # %%
 fhr = FhrMetadata(
     schema="https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
-    schemaVersion=1.0,
+    schemaVersion=1,
     genome="Homo sapiens",
     version="GRCh38.p14",
     taxon={
@@ -71,7 +71,7 @@ fhr = FhrMetadata(
     masking="soft-masked",
     genomeSynonym=["hg38"],
     dateCreated="2024-06-15",
-    license="CC0-1.0",
+    reuseConditions="CC0-1.0",
 )
 
 print(repr(fhr))
@@ -98,14 +98,14 @@ print(f"genome_synonym: {fhr.genome_synonym}")
 #
 # Use `set_fhr_metadata` to associate the metadata with a specific sequence
 # collection. On an on-disk store, this writes a sidecar JSON file
-# (`<digest>.fhr.json`) into the `collections/` directory.
+# (`<digest>.fhr.json`) into the `fhr/` directory.
 
 # %%
 store.set_fhr_metadata(collection_digest, fhr)
 print(f"Metadata attached to {collection_digest}")
 
 # Verify the sidecar file was written
-sidecar_path = os.path.join(store_path, "collections", f"{collection_digest}.fhr.json")
+sidecar_path = os.path.join(store_path, "fhr", f"{collection_digest}.fhr.json")
 print(f"Sidecar exists: {os.path.exists(sidecar_path)}")
 
 
@@ -148,14 +148,14 @@ for key, value in d.items():
 #
 # Full metadata dict:
 #   schema: https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json
-#   schemaVersion: 1.0
+#   schemaVersion: 1
 #   genome: Homo sapiens
 #   taxon: {'name': 'Homo sapiens', 'uri': 'https://identifiers.org/taxonomy:9606'}
 #   version: GRCh38.p14
 #   dateCreated: 2024-06-15
 #   masking: soft-masked
 #   genomeSynonym: ['hg38']
-#   license: CC0-1.0
+#   reuseConditions: CC0-1.0
 # ```
 
 # %% [markdown]
@@ -171,7 +171,7 @@ for key, value in d.items():
 fhr_json_path = os.path.join(temp_dir, "grch38.fhr.json")
 fhr_data = {
     "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
-    "schemaVersion": 1.0,
+    "schemaVersion": 1,
     "genome": "Homo sapiens",
     "version": "GRCh38.p14",
     "taxon": {
@@ -232,7 +232,7 @@ print(json.dumps(exported, indent=2))
 # ```
 # {
 #   "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
-#   "schemaVersion": "1.0",
+#   "schemaVersion": 1,
 #   "genome": "Homo sapiens",
 #   "taxon": {
 #     "name": "Homo sapiens",

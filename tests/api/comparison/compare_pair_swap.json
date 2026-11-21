@@ -36,7 +36,7 @@
       "lengths": true,
       "names": false,
       "sequences": true,
-      "sorted_name_length_pairs": true
+      "sorted_name_length_pairs": null
     }
   }
 }

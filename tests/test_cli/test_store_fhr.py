@@ -173,6 +173,10 @@ class TestStoreFhr:
             "syn1",
             "--genome-synonym",
             "syn2",
+            "--scholarly-article",
+            "10.1038/nature15393",
+            "--voucher-specimen",
+            "specimen-1",
             "--path",
             str(store_path),
         )
@@ -183,6 +187,11 @@ class TestStoreFhr:
         data = json.loads(get_result.stdout)
         assert data["genome"] == "Field organism"
         assert data["version"] == "v3.0"
+        # Multi-word fields use the FHR spec's camelCase names
+        assert data["genomeSynonym"] == ["syn1", "syn2"]
+        assert data["scholarlyArticle"] == "10.1038/nature15393"
+        assert data["voucherSpecimen"] == "specimen-1"
+        assert "genome_synonym" not in data
 
     def test_fhr_set_fields_requires_a_field(self, cli, tmp_path):
         """set-fields errors when no fields are provided."""

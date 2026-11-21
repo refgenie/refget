@@ -21,8 +21,9 @@ refget-store/
 │       └── XyZabc456....seq
 ├── collections/                  # Collection metadata
 │   ├── collection1.rgsi          # Each collection is represented as a refget sequence index file
-│   ├── collection1.fhr.json      # FHR sidecar metadata file (optional)
 │   └── collection2.rgsi
+├── fhr/                          # FHR sidecar metadata files (optional)
+│   └── collection1.fhr.json
 └── aliases/                      # Human-readable name mappings
     ├── sequences/                # Sequence alias namespaces
     │   ├── insdc.tsv
@@ -213,25 +214,29 @@ Each row maps one alias string (column 1) to one digest (column 2), tab-separate
 
 ### FHR Sidecar Files (.fhr.json)
 
-FHR (FAIR Headers Reference genome) sidecar files attach structured metadata to a collection, following the [FHR specification](https://github.com/FAIR-bioHeaders/FHR-Specification).
+FHR (FAIR Headers Reference genome) sidecar files attach structured metadata to a collection, following the [FHR specification](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification).
 
-**Location:** `<store-root>/collections/<collection-digest>.fhr.json`
+**Location:** `<store-root>/fhr/<collection-digest>.fhr.json`
 
 **Format:** JSON
 
 **Example:**
 ```json
 {
-  "schema_version": 1,
-  "accessionID": {"id": "GCA_000001405.15", "source": "NCBI"},
-  "taxon": [{"name": "Homo sapiens", "taxid": "9606"}],
-  "description": "GRCh38 human reference genome",
-  "scholarly_article": "https://doi.org/10.1038/nature15393",
+  "schema": "https://raw.githubusercontent.com/FAIR-bioHeaders/FHR-Specification/main/fhr.json",
+  "schemaVersion": 1,
+  "genome": "Homo sapiens",
+  "version": "GRCh38.p14",
+  "taxon": {"name": "Homo sapiens", "uri": "https://identifiers.org/taxonomy:9606"},
+  "masking": "soft-masked",
+  "identifier": ["insdc.gca:GCA_000001405.29"],
+  "reuseConditions": "CC0-1.0",
+  "scholarlyArticle": "10.1038/nature15393",
   "funding": "National Human Genome Research Institute"
 }
 ```
 
-Each collection may have at most one `.fhr.json` sidecar. The sidecar is loaded automatically when the collection is opened, and an empty metadata object is stored if no sidecar file exists (zero-cost). See the [FHR specification](https://github.com/FAIR-bioHeaders/FHR-Specification) for the full field list.
+Each collection may have at most one `.fhr.json` sidecar. Sidecars are loaded automatically. See the [FHR specification](https://github.com/FAIR-bioHeaders/FAIR-bioHeaders-Specification) for the full field list.
 
 ## Storage Modes
 

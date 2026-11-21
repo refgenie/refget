@@ -10,7 +10,7 @@ RefgetStore is a content-addressed sequence database (from [gtars](https://githu
                    │ sequences + collections      │
                    │ aliases/ncbi.tsv             │
                    │ aliases/insdc.tsv            │
-                   │ collections/*.fhr.json       │
+                   │ fhr/*.fhr.json               │
                    └──────────┬──────────────────┘
                               │
               ┌───────────────┼───────────────┐

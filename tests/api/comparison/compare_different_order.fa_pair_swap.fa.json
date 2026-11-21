@@ -38,7 +38,7 @@
     },
     "a_and_b_same_order": {
       "lengths": false,
-      "name_length_pairs": true,
+      "name_length_pairs": null,
       "names": false,
       "sequences": false,
       "sorted_sequences": true

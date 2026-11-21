@@ -506,8 +506,18 @@ class TestRemoteStoreIntegrity:
             assert list(cache_dir.rglob("*.seq")) == []
 
             substring = cli(
-                "store", "get", sequence_digest, "--sequence", "--start", "0", "--end", "3",
-                "--path", str(client), "--remote", remote_url,
+                "store",
+                "get",
+                sequence_digest,
+                "--sequence",
+                "--start",
+                "0",
+                "--end",
+                "3",
+                "--path",
+                str(client),
+                "--remote",
+                remote_url,
             )
             assert substring.exit_code == 0, substring.output
             assert substring.stdout.strip() == "ACG"
@@ -516,16 +526,30 @@ class TestRemoteStoreIntegrity:
             bed = tmp_path / "lazy.bed"
             bed.write_text("chr2\t0\t2\n")
             regions = cli(
-                "store", "regions", digest, "--bed", str(bed), "--json",
-                "--path", str(client), "--remote", remote_url,
+                "store",
+                "regions",
+                digest,
+                "--bed",
+                str(bed),
+                "--json",
+                "--path",
+                str(client),
+                "--remote",
+                remote_url,
             )
             assert regions.exit_code == 0, regions.output
             assert json.loads(regions.stdout)[0]["sequence"] == "TT"
             assert list(cache_dir.rglob("*.seq")) == []
 
             whole = cli(
-                "store", "get", sequence_digest, "--sequence",
-                "--path", str(client), "--remote", remote_url,
+                "store",
+                "get",
+                sequence_digest,
+                "--sequence",
+                "--path",
+                str(client),
+                "--remote",
+                remote_url,
             )
             assert whole.exit_code == 0, whole.output
             assert whole.stdout.strip() == "ACGTACGT"
@@ -535,6 +559,7 @@ class TestRemoteStoreIntegrity:
 
     def test_origin_isolation_alias_resolution_and_shared_cache_guard(self, cli, tmp_path):
         from gtars.refget import RefgetStore
+
         from refget.cli.store import _normalize_remote_url
 
         remote_root = tmp_path / "remotes"
@@ -549,12 +574,16 @@ class TestRemoteStoreIntegrity:
         digest_a_peer = _add_text_collection(
             cli, store_a, tmp_path / "a2.fa", ">one\nACGT\n>extra\nTTAA\n"
         )
-        digest_b = _add_text_collection(
-            cli, store_b, tmp_path / "b.fa", ">other\nCCCC\n"
-        )
+        digest_b = _add_text_collection(cli, store_b, tmp_path / "b.fa", ">other\nCCCC\n")
         alias = cli(
-            "store", "alias", "add", "ucsc", "assembly-a", digest_a,
-            "--path", str(store_a),
+            "store",
+            "alias",
+            "add",
+            "ucsc",
+            "assembly-a",
+            digest_a,
+            "--path",
+            str(store_a),
         )
         assert alias.exit_code == 0, alias.output
 
@@ -567,12 +596,8 @@ class TestRemoteStoreIntegrity:
             normalized_b = _normalize_remote_url(url_b)
             client_store = tmp_path / "client"
 
-            list_a = cli(
-                "store", "list", "--path", str(client_store), "--remote", url_a
-            )
-            list_b = cli(
-                "store", "list", "--path", str(client_store), "--remote", url_b
-            )
+            list_a = cli("store", "list", "--path", str(client_store), "--remote", url_a)
+            list_b = cli("store", "list", "--path", str(client_store), "--remote", url_b)
             assert list_a.exit_code == 0, list_a.output
             assert list_b.exit_code == 0, list_b.output
             collections_a = json.loads(list_a.stdout)["collections"]
@@ -584,8 +609,14 @@ class TestRemoteStoreIntegrity:
             ]
 
             match = cli(
-                "store", "match", "ucsc:assembly-a", digest_a_peer,
-                "--path", str(client_store), "--remote", url_a,
+                "store",
+                "match",
+                "ucsc:assembly-a",
+                digest_a_peer,
+                "--path",
+                str(client_store),
+                "--remote",
+                url_a,
             )
             assert match.exit_code == 0, match.output
             assert json.loads(match.stdout)["matches"][0]["names_a"] == ["chr1"]
@@ -631,8 +662,14 @@ class TestRemoteStoreIntegrity:
             remote_url = f"http://127.0.0.1:{port}/store"
             client_store = tmp_path / "refresh_client"
             prime = cli(
-                "store", "get", sequence_digest, "--sequence",
-                "--path", str(client_store), "--remote", remote_url,
+                "store",
+                "get",
+                sequence_digest,
+                "--sequence",
+                "--path",
+                str(client_store),
+                "--remote",
+                remote_url,
             )
             assert prime.exit_code == 0, prime.output
 
@@ -643,17 +680,21 @@ class TestRemoteStoreIntegrity:
             preserved_bytes = preserved_payload.read_bytes()
 
             alias = cli(
-                "store", "alias", "add", "ucsc", "refreshed", digest,
-                "--path", str(source_store),
+                "store",
+                "alias",
+                "add",
+                "ucsc",
+                "refreshed",
+                digest,
+                "--path",
+                str(source_store),
             )
             assert alias.exit_code == 0, alias.output
             new_digest = _add_text_collection(
                 cli, source_store, tmp_path / "new.fa", ">new\nTTAA\n"
             )
 
-            refreshed = cli(
-                "store", "list", "--path", str(client_store), "--remote", remote_url
-            )
+            refreshed = cli("store", "list", "--path", str(client_store), "--remote", remote_url)
             assert refreshed.exit_code == 0, refreshed.output
             collections = json.loads(refreshed.stdout)["collections"]
             assert {row["digest"] for row in collections} == {digest, new_digest}
@@ -669,9 +710,7 @@ class TestRemoteStoreIntegrity:
             manifest["aliases_digest"] = "deliberately-missing-alias-sidecar"
             manifest_path.write_text(json.dumps(manifest, indent=2))
 
-            corrupt = cli(
-                "store", "list", "--path", str(client_store), "--remote", remote_url
-            )
+            corrupt = cli("store", "list", "--path", str(client_store), "--remote", remote_url)
             assert corrupt.exit_code != 0
             assert "missing-ns" in corrupt.output
             assert remote_url in corrupt.output

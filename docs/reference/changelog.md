@@ -3,6 +3,52 @@
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format.
 
 
+## [Unreleased]
+
+## [0.14.0] - 2026-11-20
+
+### Changed
+
+- **Requires gtars 0.12.0.**
+- **`refget store export` streams, and labels records by digest by default.**
+  The FASTA goes to stdout without a temporary file, one sequence at a time,
+  so memory stays flat and you can pipe a whole store into a tool such as
+  `makeblastdb`. Records are labeled `SQ.<digest>` unless you choose another
+  label with `-l/--label`; pass `-l '{name}'` for the old chromosome-name headers.
+  FASTA descriptions are no longer written.
+- The positional argument takes several collections, each a digest or a
+  `namespace:alias` selector.
+- With `--output`, the JSON result includes `n_records`, `n_bases`,
+  `n_fallbacks` and `n_deduplicated`.
+- Exporting from a remote store no longer saves the downloaded sequences into
+  the local cache. Use `refget store pull` for a local copy.
+
+### Added
+
+- `refget store export --all` exports every sequence in the store.
+- `-l/--label` templates with the fields `{seq}`, `{seq:NS}`, `{col}`,
+  `{col:NS}` and `{name}`, such as `{col:ucsc}/{name}`. A label repeated for
+  the same sequence is written once; a label repeated for different sequences
+  is an error, reported before any output.
+- `--molecule dna|protein` keeps one molecule type.
+- `refget store export ... | head` exits quietly when the reader stops early.
+
+### Fixed
+
+- Comparing two large collections is much faster: element matching uses
+  sets instead of scanning lists. Results now match gtars' compare exactly.
+  Order is reported only when at least 2 elements are shared, so
+  `a_and_b_same_order` can now be `null` where it was `true`. It is also
+  `null` when a shared element appears a different number of times in each
+  collection, as the spec requires. `1` and `1.0` count as equal, and `true`
+  never matches `1`.
+- The FHR metadata docs now use the field names from the FHR specification
+  (`assemblyAuthor`, `reuseConditions`, `identifier` as a list) and the `fhr/`
+  sidecar folder (#130).
+- `refget store fhr set-fields` now saves `--genome-synonym`,
+  `--scholarly-article` and `--voucher-specimen` under their FHR names
+  (`genomeSynonym`, `scholarlyArticle`, `voucherSpecimen`).
+
 ## [0.13.0] - 2026-11-06
 
 ### Added
